@@ -223,9 +223,9 @@
                                                     <i class="fas fa-times"></i>
                                                 </button>
                                                 <?php if($this->session->userdata('role') == 'admin'): ?>
-                                                <button class="mobile-table-btn mobile-table-btn-delete btn-delete" onclick="return confirm('Apakah Anda yakin ingin menghapus data ini?')">
+                                                    <a href="<?= site_url('database/delete/' . $p->id) ?>" class="mobile-table-btn mobile-table-btn-delete btn-delete" onclick="return confirm('Apakah Anda yakin ingin menghapus data ini?')">
                                                     <i class="fas fa-trash"></i>
-                                                </button>
+                                                </a>
                                                 <?php endif; ?>
                                             </td>
                                         </tr>   
@@ -293,7 +293,7 @@
                                         <input type="email" class="form-control edit-field" value="<?= $p->email ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                         </td>
                                         <td class="gender text-center" data-field="gender" data-value="<?= $p->gender ?>">
-                                        <span class="display-value"><?= $p->gender ?></span>
+                                        <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->gender ?: '-', ENT_QUOTES) ?>', 'Gender')" title="Klik untuk copy"><?= $p->gender ?: '-' ?></span>
                                                 <select class="form-select edit-field" style="display:none;">
                                                     <option value="">Pilih Gender</option>
                                                     <option value="" <?= $p->gender == '' ? 'selected' : '' ?>></option>
@@ -302,15 +302,15 @@
                                                 </select>
                                         </td>
                                         <td class="tanggal text-center" data-field="tanggal" data-value="<?= $p->tanggal ?>">
-                                        <span class="display-value"><?= $p->tanggal ?></span>
+                                        <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->tanggal ?: '-', ENT_QUOTES) ?>', 'Tanggal')" title="Klik untuk copy"><?= $p->tanggal ?: '-' ?></span>
                                         <input type="date" class="form-control edit-field" value="<?= $p->tanggal ?>" style="display:none;">
                                         </td>
                                         <td class="jam text-center" data-field="jam" data-value="<?= $p->jam ?>">
-                                        <span class="display-value"><?= $p->jam ?></span>
+                                        <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->jam ?: '-', ENT_QUOTES) ?>', 'Jam')" title="Klik untuk copy"><?= $p->jam ?: '-' ?></span>
                                         <input type="time" class="form-control edit-field" value="<?= $p->jam ?>" style="display:none;">
                                         </td>
                                         <td class="status text-center" data-field="status" data-value="<?= $p->status ?>" style="white-space: nowrap;width: auto;">
-                                        <span class="display-value"><?= $p->status == 0 ? 'On Target' : ($p->status == 1 ? 'Already' : 'Done') ?></span>
+                                        <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->status == 0 ? 'On Target' : ($p->status == 1 ? 'Already' : 'Done') ?: '-', ENT_QUOTES) ?>', 'Status')" title="Klik untuk copy"><?= $p->status == 0 ? 'On Target' : ($p->status == 1 ? 'Already' : 'Done') ?></span>
                                                 <select class="form-select edit-field" style="display:none;">
                                                     <option value="0" <?= $p->status == 0 ? 'selected' : '' ?>>On Target</option>
                                                     <option value="1" <?= $p->status == 1 ? 'selected' : '' ?>>Already</option>
@@ -318,7 +318,7 @@
                                                 </select>
                                         </td>
                                         <td class="flag-doc text-center" data-field="flag_doc" data-value="<?= $p->flag_doc ?>">
-                                        <span class="display-value"><?= $p->flag_doc ?: '-' ?></span>
+                                        <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->flag_doc ?: '-', ENT_QUOTES) ?>', 'Flag Dokumen')" title="Klik untuk copy"><?= $p->flag_doc ?: '-' ?></span>
                                                 <select class="form-select edit-field" style="display:none;">
                                                 <?php if (!empty($flag_doc_list)): foreach ($flag_doc_list as $flag): ?>
                                                     <option value="<?= htmlspecialchars($flag->flag_doc) ?>" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === $flag->flag_doc) ? 'selected' : '' ?>>
@@ -338,9 +338,9 @@
                                                 <i class="fas fa-times"></i>
                                             </button>
                                             <?php if($this->session->userdata('role') == 'admin'): ?>
-                                            <button class="btn btn-sm btn-danger btn-action" data-bs-toggle="tooltip" title="Delete" onclick="return confirm('Apakah Anda yakin ingin menghapus data ini?')">
+                                                <a href="<?= site_url('database/delete/' . $p->id) ?>" class="btn btn-sm btn-danger btn-action" data-bs-toggle="tooltip" title="Delete" onclick="return confirm('Apakah Anda yakin ingin menghapus data ini?')">
                                                 <i class="fas fa-trash"></i>
-                                            </button>
+                                            </a>
                                             <?php endif; ?>
                                         </td>
                                     </tr>
