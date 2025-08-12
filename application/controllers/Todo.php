@@ -280,7 +280,7 @@ class Todo extends CI_Controller {
                 $this->session->set_flashdata('error', 'Gagal memperbarui data peserta');
             }
             
-            redirect('database');
+            redirect('todo');
         }
     }
 

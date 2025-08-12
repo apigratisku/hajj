@@ -1520,7 +1520,7 @@ function saveRow(button) {
         data[fieldName] = field.value;
     });
     
-    fetch('<?= base_url('database/update_ajax/') ?>' + rowId, {
+    fetch('<?= base_url('todo/update_ajax/') ?>' + rowId, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -1562,6 +1562,10 @@ function saveRow(button) {
             });
             
             showAlert('Data berhasil diperbarui', 'success');
+            // Auto refresh setelah 1 detik
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
             
             editFields.forEach(field => field.style.display = 'none');
             displayValues.forEach(value => value.style.display = 'inline');
