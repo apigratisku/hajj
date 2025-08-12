@@ -97,7 +97,8 @@ class Transaksi_model extends CI_Model {
             $this->db->like("CONCAT(tanggal, ' ', jam)", $filters['tanggaljam']);
         }
     
-        $this->db->order_by('id', 'DESC');
+        // Urut berdasarkan abjad nama
+        $this->db->order_by('peserta.nama', 'ASC');
         $this->db->limit($limit, $offset);
         return $this->db->get()->result();
     }
@@ -116,7 +117,7 @@ class Transaksi_model extends CI_Model {
         }
 
         $this->db->where('peserta.status', 0);
-        $this->db->order_by('id', 'DESC');
+        $this->db->order_by('peserta.nama', 'ASC');
         $this->db->limit($limit, $offset);
         return $this->db->get()->result();
     }
@@ -154,24 +155,24 @@ class Transaksi_model extends CI_Model {
     }
     
     public function get_unique_flag_doc() {
-        $this->db->select('flag_doc');
+        $this->db->select('*');
         $this->db->from($this->table);
         $this->db->where('flag_doc IS NOT NULL');
         $this->db->where('flag_doc !=', '');
         $this->db->group_by('flag_doc');
-        $this->db->order_by('flag_doc', 'ASC');
+        $this->db->order_by('nama', 'ASC');
         return $this->db->get()->result();
     }
     
     public function get_unique_tanggaljam() {
-        $this->db->select("CONCAT(tanggal, ' ', jam) AS tanggaljam");
+        $this->db->select("nama, CONCAT(tanggal, ' ', jam) AS tanggaljam");
         $this->db->from($this->table);
         $this->db->where("tanggal IS NOT NULL");
         $this->db->where("jam IS NOT NULL");
         $this->db->where("tanggal != ''");
         $this->db->where("jam != ''");
         $this->db->group_by("tanggaljam");
-        $this->db->order_by("tanggaljam", "ASC");
+        $this->db->order_by('nama', 'ASC');
         return $this->db->get()->result();
     }
     
