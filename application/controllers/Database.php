@@ -37,7 +37,8 @@ class Database extends CI_Controller {
             'nama' => $this->input->get('nama'),
             'nomor_paspor' => $this->input->get('nomor_paspor'),
             'no_visa' => $this->input->get('no_visa'),
-            'flag_doc' => $this->input->get('flag_doc')
+            'flag_doc' => $this->input->get('flag_doc'),
+            'tanggaljam' => $this->input->get('tanggaljam')
         ];
         
         // Pagination settings
@@ -49,6 +50,7 @@ class Database extends CI_Controller {
         $data['peserta'] = $this->transaksi_model->get_paginated_filtered($per_page, $offset, $filters);
         // Provide flag_doc options for filter select
         $data['flag_doc_list'] = $this->transaksi_model->get_unique_flag_doc();
+        $data['tanggaljam_list'] = $this->transaksi_model->get_unique_tanggaljam();
         
         // Get total count for pagination
         $total_rows = $this->transaksi_model->count_filtered($filters);

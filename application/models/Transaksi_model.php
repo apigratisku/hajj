@@ -70,6 +70,7 @@ class Transaksi_model extends CI_Model {
     public function get_paginated_filtered($limit, $offset, $filters = []) {
         $this->db->select('peserta.*');
         $this->db->from($this->table);
+    
         if (!empty($filters['nama'])) {
             $this->db->like('peserta.nama', $filters['nama']);
         }
@@ -82,11 +83,15 @@ class Transaksi_model extends CI_Model {
         if (!empty($filters['flag_doc'])) {
             $this->db->like('peserta.flag_doc', $filters['flag_doc']);
         }
-        
+        if (!empty($filters['tanggaljam'])) {
+            $this->db->like("CONCAT(tanggal, ' ', jam)", $filters['tanggaljam']);
+        }
+    
         $this->db->order_by('id', 'DESC');
         $this->db->limit($limit, $offset);
         return $this->db->get()->result();
     }
+    
 
     public function count_filtered($filters = []) {
         $this->db->from($this->table);
@@ -120,6 +125,19 @@ class Transaksi_model extends CI_Model {
         $this->db->order_by('flag_doc', 'ASC');
         return $this->db->get()->result();
     }
+    
+    public function get_unique_tanggaljam() {
+        $this->db->select("CONCAT(tanggal, ' ', jam) AS tanggaljam");
+        $this->db->from($this->table);
+        $this->db->where("tanggal IS NOT NULL");
+        $this->db->where("jam IS NOT NULL");
+        $this->db->where("tanggal != ''");
+        $this->db->where("jam != ''");
+        $this->db->group_by("tanggaljam");
+        $this->db->order_by("tanggaljam", "ASC");
+        return $this->db->get()->result();
+    }
+    
     
     public function get_dashboard_stats($flag_doc = null) {
         $this->db->select('COUNT(*) as total_done');

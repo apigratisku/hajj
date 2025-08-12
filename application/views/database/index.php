@@ -36,6 +36,16 @@
                                     <input type="text" name="no_visa" value="<?= isset($_GET['no_visa']) ? htmlspecialchars($_GET['no_visa']) : '' ?>" class="form-control mobile-input" placeholder="No Visa">
                                 </div>
                                 <div class="form-group">
+                                    <select name="tanggaljam" class="form-select mobile-input">
+                                        <option value="">Waktu</option>
+                                        <?php if (!empty($tanggaljam_list)): foreach ($tanggaljam_list as $tanggaljam): ?>
+                                            <option value="<?= htmlspecialchars($tanggaljam->tanggaljam) ?>" <?= (isset($_GET['tanggaljam']) && $_GET['tanggaljam'] === $tanggaljam->tanggaljam) ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($tanggaljam->tanggaljam) ?>
+                                            </option>
+                                        <?php endforeach; endif; ?>
+                                    </select>
+                                </div>
+                                <div class="form-group">
                                     <select name="flag_doc" class="form-select mobile-input">
                                         <option value="">Semua Flag Dokumen</option>
                                         <?php if (!empty($flag_doc_list)): foreach ($flag_doc_list as $flag): ?>
@@ -71,7 +81,7 @@
                                     <input type="text" name="no_visa" value="<?= isset($_GET['no_visa']) ? htmlspecialchars($_GET['no_visa']) : '' ?>" class="form-control form-control-sm" placeholder="No Visa">
                                 </div>
                                 <div class="col-md-2">
-                                    <select name="flag_doc" class="form-select form-select-sm">
+                                    <select name="flag_doc" class="form-select form-control-sm">
                                         <option value="">Semua Flag Dokumen</option>
                                         <?php if (!empty($flag_doc_list)): foreach ($flag_doc_list as $flag): ?>
                                             <option value="<?= htmlspecialchars($flag->flag_doc) ?>" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === $flag->flag_doc) ? 'selected' : '' ?>>
@@ -80,7 +90,17 @@
                                         <?php endforeach; endif; ?>
                                     </select>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-2">
+                                    <select name="tanggaljam" class="form-select form-control-sm">
+                                        <option value="">Waktu</option>
+                                        <?php if (!empty($tanggaljam_list)): foreach ($tanggaljam_list as $tanggaljam): ?>
+                                            <option value="<?= htmlspecialchars($tanggaljam->tanggaljam) ?>" <?= (isset($_GET['tanggaljam']) && $_GET['tanggaljam'] === $tanggaljam->tanggaljam) ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($tanggaljam->tanggaljam) ?>
+                                            </option>
+                                        <?php endforeach; endif; ?>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
                                     <button type="submit" class="btn btn-brown btn-sm me-2">
                                         <i class="fas fa-search"></i> Cari
                                     </button>
