@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Sistem Pendaftaran Peserta Hajj</title>
+    <title>Login - Sistem Pendataan Kunjungan Peserta Haji dan Umrah</title>
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -435,7 +435,7 @@
             <div class="hajj-logo">
                 <i class="fas fa-kaaba"></i>
             </div>
-            <h2>Sistem Pendaftaran Peserta Hajj</h2>
+            <h2>Sistem Pendataan Kunjungan Peserta Haji dan Umrah</h2>
         </div>
         
         <?php if (validation_errors()): ?>

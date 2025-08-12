@@ -31,7 +31,7 @@ class Database extends CI_Controller {
 
     public function index() {
         $this->load->model('transaksi_model');
-        
+        $data['title'] = 'Data Peserta';
         // Get filters from GET parameters and clean them
         $filters = [
             'nama' => trim($this->input->get('nama')),

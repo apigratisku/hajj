@@ -57,7 +57,7 @@
         </li>
         
         <li class="nav-item mt-3">
-            <a href="<?= base_url('auth/logout') ?>" class="text-danger" onclick="return confirm('Apakah Anda yakin ingin logout?');">
+            <a href="<?= base_url('auth/logout') ?>" class="text-light" onclick="return confirm('Apakah Anda yakin ingin logout?');">
                 <i class="fas fa-sign-out-alt"></i> <span>Logout</span>
             </a>
         </li>

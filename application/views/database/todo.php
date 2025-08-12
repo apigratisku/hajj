@@ -83,28 +83,38 @@
                                     <div class="card-body-mobile">
                                         <div class="data-row">
                                             <span class="label">Nama</span>
-                                            <span class="value" data-field="nama" data-value="<?= $p->nama ?>"><?= $p->nama ?></span>
+                                            <span class="value copyable-text" data-field="nama" data-value="<?= $p->nama ?>" onclick="copyToClipboard('<?= htmlspecialchars($p->nama, ENT_QUOTES) ?>', 'Nama Peserta')" title="Klik untuk copy"><?= $p->nama ?></span>
                                             <input type="text" class="mobile-edit-field" value="<?= $p->nama ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                         </div>
                                         <div class="data-row">
                                             <span class="label">No Paspor</span>
-                                            <span class="value" data-field="nomor_paspor" data-value="<?= $p->nomor_paspor ?>"><?= $p->nomor_paspor ?></span>
+                                            <span class="value copyable-text" data-field="nomor_paspor" data-value="<?= $p->nomor_paspor ?>" onclick="copyToClipboard('<?= htmlspecialchars($p->nomor_paspor, ENT_QUOTES) ?>', 'Nomor Paspor')" title="Klik untuk copy"><?= $p->nomor_paspor ?></span>
                                             <input type="text" class="mobile-edit-field" value="<?= $p->nomor_paspor ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                         </div>
                                         <div class="data-row">
                                             <span class="label">No Visa</span>
-                                            <span class="value" data-field="no_visa" data-value="<?= $p->no_visa ?>"><?= $p->no_visa ?: '-' ?></span>
+                                            <span class="value copyable-text" data-field="no_visa" data-value="<?= $p->no_visa ?>" onclick="copyToClipboard('<?= htmlspecialchars($p->no_visa ?: '-', ENT_QUOTES) ?>', 'Nomor Visa')" title="Klik untuk copy"><?= $p->no_visa ?: '-' ?></span>
                                             <input type="text" class="mobile-edit-field" value="<?= $p->no_visa ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                         </div>
                                         <div class="data-row">
                                             <span class="label">No. HP</span>
-                                            <span class="value" data-field="nomor_hp" data-value="<?= $p->nomor_hp ?>"><?= $p->nomor_hp ?: '-' ?></span>
+                                            <span class="value copyable-text" data-field="nomor_hp" data-value="<?= $p->nomor_hp ?>" onclick="copyToClipboard('<?= htmlspecialchars($p->nomor_hp ?: '-', ENT_QUOTES) ?>', 'Nomor HP')" title="Klik untuk copy"><?= $p->nomor_hp ?: '-' ?></span>
                                             <input type="text" class="mobile-edit-field" value="<?= $p->nomor_hp ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                         </div>
                                         <div class="data-row">
                                             <span class="label">Email</span>
-                                            <span class="value" data-field="email" data-value="<?= $p->email ?>"><?= $p->email ?: '-' ?></span>
+                                            <span class="value copyable-text" data-field="email" data-value="<?= $p->email ?>" onclick="copyToClipboard('<?= htmlspecialchars($p->email ?: '-', ENT_QUOTES) ?>', 'Email')" title="Klik untuk copy"><?= $p->email ?: '-' ?></span>
                                             <input type="email" class="mobile-edit-field" value="<?= $p->email ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
+                                        </div>
+                                        <div class="data-row">
+                                            <span class="label">Password</span>
+                                            <span class="value copyable-text" data-field="password" data-value="<?= $p->password ?>" onclick="copyToClipboard('<?= htmlspecialchars($p->password, ENT_QUOTES) ?>', 'Password')" title="Klik untuk copy"><?= $p->password ?: '-' ?></span>
+                                            <input type="password" class="mobile-edit-field" value="<?= $p->password ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
+                                        </div>
+                                        <div class="data-row">
+                                            <span class="label">Tgl. Lahir</span>
+                                            <span class="value copyable-text" data-field="tgl_lahir" data-value="<?= $p->tgl_lahir ?>" onclick="copyToClipboard('<?= htmlspecialchars($p->tgl_lahir ? date('d/m/Y', strtotime($p->tgl_lahir)) : '-', ENT_QUOTES) ?>', 'Tanggal Lahir')" title="Klik untuk copy"><?= $p->tgl_lahir ? date('d/m/Y', strtotime($p->tgl_lahir)) : '-' ?></span>
+                                            <input type="date" class="mobile-edit-field" value="<?= $p->tgl_lahir ? date('Y-m-d', strtotime($p->tgl_lahir)) : '' ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                         </div>
                                         <div class="data-row">
                                             <span class="label">Gender</span>
@@ -201,31 +211,31 @@
                                     <?php $no = 1; foreach ($peserta as $p): ?>
                                         <tr data-id="<?= $p->id ?>">
                                             <td class="nama-peserta" data-field="nama" data-value="<?= $p->nama ?>">
-                                                <span class="display-value"><?= $p->nama ?></span>
+                                                <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->nama, ENT_QUOTES) ?>', 'Nama Peserta')" title="Klik untuk copy"><?= $p->nama ?></span>
                                                 <input type="text" class="form-control edit-field" value="<?= $p->nama ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                             </td>
                                             <td class="no-paspor text-center" data-field="nomor_paspor" data-value="<?= $p->nomor_paspor ?>">
-                                                <span class="display-value"><?= $p->nomor_paspor ?></span>
+                                                <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->nomor_paspor, ENT_QUOTES) ?>', 'Nomor Paspor')" title="Klik untuk copy"><?= $p->nomor_paspor ?></span>
                                                 <input type="text" class="form-control edit-field" value="<?= $p->nomor_paspor ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                             </td>
                                             <td class="no-visa text-center" data-field="no_visa" data-value="<?= $p->no_visa ?>">
-                                                <span class="display-value"><?= $p->no_visa ?></span>
+                                                <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->no_visa ?: '-', ENT_QUOTES) ?>', 'Nomor Visa')" title="Klik untuk copy"><?= $p->no_visa ?></span>
                                                 <input type="text" class="form-control edit-field" value="<?= $p->no_visa ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                             </td>
                                             <td class="tgl-lahir text-center" data-field="tgl_lahir" data-value="<?= $p->tgl_lahir ?>">
-                                                <span class="display-value"><?= $p->tgl_lahir ? date('d/m/Y', strtotime($p->tgl_lahir)) : '-' ?></span>
+                                                <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->tgl_lahir ? date('d/m/Y', strtotime($p->tgl_lahir)) : '-', ENT_QUOTES) ?>', 'Tanggal Lahir')" title="Klik untuk copy"><?= $p->tgl_lahir ? date('d/m/Y', strtotime($p->tgl_lahir)) : '-' ?></span>
                                                 <input type="date" class="form-control edit-field" value="<?= $p->tgl_lahir ? date('Y-m-d', strtotime($p->tgl_lahir)) : '' ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                             </td>
                                             <td class="password text-center" data-field="password" data-value="<?= $p->password ?>">
-                                                <span class="display-value"><?= $p->password ?></span>
+                                                <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->password, ENT_QUOTES) ?>', 'Password')" title="Klik untuk copy"><?= $p->password ?></span>
                                                 <input type="password" class="form-control edit-field" value="<?= $p->password ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                             </td>
                                             <td class="no-hp text-center" data-field="nomor_hp" data-value="<?= $p->nomor_hp ?>">
-                                                <span class="display-value"><?= $p->nomor_hp ?></span>
+                                                <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->nomor_hp ?: '-', ENT_QUOTES) ?>', 'Nomor HP')" title="Klik untuk copy"><?= $p->nomor_hp ?></span>
                                                 <input type="text" class="form-control edit-field" value="<?= $p->nomor_hp ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                             </td>
                                             <td class="email text-center" data-field="email" data-value="<?= $p->email ?>"> 
-                                                <span class="display-value"><?= $p->email ?></span>
+                                                <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->email ?: '-', ENT_QUOTES) ?>', 'Email')" title="Klik untuk copy"><?= $p->email ?></span>
                                                 <input type="email" class="form-control edit-field" value="<?= $p->email ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                             </td>
                                             <td class="gender text-center" data-field="gender" data-value="<?= $p->gender ?>">
@@ -858,6 +868,59 @@
     margin-top: 0.25rem;
 }
 
+/* Copyable Text Styles */
+.copyable-text {
+    cursor: pointer;
+    position: relative;
+    transition: var(--transition);
+    border-radius: 4px;
+    padding: 2px 4px;
+}
+
+.copyable-text:hover {
+    background-color: rgba(139, 69, 19, 0.1);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.copyable-text:active {
+    transform: translateY(0);
+    background-color: rgba(139, 69, 19, 0.2);
+}
+
+.copyable-text::after {
+    content: '📋';
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    font-size: 12px;
+    opacity: 0;
+    transition: var(--transition);
+    background: var(--primary-color);
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.copyable-text:hover::after {
+    opacity: 1;
+}
+
+/* Mobile copyable text adjustments */
+@media (max-width: 768px) {
+    .copyable-text::after {
+        display: none;
+    }
+    
+    .copyable-text:hover {
+        background-color: rgba(139, 69, 19, 0.15);
+    }
+}
+
 .mobile-edit-field:focus {
     border-color: var(--primary-light);
     box-shadow: 0 0 0 0.2rem rgba(139, 69, 19, 0.25);
@@ -911,6 +974,16 @@
 .alert-danger {
     background: linear-gradient(135deg, #f8d7da, #f5c6cb);
     color: #721c24;
+}
+
+.alert-warning {
+    background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+    color: #856404;
+}
+
+.alert-info {
+    background: linear-gradient(135deg, #d1ecf1, #bee5eb);
+    color: #0c5460;
 }
 
 /* Enhanced Pagination Styles */
@@ -1242,6 +1315,80 @@
 </style>
 
 <script>
+// Copy to clipboard function
+function copyToClipboard(text, fieldName) {
+    // Handle empty or dash values
+    if (!text || text === '-' || text === '') {
+        showAlert('Tidak ada teks untuk di-copy', 'warning');
+        return;
+    }
+    
+    // Try to use the modern Clipboard API first
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(() => {
+            showCopySuccess(fieldName, text);
+        }).catch(err => {
+            console.error('Clipboard API failed:', err);
+            fallbackCopyTextToClipboard(text, fieldName);
+        });
+    } else {
+        // Fallback for older browsers or non-secure contexts
+        fallbackCopyTextToClipboard(text, fieldName);
+    }
+}
+
+// Fallback copy function for older browsers
+function fallbackCopyTextToClipboard(text, fieldName) {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    
+    // Avoid scrolling to bottom
+    textArea.style.top = '0';
+    textArea.style.left = '0';
+    textArea.style.position = 'fixed';
+    textArea.style.opacity = '0';
+    
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+            showCopySuccess(fieldName, text);
+        } else {
+            showAlert('Gagal copy teks ke clipboard', 'error');
+        }
+    } catch (err) {
+        console.error('Fallback copy failed:', err);
+        showAlert('Gagal copy teks ke clipboard', 'error');
+    }
+    
+    document.body.removeChild(textArea);
+}
+
+// Show copy success message
+function showCopySuccess(fieldName, text) {
+    // Create a temporary success indicator on the clicked element
+    const clickedElement = event.target;
+    const originalText = clickedElement.textContent;
+    
+    // Show visual feedback
+    clickedElement.style.backgroundColor = 'rgba(40, 167, 69, 0.2)';
+    clickedElement.style.color = '#155724';
+    clickedElement.style.fontWeight = 'bold';
+    
+    // Show success message
+    showAlert(`${fieldName} berhasil di-copy: "${text}"`, 'success');
+    
+    // Reset visual feedback after 1 second
+    setTimeout(() => {
+        clickedElement.style.backgroundColor = '';
+        clickedElement.style.color = '';
+        clickedElement.style.fontWeight = '';
+    }, 1000);
+}
+
 // Mobile search toggle
 function toggleMobileSearch() {
     const form = document.getElementById('mobileSearchForm');
@@ -1584,7 +1731,18 @@ function saveRow(button) {
 
 function showAlert(message, type) {
     const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+    
+    // Determine alert class based on type
+    let alertClass = 'alert-danger';
+    if (type === 'success') {
+        alertClass = 'alert-success';
+    } else if (type === 'warning') {
+        alertClass = 'alert-warning';
+    } else if (type === 'info') {
+        alertClass = 'alert-info';
+    }
+    
+    alertDiv.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
     alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px; max-width: 90vw;';
     alertDiv.innerHTML = `
         ${message}

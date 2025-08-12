@@ -164,7 +164,7 @@
     --primary-color: #8B4513;
     --primary-light: #A0522D;
     --primary-dark: #654321;
-    --secondary-color: #D2691E;
+    --secondary-color: #654321;
     --accent-color: #FF6B35;
     --success-color: #28a745;
     --danger-color: #dc3545;
