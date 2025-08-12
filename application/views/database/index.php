@@ -153,6 +153,15 @@
                                             <input type="email" class="mobile-edit-field" value="<?= $p->email ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                         </div>
                                         <div class="data-row">
+                                            <span class="label">Gender</span>
+                                            <span class="value" data-field="gender" data-value="<?= $p->gender ?>"><?= $p->gender ?: '-' ?></span>
+                                            <select class="mobile-edit-field" style="display:none;">
+                                                <option value="">Pilih Gender</option>
+                                                <option value="L" <?= $p->gender == 'L' ? 'selected' : '' ?>>Laki-laki</option>
+                                                <option value="P" <?= $p->gender == 'P' ? 'selected' : '' ?>>Perempuan</option>
+                                            </select>
+                                        </div>
+                                        <div class="data-row">
                                             <span class="label">Status</span>
                                             <span class="value status-badge status-<?= $p->status ?>" data-field="status" data-value="<?= $p->status ?>">
                                                 <?= $p->status == 0 ? 'On Target' : ($p->status == 1 ? 'Already' : 'Done') ?>
