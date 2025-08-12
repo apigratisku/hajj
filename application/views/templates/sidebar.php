@@ -33,6 +33,11 @@
                 <i class="fas fa-user-friends"></i> <span>Data Peserta</span>
             </a>
         </li>
+        <li class="nav-item">
+            <a href="<?= base_url('to_do') ?>" <?= $this->uri->segment(1) == 'to_do' ? 'class="active"' : '' ?>>
+                <i class="fas fa-list-ul"></i> <span>To Do List</span>
+            </a>
+        </li>
        
         <div class="nav-section-divider"></div>
         

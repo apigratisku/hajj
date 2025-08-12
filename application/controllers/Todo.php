@@ -1,7 +1,7 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 
-class Database extends CI_Controller {
+class To_do extends CI_Controller {
 
     private function is_ajax_request() {
         return isset($_SERVER['HTTP_X_REQUESTED_WITH']) && 
@@ -609,7 +609,6 @@ class Database extends CI_Controller {
             $error_count = 0;
             $errors = [];
             
-            
             // Start from row 2 (skip header)
             for ($row = 2; $row <= $highestRow; $row++) {
                 $nama_peserta = trim($sheet->getCellByColumnAndRow(0, $row)->getValue());
@@ -620,14 +619,7 @@ class Database extends CI_Controller {
                 $nomor_hp = trim($sheet->getCellByColumnAndRow(5, $row)->getValue());
                 $email = trim($sheet->getCellByColumnAndRow(6, $row)->getValue());
                 $gender = "";
-                $status_Cek = trim($sheet->getCellByColumnAndRow(7, $row)->getValue());
-                if($status_Cek == 'On Target'){
-                    $status = 0;
-                }elseif($status_Cek == 'Already'){
-                    $status = 1;
-                }elseif($status_Cek == 'Done'){
-                    $status = 2;
-                }
+                $status = 0;
                 $tanggal = "";
                 $jam = "";
                 $flag_doc = trim($sheet->getCellByColumnAndRow(11, $row)->getValue());
