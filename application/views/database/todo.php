@@ -57,7 +57,7 @@
                                     <button type="submit" class="btn btn-brown btn-sm me-2">
                                         <i class="fas fa-search"></i> Cari
                                     </button>
-                                    <a href="<?= base_url('database/index') ?>" class="btn btn-brown-light btn-sm">
+                                    <a href="<?= base_url('todo/index') ?>" class="btn btn-brown-light btn-sm">
                                         <i class="fas fa-times"></i> Reset
                                     </a>
                                 </div>
