@@ -1482,6 +1482,10 @@ function saveRowMobileTable(button) {
             });
             
             showAlert('Data berhasil diperbarui', 'success');
+            // Auto refresh setelah 1 detik
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
             
             // Remove editing class
             row.classList.remove('editing');
