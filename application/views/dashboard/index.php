@@ -98,7 +98,7 @@
         <div class="col-md-12">
             <div class="card mobile-card">
                 <div class="card-header bg-brown text-white">
-                    <h5 class="mb-0"><i class="fas fa-clock"></i> Statistik Berdasarkan Jam</h5>
+                    <h5 class="mb-0"><i class="fas fa-clock"></i> Jadwal Kunjungan</h5>
                 </div>
                 <div class="card-body">
                     <?php if (empty($hour_stats)): ?>
