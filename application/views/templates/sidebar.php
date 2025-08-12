@@ -34,7 +34,7 @@
             </a>
         </li>
         <li class="nav-item">
-            <a href="<?= base_url('to_do') ?>" <?= $this->uri->segment(1) == 'to_do' ? 'class="active"' : '' ?>>
+            <a href="<?= base_url('todo') ?>" <?= $this->uri->segment(1) == 'todo' ? 'class="active"' : '' ?>>
                 <i class="fas fa-list-ul"></i> <span>To Do List</span>
             </a>
         </li>

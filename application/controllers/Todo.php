@@ -1,7 +1,7 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 
-class To_do extends CI_Controller {
+class Todo extends CI_Controller {
 
     private function is_ajax_request() {
         return isset($_SERVER['HTTP_X_REQUESTED_WITH']) && 
@@ -31,7 +31,7 @@ class To_do extends CI_Controller {
 
     public function index() {
         $this->load->model('transaksi_model');
-        
+        $data['title'] = 'To Do List';
         // Get filters from GET parameters and clean them
         $filters = [
             'nama' => trim($this->input->get('nama')),
@@ -52,7 +52,7 @@ class To_do extends CI_Controller {
         $offset = ($page - 1) * $per_page;
         
         // Get data
-        $data['peserta'] = $this->transaksi_model->get_paginated_filtered($per_page, $offset, $filters);
+        $data['peserta'] = $this->transaksi_model->get_paginated_filtered_todo($per_page, $offset, $filters);
         // Provide flag_doc options for filter select
         $data['flag_doc_list'] = $this->transaksi_model->get_unique_flag_doc();
         $data['tanggaljam_list'] = $this->transaksi_model->get_unique_tanggaljam();
@@ -131,7 +131,7 @@ class To_do extends CI_Controller {
         
         $this->load->view('templates/sidebar');
         $this->load->view('templates/header', $data);
-        $this->load->view('database/index', $data);
+        $this->load->view('database/todo', $data);
         $this->load->view('templates/footer');
     }
     public function index2() {

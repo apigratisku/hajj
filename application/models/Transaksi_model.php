@@ -101,6 +101,25 @@ class Transaksi_model extends CI_Model {
         $this->db->limit($limit, $offset);
         return $this->db->get()->result();
     }
+
+    public function get_paginated_filtered_todo($limit, $offset, $filters = []) {
+        $this->db->select('peserta.*');
+        $this->db->from($this->table);
+    
+        if (!empty($filters['flag_doc'])) {
+            // Handle flag_doc filter more precisely
+            if ($filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
+                $this->db->where('peserta.flag_doc IS NULL OR peserta.flag_doc = ""');
+            } else {
+                $this->db->where('peserta.flag_doc', $filters['flag_doc']);
+            }
+        }
+
+        $this->db->where('peserta.status', 0);
+        $this->db->order_by('id', 'DESC');
+        $this->db->limit($limit, $offset);
+        return $this->db->get()->result();
+    }
     
 
     public function count_filtered($filters = []) {

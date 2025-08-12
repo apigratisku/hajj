@@ -29,7 +29,7 @@ $route['database/download/(:num)'] = 'database/download/$1';
 $route['database/print_laporan/(:num)'] = 'database/print_laporan/$1';
 $route['database/hapus/(:num)'] = 'database/hapus/$1';
 $route['database/index2'] = 'database/index2';
-$route['to_do'] = 'to_do';
+$route['todo'] = 'todo';
 
 
 // User routes
