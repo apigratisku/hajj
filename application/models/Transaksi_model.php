@@ -47,7 +47,12 @@ class Transaksi_model extends CI_Model {
     public function count_all() {
         return $this->db->count_all($this->table);
     }
-    
+
+    public function count_all_filtered($flag_doc) {
+        $this->db->from($this->table);
+        $this->db->where('flag_doc', $flag_doc);
+        return $this->db->count_all_results();
+    }
     
 
     public function get_all_active() {

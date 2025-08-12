@@ -84,7 +84,7 @@
                     </div>
                     <div class="col-md-9">
                         <div class="count"><?= $total_user ?></div>
-                        <div class="title">Total User</div>
+                        <div class="title">Total User Aplikasi</div>
                     </div>
                 </div>
             </div>

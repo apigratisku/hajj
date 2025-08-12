@@ -19,12 +19,19 @@ class Dashboard extends CI_Controller {
 
     public function index() {
         $data['title'] = 'Dashboard';
-        $data['total_agent'] = $this->agent_model->count_all();
-        $data['total_peserta'] = $this->transaksi_model->count_all();
-        $data['total_user'] = $this->user_model->count_all();
-        
+
         // Get flag_doc filter from GET parameter
         $flag_doc = $this->input->get('flag_doc');
+
+        $data['total_agent'] = $this->agent_model->count_all();
+        if(empty($flag_doc)){
+            $data['total_peserta'] = $this->transaksi_model->count_all();
+        }else{
+            $data['total_peserta'] = $this->transaksi_model->count_all_filtered($flag_doc);
+        }
+        $data['total_user'] = $this->user_model->count_all();
+        
+        
         $data['selected_flag_doc'] = $flag_doc;
         
         // Get all unique flag_doc values for dropdown
