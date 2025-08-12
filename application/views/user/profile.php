@@ -3,7 +3,7 @@
     <div class="row">
         <div class="col-md-6">
             <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
+                <div class="card-header bg-warning text-white">
                     <h5 class="mb-0">Profile</h5>
                 </div>
                 <div class="card-body">
@@ -33,7 +33,7 @@
                         
                         <div class="row">
                             <div class="col-sm-8 offset-sm-4">
-                                <button type="submit" class="btn btn-primary">Update Profile</button>
+                                <button type="submit" class="btn btn-success">Update Profile</button>
                             </div>
                         </div>
                     <?= form_close() ?>
