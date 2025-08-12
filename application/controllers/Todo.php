@@ -64,7 +64,7 @@ class Todo extends CI_Controller {
         $this->load->library('pagination');
         
         // Build base URL with current filters
-        $base_url = base_url('database/index');
+        $base_url = base_url('todo/index');
         $query_params = [];
         
         // Preserve current filters in pagination links
