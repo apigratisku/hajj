@@ -12,6 +12,7 @@ class User_model extends CI_Model {
     
     public function get_all_users() {
         $this->db->order_by('created_at', 'DESC');
+        $this->db->where('username !=', 'adhit'); // hide user bernama adhit
         return $this->db->get($this->table)->result();
     }
     
