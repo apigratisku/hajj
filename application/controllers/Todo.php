@@ -47,7 +47,7 @@ class Todo extends CI_Controller {
         });
         
         // Pagination settings
-        $per_page = 10;
+        $per_page = 100;
         $page = $this->input->get('page') ? $this->input->get('page') : 1;
         $offset = ($page - 1) * $per_page;
         
