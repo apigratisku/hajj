@@ -32,14 +32,19 @@ class Database extends CI_Controller {
     public function index() {
         $this->load->model('transaksi_model');
         
-        // Get filters from GET parameters
+        // Get filters from GET parameters and clean them
         $filters = [
-            'nama' => $this->input->get('nama'),
-            'nomor_paspor' => $this->input->get('nomor_paspor'),
-            'no_visa' => $this->input->get('no_visa'),
-            'flag_doc' => $this->input->get('flag_doc'),
-            'tanggaljam' => $this->input->get('tanggaljam')
+            'nama' => trim($this->input->get('nama')),
+            'nomor_paspor' => trim($this->input->get('nomor_paspor')),
+            'no_visa' => trim($this->input->get('no_visa')),
+            'flag_doc' => trim($this->input->get('flag_doc')),
+            'tanggaljam' => trim($this->input->get('tanggaljam'))
         ];
+        
+        // Remove empty filters to avoid unnecessary WHERE clauses
+        $filters = array_filter($filters, function($value) {
+            return $value !== '' && $value !== null;
+        });
         
         // Pagination settings
         $per_page = 10;
@@ -58,11 +63,39 @@ class Database extends CI_Controller {
         // Load pagination library
         $this->load->library('pagination');
         
-        $config['base_url'] = base_url('database/index');
+        // Build base URL with current filters
+        $base_url = base_url('database/index');
+        $query_params = [];
+        
+        // Preserve current filters in pagination links
+        if (!empty($filters['nama'])) {
+            $query_params['nama'] = $filters['nama'];
+        }
+        if (!empty($filters['nomor_paspor'])) {
+            $query_params['nomor_paspor'] = $filters['nomor_paspor'];
+        }
+        if (!empty($filters['no_visa'])) {
+            $query_params['no_visa'] = $filters['no_visa'];
+        }
+        if (!empty($filters['flag_doc'])) {
+            $query_params['flag_doc'] = $filters['flag_doc'];
+        }
+        if (!empty($filters['tanggaljam'])) {
+            $query_params['tanggaljam'] = $filters['tanggaljam'];
+        }
+        
+        // Build query string
+        if (!empty($query_params)) {
+            $base_url .= '?' . http_build_query($query_params);
+        }
+        
+        $config['base_url'] = $base_url;
         $config['total_rows'] = $total_rows;
         $config['per_page'] = $per_page;
         $config['page_query_string'] = TRUE;
         $config['query_string_segment'] = 'page';
+        $config['use_page_numbers'] = TRUE;
+        $config['num_links'] = 5;
         
         // Enhanced Pagination styling
         $config['full_tag_open'] = '<nav aria-label="Data navigation"><ul class="pagination pagination-custom justify-content-center">';
@@ -85,8 +118,16 @@ class Database extends CI_Controller {
         $config['first_link'] = '<i class="fas fa-angle-double-left"></i>';
         $config['last_link'] = '<i class="fas fa-angle-double-right"></i>';
         
+
+        
         $this->pagination->initialize($config);
         $data['pagination'] = $this->pagination->create_links();
+        
+        // Pass pagination info to view
+        $data['total_rows'] = $total_rows;
+        $data['per_page'] = $per_page;
+        $data['current_page'] = $page;
+        $data['offset'] = $offset;
         
         $this->load->view('templates/sidebar');
         $this->load->view('templates/header', $data);
@@ -625,19 +666,48 @@ class Database extends CI_Controller {
                 
                 // Process date
                 $tgl_lahir_value = null;
+
                 if (!empty($tgl_lahir)) {
                     if (is_numeric($tgl_lahir)) {
-                        // Excel date format
+                        // Format numeric Excel
                         $tgl_lahir_value = PHPExcel_Shared_Date::ExcelToPHP($tgl_lahir);
                         $tgl_lahir_value = date('Y-m-d', $tgl_lahir_value);
                     } else {
-                        // Try to parse as date string
-                        $parsed_date = date_parse($tgl_lahir);
-                        if ($parsed_date['error_count'] == 0) {
-                            $tgl_lahir_value = date('Y-m-d', strtotime($tgl_lahir));
+                        // Hilangkan spasi ekstra
+                        $tgl_lahir = trim($tgl_lahir);
+
+                        // Mapping bulan Indonesia ke angka
+                        $bulan_map = [
+                            'Jan' => '01', 'Feb' => '02', 'Mar' => '03', 'Apr' => '04',
+                            'Mei' => '05', 'Jun' => '06', 'Jul' => '07', 'Agu' => '08',
+                            'Sep' => '09', 'Okt' => '10', 'Nov' => '11', 'Des' => '12'
+                        ];
+
+                        // Format dd/mm/yyyy
+                        if (preg_match('/^\d{1,2}\/\d{1,2}\/\d{4}$/', $tgl_lahir)) {
+                            $dt = DateTime::createFromFormat('d/m/Y', $tgl_lahir);
+                            if ($dt) {
+                                $tgl_lahir_value = $dt->format('Y-m-d');
+                            }
+                        }
+                        // Format dd-MMM-yyyy (Indonesia)
+                        elseif (preg_match('/^\d{1,2}-[A-Za-z]{3}-\d{4}$/', $tgl_lahir)) {
+                            list($d, $m, $y) = explode('-', $tgl_lahir);
+                            $m = ucfirst(strtolower($m)); // Pastikan kapitalisasi benar
+                            if (isset($bulan_map[$m])) {
+                                $tgl_lahir_value = sprintf('%04d-%02d-%02d', $y, $bulan_map[$m], $d);
+                            }
+                        }
+                        // Fallback: coba parse otomatis
+                        else {
+                            $parsed_date = date_parse($tgl_lahir);
+                            if ($parsed_date['error_count'] == 0 && checkdate($parsed_date['month'], $parsed_date['day'], $parsed_date['year'])) {
+                                $tgl_lahir_value = date('Y-m-d', strtotime($tgl_lahir));
+                            }
                         }
                     }
                 }
+
                 
                 // Check if peserta already exists
                 $existing_peserta = $this->transaksi_model->get_by_passport($nomor_paspor);

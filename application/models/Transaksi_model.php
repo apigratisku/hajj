@@ -81,7 +81,12 @@ class Transaksi_model extends CI_Model {
             $this->db->like('peserta.no_visa', $filters['no_visa']);
         }
         if (!empty($filters['flag_doc'])) {
-            $this->db->like('peserta.flag_doc', $filters['flag_doc']);
+            // Handle flag_doc filter more precisely
+            if ($filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
+                $this->db->where('peserta.flag_doc IS NULL OR peserta.flag_doc = ""');
+            } else {
+                $this->db->where('peserta.flag_doc', $filters['flag_doc']);
+            }
         }
         if (!empty($filters['tanggaljam'])) {
             $this->db->like("CONCAT(tanggal, ' ', jam)", $filters['tanggaljam']);
@@ -105,7 +110,15 @@ class Transaksi_model extends CI_Model {
             $this->db->like('peserta.no_visa', $filters['no_visa']);
         }
         if (!empty($filters['flag_doc'])) {
-            $this->db->like('peserta.flag_doc', $filters['flag_doc']);
+            // Handle flag_doc filter more precisely
+            if ($filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
+                $this->db->where('peserta.flag_doc IS NULL OR peserta.flag_doc = ""');
+            } else {
+                $this->db->like('peserta.flag_doc', $filters['flag_doc']);
+            }
+        }
+        if (!empty($filters['tanggaljam'])) {
+            $this->db->like("CONCAT(tanggal, ' ', jam)", $filters['tanggaljam']);
         }
         
         return $this->db->count_all_results();

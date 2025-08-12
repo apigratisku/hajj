@@ -25,7 +25,7 @@
                             <i class="fas fa-search"></i> Cari Data
                         </div>
                         <div class="mobile-search-form" id="mobileSearchForm" style="display: none;">
-                            <form method="get" action="<?= base_url('database/index') ?>" class="mobile-form">
+                            <form method="get" action="<?= base_url('database/index') ?>" class="mobile-form" id="mobileSearchForm">
                                 <div class="form-group">
                                     <input type="text" name="nama" value="<?= isset($_GET['nama']) ? htmlspecialchars($_GET['nama']) : '' ?>" class="form-control mobile-input" placeholder="Nama Peserta">
                                 </div>
@@ -48,6 +48,7 @@
                                 <div class="form-group">
                                     <select name="flag_doc" class="form-select mobile-input">
                                         <option value="">Semua Flag Dokumen</option>
+                                        <option value="null" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === 'null') ? 'selected' : '' ?>>Tanpa Flag Dokumen</option>
                                         <?php if (!empty($flag_doc_list)): foreach ($flag_doc_list as $flag): ?>
                                             <option value="<?= htmlspecialchars($flag->flag_doc) ?>" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === $flag->flag_doc) ? 'selected' : '' ?>>
                                                 <?= htmlspecialchars($flag->flag_doc) ?>
@@ -83,6 +84,7 @@
                                 <div class="col-md-2">
                                     <select name="flag_doc" class="form-select form-control-sm">
                                         <option value="">Semua Flag Dokumen</option>
+                                        <option value="null" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === 'null') ? 'selected' : '' ?>>Tanpa Flag Dokumen</option>
                                         <?php if (!empty($flag_doc_list)): foreach ($flag_doc_list as $flag): ?>
                                             <option value="<?= htmlspecialchars($flag->flag_doc) ?>" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === $flag->flag_doc) ? 'selected' : '' ?>>
                                                 <?= htmlspecialchars($flag->flag_doc) ?>
@@ -302,7 +304,6 @@
                                             <td class="flag-doc text-center" data-field="flag_doc" data-value="<?= $p->flag_doc ?>">
                                                 <span class="display-value"><?= $p->flag_doc ?: '-' ?></span>
                                                 <select class="form-select edit-field" style="display:none;">
-                                                    <option value="">Flag Doc:</option>
                                                 <?php if (!empty($flag_doc_list)): foreach ($flag_doc_list as $flag): ?>
                                                     <option value="<?= htmlspecialchars($flag->flag_doc) ?>" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === $flag->flag_doc) ? 'selected' : '' ?>>
                                                         <?= htmlspecialchars($flag->flag_doc) ?>
@@ -334,7 +335,36 @@
                     
                     <!-- Enhanced Pagination -->
                     <div class="pagination-container">
-                        <?php if(isset($pagination)) echo $pagination; ?>
+                        <?php if(isset($pagination) && !empty($pagination) && isset($total_rows) && isset($per_page) && $total_rows > $per_page): ?>
+                            <?= $pagination ?>
+                            <div class="text-center text-muted mt-2">
+                                <small>Menampilkan <?= ($offset + 1) ?> - <?= min($offset + $per_page, $total_rows) ?> dari <?= $total_rows ?> data</small>
+                            </div>
+                        <?php elseif(isset($total_rows) && $total_rows > 0): ?>
+                            <div class="text-center text-muted py-3">
+                                <small>Menampilkan semua <?= $total_rows ?> data</small>
+                            </div>
+                        <?php elseif(isset($peserta) && is_array($peserta) && count($peserta) > 0): ?>
+                            <div class="text-center text-muted py-3">
+                                <small>Menampilkan <?= count($peserta) ?> data</small>
+                            </div>
+                        <?php else: ?>
+                            <div class="text-center text-muted py-3">
+                                <small>Tidak ada data yang ditemukan</small>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <!-- Debug Info (remove in production) -->
+                        <?php if(isset($_GET['debug']) && $_GET['debug'] === '1'): ?>
+                            <div class="text-center text-info mt-2">
+                                <small>
+                                    Debug: total_rows=<?= isset($total_rows) ? $total_rows : 'null' ?>, 
+                                    per_page=<?= isset($per_page) ? $per_page : 'null' ?>, 
+                                    page=<?= isset($current_page) ? $current_page : 'null' ?>, 
+                                    offset=<?= isset($offset) ? $offset : 'null' ?>
+                                </small>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -939,6 +969,70 @@
     border-radius: 0 0 var(--border-radius) var(--border-radius);
 }
 
+/* Pagination Info Text */
+.pagination-container .text-muted {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+/* Ensure pagination is visible on all devices */
+.pagination {
+    display: flex !important;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin: 0;
+    list-style: none;
+    padding: 0;
+}
+
+.pagination li {
+    margin: 0 0.25rem;
+}
+
+.pagination a,
+.pagination span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    height: 44px;
+    padding: 0.75rem 1rem;
+    text-decoration: none;
+    border: 2px solid var(--primary-color);
+    border-radius: var(--border-radius);
+    color: var(--primary-color);
+    background: white;
+    font-weight: 600;
+    transition: var(--transition);
+    text-align: center;
+}
+
+.pagination a:hover {
+    background: var(--primary-color);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+.pagination .active a,
+.pagination .active span {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+    box-shadow: var(--shadow);
+}
+
+.pagination .disabled a,
+.pagination .disabled span {
+    border-color: #dee2e6;
+    color: #6c757d;
+    background: #f8f9fa;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
 .pagination-custom {
     display: flex;
     justify-content: center;
@@ -1032,6 +1126,20 @@
     .pagination-custom .page-link i {
         font-size: 0.8rem;
     }
+    
+    /* Mobile pagination container */
+    .pagination-container {
+        padding: 1rem;
+    }
+    
+    /* Mobile pagination links */
+    .pagination a,
+    .pagination span {
+        min-width: 40px;
+        height: 40px;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+    }
 }
 
 @media (max-width: 576px) {
@@ -1060,6 +1168,26 @@
 
 .pagination-custom .page-item.active .page-link {
     animation: paginationPulse 2s infinite;
+}
+
+/* Loading Overlay */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    border-radius: var(--border-radius);
+}
+
+.loading-overlay .spinner-border {
+    width: 3rem;
+    height: 3rem;
 }
 
 /* Floating Action Button for Mobile */
@@ -1170,6 +1298,55 @@ function toggleMobileSearch() {
         form.style.animation = 'slideIn 0.3s ease-out';
     } else {
         form.style.display = 'none';
+    }
+}
+
+// Enhanced pagination functionality
+function enhancePagination() {
+    // Debug: Log current URL and parameters
+    console.log('Current URL:', window.location.href);
+    console.log('Current filters:', {
+        nama: new URLSearchParams(window.location.search).get('nama'),
+        nomor_paspor: new URLSearchParams(window.location.search).get('nomor_paspor'),
+        no_visa: new URLSearchParams(window.location.search).get('no_visa'),
+        flag_doc: new URLSearchParams(window.location.search).get('flag_doc'),
+        tanggaljam: new URLSearchParams(window.location.search).get('tanggaljam'),
+        page: new URLSearchParams(window.location.search).get('page')
+    });
+    
+    // Add click event listeners to pagination links
+    const paginationLinks = document.querySelectorAll('.pagination a');
+    console.log('Found pagination links:', paginationLinks.length);
+    
+    if (paginationLinks.length > 0) {
+        paginationLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                console.log('Pagination link clicked:', link.href);
+                
+                // Show loading state
+                const container = document.querySelector('.mobile-data-container, .table-responsive');
+                if (container) {
+                    container.style.opacity = '0.6';
+                    container.style.pointerEvents = 'none';
+                    
+                    // Add loading indicator
+                    const loadingDiv = document.createElement('div');
+                    loadingDiv.className = 'loading-overlay';
+                    loadingDiv.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
+                    loadingDiv.style.cssText = 'position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000;';
+                    
+                    container.style.position = 'relative';
+                    container.appendChild(loadingDiv);
+                }
+                
+                // Add a small delay to show loading state
+                setTimeout(() => {
+                    window.location.href = link.href;
+                }, 100);
+            });
+        });
+    } else {
+        console.log('No pagination links found');
     }
 }
 
@@ -1462,6 +1639,67 @@ function showAlert(message, type) {
     setTimeout(() => {
         alertDiv.remove();
     }, 3000);
+}
+
+// Initialize functionality when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize pagination enhancement
+    enhancePagination();
+    
+    // Initialize search form enhancement
+    enhanceSearchForms();
+    
+    // Debug pagination data
+    debugPaginationData();
+    
+    // Any mobile-specific initialization can go here
+});
+
+// Debug pagination data
+function debugPaginationData() {
+    console.log('=== Pagination Debug Info ===');
+    console.log('Total rows:', <?= isset($total_rows) ? $total_rows : 'null' ?>);
+    console.log('Per page:', <?= isset($per_page) ? $per_page : 'null' ?>);
+    console.log('Current page:', <?= isset($current_page) ? $current_page : 'null' ?>);
+    console.log('Offset:', <?= isset($offset) ? $offset : 'null' ?>);
+    console.log('Pagination HTML:', document.querySelector('.pagination-container')?.innerHTML);
+    console.log('=============================');
+}
+
+// Enhanced search form functionality
+function enhanceSearchForms() {
+    // Mobile search form
+    const mobileForm = document.getElementById('mobileSearchForm');
+    if (mobileForm) {
+        mobileForm.addEventListener('submit', function(e) {
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mencari...';
+            }
+            
+            // Add loading overlay to container
+            const container = document.querySelector('.mobile-data-container, .table-responsive');
+            if (container) {
+                container.style.opacity = '0.6';
+                container.style.pointerEvents = 'none';
+            }
+        });
+    }
+    
+    // Desktop search form
+    const desktopForm = document.querySelector('.desktop-form');
+    if (desktopForm) {
+        desktopForm.addEventListener('submit', function(e) {
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mencari...';
+            }
+        });
+    }
 }
 </script>
 
