@@ -128,27 +128,32 @@
                                     </div>
                                     <div class="card-body-mobile">
                                         <div class="data-row">
-                                            <span class="label">No Paspor:</span>
+                                            <span class="label">Nama</span>
+                                            <span class="value" data-field="nama" data-value="<?= $p->nama ?>"><?= $p->nama ?></span>
+                                            <input type="text" class="mobile-edit-field" value="<?= $p->nama ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
+                                        </div>
+                                        <div class="data-row">
+                                            <span class="label">No Paspor</span>
                                             <span class="value" data-field="nomor_paspor" data-value="<?= $p->nomor_paspor ?>"><?= $p->nomor_paspor ?></span>
                                             <input type="text" class="mobile-edit-field" value="<?= $p->nomor_paspor ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                         </div>
                                         <div class="data-row">
-                                            <span class="label">No Visa:</span>
+                                            <span class="label">No Visa</span>
                                             <span class="value" data-field="no_visa" data-value="<?= $p->no_visa ?>"><?= $p->no_visa ?: '-' ?></span>
                                             <input type="text" class="mobile-edit-field" value="<?= $p->no_visa ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                         </div>
                                         <div class="data-row">
-                                            <span class="label">No. HP:</span>
+                                            <span class="label">No. HP</span>
                                             <span class="value" data-field="nomor_hp" data-value="<?= $p->nomor_hp ?>"><?= $p->nomor_hp ?: '-' ?></span>
                                             <input type="text" class="mobile-edit-field" value="<?= $p->nomor_hp ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                         </div>
                                         <div class="data-row">
-                                            <span class="label">Email:</span>
+                                            <span class="label">Email</span>
                                             <span class="value" data-field="email" data-value="<?= $p->email ?>"><?= $p->email ?: '-' ?></span>
                                             <input type="email" class="mobile-edit-field" value="<?= $p->email ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                         </div>
                                         <div class="data-row">
-                                            <span class="label">Status:</span>
+                                            <span class="label">Status</span>
                                             <span class="value status-badge status-<?= $p->status ?>" data-field="status" data-value="<?= $p->status ?>">
                                                 <?= $p->status == 0 ? 'On Target' : ($p->status == 1 ? 'Already' : 'Done') ?>
                                             </span>
@@ -159,30 +164,31 @@
                                             </select>
                                         </div>
                                         <div class="data-row">
-                                            <span class="label">Flag Doc:</span>
+                                            <span class="label">Flag Doc</span>
                                             <span class="value" data-field="flag_doc" data-value="<?= $p->flag_doc ?>"><?= $p->flag_doc ?: '-' ?></span>    
                                             <select class="mobile-edit-field" style="display:none;">
                                                 <option value="">Flag Doc:</option>
                                                 <?php if (!empty($flag_doc_list)): foreach ($flag_doc_list as $flag): ?>
-                                                    <option value="<?= htmlspecialchars($flag->flag_doc) ?>" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === $flag->flag_doc) ? 'selected' : '' ?>>
+                                                    <option value="<?= htmlspecialchars($flag->flag_doc) ?>"
+                                                        <?= (!empty($p->flag_doc) && $p->flag_doc === $flag->flag_doc) ? 'selected' : '' ?>>
                                                         <?= htmlspecialchars($flag->flag_doc) ?>
                                                     </option>
                                                 <?php endforeach; endif; ?>
                                             </select>
+
                                         </div>
                                         
                                         <div class="data-row">
-                                            <span class="label">Tanggal:</span>
+                                            <span class="label">Tanggal</span>
                                             <span class="value" data-field="tanggal" data-value="<?= $p->tanggal ?>"><?= $p->tanggal ?: '-' ?></span>
                                             <input type="date" class="mobile-edit-field" value="<?= $p->tanggal ?>" style="display:none;">
                                         </div>  
                                         <div class="data-row">
-                                            <span class="label">Jam:</span>
+                                            <span class="label">Jam</span>
                                             <span class="value" data-field="jam" data-value="<?= $p->jam ?>"><?= $p->jam ?: '-' ?></span>
                                             <input type="time" class="mobile-edit-field" value="<?= $p->jam ?>" style="display:none;">
                                         </div>
-                                        <div class="data-row">
-                                        </div>
+
                                         <div class="card-actions">
                                             <button class="btn btn-sm btn-edit-mobile" onclick="toggleEditMobile(this)">
                                                 <i class="fas fa-edit"></i>
@@ -565,6 +571,21 @@
 .card-body-mobile {
     padding: 1rem;
 }
+.data-row-inline {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* jarak antar elemen */
+}
+
+.data-row-inline .label {
+    font-weight: bold;
+}
+
+.data-row-inline .mobile-edit-field {
+    flex: none;
+    width: auto;
+}
+
 
 .data-row {
     display: flex;
@@ -832,6 +853,55 @@
 .edit-field:focus {
     border-color: var(--primary-light);
     box-shadow: 0 0 0 0.2rem rgba(139, 69, 19, 0.25);
+}
+
+/* Mobile Edit Field Styles */
+.mobile-edit-field {
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+    border: 2px solid var(--primary-color);
+    border-radius: 8px;
+    transition: var(--transition);
+    width: 100%;
+    background: white;
+    margin-top: 0.25rem;
+}
+
+.mobile-edit-field:focus {
+    border-color: var(--primary-light);
+    box-shadow: 0 0 0 0.2rem rgba(139, 69, 19, 0.25);
+    outline: none;
+    transform: translateY(-1px);
+}
+
+.mobile-edit-field[readonly],
+.mobile-edit-field[disabled] {
+    background-color: #f8f9fa;
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Edit Mode Visual Feedback */
+.mobile-card-item.editing {
+    border: 2px solid var(--primary-color);
+    box-shadow: 0 0 20px rgba(139, 69, 19, 0.2);
+}
+
+.mobile-card-item.editing .card-header-mobile {
+    background: linear-gradient(135deg, var(--accent-color), var(--secondary-color));
+}
+
+/* Save Button Animation */
+.btn-save-mobile {
+    background: var(--success-color);
+    border-color: var(--success-color);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
 }
 
 /* Alert Styles */
@@ -1103,6 +1173,9 @@ function toggleEditMobile(button) {
     const saveBtn = card.querySelector('.btn-save-mobile');
     const cancelBtn = card.querySelector('.btn-cancel-mobile');
     
+    // Add editing class for visual feedback
+    card.classList.add('editing');
+    
     editFields.forEach(field => field.style.display = 'block');
     values.forEach(value => value.style.display = 'none');
     
@@ -1120,13 +1193,18 @@ function cancelEditMobile(button) {
     const cancelBtn = card.querySelector('.btn-cancel-mobile');
     
     editFields.forEach((field, index) => {
+        const valueElement = values[index];
+        const originalValue = valueElement.getAttribute('data-value');
+        
         if (field.tagName === 'SELECT') {
-            const originalValue = field.closest('.data-row').querySelector('.value').getAttribute('data-value');
             field.value = originalValue || '';
         } else {
-            field.value = field.closest('.data-row').querySelector('.value').getAttribute('data-value') || '';
+            field.value = originalValue || '';
         }
     });
+    
+    // Remove editing class
+    card.classList.remove('editing');
     
     editFields.forEach(field => field.style.display = 'none');
     values.forEach(value => value.style.display = 'inline');
@@ -1146,10 +1224,35 @@ function saveRowMobile(button) {
     const cancelBtn = card.querySelector('.btn-cancel-mobile');
     
     const data = {};
-    editFields.forEach(field => {
-        const fieldName = field.closest('.data-row').querySelector('.value').getAttribute('data-field');
-        data[fieldName] = field.value;
+    let hasData = false;
+    
+    editFields.forEach((field, index) => {
+        // Get the corresponding value element to find the field name
+        const valueElement = values[index];
+        const fieldName = valueElement.getAttribute('data-field');
+        if (fieldName) {
+            data[fieldName] = field.value;
+            hasData = true;
+        }
     });
+    
+    // Validate that we have data to save
+    if (!hasData || Object.keys(data).length === 0) {
+        showAlert('Tidak ada data yang dapat disimpan', 'error');
+        return;
+    }
+    
+    // Debug logging
+    console.log('Saving data:', data);
+    console.log('Row ID:', rowId);
+    
+    // Show loading state
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    
+    // Create AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
     
     fetch('<?= base_url('database/update_ajax/') ?>' + rowId, {
         method: 'POST',
@@ -1157,7 +1260,8 @@ function saveRowMobile(button) {
             'Content-Type': 'application/json',
             'X-Requested-With': 'XMLHttpRequest'
         },
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
+        signal: controller.signal
     })
     .then(response => {
         if (response.status === 401) {
@@ -1174,20 +1278,24 @@ function saveRowMobile(button) {
         
         if (result.success) {
             editFields.forEach((field, index) => {
-                const fieldName = field.closest('.data-row').querySelector('.value').getAttribute('data-field');
+                const valueElement = values[index];
+                const fieldName = valueElement.getAttribute('data-field');
                 let displayValue = field.value;
                 
                 if (fieldName === 'status') {
                     const statusMap = {0: 'On Target', 1: 'Already', 2: 'Done'};
                     displayValue = statusMap[field.value] || field.value;
-                    values[index].className = `value status-badge status-${field.value}`;
+                    valueElement.className = `value status-badge status-${field.value}`;
                 }
                 
-                values[index].textContent = displayValue;
-                values[index].setAttribute('data-value', field.value);
+                valueElement.textContent = displayValue;
+                valueElement.setAttribute('data-value', field.value);
             });
             
             showAlert('Data berhasil diperbarui', 'success');
+            
+            // Remove editing class
+            card.classList.remove('editing');
             
             editFields.forEach(field => field.style.display = 'none');
             values.forEach(value => value.style.display = 'inline');
@@ -1200,7 +1308,20 @@ function saveRowMobile(button) {
     })
     .catch(error => {
         console.error('Error:', error);
-        showAlert('Terjadi kesalahan saat memperbarui data', 'error');
+        if (error.name === 'AbortError') {
+            showAlert('Request timeout. Silakan coba lagi.', 'error');
+        } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            showAlert('Koneksi terputus. Silakan periksa koneksi internet Anda.', 'error');
+        } else {
+            showAlert('Terjadi kesalahan saat memperbarui data: ' + error.message, 'error');
+        }
+    })
+    .finally(() => {
+        // Clear timeout
+        clearTimeout(timeoutId);
+        // Reset button state
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<i class="fas fa-save"></i>';
     });
 }
 
