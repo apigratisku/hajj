@@ -29,13 +29,13 @@
                                     <input type="file" class="form-control" id="excel_file" name="excel_file" accept=".xls,.xlsx" required>
                                     <div class="form-text">Pilih file Excel yang berisi data peserta</div>
                                 </div>
-                                
+                                <!--
                                 <div class="mb-3">
                                     <label for="flag_doc" class="form-label">Flag Dokumen</label>
                                     <input type="text" class="form-control" id="flag_doc" name="flag_doc" placeholder="Contoh: Batch-001, Import-Jan2025" required>
                                     <div class="form-text">Masukkan identifier untuk file yang diupload (akan digunakan untuk filtering data)</div>
                                 </div>
-                                
+                                -->
                                 <div class="mb-3">
                                     <button type="submit" class="btn btn-brown">
                                         <i class="fas fa-upload"></i> Import Data

@@ -579,6 +579,7 @@ class Database extends CI_Controller {
                 $status = 0;
                 $tanggal = "";
                 $jam = "";
+                $flag_doc = trim($sheet->getCellByColumnAndRow(11, $row)->getValue());
                 
                 // Skip empty rows
                 if (empty($nama_peserta) && empty($nomor_paspor)) {
@@ -644,8 +645,6 @@ class Database extends CI_Controller {
                     continue;
                 }
                 
-                // Get flag_doc from form
-                $flag_doc = $this->input->post('flag_doc');
                 
                 // Insert peserta data
                 $peserta_data = [
