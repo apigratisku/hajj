@@ -1254,12 +1254,12 @@ function fallbackCopyTextToClipboard(text, fieldName) {
         const successful = document.execCommand('copy');
         if (successful) {
             showCopySuccess(fieldName, text);
-        } else {
+        } /*else {
             showAlert('Gagal copy teks ke clipboard', 'error');
-        }
+        }*/
     } catch (err) {
         console.error('Fallback copy failed:', err);
-        showAlert('Gagal copy teks ke clipboard', 'error');
+        //showAlert('Gagal copy teks ke clipboard', 'error');
     }
     
     document.body.removeChild(textArea);
@@ -1772,12 +1772,12 @@ function fallbackCopyTextToClipboard(text, fieldName) {
         const successful = document.execCommand('copy');
         if (successful) {
             showCopySuccess(fieldName, text);
-        } else {
+        } /*else {
             showAlert('Gagal copy teks ke clipboard', 'error');
-        }
+        }*/
     } catch (err) {
         console.error('Fallback copy failed:', err);
-        showAlert('Gagal copy teks ke clipboard', 'error');
+        //showAlert('Gagal copy teks ke clipboard', 'error');
     }
     
     document.body.removeChild(textArea);
