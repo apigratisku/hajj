@@ -1,0 +1,192 @@
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+
+class User extends CI_Controller {
+
+    public function __construct() {
+        parent::__construct();
+        $this->load->model('user_model');
+        $this->load->library('form_validation');
+        $this->load->library('session');
+        $this->load->helper('url');
+        $this->load->helper('form');
+        
+        // Check if user is logged in
+        if (!$this->session->userdata('logged_in')) {
+            redirect('auth');
+        }
+        
+        // Check if user is admin for certain methods
+        $allowed_methods = ['index', 'profile', 'update_profile', 'change_password'];
+        if (!in_array($this->router->fetch_method(), $allowed_methods) && $this->session->userdata('role') != 'admin') {
+            $this->session->set_flashdata('error', 'Anda tidak memiliki akses ke halaman tersebut');
+            redirect('dashboard');
+        }
+    }
+
+    public function index() {
+        $data['title'] = 'Data User';
+        $data['users'] = $this->user_model->get_all_users();
+        
+        $this->load->view('templates/sidebar');
+        $this->load->view('templates/header', $data);
+        $this->load->view('user/index', $data);
+        $this->load->view('templates/footer');
+    }
+
+    public function add() {
+        $data['title'] = 'Tambah User';
+
+        $this->form_validation->set_rules('username', 'Username', 'required|is_unique[users.username]');
+        $this->form_validation->set_rules('password', 'Password', 'required|min_length[6]');
+        $this->form_validation->set_rules('nama_lengkap', 'Nama Lengkap', 'required');
+        $this->form_validation->set_rules('role', 'Role', 'required');
+        
+        if ($this->form_validation->run() == FALSE) {
+            $this->load->view('templates/sidebar');
+            $this->load->view('templates/header', $data);
+            $this->load->view('user/add', $data);
+            $this->load->view('templates/footer');
+        } else {
+            $data = [
+                'username' => $this->input->post('username'),
+                'password' => password_hash($this->input->post('password'), PASSWORD_DEFAULT),
+                'nama_lengkap' => $this->input->post('nama_lengkap'),
+                'role' => $this->input->post('role'),
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s')
+            ];
+
+            $this->user_model->create_user($data);
+            $this->session->set_flashdata('message', 'User berhasil ditambahkan');
+            redirect('user');
+        }
+    }
+
+    public function edit($id) {
+        $data['title'] = 'Edit User';
+        $data['user'] = $this->user_model->get_user_by_id($id);
+
+        if (empty($data['user'])) {
+            show_404();
+        }
+
+        $this->form_validation->set_rules('username', 'Username', 'required');
+        $this->form_validation->set_rules('nama_lengkap', 'Nama Lengkap', 'required');
+        $this->form_validation->set_rules('role', 'Role', 'required');
+        
+        // Jika username diubah, cek keunikan
+        if ($this->input->post('username') != $data['user']->username) {
+            $this->form_validation->set_rules('username', 'Username', 'required|is_unique[users.username]');
+        }
+
+        if ($this->form_validation->run() == FALSE) {
+            $this->load->view('templates/sidebar');
+            $this->load->view('templates/header', $data);
+            $this->load->view('user/edit', $data);
+            $this->load->view('templates/footer');
+        } else {
+            $data = [
+                'username' => $this->input->post('username'),
+                'nama_lengkap' => $this->input->post('nama_lengkap'),
+                'role' => $this->input->post('role'),
+                'updated_at' => date('Y-m-d H:i:s')
+            ];
+
+            // Update password hanya jika diisi
+            if (!empty($this->input->post('password'))) {
+                $data['password'] = password_hash($this->input->post('password'), PASSWORD_DEFAULT);
+            }
+
+            $this->user_model->update_user($id, $data);
+            $this->session->set_flashdata('message', 'User berhasil diupdate');
+            redirect('user');
+        }
+    }
+
+    public function delete($id) {
+        $user = $this->user_model->get_user_by_id($id);
+
+        if (empty($user)) {
+            show_404();
+        }
+
+        $this->user_model->delete_user($id);
+        $this->session->set_flashdata('message', 'User berhasil dihapus');
+        redirect('user');
+    }
+    
+    public function profile() {
+        $id = $this->session->userdata('user_id');
+        $data['title'] = 'Profile';
+        $data['user'] = $this->user_model->get_user_by_id($id);
+        
+        $this->load->view('templates/sidebar');
+        $this->load->view('templates/header', $data);
+        $this->load->view('user/profile', $data);
+        $this->load->view('templates/footer');
+    }
+    
+    public function update_profile() {
+        $id = $this->session->userdata('user_id');
+        
+        $this->form_validation->set_rules('nama_lengkap', 'Nama Lengkap', 'required|trim');
+        
+        if ($this->form_validation->run() == FALSE) {
+            $this->profile();
+        } else {
+            $data = [
+                'nama_lengkap' => $this->input->post('nama_lengkap')
+            ];
+            
+            $update = $this->user_model->update($id, $data);
+            
+            if ($update) {
+                // Update session data
+                $this->session->set_userdata('nama_lengkap', $data['nama_lengkap']);
+                
+                $this->session->set_flashdata('success', 'Profile berhasil diperbarui');
+            } else {
+                $this->session->set_flashdata('error', 'Gagal memperbarui profile');
+            }
+            
+            redirect('user/profile');
+        }
+    }
+    
+    public function change_password() {
+        $id = $this->session->userdata('user_id');
+        
+        $this->form_validation->set_rules('current_password', 'Password Lama', 'required|trim');
+        $this->form_validation->set_rules('new_password', 'Password Baru', 'required|trim|min_length[6]');
+        $this->form_validation->set_rules('confirm_password', 'Konfirmasi Password', 'required|trim|matches[new_password]');
+        
+        if ($this->form_validation->run() == FALSE) {
+            $this->profile();
+        } else {
+            $current_password = $this->input->post('current_password');
+            $new_password = $this->input->post('new_password');
+            
+            $user = $this->user_model->get_user_by_id($id);
+            
+            if (password_verify($current_password, $user->password)) {
+                $data = [
+                    'password' => $new_password
+                ];
+                
+                $update = $this->user_model->update($id, $data);
+                
+                if ($update) {
+                    $this->session->set_flashdata('success', 'Password berhasil diperbarui');
+                } else {
+                    $this->session->set_flashdata('error', 'Gagal memperbarui password');
+                }
+                
+                redirect('user/profile');
+            } else {
+                $this->session->set_flashdata('error', 'Password lama salah');
+                redirect('user/profile');
+            }
+        }
+    }
+} 
