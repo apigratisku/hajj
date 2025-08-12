@@ -222,9 +222,11 @@
                                                 <button class="mobile-table-btn mobile-table-btn-cancel btn-cancel" style="display:none;" onclick="cancelEditMobileTable(this)">
                                                     <i class="fas fa-times"></i>
                                                 </button>
+                                                <?php if($this->session->userdata('role') == 'admin'): ?>
                                                 <button class="mobile-table-btn mobile-table-btn-delete btn-delete" onclick="return confirm('Apakah Anda yakin ingin menghapus data ini?')">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
+                                                <?php endif; ?>
                                             </td>
                                         </tr>   
                                         <?php endforeach; ?>
@@ -335,9 +337,11 @@
                                             <button class="btn btn-sm btn-secondary btn-cancel" data-bs-toggle="tooltip" title="Batal" style="display:none;" onclick="cancelEdit(this)">
                                                 <i class="fas fa-times"></i>
                                             </button>
+                                            <?php if($this->session->userdata('role') == 'admin'): ?>
                                             <button class="btn btn-sm btn-danger btn-action" data-bs-toggle="tooltip" title="Delete" onclick="return confirm('Apakah Anda yakin ingin menghapus data ini?')">
                                                 <i class="fas fa-trash"></i>
                                             </button>
+                                            <?php endif; ?>
                                         </td>
                                     </tr>
                                     <?php endforeach; ?>
