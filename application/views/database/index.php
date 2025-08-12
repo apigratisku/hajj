@@ -130,22 +130,22 @@
                                         <div class="data-row">
                                             <span class="label">No Paspor:</span>
                                             <span class="value" data-field="nomor_paspor" data-value="<?= $p->nomor_paspor ?>"><?= $p->nomor_paspor ?></span>
-                                            <input type="text" class="mobile-edit-field" value="<?= $p->nomor_paspor ?>" style="display:none;">
+                                            <input type="text" class="mobile-edit-field" value="<?= $p->nomor_paspor ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                         </div>
                                         <div class="data-row">
                                             <span class="label">No Visa:</span>
                                             <span class="value" data-field="no_visa" data-value="<?= $p->no_visa ?>"><?= $p->no_visa ?: '-' ?></span>
-                                            <input type="text" class="mobile-edit-field" value="<?= $p->no_visa ?>" style="display:none;">
+                                            <input type="text" class="mobile-edit-field" value="<?= $p->no_visa ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                         </div>
                                         <div class="data-row">
                                             <span class="label">No. HP:</span>
                                             <span class="value" data-field="nomor_hp" data-value="<?= $p->nomor_hp ?>"><?= $p->nomor_hp ?: '-' ?></span>
-                                            <input type="text" class="mobile-edit-field" value="<?= $p->nomor_hp ?>" style="display:none;">
+                                            <input type="text" class="mobile-edit-field" value="<?= $p->nomor_hp ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                         </div>
                                         <div class="data-row">
                                             <span class="label">Email:</span>
                                             <span class="value" data-field="email" data-value="<?= $p->email ?>"><?= $p->email ?: '-' ?></span>
-                                            <input type="email" class="mobile-edit-field" value="<?= $p->email ?>" style="display:none;">
+                                            <input type="email" class="mobile-edit-field" value="<?= $p->email ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                         </div>
                                         <div class="data-row">
                                             <span class="label">Status:</span>
@@ -160,14 +160,22 @@
                                         </div>
                                         <div class="data-row">
                                             <span class="label">Flag Doc:</span>
-                                            <span class="value" data-field="flag_doc" data-value="<?= $p->flag_doc ?>"><?= $p->flag_doc ?: '-' ?></span>
-                                            <input type="text" class="mobile-edit-field" value="<?= $p->flag_doc ?>" style="display:none;">
+                                            <span class="value" data-field="flag_doc" data-value="<?= $p->flag_doc ?>"><?= $p->flag_doc ?: '-' ?></span>    
+                                            <select class="mobile-edit-field" style="display:none;">
+                                                <option value="">Flag Doc:</option>
+                                                <?php if (!empty($flag_doc_list)): foreach ($flag_doc_list as $flag): ?>
+                                                    <option value="<?= htmlspecialchars($flag->flag_doc) ?>" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === $flag->flag_doc) ? 'selected' : '' ?>>
+                                                        <?= htmlspecialchars($flag->flag_doc) ?>
+                                                    </option>
+                                                <?php endforeach; endif; ?>
+                                            </select>
                                         </div>
+                                        
                                         <div class="data-row">
                                             <span class="label">Tanggal:</span>
                                             <span class="value" data-field="tanggal" data-value="<?= $p->tanggal ?>"><?= $p->tanggal ?: '-' ?></span>
                                             <input type="date" class="mobile-edit-field" value="<?= $p->tanggal ?>" style="display:none;">
-                                        </div>
+                                        </div>  
                                         <div class="data-row">
                                             <span class="label">Jam:</span>
                                             <span class="value" data-field="jam" data-value="<?= $p->jam ?>"><?= $p->jam ?: '-' ?></span>
@@ -225,31 +233,31 @@
                                         <tr data-id="<?= $p->id ?>">
                                             <td class="nama-peserta" data-field="nama" data-value="<?= $p->nama ?>">
                                                 <span class="display-value"><?= $p->nama ?></span>
-                                                <input type="text" class="form-control edit-field" value="<?= $p->nama ?>" style="display:none;">
+                                                <input type="text" class="form-control edit-field" value="<?= $p->nama ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                             </td>
                                             <td class="no-paspor text-center" data-field="nomor_paspor" data-value="<?= $p->nomor_paspor ?>">
                                                 <span class="display-value"><?= $p->nomor_paspor ?></span>
-                                                <input type="text" class="form-control edit-field" value="<?= $p->nomor_paspor ?>" style="display:none;">
+                                                <input type="text" class="form-control edit-field" value="<?= $p->nomor_paspor ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                             </td>
                                             <td class="no-visa text-center" data-field="no_visa" data-value="<?= $p->no_visa ?>">
                                                 <span class="display-value"><?= $p->no_visa ?></span>
-                                                <input type="text" class="form-control edit-field" value="<?= $p->no_visa ?>" style="display:none;">
+                                                <input type="text" class="form-control edit-field" value="<?= $p->no_visa ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                             </td>
                                             <td class="tgl-lahir text-center" data-field="tgl_lahir" data-value="<?= $p->tgl_lahir ?>">
                                                 <span class="display-value"><?= $p->tgl_lahir ? date('d/m/Y', strtotime($p->tgl_lahir)) : '-' ?></span>
-                                                <input type="date" class="form-control edit-field" value="<?= $p->tgl_lahir ? date('Y-m-d', strtotime($p->tgl_lahir)) : '' ?>" style="display:none;">
+                                                <input type="date" class="form-control edit-field" value="<?= $p->tgl_lahir ? date('Y-m-d', strtotime($p->tgl_lahir)) : '' ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                             </td>
                                             <td class="password text-center" data-field="password" data-value="<?= $p->password ?>">
                                                 <span class="display-value"><?= $p->password ?></span>
-                                                <input type="password" class="form-control edit-field" value="<?= $p->password ?>" style="display:none;">
+                                                <input type="password" class="form-control edit-field" value="<?= $p->password ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                             </td>
                                             <td class="no-hp text-center" data-field="nomor_hp" data-value="<?= $p->nomor_hp ?>">
                                                 <span class="display-value"><?= $p->nomor_hp ?></span>
-                                                <input type="text" class="form-control edit-field" value="<?= $p->nomor_hp ?>" style="display:none;">
+                                                <input type="text" class="form-control edit-field" value="<?= $p->nomor_hp ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                             </td>
-                                            <td class="email text-center" data-field="email" data-value="<?= $p->email ?>">
+                                            <td class="email text-center" data-field="email" data-value="<?= $p->email ?>"> 
                                                 <span class="display-value"><?= $p->email ?></span>
-                                                <input type="email" class="form-control edit-field" value="<?= $p->email ?>" style="display:none;">
+                                                <input type="email" class="form-control edit-field" value="<?= $p->email ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                             </td>
                                             <td class="gender text-center" data-field="gender" data-value="<?= $p->gender ?>">
                                                 <span class="display-value"><?= $p->gender ?></span>
@@ -278,7 +286,14 @@
                                             </td>
                                             <td class="flag-doc text-center" data-field="flag_doc" data-value="<?= $p->flag_doc ?>">
                                                 <span class="display-value"><?= $p->flag_doc ?: '-' ?></span>
-                                                <input type="text" class="form-control edit-field" value="<?= $p->flag_doc ?>" style="display:none;">
+                                                <select class="form-select edit-field" style="display:none;">
+                                                    <option value="">Flag Doc:</option>
+                                                <?php if (!empty($flag_doc_list)): foreach ($flag_doc_list as $flag): ?>
+                                                    <option value="<?= htmlspecialchars($flag->flag_doc) ?>" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === $flag->flag_doc) ? 'selected' : '' ?>>
+                                                        <?= htmlspecialchars($flag->flag_doc) ?>
+                                                    </option>
+                                                <?php endforeach; endif; ?>
+                                            </select>
                                             </td>
                                             
                                             <td class="text-center aksi" style="width: 13%;">
