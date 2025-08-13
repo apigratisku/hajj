@@ -6,7 +6,6 @@ class Peserta extends CI_Controller {
     public function __construct() {
         parent::__construct();
         $this->load->model('peserta_model');
-        $this->load->model('agent_model');
         $this->load->library('session');
         $this->load->helper('url');
         $this->load->library('form_validation');
@@ -22,7 +21,6 @@ class Peserta extends CI_Controller {
         
         // Ambil filter dari GET
         $filters = [
-            'nama_agent' => $this->input->get('nama_agent', TRUE),
             'nama' => $this->input->get('nama', TRUE),
             'nomor_paspor' => $this->input->get('nomor_paspor', TRUE),
             'no_visa' => $this->input->get('no_visa', TRUE),

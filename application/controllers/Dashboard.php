@@ -5,7 +5,6 @@ class Dashboard extends CI_Controller {
 
     public function __construct() {
         parent::__construct();
-        $this->load->model('agent_model');
         $this->load->model('transaksi_model');
         $this->load->model('user_model');
         $this->load->library('session');
@@ -23,7 +22,6 @@ class Dashboard extends CI_Controller {
         // Get flag_doc filter from GET parameter
         $flag_doc = $this->input->get('flag_doc');
 
-        $data['total_agent'] = $this->agent_model->count_all();
         if(empty($flag_doc)){
             $data['total_peserta'] = $this->transaksi_model->count_all();
         }else{
