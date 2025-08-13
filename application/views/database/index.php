@@ -1,5 +1,12 @@
-<!-- Content Body -->
-<div class="content-body">
+    <!-- CSRF Token for AJAX requests -->
+    <script>
+        // CSRF Token for AJAX requests
+        const csrfTokenName = '<?= $this->security->get_csrf_token_name() ?>';
+        const csrfTokenValue = '<?= $this->security->get_csrf_hash() ?>';
+    </script>
+    
+    <!-- Content Body -->
+    <div class="content-body">
     <div class="row mb-4">
         <div class="col-12">
             <div class="card mobile-card">
@@ -1472,7 +1479,10 @@ function saveRowMobileTable(button) {
             'Content-Type': 'application/json',
             'X-Requested-With': 'XMLHttpRequest'
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+            ...data,
+            [csrfTokenName]: csrfTokenValue
+        }),
         signal: controller.signal
     })
     .then(response => {

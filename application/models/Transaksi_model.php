@@ -27,16 +27,62 @@ class Transaksi_model extends CI_Model {
     
    
     public function insert($data) {
-        $data['created_at'] = date('Y-m-d H:i:s');
-        $data['updated_at'] = date('Y-m-d H:i:s');
-        $this->db->insert($this->table, $data);
-        return $this->db->insert_id();
+        try {
+            // Get table structure to check if fields exist
+            $fields = $this->db->list_fields($this->table);
+            
+            // Filter data to only include existing fields
+            $filtered_data = array_intersect_key($data, array_flip($fields));
+            
+            // Add timestamps
+            $filtered_data['created_at'] = date('Y-m-d H:i:s');
+            $filtered_data['updated_at'] = date('Y-m-d H:i:s');
+            
+            $this->db->insert($this->table, $filtered_data);
+            
+            if ($this->db->affected_rows() > 0) {
+                log_message('debug', 'Insert successful - Data: ' . json_encode($filtered_data));
+                return $this->db->insert_id();
+            } else {
+                $error = $this->db->error();
+                log_message('error', 'Insert failed - Last query: ' . $this->db->last_query());
+                log_message('error', 'DB Error: ' . json_encode($error));
+                return false;
+            }
+        } catch (Exception $e) {
+            log_message('error', 'Exception in insert method: ' . $e->getMessage());
+            throw $e;
+        }
     }
     
     public function update($id, $data) {
-        $data['updated_at'] = date('Y-m-d H:i:s');
-        $this->db->where('id', $id);
-        return $this->db->update($this->table, $data);
+        try {
+            // Get table structure to check if fields exist
+            $fields = $this->db->list_fields($this->table);
+            
+            // Filter data to only include existing fields
+            $filtered_data = array_intersect_key($data, array_flip($fields));
+            
+            // Add updated_at timestamp
+            $filtered_data['updated_at'] = date('Y-m-d H:i:s');
+            
+            $this->db->where('id', $id);
+            $result = $this->db->update($this->table, $filtered_data);
+            
+            // Debug: Log the last query and any errors
+            if (!$result) {
+                $error = $this->db->error();
+                log_message('error', 'Update failed for ID: ' . $id . ' - Last query: ' . $this->db->last_query());
+                log_message('error', 'DB Error: ' . json_encode($error));
+            } else {
+                log_message('debug', 'Update successful for ID: ' . $id . ' - Data: ' . json_encode($filtered_data));
+            }
+            
+            return $result;
+        } catch (Exception $e) {
+            log_message('error', 'Exception in update method: ' . $e->getMessage());
+            throw $e;
+        }
     }
     
     public function delete($id) {

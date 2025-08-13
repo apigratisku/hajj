@@ -67,6 +67,13 @@
                                 </div>
                                 
                                 <div class="form-group">
+                                    <label for="barcode" class="form-label">
+                                        <i class="fas fa-barcode"></i> Barcode
+                                    </label>
+                                    <input type="text" class="form-control mobile-input" id="barcode" name="barcode" value="<?= $peserta->barcode ?>" placeholder="Masukkan barcode">
+                                </div>
+                                
+                                <div class="form-group">
                                     <label for="gender" class="form-label">
                                         <i class="fas fa-venus-mars"></i> Gender
                                     </label>

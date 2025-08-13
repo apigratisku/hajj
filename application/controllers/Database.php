@@ -260,29 +260,41 @@ class Database extends CI_Controller {
         if ($this->form_validation->run() == FALSE) {
             $this->edit($id);
         } else {
+            // Prepare data with proper handling of empty values
             $data = [
-                'nama' => $this->input->post('nama'),
-                'nomor_paspor' => $this->input->post('nomor_paspor'),
-                'no_visa' => $this->input->post('no_visa'),
+                'nama' => trim($this->input->post('nama')),
+                'nomor_paspor' => trim($this->input->post('nomor_paspor')),
+                'no_visa' => trim($this->input->post('no_visa')) ?: null,
                 'tgl_lahir' => $this->input->post('tgl_lahir') ? $this->input->post('tgl_lahir') : null,
-                'password' => $this->input->post('password'),
-                'nomor_hp' => $this->input->post('nomor_hp'),
-                'email' => $this->input->post('email'),
-                'barcode' => $this->input->post('barcode'),
-                'gender' => $this->input->post('gender'),
-                'status' => $this->input->post('status') ? $this->input->post('status') : 0,
-                'tanggal' => $this->input->post('tanggal'),
-                'jam' => $this->input->post('jam'),
-                'flag_doc' => $this->input->post('flag_doc'),
+                'password' => trim($this->input->post('password')),
+                'nomor_hp' => trim($this->input->post('nomor_hp')) ?: null,
+                'email' => trim($this->input->post('email')) ?: null,
+                'barcode' => trim($this->input->post('barcode')) ?: null,
+                'gender' => $this->input->post('gender') ?: null,
+                'status' => $this->input->post('status') !== '' ? $this->input->post('status') : 0,
+                'tanggal' => $this->input->post('tanggal') ?: null,
+                'jam' => $this->input->post('jam') ?: null,
+                'flag_doc' => trim($this->input->post('flag_doc')) ?: null,
                 'updated_at' => date('Y-m-d H:i:s')
             ];
             
-            $result = $this->transaksi_model->update($id, $data);
+            // Debug: Log the data being updated
+            log_message('debug', 'Updating peserta ID: ' . $id . ' with data: ' . json_encode($data));
             
-            if ($result) {
-                $this->session->set_flashdata('success', 'Data peserta berhasil diperbarui');
-            } else {
-                $this->session->set_flashdata('error', 'Gagal memperbarui data peserta');
+            try {
+                $result = $this->transaksi_model->update($id, $data);
+                
+                if ($result) {
+                    $this->session->set_flashdata('success', 'Data peserta berhasil diperbarui');
+                    redirect('database');
+                } else {
+                    $this->session->set_flashdata('error', 'Gagal memperbarui data peserta. Silakan coba lagi.');
+                    $this->edit($id);
+                }
+            } catch (Exception $e) {
+                log_message('error', 'Exception during update: ' . $e->getMessage());
+                $this->session->set_flashdata('error', 'Terjadi kesalahan saat memperbarui data: ' . $e->getMessage());
+                $this->edit($id);
             }
             
             redirect('database');
@@ -544,29 +556,37 @@ class Database extends CI_Controller {
             $this->tambah();
         } else {
             $data = [
-                'nama' => $this->input->post('nama'),
-                'nomor_paspor' => $this->input->post('nomor_paspor'),
-                'no_visa' => $this->input->post('no_visa'),
+                'nama' => trim($this->input->post('nama')),
+                'nomor_paspor' => trim($this->input->post('nomor_paspor')),
+                'no_visa' => trim($this->input->post('no_visa')) ?: null,
                 'tgl_lahir' => $this->input->post('tgl_lahir') ? $this->input->post('tgl_lahir') : null,
-                'password' => $this->input->post('password'),
-                'nomor_hp' => $this->input->post('nomor_hp'),
-                'email' => $this->input->post('email'),
-                'barcode' => $this->input->post('barcode'),
-                'gender' => $this->input->post('gender'),
-                'status' => $this->input->post('status') ? $this->input->post('status') : 0,
-                'tanggal' => $this->input->post('tanggal'),
-                'jam' => $this->input->post('jam'),
-                'flag_doc' => $this->input->post('flag_doc'),
+                'password' => trim($this->input->post('password')),
+                'nomor_hp' => trim($this->input->post('nomor_hp')) ?: null,
+                'email' => trim($this->input->post('email')) ?: null,
+                'barcode' => trim($this->input->post('barcode')) ?: null,
+                'gender' => $this->input->post('gender') ?: null,
+                'status' => $this->input->post('status') !== '' ? $this->input->post('status') : 0,
+                'tanggal' => $this->input->post('tanggal') ?: null,
+                'jam' => $this->input->post('jam') ?: null,
+                'flag_doc' => trim($this->input->post('flag_doc')) ?: null,
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s')
             ];
             
-            $result = $this->transaksi_model->insert($data);
-            
-            if ($result) {
-                $this->session->set_flashdata('success', 'Data peserta berhasil ditambahkan');
-            } else {
-                $this->session->set_flashdata('error', 'Gagal menambahkan data peserta');
+            try {
+                $result = $this->transaksi_model->insert($data);
+                
+                if ($result) {
+                    $this->session->set_flashdata('success', 'Data peserta berhasil ditambahkan');
+                    redirect('database');
+                } else {
+                    $this->session->set_flashdata('error', 'Gagal menambahkan data peserta. Silakan coba lagi.');
+                    $this->tambah();
+                }
+            } catch (Exception $e) {
+                log_message('error', 'Exception during insert: ' . $e->getMessage());
+                $this->session->set_flashdata('error', 'Terjadi kesalahan saat menambahkan data: ' . $e->getMessage());
+                $this->tambah();
             }
             
             redirect('database');
@@ -752,8 +772,8 @@ class Database extends CI_Controller {
                 $password = trim($sheet->getCellByColumnAndRow(4, $row)->getValue());
                 $nomor_hp = trim($sheet->getCellByColumnAndRow(5, $row)->getValue());
                 $email = trim($sheet->getCellByColumnAndRow(6, $row)->getValue());
-                $gender = trim($sheet->getCellByColumnAndRow(7, $row)->getValue());
-                $status_Cek = trim($sheet->getCellByColumnAndRow(8, $row)->getValue());
+                $gender = trim($sheet->getCellByColumnAndRow(8, $row)->getValue());
+                $status_Cek = trim($sheet->getCellByColumnAndRow(7, $row)->getValue());
                 if($status_Cek == 'On Target'){
                     $status = 0;
                 }elseif($status_Cek == 'Already'){
@@ -888,8 +908,8 @@ class Database extends CI_Controller {
             'Password',
             'No. HP',
             'Email',
-            'Gender',
             'Status',
+            'Gender',
             'Tanggal',
             'Jam',
             'Flag Dokumen'
@@ -930,8 +950,8 @@ class Database extends CI_Controller {
             'password123',
             '08123456789',
             'ahmad@email.com',
-            'L',
             'On Target',
+            'L',
             '2025-01-01',
             '12:00',
             'Batch-001'

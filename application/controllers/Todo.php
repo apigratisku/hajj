@@ -319,20 +319,29 @@ class Todo extends CI_Controller {
                 if ($field === 'tgl_lahir' && empty($input[$field])) {
                     $data[$field] = null;
                 } else {
-                    $data[$field] = $input[$field];
+                    $data[$field] = trim($input[$field]) ?: null;
                 }
             }
         }
         $data['updated_at'] = date('Y-m-d H:i:s');
         
-        // Update data
-        $result = $this->transaksi_model->update($id, $data);
+        // Debug: Log the data being updated
+        log_message('debug', 'Todo update_ajax - Updating peserta ID: ' . $id . ' with data: ' . json_encode($data));
         
-        if ($result) {
-            $this->output->set_output(json_encode(['success' => true, 'message' => 'Data berhasil diperbarui']));
-        } else {
+        try {
+            // Update data
+            $result = $this->transaksi_model->update($id, $data);
+            
+            if ($result) {
+                $this->output->set_output(json_encode(['success' => true, 'message' => 'Data berhasil diperbarui']));
+            } else {
+                $this->output->set_status_header(500);
+                $this->output->set_output(json_encode(['success' => false, 'message' => 'Gagal memperbarui data. Silakan coba lagi.']));
+            }
+        } catch (Exception $e) {
+            log_message('error', 'Exception in Todo update_ajax: ' . $e->getMessage());
             $this->output->set_status_header(500);
-            $this->output->set_output(json_encode(['success' => false, 'message' => 'Gagal memperbarui data']));
+            $this->output->set_output(json_encode(['success' => false, 'message' => 'Terjadi kesalahan saat memperbarui data: ' . $e->getMessage()]));
         }
     }
 
