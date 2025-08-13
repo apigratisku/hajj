@@ -24,6 +24,8 @@
                     <div class="row">
                         <div class="col-md-8">
                             <form action="<?= base_url('database/process_import') ?>" method="post" enctype="multipart/form-data">
+                                <!-- CSRF Token -->
+                                <input type="hidden" name="<?= $this->security->get_csrf_token_name() ?>" value="<?= $this->security->get_csrf_hash() ?>" />
                                 <div class="mb-3">
                                     <label for="excel_file" class="form-label">File Excel (.xls atau .xlsx)</label>
                                     <input type="file" class="form-control" id="excel_file" name="excel_file" accept=".xls,.xlsx" required>

@@ -11,6 +11,8 @@
                 </div>
                 <div class="card-body">
                     <form action="<?= base_url('database/update/' . $peserta->id) ?>" method="POST" class="mobile-form">
+                        <!-- CSRF Token -->
+                        <input type="hidden" name="<?= $this->security->get_csrf_token_name() ?>" value="<?= $this->security->get_csrf_hash() ?>" />
                         <div class="row g-3">
                             <div class="col-12 col-lg-6">
                                 <div class="form-group">
