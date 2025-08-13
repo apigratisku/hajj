@@ -134,6 +134,9 @@ class Transaksi_model extends CI_Model {
         if (isset($filters['status']) && $filters['status'] !== '') {
             $this->db->where('peserta.status', $filters['status']);
         }
+        if (!empty($filters['gender'])) {
+            $this->db->where('peserta.gender', $filters['gender']);
+        }
         if (isset($filters['flag_doc'])) {
             // Handle flag_doc filter more precisely
             if ($filters['flag_doc'] === null || $filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {

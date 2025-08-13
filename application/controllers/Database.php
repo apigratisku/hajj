@@ -38,7 +38,8 @@ class Database extends CI_Controller {
             'no_visa' => trim($this->input->get('no_visa')),
             'flag_doc' => trim($this->input->get('flag_doc')),
             'tanggaljam' => trim($this->input->get('tanggaljam')),
-            'status' => trim($this->input->get('status'))
+            'status' => trim($this->input->get('status')),
+            'gender' => trim($this->input->get('gender'))
         ];
         
         // Remove empty filters to avoid unnecessary WHERE clauses
@@ -86,6 +87,9 @@ class Database extends CI_Controller {
         }
         if (!empty($filters['status'])) {
             $query_params['status'] = $filters['status'];
+        }
+        if (!empty($filters['gender'])) {
+            $query_params['gender'] = $filters['gender'];
         }
         
         // Build query string

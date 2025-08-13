@@ -82,15 +82,6 @@
                     <div class="desktop-search-container d-none d-md-block">
                         <form method="get" action="<?= base_url('database/index') ?>" class="desktop-form">
                             <div class="row g-2 align-items-center">
-                                <div class="col-md-1">
-                                    <input type="text" name="nama" value="<?= isset($_GET['nama']) ? htmlspecialchars($_GET['nama']) : '' ?>" class="form-control form-control-sm" placeholder="Nama Peserta">
-                                </div>
-                                <div class="col-md-1">
-                                    <input type="text" name="nomor_paspor" value="<?= isset($_GET['nomor_paspor']) ? htmlspecialchars($_GET['nomor_paspor']) : '' ?>" class="form-control form-control-sm" placeholder="No Paspor">
-                                </div>
-                                <div class="col-md-1">
-                                    <input type="text" name="no_visa" value="<?= isset($_GET['no_visa']) ? htmlspecialchars($_GET['no_visa']) : '' ?>" class="form-control form-control-sm" placeholder="No Visa">
-                                </div>
                                 
                                 <div class="col-md-2">
                                     <select name="flag_doc" class="form-select form-control-sm">
@@ -111,6 +102,13 @@
                                                 <?= htmlspecialchars($tanggaljam->tanggaljam) ?>
                                             </option>
                                         <?php endforeach; endif; ?>
+                                    </select>
+                                </div>
+                                <div class="col-md-1">
+                                    <select name="gender" class="form-select form-control-sm">
+                                        <option value="">Gender</option>
+                                        <option value="L" <?= (isset($_GET['gender']) && $_GET['gender'] === 'L') ? 'selected' : '' ?>>Laki-laki</option>
+                                        <option value="P" <?= (isset($_GET['gender']) && $_GET['gender'] === 'P') ? 'selected' : '' ?>>Perempuan</option>
                                     </select>
                                 </div>
                                 <div class="col-md-1">

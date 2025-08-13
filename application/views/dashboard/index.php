@@ -142,8 +142,15 @@
                                     </div>
                                     <?php if ($detail): ?>
                                         <div class="hour-gender-breakdown d-flex justify-content-between small text-muted">
+                                        <a href="<?= base_url('database/index?flag_doc=&tanggaljam=&status=&gender=L') ?>" 
+                                        class="gender-link male">
                                             <span><i class="fas fa-mars text-primary"></i> Laki-laki: <strong><?= (int)$detail->male_count ?></strong></span>
+                                        </a>
+
+                                        <a href="<?= base_url('database/index?&flag_doc=&tanggaljam=&status=&gender=P') ?>" 
+                                        class="gender-link female">
                                             <span><i class="fas fa-venus text-danger"></i> Perempuan: <strong><?= (int)$detail->female_count ?></strong></span>
+                                        </a>
                                         </div>
                                     <?php endif; ?>
                                 </div>
@@ -457,5 +464,49 @@
 .gender-stats::-webkit-scrollbar-thumb:hover,
 .hour-stats::-webkit-scrollbar-thumb:hover {
     background: var(--primary-light);
+}
+.gender-link {
+    display: inline-flex;
+    align-items: center;
+    padding: 10px 16px;
+    margin: 5px;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+    color: #333;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.gender-link:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+    color: #fff;
+}
+
+.gender-link i.fa-mars {
+    transition: color 0.3s ease;
+}
+
+.gender-link i.fa-venus {
+    transition: color 0.3s ease;
+}
+
+.gender-link:hover i.fa-mars {
+    color: #007bff !important;
+}
+
+.gender-link:hover i.fa-venus {
+    color: #e63946 !important;
+}
+
+/* Spesifik untuk Laki-laki */
+.gender-link.male:hover {
+    background-color: #007bff;
+}
+
+/* Spesifik untuk Perempuan */
+.gender-link.female:hover {
+    background-color: #e63946;
 }
 </style> 
