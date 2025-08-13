@@ -312,7 +312,7 @@ class Todo extends CI_Controller {
         }
         
         // Prepare data for update only for fields provided
-        $allowedFields = ['nama','flag_doc','nomor_paspor','no_visa','tgl_lahir','password','nomor_hp','email','gender','status','tanggal','jam'];
+        $allowedFields = ['nama','flag_doc','nomor_paspor','no_visa','tgl_lahir','password','nomor_hp','email','barcode','gender','status','tanggal','jam'];
         $data = [];
         foreach ($allowedFields as $field) {
             if (array_key_exists($field, $input)) {

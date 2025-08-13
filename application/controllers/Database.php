@@ -38,7 +38,8 @@ class Database extends CI_Controller {
             'nomor_paspor' => trim($this->input->get('nomor_paspor')),
             'no_visa' => trim($this->input->get('no_visa')),
             'flag_doc' => trim($this->input->get('flag_doc')),
-            'tanggaljam' => trim($this->input->get('tanggaljam'))
+            'tanggaljam' => trim($this->input->get('tanggaljam')),
+            'status' => trim($this->input->get('status'))
         ];
         
         // Remove empty filters to avoid unnecessary WHERE clauses
@@ -56,6 +57,7 @@ class Database extends CI_Controller {
         // Provide flag_doc options for filter select
         $data['flag_doc_list'] = $this->transaksi_model->get_unique_flag_doc();
         $data['tanggaljam_list'] = $this->transaksi_model->get_unique_tanggaljam();
+   
         
         // Get total count for pagination
         $total_rows = $this->transaksi_model->count_filtered($filters);
@@ -82,6 +84,9 @@ class Database extends CI_Controller {
         }
         if (!empty($filters['tanggaljam'])) {
             $query_params['tanggaljam'] = $filters['tanggaljam'];
+        }
+        if (!empty($filters['status'])) {
+            $query_params['status'] = $filters['status'];
         }
         
         // Build query string
@@ -264,6 +269,7 @@ class Database extends CI_Controller {
                 'password' => $this->input->post('password'),
                 'nomor_hp' => $this->input->post('nomor_hp'),
                 'email' => $this->input->post('email'),
+                'barcode' => $this->input->post('barcode'),
                 'gender' => $this->input->post('gender'),
                 'status' => $this->input->post('status') ? $this->input->post('status') : 0,
                 'tanggal' => $this->input->post('tanggal'),
@@ -312,7 +318,7 @@ class Database extends CI_Controller {
         }
         
         // Prepare data for update only for fields provided
-        $allowedFields = ['nama','flag_doc','nomor_paspor','no_visa','tgl_lahir','password','nomor_hp','email','gender','status','tanggal','jam'];
+        $allowedFields = ['nama','flag_doc','nomor_paspor','no_visa','tgl_lahir','password','nomor_hp','email','barcode','gender','status','tanggal','jam'];
         $data = [];
         foreach ($allowedFields as $field) {
             if (array_key_exists($field, $input)) {
@@ -372,7 +378,8 @@ class Database extends CI_Controller {
             'nama' => $this->input->get('nama'),
             'nomor_paspor' => $this->input->get('nomor_paspor'),
             'no_visa' => $this->input->get('no_visa'),
-            'flag_doc' => $this->input->get('flag_doc')
+            'flag_doc' => $this->input->get('flag_doc'),
+            'status' => $this->input->get('status')
         ];
         
         // Get data
@@ -408,11 +415,12 @@ class Database extends CI_Controller {
                 ->setCellValue('E1', 'Password')
                 ->setCellValue('F1', 'No HP')
                 ->setCellValue('G1', 'Email')
-                ->setCellValue('H1', 'Gender')
-                ->setCellValue('I1', 'Tanggal')
-                ->setCellValue('J1', 'Jam')
-                ->setCellValue('K1', 'Status')
-                ->setCellValue('L1', 'Flag Dokumen');
+                ->setCellValue('H1', 'Barcode')
+                ->setCellValue('I1', 'Gender')
+                ->setCellValue('J1', 'Tanggal')
+                ->setCellValue('K1', 'Jam')
+                ->setCellValue('L1', 'Status')
+                ->setCellValue('M1', 'Flag Dokumen');
             
             // Set column widths
             $excel->getActiveSheet()->getColumnDimension('A')->setWidth(25);
@@ -427,7 +435,7 @@ class Database extends CI_Controller {
             $excel->getActiveSheet()->getColumnDimension('J')->setWidth(15);
             $excel->getActiveSheet()->getColumnDimension('K')->setWidth(15);
             $excel->getActiveSheet()->getColumnDimension('L')->setWidth(15);
-            
+            $excel->getActiveSheet()->getColumnDimension('M')->setWidth(15);
             // Style header row
             $headerStyle = [
                 'font' => [
@@ -473,11 +481,12 @@ class Database extends CI_Controller {
                     ->setCellValue('E' . $row, $p->password)
                     ->setCellValue('F' . $row, $p->nomor_hp ? $p->nomor_hp : '-')
                     ->setCellValue('G' . $row, $p->email ? $p->email : '-')
-                    ->setCellValue('H' . $row, $gender ?: '-')
-                    ->setCellValue('I' . $row, $p->tanggal ?: '-')
-                    ->setCellValue('J' . $row, $p->jam ?: '-')
-                    ->setCellValue('K' . $row, $status)
-                    ->setCellValue('L' . $row, $p->flag_doc ?: '-');
+                    ->setCellValue('H' . $row, $p->barcode ?: '-')
+                    ->setCellValue('I' . $row, $gender ?: '-')
+                    ->setCellValue('J' . $row, $p->tanggal ?: '-')
+                    ->setCellValue('K' . $row, $p->jam ?: '-')
+                    ->setCellValue('L' . $row, $status)
+                    ->setCellValue('M' . $row, $p->flag_doc ?: '-');
                 $row++;
             }
             
@@ -543,6 +552,7 @@ class Database extends CI_Controller {
                 'password' => $this->input->post('password'),
                 'nomor_hp' => $this->input->post('nomor_hp'),
                 'email' => $this->input->post('email'),
+                'barcode' => $this->input->post('barcode'),
                 'gender' => $this->input->post('gender'),
                 'status' => $this->input->post('status') ? $this->input->post('status') : 0,
                 'tanggal' => $this->input->post('tanggal'),

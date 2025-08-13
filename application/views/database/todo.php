@@ -79,6 +79,7 @@
                                             <th class="col-password">Pass</th>
                                             <th class="col-hp">HP</th>
                                             <th class="col-email">Email</th>
+                                            <th class="col-barcode">Barcode</th>
                                             <th class="col-gender">L/P</th>
                                             <th class="col-tanggal">Tanggal</th>
                                             <th class="col-jam">Jam</th>
@@ -124,6 +125,10 @@
                                             <td class="col-email" data-field="email" data-value="<?= $p->email ?>">
                                             <span class="value copyable-text" data-field="email" data-value="<?= $p->email ?>" onclick="copyToClipboard('<?= htmlspecialchars($p->email ?: '-', ENT_QUOTES) ?>', 'Email')" title="Klik untuk copy"><?= $p->email ?: '-' ?></span>
                                             <input type="email" class="mobile-edit-field" value="<?= $p->email ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
+                                            </td>
+                                            <td class="col-barcode" data-field="barcode" data-value="<?= $p->barcode ?>">
+                                            <span class="value copyable-text" data-field="barcode" data-value="<?= $p->barcode ?>" onclick="copyToClipboard('<?= htmlspecialchars($p->barcode ?: '-', ENT_QUOTES) ?>', 'Barcode')" title="Klik untuk copy"><?= $p->barcode ?: '-' ?></span>
+                                            <input type="text" class="mobile-edit-field" value="<?= $p->barcode ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                             </td>
                                             <td class="col-gender" data-field="gender" data-value="<?= $p->gender ?>">
                                             <span class="value" data-field="gender" data-value="<?= $p->gender ?>"><?= $p->gender ?: '-' ?></span>
@@ -199,6 +204,7 @@
                                         <th class="text-center">Password</th>
                                         <th class="text-center">No. HP</th>
                                         <th class="text-center">Email</th>
+                                        <th class="text-center">Barcode</th>
                                         <th class="text-center">Gender</th>
                                         <th class="text-center">Tanggal</th>
                                         <th class="text-center">Jam</th>
@@ -242,6 +248,10 @@
                                         <td class="email text-center" data-field="email" data-value="<?= $p->email ?>"> 
                                         <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->email ?: '-', ENT_QUOTES) ?>', 'Email')" title="Klik untuk copy"><?= $p->email ?></span>
                                         <input type="email" class="form-control edit-field" value="<?= $p->email ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
+                                        </td>
+                                        <td class="barcode text-center" data-field="barcode" data-value="<?= $p->barcode ?>">
+                                        <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->barcode ?: '-', ENT_QUOTES) ?>', 'Barcode')" title="Klik untuk copy"><?= $p->barcode ?: '-' ?></span>
+                                        <input type="text" class="form-control edit-field" value="<?= $p->barcode ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                         </td>
                                         <td class="gender text-center" data-field="gender" data-value="<?= $p->gender ?>">
                                         <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->gender ?: '-', ENT_QUOTES) ?>', 'Gender')" title="Klik untuk copy"><?= $p->gender ?: '-' ?></span>

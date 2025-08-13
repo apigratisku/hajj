@@ -85,6 +85,9 @@ class Transaksi_model extends CI_Model {
         if (!empty($filters['no_visa'])) {
             $this->db->like('peserta.no_visa', $filters['no_visa']);
         }
+        if (isset($filters['status']) && $filters['status'] !== '') {
+            $this->db->where('peserta.status', $filters['status']);
+        }
         if (!empty($filters['flag_doc'])) {
             // Handle flag_doc filter more precisely
             if ($filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
@@ -121,6 +124,8 @@ class Transaksi_model extends CI_Model {
         $this->db->limit($limit, $offset);
         return $this->db->get()->result();
     }
+
+  
     
 
     public function count_filtered($filters = []) {
@@ -133,6 +138,9 @@ class Transaksi_model extends CI_Model {
         }
         if (!empty($filters['no_visa'])) {
             $this->db->like('peserta.no_visa', $filters['no_visa']);
+        }
+        if (!empty($filters['status'])) {
+            $this->db->where('peserta.status', $filters['status']);
         }
         if (!empty($filters['flag_doc'])) {
             // Handle flag_doc filter more precisely

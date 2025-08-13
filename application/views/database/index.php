@@ -45,6 +45,7 @@
                                         <?php endforeach; endif; ?>
                                     </select>
                                 </div>
+                                
                                 <div class="form-group">
                                     <select name="flag_doc" class="form-select mobile-input">
                                         <option value="">Semua Flag Dokumen</option>
@@ -54,6 +55,15 @@
                                                 <?= htmlspecialchars($flag->flag_doc) ?>
                                             </option>
                                         <?php endforeach; endif; ?>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <select name="status" class="form-select mobile-input">
+                                        <option value="">Status</option>
+                                            <option value="0">On Target</option>
+                                            <option value="1">Already</option>
+                                            <option value="2">Done</option>
+                                       
                                     </select>
                                 </div>
                                 <div class="form-actions">
@@ -72,15 +82,16 @@
                     <div class="desktop-search-container d-none d-md-block">
                         <form method="get" action="<?= base_url('database/index') ?>" class="desktop-form">
                             <div class="row g-2 align-items-center">
-                                <div class="col-md-2">
+                                <div class="col-md-1">
                                     <input type="text" name="nama" value="<?= isset($_GET['nama']) ? htmlspecialchars($_GET['nama']) : '' ?>" class="form-control form-control-sm" placeholder="Nama Peserta">
                                 </div>
-                                <div class="col-md-2">
+                                <div class="col-md-1">
                                     <input type="text" name="nomor_paspor" value="<?= isset($_GET['nomor_paspor']) ? htmlspecialchars($_GET['nomor_paspor']) : '' ?>" class="form-control form-control-sm" placeholder="No Paspor">
                                 </div>
-                                <div class="col-md-2">
+                                <div class="col-md-1">
                                     <input type="text" name="no_visa" value="<?= isset($_GET['no_visa']) ? htmlspecialchars($_GET['no_visa']) : '' ?>" class="form-control form-control-sm" placeholder="No Visa">
                                 </div>
+                                
                                 <div class="col-md-2">
                                     <select name="flag_doc" class="form-select form-control-sm">
                                         <option value="">Semua Flag Dokumen</option>
@@ -92,7 +103,7 @@
                                         <?php endforeach; endif; ?>
                                     </select>
                                 </div>
-                                <div class="col-md-2">
+                                <div class="col-md-1">
                                     <select name="tanggaljam" class="form-select form-control-sm">
                                         <option value="">Waktu</option>
                                         <?php if (!empty($tanggaljam_list)): foreach ($tanggaljam_list as $tanggaljam): ?>
@@ -100,6 +111,14 @@
                                                 <?= htmlspecialchars($tanggaljam->tanggaljam) ?>
                                             </option>
                                         <?php endforeach; endif; ?>
+                                    </select>
+                                </div>
+                                <div class="col-md-1">
+                                    <select name="status" class="form-select form-control-sm">
+                                        <option value="">Status</option>
+                                        <option value="0" <?= (isset($_GET['status']) && $_GET['status'] === '0') ? 'selected' : '' ?>>On Target</option>
+                                        <option value="1" <?= (isset($_GET['status']) && $_GET['status'] === '1') ? 'selected' : '' ?>>Already</option>
+                                        <option value="2" <?= (isset($_GET['status']) && $_GET['status'] === '2') ? 'selected' : '' ?>>Done</option>
                                     </select>
                                 </div>
                                 <div class="col-md-2">
@@ -174,6 +193,10 @@
                                             <span class="value copyable-text" data-field="email" data-value="<?= $p->email ?>" onclick="copyToClipboard('<?= htmlspecialchars($p->email ?: '-', ENT_QUOTES) ?>', 'Email')" title="Klik untuk copy"><?= $p->email ?: '-' ?></span>
                                             <input type="email" class="mobile-edit-field" value="<?= $p->email ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                             </td>
+                                            <td class="col-barcode" data-field="barcode" data-value="<?= $p->barcode ?>">
+                                            <span class="value copyable-text" data-field="barcode" data-value="<?= $p->barcode ?>" onclick="copyToClipboard('<?= htmlspecialchars($p->barcode ?: '-', ENT_QUOTES) ?>', 'Barcode')" title="Klik untuk copy"><?= $p->barcode ?: '-' ?></span>
+                                            <input type="text" class="mobile-edit-field" value="<?= $p->barcode ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
+                                            </td>
                                             <td class="col-gender" data-field="gender" data-value="<?= $p->gender ?>">
                                             <span class="value" data-field="gender" data-value="<?= $p->gender ?>"><?= $p->gender ?: '-' ?></span>
                                             <select class="mobile-edit-field" style="display:none;">
@@ -194,7 +217,7 @@
                                                 <span class="value mobile-status-badge mobile-status-<?= $p->status ?>" data-field="status" data-value="<?= $p->status ?>">
                                                 <?= $p->status == 0 ? 'On Target' : ($p->status == 1 ? 'Already' : 'Done') ?>
                                             </span>
-                                                <select class="mobile-edit-field" style="display:none;">
+                                            <select class="mobile-edit-field" style="display:none;">
                                                 <option value="0" <?= $p->status == 0 ? 'selected' : '' ?>>On Target</option>
                                                 <option value="1" <?= $p->status == 1 ? 'selected' : '' ?>>Already</option>
                                                 <option value="2" <?= $p->status == 2 ? 'selected' : '' ?>>Done</option>
@@ -248,6 +271,7 @@
                                         <th class="text-center">Password</th>
                                         <th class="text-center">No. HP</th>
                                         <th class="text-center">Email</th>
+                                        <th class="text-center">Barcode</th>
                                         <th class="text-center">Gender</th>
                                         <th class="text-center">Tanggal</th>
                                         <th class="text-center">Jam</th>
@@ -291,6 +315,10 @@
                                         <td class="email text-center" data-field="email" data-value="<?= $p->email ?>"> 
                                         <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->email ?: '-', ENT_QUOTES) ?>', 'Email')" title="Klik untuk copy"><?= $p->email ?></span>
                                         <input type="email" class="form-control edit-field" value="<?= $p->email ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
+                                        </td>
+                                        <td class="barcode text-center" data-field="barcode" data-value="<?= $p->barcode ?>">
+                                        <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->barcode ?: '-', ENT_QUOTES) ?>', 'Barcode')" title="Klik untuk copy"><?= $p->barcode ?: '-' ?></span>
+                                        <input type="text" class="form-control edit-field" value="<?= $p->barcode ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                         </td>
                                         <td class="gender text-center" data-field="gender" data-value="<?= $p->gender ?>">
                                         <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->gender ?: '-', ENT_QUOTES) ?>', 'Gender')" title="Klik untuk copy"><?= $p->gender ?: '-' ?></span>
