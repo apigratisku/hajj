@@ -147,6 +147,7 @@
                                             <th class="col-password">Pass</th>
                                             <th class="col-hp">HP</th>
                                             <th class="col-email">Email</th>
+                                            <th class="col-barcode">Barcode</th>
                                             <th class="col-gender">L/P</th>
                                             <th class="col-tanggal">Tanggal</th>
                                             <th class="col-jam">Jam</th>
