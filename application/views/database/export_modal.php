@@ -83,6 +83,13 @@
                 <button type="button" class="btn btn-success" onclick="submitExport()">
                     <i class="fas fa-download"></i> Export Data
                 </button>
+                <div class="mt-2">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle"></i> 
+                        <strong>Excel:</strong> Format spreadsheet dengan ringkasan status<br>
+                        <strong>PDF:</strong> Format HTML yang dapat dicetak sebagai PDF
+                    </small>
+                </div>
             </div>
         </div>
     </div>
@@ -179,12 +186,20 @@ function submitExport() {
     
     // Set filename based on format
     const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-    const extension = format === 'pdf' ? '.pdf' : '.xlsx';
+    const extension = format === 'pdf' ? '.html' : '.xlsx';
     link.download = 'Database_Peserta_' + timestamp + extension;
     
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // For PDF, open in new window first to check for errors
+    if (format === 'pdf') {
+        const newWindow = window.open(exportUrl, '_blank');
+        if (!newWindow) {
+            showAlert('Pop-up blocker mungkin mencegah download. Silakan izinkan pop-up untuk situs ini.', 'warning');
+        }
+    } else {
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
     
     // Reset button and close modal
     setTimeout(() => {

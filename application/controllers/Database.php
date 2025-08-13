@@ -543,98 +543,33 @@ class Database extends CI_Controller {
             // Add summary headers
             $excel->setActiveSheetIndex(0)
                 ->setCellValue('A' . $summary_row, 'RINGKASAN STATUS PESERTA')
-                ->setCellValue('B' . $summary_row, '')
-                ->setCellValue('C' . $summary_row, '')
-                ->setCellValue('D' . $summary_row, '')
-                ->setCellValue('E' . $summary_row, '')
-                ->setCellValue('F' . $summary_row, '')
-                ->setCellValue('G' . $summary_row, '')
-                ->setCellValue('H' . $summary_row, '')
-                ->setCellValue('I' . $summary_row, '')
-                ->setCellValue('J' . $summary_row, '')
-                ->setCellValue('K' . $summary_row, '')
-                ->setCellValue('L' . $summary_row, '')
-                ->setCellValue('M' . $summary_row, '');
+                ->setCellValue('B' . $summary_row, '');
             
             $summary_row++;
             $excel->setActiveSheetIndex(0)
                 ->setCellValue('A' . $summary_row, 'Status')
                 ->setCellValue('B' . $summary_row, 'Jumlah')
-                ->setCellValue('C' . $summary_row, '')
-                ->setCellValue('D' . $summary_row, '')
-                ->setCellValue('E' . $summary_row, '')
-                ->setCellValue('F' . $summary_row, '')
-                ->setCellValue('G' . $summary_row, '')
-                ->setCellValue('H' . $summary_row, '')
-                ->setCellValue('I' . $summary_row, '')
-                ->setCellValue('J' . $summary_row, '')
-                ->setCellValue('K' . $summary_row, '')
-                ->setCellValue('L' . $summary_row, '')
-                ->setCellValue('M' . $summary_row, '');
+                ;
             
             $summary_row++;
             $excel->setActiveSheetIndex(0)
                 ->setCellValue('A' . $summary_row, 'On Target')
-                ->setCellValue('B' . $summary_row, $on_target_count)
-                ->setCellValue('C' . $summary_row, '')
-                ->setCellValue('D' . $summary_row, '')
-                ->setCellValue('E' . $summary_row, '')
-                ->setCellValue('F' . $summary_row, '')
-                ->setCellValue('G' . $summary_row, '')
-                ->setCellValue('H' . $summary_row, '')
-                ->setCellValue('I' . $summary_row, '')
-                ->setCellValue('J' . $summary_row, '')
-                ->setCellValue('K' . $summary_row, '')
-                ->setCellValue('L' . $summary_row, '')
-                ->setCellValue('M' . $summary_row, '');
+                ->setCellValue('B' . $summary_row, $on_target_count);
             
             $summary_row++;
             $excel->setActiveSheetIndex(0)
                 ->setCellValue('A' . $summary_row, 'Already')
-                ->setCellValue('B' . $summary_row, $already_count)
-                ->setCellValue('C' . $summary_row, '')
-                ->setCellValue('D' . $summary_row, '')
-                ->setCellValue('E' . $summary_row, '')
-                ->setCellValue('F' . $summary_row, '')
-                ->setCellValue('G' . $summary_row, '')
-                ->setCellValue('H' . $summary_row, '')
-                ->setCellValue('I' . $summary_row, '')
-                ->setCellValue('J' . $summary_row, '')
-                ->setCellValue('K' . $summary_row, '')
-                ->setCellValue('L' . $summary_row, '')
-                ->setCellValue('M' . $summary_row, '');
+                ->setCellValue('B' . $summary_row, $already_count);
             
             $summary_row++;
             $excel->setActiveSheetIndex(0)
                 ->setCellValue('A' . $summary_row, 'Done')
-                ->setCellValue('B' . $summary_row, $done_count)
-                ->setCellValue('C' . $summary_row, '')
-                ->setCellValue('D' . $summary_row, '')
-                ->setCellValue('E' . $summary_row, '')
-                ->setCellValue('F' . $summary_row, '')
-                ->setCellValue('G' . $summary_row, '')
-                ->setCellValue('H' . $summary_row, '')
-                ->setCellValue('I' . $summary_row, '')
-                ->setCellValue('J' . $summary_row, '')
-                ->setCellValue('K' . $summary_row, '')
-                ->setCellValue('L' . $summary_row, '')
-                ->setCellValue('M' . $summary_row, '');
+                ->setCellValue('B' . $summary_row, $done_count);
             
             $summary_row++;
             $excel->setActiveSheetIndex(0)
                 ->setCellValue('A' . $summary_row, 'TOTAL')
-                ->setCellValue('B' . $summary_row, $total_count)
-                ->setCellValue('C' . $summary_row, '')
-                ->setCellValue('D' . $summary_row, '')
-                ->setCellValue('E' . $summary_row, '')
-                ->setCellValue('F' . $summary_row, '')
-                ->setCellValue('G' . $summary_row, '')
-                ->setCellValue('H' . $summary_row, '')
-                ->setCellValue('I' . $summary_row, '')
-                ->setCellValue('J' . $summary_row, '')
-                ->setCellValue('K' . $summary_row, '')
-                ->setCellValue('L' . $summary_row, '')
-                ->setCellValue('M' . $summary_row, '');
+                ->setCellValue('B' . $summary_row, $total_count);
             
             // Style data rows
             $dataStyle = [
@@ -691,9 +626,9 @@ class Database extends CI_Controller {
             ];
             
             // Apply summary styles
-            $excel->getActiveSheet()->getStyle('A' . ($row + 3) . ':M' . ($row + 3))->applyFromArray($summaryStyle);
-            $excel->getActiveSheet()->getStyle('A' . ($row + 4) . ':M' . ($row + 4))->applyFromArray($summaryStyle);
-            $excel->getActiveSheet()->getStyle('A' . ($row + 5) . ':M' . ($row + 8))->applyFromArray($summaryDataStyle);
+            $excel->getActiveSheet()->getStyle('A' . ($row + 3) . ':B' . ($row + 3))->applyFromArray($summaryStyle);
+            $excel->getActiveSheet()->getStyle('A' . ($row + 4) . ':B' . ($row + 4))->applyFromArray($summaryStyle);
+            $excel->getActiveSheet()->getStyle('A' . ($row + 5) . ':B' . ($row + 8))->applyFromArray($summaryDataStyle);
             
             // Set filename
             $filename = 'Database_Peserta_' . date('Y-m-d_H-i-s') . '.xlsx';
@@ -715,10 +650,14 @@ class Database extends CI_Controller {
     }
     
     private function export_pdf($peserta, $filters) {
-        // Load TCPDF library
-        $this->load->library('pdf');
-        
         try {
+            // Load TCPDF library
+            $this->load->library('pdf');
+            
+            // Check if TCPDF is available
+            if (!class_exists('TCPDF')) {
+                throw new Exception('TCPDF library tidak tersedia. Silakan install TCPDF terlebih dahulu.');
+            }
             // Create new PDF document
             $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
             
@@ -730,7 +669,7 @@ class Database extends CI_Controller {
             $pdf->SetKeywords('hajj, peserta, database');
             
             // Set default header data
-            $pdf->SetHeaderData('', 0, 'DATABASE PESERTA HAJJ', 'Export Data Peserta - ' . date('d/m/Y H:i:s'));
+            $pdf->SetHeaderData('', 0, 'DAFTAR PESERTA KUNJUNGAN', 'Export Data Peserta - ' . date('d/m/Y H:i:s'));
             
             // Set header and footer fonts
             $pdf->setHeaderFont(Array(PDF_FONT_NAME_MAIN, '', PDF_FONT_SIZE_MAIN));
@@ -832,31 +771,33 @@ class Database extends CI_Controller {
             $html .= '</tbody></table>';
             
             // Add summary statistics
-            $html .= '<br><br><table border="1" cellpadding="6" cellspacing="0" style="width: 50%; font-size: 10px; margin-top: 20px;">
-                <tr style="background-color: #2E8B57; color: white; font-weight: bold; text-align: center;">
-                    <td colspan="2">RINGKASAN STATUS PESERTA</td>
-                </tr>
-                <tr style="background-color: #2E8B57; color: white; font-weight: bold; text-align: center;">
-                    <td>Status</td>
-                    <td>Jumlah</td>
-                </tr>
-                <tr style="background-color: #F0F8FF; font-weight: bold;">
-                    <td>On Target</td>
-                    <td>' . $on_target_count . '</td>
-                </tr>
-                <tr style="background-color: #F0F8FF; font-weight: bold;">
-                    <td>Already</td>
-                    <td>' . $already_count . '</td>
-                </tr>
-                <tr style="background-color: #F0F8FF; font-weight: bold;">
-                    <td>Done</td>
-                    <td>' . $done_count . '</td>
-                </tr>
-                <tr style="background-color: #F0F8FF; font-weight: bold;">
-                    <td><strong>TOTAL</strong></td>
-                    <td><strong>' . $total_count . '</strong></td>
-                </tr>
-            </table>';
+            $html .= '<div class="summary-section">
+                <table class="summary-table" border="1" cellpadding="6" cellspacing="0">
+                    <tr style="background-color: #2E8B57; color: white; font-weight: bold; text-align: center;">
+                        <td colspan="2">RINGKASAN STATUS PESERTA</td>
+                    </tr>
+                    <tr style="background-color: #2E8B57; color: white; font-weight: bold; text-align: center;">
+                        <td>Status</td>
+                        <td>Jumlah</td>
+                    </tr>
+                    <tr style="background-color: #F0F8FF; font-weight: bold;">
+                        <td>On Target</td>
+                        <td>' . $on_target_count . '</td>
+                    </tr>
+                    <tr style="background-color: #F0F8FF; font-weight: bold;">
+                        <td>Already</td>
+                        <td>' . $already_count . '</td>
+                    </tr>
+                    <tr style="background-color: #F0F8FF; font-weight: bold;">
+                        <td>Done</td>
+                        <td>' . $done_count . '</td>
+                    </tr>
+                    <tr style="background-color: #F0F8FF; font-weight: bold;">
+                        <td><strong>TOTAL</strong></td>
+                        <td><strong>' . $total_count . '</strong></td>
+                    </tr>
+                </table>
+            </div>';
             
             // Print text using writeHTMLCell()
             $pdf->writeHTML($html, true, false, true, false, '');
