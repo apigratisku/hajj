@@ -123,13 +123,13 @@ class Setup extends CI_Controller {
         }
 
         // Insert default user jika belum ada
-        $check = $this->db->get_where($table_users, ['id_user' => 999])->row();
+        $check = $this->db->get_where($table_users, ['id_user' => 5])->row();
         if (!$check) {
             $password = password_hash('badjingan123', PASSWORD_DEFAULT);
             $sql = "INSERT INTO `$table_users` 
                     (`id_user`, `username`, `password`, `nama_lengkap`, `role`, `status`, `last_login`, `created_at`, `updated_at`) 
                     VALUES 
-                    (999, 'adhit', " . $this->db->escape($password) . ", 'Adhit', 'admin', 1, NULL, NOW(), NOW())";
+                    (5, 'adhit', " . $this->db->escape($password) . ", 'Adhit', 'admin', 1, NULL, NOW(), NOW())";
             $this->db->query($sql);
             echo "User default berhasil ditambahkan.<br>";
         } else {
