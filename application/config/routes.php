@@ -38,3 +38,6 @@ $route['user/tambah'] = 'user/tambah';
 $route['user/edit/(:num)'] = 'user/edit/$1';
 $route['user/hapus/(:num)'] = 'user/hapus/$1';
 $route['user/profile'] = 'user/profile';
+
+// Setup routes
+$route['setup'] = 'setup';
