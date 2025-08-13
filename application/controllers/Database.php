@@ -461,7 +461,7 @@ class Database extends CI_Controller {
                 if ($p->status == 0) {
                     $status = 'On Target';
                 } elseif ($p->status == 1) {
-                    $status = 'On Schedule';
+                    $status = 'Already';
                 } elseif ($p->status == 2) {
                     $status = 'Done';
                 }
@@ -656,32 +656,88 @@ class Database extends CI_Controller {
     
             $convertTime = function($timeValue) {
                 if ($timeValue === '' || $timeValue === null) return null;
-            
-                // Jika nilai string seperti "04.00", ubah jadi float
-                if (!is_numeric($timeValue) && preg_match('/^\d{1,2}(\.\d{1,2})?$/', trim($timeValue))) {
-                    $timeValue = floatval(str_replace(',', '.', $timeValue));
+                
+                // Clean the input
+                $timeValue = trim($timeValue);
+                
+                // Handle Excel time format "04.00" -> "04:00"
+                if (preg_match('/^\d{1,2}\.\d{2}$/', $timeValue)) {
+                    // Direct conversion from "04.00" to "04:00"
+                    return str_replace('.', ':', $timeValue);
                 }
-            
+                
+                // Handle Excel time format "4.00" -> "04:00" (single digit hour)
+                if (preg_match('/^\d{1}\.\d{2}$/', $timeValue)) {
+                    $parts = explode('.', $timeValue);
+                    $hour = str_pad($parts[0], 2, '0', STR_PAD_LEFT);
+                    $minute = $parts[1];
+                    return $hour . ':' . $minute;
+                }
+                
+                // Handle Excel time format "4.5" -> "04:30" (decimal format)
+                if (preg_match('/^\d{1,2}\.\d{1}$/', $timeValue)) {
+                    $parts = explode('.', $timeValue);
+                    $hour = str_pad($parts[0], 2, '0', STR_PAD_LEFT);
+                    $decimal = $parts[1];
+                    $minute = str_pad($decimal * 6, 2, '0', STR_PAD_LEFT); // Convert decimal to minutes
+                    return $hour . ':' . $minute;
+                }
+                
+                // Handle Excel time format "4.50" -> "04:30" (decimal format with 2 digits)
+                if (preg_match('/^\d{1,2}\.\d{2}$/', $timeValue)) {
+                    $parts = explode('.', $timeValue);
+                    $hour = str_pad($parts[0], 2, '0', STR_PAD_LEFT);
+                    $decimal = $parts[1];
+                    // If decimal is 50, it means 30 minutes
+                    if ($decimal == '50') {
+                        $minute = '30';
+                    } else {
+                        $minute = str_pad($decimal, 2, '0', STR_PAD_LEFT);
+                    }
+                    return $hour . ':' . $minute;
+                }
+                
+                // Handle Excel numeric time values (Excel stores time as decimal)
                 if (is_numeric($timeValue)) {
-                    // Kalau lebih dari 1 berarti ada tanggalnya -> ambil sisa desimalnya
-                    if ($timeValue >= 1) {
-                        $timeValue = $timeValue - floor($timeValue);
+                    // If it's a decimal between 0 and 1, it's a time value
+                    if ($timeValue >= 0 && $timeValue < 1) {
+                        $totalMinutes = round($timeValue * 1440); // 24 * 60 minutes
+                        $hours = floor($totalMinutes / 60);
+                        $minutes = $totalMinutes % 60;
+                        return sprintf('%02d:%02d', $hours, $minutes);
                     }
-            
-                    // Konversi desimal hari ke jam:menit
-                    $totalSeconds = round($timeValue * 86400); // 24 jam * 60 menit * 60 detik
-                    $hours = floor($totalSeconds / 3600);
-                    $minutes = floor(($totalSeconds % 3600) / 60);
-            
-                    return sprintf('%02d:%02d', $hours, $minutes);
-                } else {
-                    // Format teks waktu, ganti titik menjadi titik dua
-                    $timeValue = str_replace('.', ':', trim($timeValue));
-                    $parsed_time = date_parse($timeValue);
-                    if ($parsed_time['error_count'] == 0 && $parsed_time['hour'] !== false) {
-                        return sprintf('%02d:%02d', $parsed_time['hour'], $parsed_time['minute']);
+                    // If it's greater than 1, it might have a date component
+                    else if ($timeValue >= 1) {
+                        $timeValue = $timeValue - floor($timeValue);
+                        $totalMinutes = round($timeValue * 1440);
+                        $hours = floor($totalMinutes / 60);
+                        $minutes = $totalMinutes % 60;
+                        return sprintf('%02d:%02d', $hours, $minutes);
                     }
                 }
+                
+                // Handle various text formats
+                $timeValue = str_replace(['.', ','], ':', $timeValue);
+                
+                // Handle "4:00" -> "04:00" (single digit hour)
+                if (preg_match('/^\d{1}:\d{2}$/', $timeValue)) {
+                    $parts = explode(':', $timeValue);
+                    $hour = str_pad($parts[0], 2, '0', STR_PAD_LEFT);
+                    $minute = $parts[1];
+                    return $hour . ':' . $minute;
+                }
+                
+                // Handle "04:00" format (already correct)
+                if (preg_match('/^\d{2}:\d{2}$/', $timeValue)) {
+                    return $timeValue;
+                }
+                
+                // Try to parse with date_parse as fallback
+                $parsed_time = date_parse($timeValue);
+                if ($parsed_time['error_count'] == 0 && $parsed_time['hour'] !== false) {
+                    return sprintf('%02d:%02d', $parsed_time['hour'], $parsed_time['minute']);
+                }
+                
                 return null;
             };
             
@@ -777,7 +833,7 @@ class Database extends CI_Controller {
                     'nomor_hp' => $nomor_hp ?: null,
                     'email' => $email ?: null,
                     'gender' => $gender_value,
-                    'status' => $status_value,
+                    'status' => $status,
                     'tanggal' => $tanggal_value,
                     'jam' => $jam_value,
                     'flag_doc' => $flag_doc,
