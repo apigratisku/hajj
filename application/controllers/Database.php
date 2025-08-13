@@ -589,7 +589,7 @@ class Database extends CI_Controller {
             $this->session->set_flashdata('error', 'File tidak ditemukan atau terjadi error saat upload');
             redirect('database/import');
         }
-
+    
         $file = $_FILES['excel_file'];
         $file_ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
         
@@ -598,7 +598,7 @@ class Database extends CI_Controller {
             $this->session->set_flashdata('error', 'File harus berformat Excel (.xls atau .xlsx)');
             redirect('database/import');
         }
-
+    
         // Load PHPExcel library
         require_once APPPATH . 'third_party/PHPExcel/Classes/PHPExcel.php';
         
@@ -618,6 +618,74 @@ class Database extends CI_Controller {
             $success_count = 0;
             $error_count = 0;
             $errors = [];
+    
+            // Fungsi konversi tanggal seragam
+            $convertDate = function($dateValue) {
+                $bulan_map = [
+                    'Jan' => '01', 'Feb' => '02', 'Mar' => '03', 'Apr' => '04',
+                    'Mei' => '05', 'Jun' => '06', 'Jul' => '07', 'Agu' => '08',
+                    'Sep' => '09', 'Okt' => '10', 'Nov' => '11', 'Des' => '12'
+                ];
+                if (empty($dateValue)) return null;
+                if (is_numeric($dateValue)) {
+                    $phpDate = PHPExcel_Shared_Date::ExcelToPHP($dateValue);
+                    return date('Y-m-d', $phpDate);
+                } else {
+                    $dateValue = trim($dateValue);
+                    // Format dd/MM/yyyy
+                    if (preg_match('/^\d{1,2}\/\d{1,2}\/\d{4}$/', $dateValue)) {
+                        $dt = DateTime::createFromFormat('d/m/Y', $dateValue);
+                        return $dt ? $dt->format('Y-m-d') : null;
+                    }
+                    // Format dd-MMM-yyyy (Indonesia)
+                    elseif (preg_match('/^\d{1,2}-[A-Za-z]{3}-\d{4}$/', $dateValue)) {
+                        list($d, $m, $y) = explode('-', $dateValue);
+                        $m = ucfirst(strtolower($m));
+                        if (isset($bulan_map[$m])) {
+                            return sprintf('%04d-%02d-%02d', $y, $bulan_map[$m], $d);
+                        }
+                    }
+                    // Fallback: parse otomatis
+                    $parsed_date = date_parse($dateValue);
+                    if ($parsed_date['error_count'] == 0 && checkdate($parsed_date['month'], $parsed_date['day'], $parsed_date['year'])) {
+                        return date('Y-m-d', strtotime($dateValue));
+                    }
+                }
+                return null;
+            };
+    
+            $convertTime = function($timeValue) {
+                if ($timeValue === '' || $timeValue === null) return null;
+            
+                // Jika nilai string seperti "04.00", ubah jadi float
+                if (!is_numeric($timeValue) && preg_match('/^\d{1,2}(\.\d{1,2})?$/', trim($timeValue))) {
+                    $timeValue = floatval(str_replace(',', '.', $timeValue));
+                }
+            
+                if (is_numeric($timeValue)) {
+                    // Kalau lebih dari 1 berarti ada tanggalnya -> ambil sisa desimalnya
+                    if ($timeValue >= 1) {
+                        $timeValue = $timeValue - floor($timeValue);
+                    }
+            
+                    // Konversi desimal hari ke jam:menit
+                    $totalSeconds = round($timeValue * 86400); // 24 jam * 60 menit * 60 detik
+                    $hours = floor($totalSeconds / 3600);
+                    $minutes = floor(($totalSeconds % 3600) / 60);
+            
+                    return sprintf('%02d:%02d', $hours, $minutes);
+                } else {
+                    // Format teks waktu, ganti titik menjadi titik dua
+                    $timeValue = str_replace('.', ':', trim($timeValue));
+                    $parsed_time = date_parse($timeValue);
+                    if ($parsed_time['error_count'] == 0 && $parsed_time['hour'] !== false) {
+                        return sprintf('%02d:%02d', $parsed_time['hour'], $parsed_time['minute']);
+                    }
+                }
+                return null;
+            };
+            
+            
             
             
             // Start from row 2 (skip header)
@@ -629,17 +697,20 @@ class Database extends CI_Controller {
                 $password = trim($sheet->getCellByColumnAndRow(4, $row)->getValue());
                 $nomor_hp = trim($sheet->getCellByColumnAndRow(5, $row)->getValue());
                 $email = trim($sheet->getCellByColumnAndRow(6, $row)->getValue());
-                $gender = "";
-                $status_Cek = trim($sheet->getCellByColumnAndRow(7, $row)->getValue());
+                $gender = trim($sheet->getCellByColumnAndRow(7, $row)->getValue());
+                $status_Cek = trim($sheet->getCellByColumnAndRow(8, $row)->getValue());
                 if($status_Cek == 'On Target'){
                     $status = 0;
                 }elseif($status_Cek == 'Already'){
                     $status = 1;
                 }elseif($status_Cek == 'Done'){
                     $status = 2;
+                }elseif($status_Cek == 'Done!'){
+                    $status = 2;
                 }
-                $tanggal = "";
-                $jam = "";
+                // Ambil tanggal & jam dari kolom Excel (misal index 8 & 9)
+                $tanggal_excel = trim($sheet->getCellByColumnAndRow(9, $row)->getValue());
+                $jam_excel = trim($sheet->getCellByColumnAndRow(10, $row)->getValue());
                 $flag_doc = trim($sheet->getCellByColumnAndRow(11, $row)->getValue());
                 
                 // Skip empty rows
@@ -654,16 +725,15 @@ class Database extends CI_Controller {
                     continue;
                 }
                 
-                
                 // Process status
                 $status_value = 0; // Default to 'On Target'
                 if (!empty($status)) {
                     switch (strtolower($status)) {
-                        case 'on schedule':
-                        case 'on schedule':
+                        case 'already':
                             $status_value = 1;
                             break;
-                        case 'done':
+                        case 'Done!':
+                        case 'Done':    
                         case 'selesai':
                             $status_value = 2;
                             break;
@@ -682,51 +752,13 @@ class Database extends CI_Controller {
                     $gender_value = '';
                 }
                 
-                // Process date
-                $tgl_lahir_value = null;
-
-                if (!empty($tgl_lahir)) {
-                    if (is_numeric($tgl_lahir)) {
-                        // Format numeric Excel
-                        $tgl_lahir_value = PHPExcel_Shared_Date::ExcelToPHP($tgl_lahir);
-                        $tgl_lahir_value = date('Y-m-d', $tgl_lahir_value);
-                    } else {
-                        // Hilangkan spasi ekstra
-                        $tgl_lahir = trim($tgl_lahir);
-
-                        // Mapping bulan Indonesia ke angka
-                        $bulan_map = [
-                            'Jan' => '01', 'Feb' => '02', 'Mar' => '03', 'Apr' => '04',
-                            'Mei' => '05', 'Jun' => '06', 'Jul' => '07', 'Agu' => '08',
-                            'Sep' => '09', 'Okt' => '10', 'Nov' => '11', 'Des' => '12'
-                        ];
-
-                        // Format dd/mm/yyyy
-                        if (preg_match('/^\d{1,2}\/\d{1,2}\/\d{4}$/', $tgl_lahir)) {
-                            $dt = DateTime::createFromFormat('d/m/Y', $tgl_lahir);
-                            if ($dt) {
-                                $tgl_lahir_value = $dt->format('Y-m-d');
-                            }
-                        }
-                        // Format dd-MMM-yyyy (Indonesia)
-                        elseif (preg_match('/^\d{1,2}-[A-Za-z]{3}-\d{4}$/', $tgl_lahir)) {
-                            list($d, $m, $y) = explode('-', $tgl_lahir);
-                            $m = ucfirst(strtolower($m)); // Pastikan kapitalisasi benar
-                            if (isset($bulan_map[$m])) {
-                                $tgl_lahir_value = sprintf('%04d-%02d-%02d', $y, $bulan_map[$m], $d);
-                            }
-                        }
-                        // Fallback: coba parse otomatis
-                        else {
-                            $parsed_date = date_parse($tgl_lahir);
-                            if ($parsed_date['error_count'] == 0 && checkdate($parsed_date['month'], $parsed_date['day'], $parsed_date['year'])) {
-                                $tgl_lahir_value = date('Y-m-d', strtotime($tgl_lahir));
-                            }
-                        }
-                    }
-                }
+                // Konversi semua tanggal
+                $tgl_lahir_value = $convertDate($tgl_lahir);
+                $tanggal_value   = $convertDate($tanggal_excel);
+                $jam_value       = $convertTime($jam_excel);
 
                 
+    
                 // Check if peserta already exists
                 $existing_peserta = $this->transaksi_model->get_by_passport($nomor_paspor);
                 if ($existing_peserta) {
@@ -734,7 +766,6 @@ class Database extends CI_Controller {
                     $error_count++;
                     continue;
                 }
-                
                 
                 // Insert peserta data
                 $peserta_data = [
@@ -747,8 +778,8 @@ class Database extends CI_Controller {
                     'email' => $email ?: null,
                     'gender' => $gender_value,
                     'status' => $status_value,
-                    'tanggal' => $tanggal,
-                    'jam' => $jam,
+                    'tanggal' => $tanggal_value,
+                    'jam' => $jam_value,
                     'flag_doc' => $flag_doc,
                     'created_at' => date('Y-m-d H:i:s'),
                     'updated_at' => date('Y-m-d H:i:s')
@@ -777,6 +808,7 @@ class Database extends CI_Controller {
         
         redirect('database/import');
     }
+    
 
     public function download_template() {
         // Load PHPExcel library
