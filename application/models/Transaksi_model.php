@@ -134,10 +134,10 @@ class Transaksi_model extends CI_Model {
         if (isset($filters['status']) && $filters['status'] !== '') {
             $this->db->where('peserta.status', $filters['status']);
         }
-        if (!empty($filters['flag_doc'])) {
+        if (isset($filters['flag_doc'])) {
             // Handle flag_doc filter more precisely
-            if ($filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
-                $this->db->where('peserta.flag_doc IS NULL OR peserta.flag_doc = ""');
+            if ($filters['flag_doc'] === null || $filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
+                $this->db->where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
             } else {
                 $this->db->where('peserta.flag_doc', $filters['flag_doc']);
             }
@@ -156,10 +156,10 @@ class Transaksi_model extends CI_Model {
         $this->db->select('peserta.*');
         $this->db->from($this->table);
     
-        if (!empty($filters['flag_doc'])) {
+        if (isset($filters['flag_doc'])) {
             // Handle flag_doc filter more precisely
-            if ($filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
-                $this->db->where('peserta.flag_doc IS NULL OR peserta.flag_doc = ""');
+            if ($filters['flag_doc'] === null || $filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
+                $this->db->where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
             } else {
                 $this->db->where('peserta.flag_doc', $filters['flag_doc']);
             }
@@ -185,15 +185,15 @@ class Transaksi_model extends CI_Model {
         if (!empty($filters['no_visa'])) {
             $this->db->like('peserta.no_visa', $filters['no_visa']);
         }
-        if (!empty($filters['status'])) {
+        if (isset($filters['status']) && $filters['status'] !== '') {
             $this->db->where('peserta.status', $filters['status']);
         }
-        if (!empty($filters['flag_doc'])) {
+        if (isset($filters['flag_doc'])) {
             // Handle flag_doc filter more precisely
-            if ($filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
-                $this->db->where('peserta.flag_doc IS NULL OR peserta.flag_doc = ""');
+            if ($filters['flag_doc'] === null || $filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
+                $this->db->where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
             } else {
-                $this->db->like('peserta.flag_doc', $filters['flag_doc']);
+                $this->db->where('peserta.flag_doc', $filters['flag_doc']);
             }
         }
         if (!empty($filters['tanggaljam'])) {

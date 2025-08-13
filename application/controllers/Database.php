@@ -405,6 +405,11 @@ class Database extends CI_Controller {
             'status' => $this->input->get('status')
         ];
         
+        // Handle null flag_doc (for data without flag_doc)
+        if (isset($filters['flag_doc']) && $filters['flag_doc'] === 'null') {
+            $filters['flag_doc'] = null;
+        }
+        
         // Get data
         $peserta = $this->transaksi_model->get_paginated_filtered(1000, 0, $filters);
         
@@ -475,7 +480,7 @@ class Database extends CI_Controller {
                 ],
             ];
             
-            $excel->getActiveSheet()->getStyle('A1:L1')->applyFromArray($headerStyle);
+            $excel->getActiveSheet()->getStyle('A1:M1')->applyFromArray($headerStyle);
             
             // Populate data
             $row = 2;
@@ -528,7 +533,7 @@ class Database extends CI_Controller {
             ];
             
             if ($row > 2) {
-                $excel->getActiveSheet()->getStyle('A2:L' . ($row - 1))->applyFromArray($dataStyle);
+                $excel->getActiveSheet()->getStyle('A2:M' . ($row - 1))->applyFromArray($dataStyle);
             }
             
             // Set filename

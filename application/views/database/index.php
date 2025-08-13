@@ -12,9 +12,9 @@
                         <a href="<?= base_url('database/import') ?>" class="btn btn-sm btn-import">
                             <i class="fas fa-file-import"></i> <span class="d-none d-sm-inline">Import</span>
                         </a>
-                        <a href="<?= base_url('database/export') ?>" class="btn btn-sm btn-export" target="_blank">
-                            <i class="fas fa-file-export"></i> <span class="d-none d-sm-inline">Export</span>
-                        </a>
+                                        <button type="button" class="btn btn-sm btn-export" data-bs-toggle="modal" data-bs-target="#exportModal">
+                    <i class="fas fa-file-export"></i> <span class="d-none d-sm-inline">Export</span>
+                </button>
                     </div>
                 </div>
                 <div class="card-body p-0">
@@ -1232,6 +1232,8 @@
     animation: slideIn 0.2s ease-out;
 }
 </style>
+
+<?php $this->load->view('database/export_modal'); ?>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script>
