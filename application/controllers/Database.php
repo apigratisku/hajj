@@ -271,7 +271,7 @@ class Database extends CI_Controller {
                 'email' => trim($this->input->post('email')) ?: null,
                 'barcode' => trim($this->input->post('barcode')) ?: null,
                 'gender' => $this->input->post('gender') ?: null,
-                'status' => $this->input->post('status') !== '' ? $this->input->post('status') : 0,
+                'status' => $this->input->post('status') !== null ? $this->input->post('status') : null,
                 'tanggal' => $this->input->post('tanggal') ?: null,
                 'jam' => $this->input->post('jam') ?: null,
                 'flag_doc' => trim($this->input->post('flag_doc')) ?: null,
@@ -413,6 +413,17 @@ class Database extends CI_Controller {
         // Get data
         $peserta = $this->transaksi_model->get_paginated_filtered(1000, 0, $filters);
         
+        // Get format from parameters
+        $format = $this->input->get('format');
+        
+        if ($format === 'pdf') {
+            $this->export_pdf($peserta, $filters);
+        } else {
+            $this->export_excel($peserta, $filters);
+        }
+    }
+    
+    private function export_excel($peserta, $filters) {
         // Check if PHPExcel library exists
         $phpexcel_path = APPPATH . 'third_party/PHPExcel/Classes/PHPExcel.php';
         if (!file_exists($phpexcel_path)) {
@@ -484,14 +495,21 @@ class Database extends CI_Controller {
             
             // Populate data
             $row = 2;
+            $on_target_count = 0;
+            $already_count = 0;
+            $done_count = 0;
+            
             foreach ($peserta as $p) {
                 $status = '';
                 if ($p->status == 0) {
                     $status = 'On Target';
+                    $on_target_count++;
                 } elseif ($p->status == 1) {
                     $status = 'Already';
+                    $already_count++;
                 } elseif ($p->status == 2) {
                     $status = 'Done';
+                    $done_count++;
                 }
                 
                 $gender = '';
@@ -518,6 +536,106 @@ class Database extends CI_Controller {
                 $row++;
             }
             
+            // Add summary statistics 3 rows below the last data
+            $summary_row = $row + 3;
+            $total_count = count($peserta);
+            
+            // Add summary headers
+            $excel->setActiveSheetIndex(0)
+                ->setCellValue('A' . $summary_row, 'RINGKASAN STATUS PESERTA')
+                ->setCellValue('B' . $summary_row, '')
+                ->setCellValue('C' . $summary_row, '')
+                ->setCellValue('D' . $summary_row, '')
+                ->setCellValue('E' . $summary_row, '')
+                ->setCellValue('F' . $summary_row, '')
+                ->setCellValue('G' . $summary_row, '')
+                ->setCellValue('H' . $summary_row, '')
+                ->setCellValue('I' . $summary_row, '')
+                ->setCellValue('J' . $summary_row, '')
+                ->setCellValue('K' . $summary_row, '')
+                ->setCellValue('L' . $summary_row, '')
+                ->setCellValue('M' . $summary_row, '');
+            
+            $summary_row++;
+            $excel->setActiveSheetIndex(0)
+                ->setCellValue('A' . $summary_row, 'Status')
+                ->setCellValue('B' . $summary_row, 'Jumlah')
+                ->setCellValue('C' . $summary_row, '')
+                ->setCellValue('D' . $summary_row, '')
+                ->setCellValue('E' . $summary_row, '')
+                ->setCellValue('F' . $summary_row, '')
+                ->setCellValue('G' . $summary_row, '')
+                ->setCellValue('H' . $summary_row, '')
+                ->setCellValue('I' . $summary_row, '')
+                ->setCellValue('J' . $summary_row, '')
+                ->setCellValue('K' . $summary_row, '')
+                ->setCellValue('L' . $summary_row, '')
+                ->setCellValue('M' . $summary_row, '');
+            
+            $summary_row++;
+            $excel->setActiveSheetIndex(0)
+                ->setCellValue('A' . $summary_row, 'On Target')
+                ->setCellValue('B' . $summary_row, $on_target_count)
+                ->setCellValue('C' . $summary_row, '')
+                ->setCellValue('D' . $summary_row, '')
+                ->setCellValue('E' . $summary_row, '')
+                ->setCellValue('F' . $summary_row, '')
+                ->setCellValue('G' . $summary_row, '')
+                ->setCellValue('H' . $summary_row, '')
+                ->setCellValue('I' . $summary_row, '')
+                ->setCellValue('J' . $summary_row, '')
+                ->setCellValue('K' . $summary_row, '')
+                ->setCellValue('L' . $summary_row, '')
+                ->setCellValue('M' . $summary_row, '');
+            
+            $summary_row++;
+            $excel->setActiveSheetIndex(0)
+                ->setCellValue('A' . $summary_row, 'Already')
+                ->setCellValue('B' . $summary_row, $already_count)
+                ->setCellValue('C' . $summary_row, '')
+                ->setCellValue('D' . $summary_row, '')
+                ->setCellValue('E' . $summary_row, '')
+                ->setCellValue('F' . $summary_row, '')
+                ->setCellValue('G' . $summary_row, '')
+                ->setCellValue('H' . $summary_row, '')
+                ->setCellValue('I' . $summary_row, '')
+                ->setCellValue('J' . $summary_row, '')
+                ->setCellValue('K' . $summary_row, '')
+                ->setCellValue('L' . $summary_row, '')
+                ->setCellValue('M' . $summary_row, '');
+            
+            $summary_row++;
+            $excel->setActiveSheetIndex(0)
+                ->setCellValue('A' . $summary_row, 'Done')
+                ->setCellValue('B' . $summary_row, $done_count)
+                ->setCellValue('C' . $summary_row, '')
+                ->setCellValue('D' . $summary_row, '')
+                ->setCellValue('E' . $summary_row, '')
+                ->setCellValue('F' . $summary_row, '')
+                ->setCellValue('G' . $summary_row, '')
+                ->setCellValue('H' . $summary_row, '')
+                ->setCellValue('I' . $summary_row, '')
+                ->setCellValue('J' . $summary_row, '')
+                ->setCellValue('K' . $summary_row, '')
+                ->setCellValue('L' . $summary_row, '')
+                ->setCellValue('M' . $summary_row, '');
+            
+            $summary_row++;
+            $excel->setActiveSheetIndex(0)
+                ->setCellValue('A' . $summary_row, 'TOTAL')
+                ->setCellValue('B' . $summary_row, $total_count)
+                ->setCellValue('C' . $summary_row, '')
+                ->setCellValue('D' . $summary_row, '')
+                ->setCellValue('E' . $summary_row, '')
+                ->setCellValue('F' . $summary_row, '')
+                ->setCellValue('G' . $summary_row, '')
+                ->setCellValue('H' . $summary_row, '')
+                ->setCellValue('I' . $summary_row, '')
+                ->setCellValue('J' . $summary_row, '')
+                ->setCellValue('K' . $summary_row, '')
+                ->setCellValue('L' . $summary_row, '')
+                ->setCellValue('M' . $summary_row, '');
+            
             // Style data rows
             $dataStyle = [
                 'alignment' => [
@@ -536,6 +654,47 @@ class Database extends CI_Controller {
                 $excel->getActiveSheet()->getStyle('A2:M' . ($row - 1))->applyFromArray($dataStyle);
             }
             
+            // Style summary section
+            $summaryStyle = [
+                'font' => [
+                    'bold' => true,
+                    'color' => ['rgb' => 'FFFFFF'],
+                ],
+                'fill' => [
+                    'type' => PHPExcel_Style_Fill::FILL_SOLID,
+                    'color' => ['rgb' => '2E8B57'],
+                ],
+                'alignment' => [
+                    'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER,
+                    'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER,
+                ],
+            ];
+            
+            $summaryDataStyle = [
+                'font' => [
+                    'bold' => true,
+                ],
+                'fill' => [
+                    'type' => PHPExcel_Style_Fill::FILL_SOLID,
+                    'color' => ['rgb' => 'F0F8FF'],
+                ],
+                'alignment' => [
+                    'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_LEFT,
+                    'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER,
+                ],
+                'borders' => [
+                    'allborders' => [
+                        'style' => PHPExcel_Style_Border::BORDER_THIN,
+                        'color' => ['rgb' => '000000'],
+                    ],
+                ],
+            ];
+            
+            // Apply summary styles
+            $excel->getActiveSheet()->getStyle('A' . ($row + 3) . ':M' . ($row + 3))->applyFromArray($summaryStyle);
+            $excel->getActiveSheet()->getStyle('A' . ($row + 4) . ':M' . ($row + 4))->applyFromArray($summaryStyle);
+            $excel->getActiveSheet()->getStyle('A' . ($row + 5) . ':M' . ($row + 8))->applyFromArray($summaryDataStyle);
+            
             // Set filename
             $filename = 'Database_Peserta_' . date('Y-m-d_H-i-s') . '.xlsx';
             
@@ -550,7 +709,167 @@ class Database extends CI_Controller {
             exit;
             
         } catch (Exception $e) {
-            $this->session->set_flashdata('error', 'Error saat export: ' . $e->getMessage());
+            $this->session->set_flashdata('error', 'Error saat export Excel: ' . $e->getMessage());
+            redirect('database');
+        }
+    }
+    
+    private function export_pdf($peserta, $filters) {
+        // Load TCPDF library
+        $this->load->library('pdf');
+        
+        try {
+            // Create new PDF document
+            $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+            
+            // Set document information
+            $pdf->SetCreator('Hajj System');
+            $pdf->SetAuthor('Hajj System');
+            $pdf->SetTitle('Database Peserta');
+            $pdf->SetSubject('Data Peserta');
+            $pdf->SetKeywords('hajj, peserta, database');
+            
+            // Set default header data
+            $pdf->SetHeaderData('', 0, 'DATABASE PESERTA HAJJ', 'Export Data Peserta - ' . date('d/m/Y H:i:s'));
+            
+            // Set header and footer fonts
+            $pdf->setHeaderFont(Array(PDF_FONT_NAME_MAIN, '', PDF_FONT_SIZE_MAIN));
+            $pdf->setFooterFont(Array(PDF_FONT_NAME_DATA, '', PDF_FONT_SIZE_DATA));
+            
+            // Set default monospaced font
+            $pdf->SetDefaultMonospacedFont(PDF_FONT_MONOSPACED);
+            
+            // Set margins
+            $pdf->SetMargins(PDF_MARGIN_LEFT, PDF_MARGIN_TOP, PDF_MARGIN_RIGHT);
+            $pdf->SetHeaderMargin(PDF_MARGIN_HEADER);
+            $pdf->SetFooterMargin(PDF_MARGIN_FOOTER);
+            
+            // Set auto page breaks
+            $pdf->SetAutoPageBreak(TRUE, PDF_MARGIN_BOTTOM);
+            
+            // Set image scale factor
+            $pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
+            
+            // Set landscape orientation
+            $pdf->setPageOrientation('L');
+            
+            // Add a page
+            $pdf->AddPage();
+            
+            // Set font
+            $pdf->SetFont('helvetica', '', 8);
+            
+            // Calculate statistics
+            $on_target_count = 0;
+            $already_count = 0;
+            $done_count = 0;
+            
+            foreach ($peserta as $p) {
+                if ($p->status == 0) $on_target_count++;
+                elseif ($p->status == 1) $already_count++;
+                elseif ($p->status == 2) $done_count++;
+            }
+            
+            $total_count = count($peserta);
+            
+            // Create table header
+            $html = '<table border="1" cellpadding="4" cellspacing="0" style="width: 100%; font-size: 8px;">
+                <thead>
+                    <tr style="background-color: #8B4513; color: white; font-weight: bold; text-align: center;">
+                        <th width="15%">Nama Peserta</th>
+                        <th width="10%">No Paspor</th>
+                        <th width="8%">No Visa</th>
+                        <th width="8%">Tgl Lahir</th>
+                        <th width="8%">Password</th>
+                        <th width="10%">No HP</th>
+                        <th width="12%">Email</th>
+                        <th width="6%">Barcode</th>
+                        <th width="6%">Gender</th>
+                        <th width="8%">Tanggal</th>
+                        <th width="6%">Jam</th>
+                        <th width="8%">Status</th>
+                        <th width="5%">Flag</th>
+                    </tr>
+                </thead>
+                <tbody>';
+            
+            // Add data rows
+            foreach ($peserta as $p) {
+                $status = '';
+                if ($p->status == 0) {
+                    $status = 'On Target';
+                } elseif ($p->status == 1) {
+                    $status = 'Already';
+                } elseif ($p->status == 2) {
+                    $status = 'Done';
+                }
+                
+                $gender = '';
+                if ($p->gender == 'L') {
+                    $gender = 'Laki-laki';
+                } elseif ($p->gender == 'P') {
+                    $gender = 'Perempuan';
+                }
+                
+                $html .= '<tr>
+                    <td>' . htmlspecialchars($p->nama) . '</td>
+                    <td>' . htmlspecialchars($p->nomor_paspor) . '</td>
+                    <td>' . htmlspecialchars($p->no_visa ?: '-') . '</td>
+                    <td>' . ($p->tgl_lahir ? date('d/m/Y', strtotime($p->tgl_lahir)) : '-') . '</td>
+                    <td>' . htmlspecialchars($p->password) . '</td>
+                    <td>' . htmlspecialchars($p->nomor_hp ?: '-') . '</td>
+                    <td>' . htmlspecialchars($p->email ?: '-') . '</td>
+                    <td>' . htmlspecialchars($p->barcode ?: '-') . '</td>
+                    <td>' . htmlspecialchars($gender ?: '-') . '</td>
+                    <td>' . htmlspecialchars($p->tanggal ?: '-') . '</td>
+                    <td>' . htmlspecialchars($p->jam ?: '-') . '</td>
+                    <td>' . htmlspecialchars($status) . '</td>
+                    <td>' . htmlspecialchars($p->flag_doc ?: '-') . '</td>
+                </tr>';
+            }
+            
+            // Add summary section
+            $html .= '</tbody></table>';
+            
+            // Add summary statistics
+            $html .= '<br><br><table border="1" cellpadding="6" cellspacing="0" style="width: 50%; font-size: 10px; margin-top: 20px;">
+                <tr style="background-color: #2E8B57; color: white; font-weight: bold; text-align: center;">
+                    <td colspan="2">RINGKASAN STATUS PESERTA</td>
+                </tr>
+                <tr style="background-color: #2E8B57; color: white; font-weight: bold; text-align: center;">
+                    <td>Status</td>
+                    <td>Jumlah</td>
+                </tr>
+                <tr style="background-color: #F0F8FF; font-weight: bold;">
+                    <td>On Target</td>
+                    <td>' . $on_target_count . '</td>
+                </tr>
+                <tr style="background-color: #F0F8FF; font-weight: bold;">
+                    <td>Already</td>
+                    <td>' . $already_count . '</td>
+                </tr>
+                <tr style="background-color: #F0F8FF; font-weight: bold;">
+                    <td>Done</td>
+                    <td>' . $done_count . '</td>
+                </tr>
+                <tr style="background-color: #F0F8FF; font-weight: bold;">
+                    <td><strong>TOTAL</strong></td>
+                    <td><strong>' . $total_count . '</strong></td>
+                </tr>
+            </table>';
+            
+            // Print text using writeHTMLCell()
+            $pdf->writeHTML($html, true, false, true, false, '');
+            
+            // Set filename
+            $filename = 'Database_Peserta_' . date('Y-m-d_H-i-s') . '.pdf';
+            
+            // Output PDF
+            $pdf->Output($filename, 'D');
+            exit;
+            
+        } catch (Exception $e) {
+            $this->session->set_flashdata('error', 'Error saat export PDF: ' . $e->getMessage());
             redirect('database');
         }
     }

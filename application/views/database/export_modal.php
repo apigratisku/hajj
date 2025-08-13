@@ -11,6 +11,18 @@
             <div class="modal-body">
                 <form id="exportForm" action="<?= base_url('database/export') ?>" method="GET">
                     <div class="mb-3">
+                        <label for="export_format" class="form-label">
+                            <i class="fas fa-file"></i> Format Export
+                        </label>
+                        <select class="form-select" id="export_format" name="format" required>
+                            <option value="">Pilih Format</option>
+                            <option value="excel">Excel (.xlsx)</option>
+                            <option value="pdf">PDF (.pdf)</option>
+                        </select>
+                        <div class="form-text">Pilih format file yang akan di-export</div>
+                    </div>
+                    
+                    <div class="mb-3">
                         <label for="export_flag_doc" class="form-label">
                             <i class="fas fa-tag"></i> Pilih Flag Dokumen
                         </label>
@@ -145,6 +157,13 @@ function submitExport() {
         }
     }
     
+    // Check if format is selected
+    const format = formData.get('format');
+    if (!format) {
+        showAlert('Silakan pilih format export terlebih dahulu!', 'error');
+        return;
+    }
+    
     // Show loading state
     const exportBtn = document.querySelector('#exportModal .btn-success');
     const originalText = exportBtn.innerHTML;
@@ -157,7 +176,12 @@ function submitExport() {
     // Create temporary link and trigger download
     const link = document.createElement('a');
     link.href = exportUrl;
-    link.download = 'Database_Peserta_' + new Date().toISOString().slice(0, 19).replace(/:/g, '-') + '.xlsx';
+    
+    // Set filename based on format
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+    const extension = format === 'pdf' ? '.pdf' : '.xlsx';
+    link.download = 'Database_Peserta_' + timestamp + extension;
+    
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

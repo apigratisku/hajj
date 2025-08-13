@@ -196,7 +196,7 @@
                                             </td>
                                             <td class="col-barcode" data-field="barcode" data-value="<?= $p->barcode ?>">
                                             <span class="value copyable-text" data-field="barcode" data-value="<?= $p->barcode ?>" onclick="copyToClipboard('<?= htmlspecialchars($p->barcode ?: '-', ENT_QUOTES) ?>', 'Barcode')" title="Klik untuk copy"><?= $p->barcode ?: '-' ?></span>
-                                            <input type="text" class="mobile-edit-field" value="<?= $p->barcode ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
+                                            <input type="text" class="mobile-edit-field" value="<?= $p->barcode ?>" style="display:none;">
                                             </td>
                                             <td class="col-gender" data-field="gender" data-value="<?= $p->gender ?>">
                                             <span class="value" data-field="gender" data-value="<?= $p->gender ?>"><?= $p->gender ?: '-' ?></span>
@@ -226,7 +226,7 @@
                                             </td>
                                             <td class="col-flag" data-field="flag_doc" data-value="<?= $p->flag_doc ?>">
                                             <span class="value" data-field="flag_doc" data-value="<?= $p->flag_doc ?>"><?= $p->flag_doc ?: '-' ?></span>    
-                                            <select class="mobile-edit-field" style="display:none;">
+                                            <select class="mobile-edit-field" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                                 <option value="">Flag Doc:</option>
                                                 <?php if (!empty($flag_doc_list)): foreach ($flag_doc_list as $flag): ?>
                                                     <option value="<?= htmlspecialchars($flag->flag_doc) ?>"
@@ -319,7 +319,7 @@
                                         </td>
                                         <td class="barcode text-center" data-field="barcode" data-value="<?= $p->barcode ?>">
                                         <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->barcode ?: '-', ENT_QUOTES) ?>', 'Barcode')" title="Klik untuk copy"><?= $p->barcode ?: '-' ?></span>
-                                        <input type="text" class="form-control edit-field" value="<?= $p->barcode ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
+                                        <input type="text" class="form-control edit-field" value="<?= $p->barcode ?>" style="display:none;" >
                                         </td>
                                         <td class="gender text-center" data-field="gender" data-value="<?= $p->gender ?>">
                                         <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->gender ?: '-', ENT_QUOTES) ?>', 'Gender')" title="Klik untuk copy"><?= $p->gender ?: '-' ?></span>
@@ -348,7 +348,7 @@
                                         </td>
                                         <td class="flag-doc text-center" data-field="flag_doc" data-value="<?= $p->flag_doc ?>">
                                         <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->flag_doc ?: '-', ENT_QUOTES) ?>', 'Flag Dokumen')" title="Klik untuk copy"><?= $p->flag_doc ?: '-' ?></span>
-                                                <select class="form-select edit-field" style="display:none;">
+                                                <select class="form-select edit-field" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                                 <?php if (!empty($flag_doc_list)): foreach ($flag_doc_list as $flag): ?>
                                                     <option value="<?= htmlspecialchars($flag->flag_doc) ?>" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === $flag->flag_doc) ? 'selected' : '' ?>>
                                                         <?= htmlspecialchars($flag->flag_doc) ?>
