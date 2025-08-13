@@ -22,7 +22,7 @@ class Auth extends CI_Controller {
             redirect('dashboard');
         }
         
-        $this->form_validation->set_rules('username', 'Username', 'required|trim');
+        $this->form_validation->set_rules('username', 'Username', 'required|trim|alpha_numeric_spaces');
         $this->form_validation->set_rules('password', 'Password', 'required|trim');
         
         if ($this->form_validation->run() == FALSE) {
@@ -54,7 +54,7 @@ class Auth extends CI_Controller {
                 $this->session->set_userdata($session_data);
                 redirect('dashboard');
             } else {
-                $this->session->set_flashdata('error', 'Username atau password salah!');
+                $this->session->set_flashdata('error', 'Kredensial tidak valid.');
                 redirect('auth');
             }
         }
