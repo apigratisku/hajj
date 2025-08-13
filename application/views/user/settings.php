@@ -18,8 +18,6 @@
                 </div>
                 <div class="card-body">
                     <form action="<?= base_url('user/settings'); ?>" method="post">
-                        <!-- CSRF Token -->
-                        <input type="hidden" name="<?= $this->security->get_csrf_token_name() ?>" value="<?= $this->security->get_csrf_hash() ?>" />
                         <div class="form-group">
                             <label for="username">Username</label>
                             <input type="text" class="form-control" id="username" name="username" value="<?= $user->username; ?>">

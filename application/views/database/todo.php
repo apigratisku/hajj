@@ -1,10 +1,3 @@
-    <!-- CSRF Token for AJAX requests -->
-    <script>
-        // CSRF Token for AJAX requests
-        const csrfTokenName = '<?= $this->security->get_csrf_token_name() ?>';
-        const csrfTokenValue = '<?= $this->security->get_csrf_hash() ?>';
-    </script>
-    
     <!-- Content Body -->
     <div class="content-body">
         <div class="row mb-4">

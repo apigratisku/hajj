@@ -1,10 +1,3 @@
-    <!-- CSRF Token for AJAX requests -->
-    <script>
-        // CSRF Token for AJAX requests
-        const csrfTokenName = '<?= $this->security->get_csrf_token_name() ?>';
-        const csrfTokenValue = '<?= $this->security->get_csrf_hash() ?>';
-    </script>
-    
     <!-- Content Body -->
     <div class="content-body">
     <div class="row mb-4">
@@ -1479,10 +1472,7 @@ function saveRowMobileTable(button) {
             'Content-Type': 'application/json',
             'X-Requested-With': 'XMLHttpRequest'
         },
-        body: JSON.stringify({
-            ...data,
-            [csrfTokenName]: csrfTokenValue
-        }),
+        body: JSON.stringify(data),
         signal: controller.signal
     })
     .then(response => {
@@ -1544,6 +1534,8 @@ function saveRowMobileTable(button) {
             showAlert('Request timeout. Silakan coba lagi.', 'error');
         } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
             showAlert('Koneksi terputus. Silakan periksa koneksi internet Anda.', 'error');
+        } else if (error.name === 'SyntaxError' && error.message.includes('JSON')) {
+            showAlert('Response tidak valid. Silakan refresh halaman dan coba lagi.', 'error');
         } else {
             showAlert('Terjadi kesalahan saat memperbarui data: ' + error.message, 'error');
         }

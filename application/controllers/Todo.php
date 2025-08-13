@@ -333,14 +333,17 @@ class Todo extends CI_Controller {
             $result = $this->transaksi_model->update($id, $data);
             
             if ($result) {
+                $this->output->set_content_type('application/json');
                 $this->output->set_output(json_encode(['success' => true, 'message' => 'Data berhasil diperbarui']));
             } else {
                 $this->output->set_status_header(500);
+                $this->output->set_content_type('application/json');
                 $this->output->set_output(json_encode(['success' => false, 'message' => 'Gagal memperbarui data. Silakan coba lagi.']));
             }
         } catch (Exception $e) {
             log_message('error', 'Exception in Todo update_ajax: ' . $e->getMessage());
             $this->output->set_status_header(500);
+            $this->output->set_content_type('application/json');
             $this->output->set_output(json_encode(['success' => false, 'message' => 'Terjadi kesalahan saat memperbarui data: ' . $e->getMessage()]));
         }
     }

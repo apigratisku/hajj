@@ -8,8 +8,6 @@
                 </div>
                 <div class="card-body">
                     <form action="<?= base_url('database/update/' . $transaksi->id_transaksi) ?>" method="POST">
-                        <!-- CSRF Token -->
-                        <input type="hidden" name="<?= $this->security->get_csrf_token_name() ?>" value="<?= $this->security->get_csrf_hash() ?>" />
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <div class="form-group">
