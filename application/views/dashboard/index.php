@@ -94,63 +94,82 @@
     <!-- Detailed Statistics -->
     <div class="row mb-4">
         
-        <!-- Hour Statistics -->
+        <!-- Schedule Statistics -->
         <div class="col-md-12">
             <div class="card mobile-card">
                 <div class="card-header bg-brown text-white">
-                    <h5 class="mb-0"><i class="fas fa-clock"></i> Jadwal Kunjungan</h5>
+                    <h5 class="mb-0"><i class="fas fa-calendar-alt"></i> Jadwal Kunjungan</h5>
                 </div>
                 <div class="card-body">
-                    <?php if (empty($hour_stats)): ?>
+                    <?php if (empty($schedule_by_date)): ?>
                         <div class="text-center text-muted">
-                            <i class="fas fa-chart-bar fa-3x mb-3"></i>
-                            <p>Tidak ada data untuk ditampilkan</p>
+                            <i class="fas fa-calendar fa-3x mb-3"></i>
+                            <p>Tidak ada data jadwal untuk ditampilkan</p>
                         </div>
                     <?php else: ?>
-                        <div class="hour-stats">
-                            <?php
-                                // Build a map jam => detail male/female
-                                $hourDetailMap = [];
-                                if (!empty($hour_gender_stats)) {
-                                    foreach ($hour_gender_stats as $hg) {
-                                        $hourDetailMap[$hg->jam] = $hg;
-                                    }
-                                }
-                                $maxHourCount = !empty($hour_stats) ? max(array_map(function($h){ return $h->count; }, $hour_stats)) : 1;
+                        <div class="schedule-stats">
+                            <?php 
+                            $maxDateCount = !empty($schedule_by_date) ? max(array_map(function($s){ return $s->total_count; }, $schedule_by_date)) : 1;
                             ?>
-                            <?php foreach ($hour_stats as $hour): ?>
-                                <?php $detail = isset($hourDetailMap[$hour->jam]) ? $hourDetailMap[$hour->jam] : null; ?>
+                            <?php foreach ($schedule_by_date as $schedule): ?>
                                 <?php
-                                $tanggal = $hour->tanggal; // "2025-08-11"
-
-                                // Ubah ke format 11 Agustus 2025
-                                $hasil = date('d F Y', strtotime($tanggal));
-                                
-                                // Jika ingin nama bulan dalam bahasa Indonesia
+                                $tanggal = $schedule->tanggal;
+                                // Format tanggal ke bahasa Indonesia
                                 setlocale(LC_TIME, 'id_ID.UTF-8');
-                                $hasil_id = strftime('%d %B %Y', strtotime($tanggal));
+                                $tanggal_formatted = strftime('%d %B %Y', strtotime($tanggal));
+                                
+                                // Get detail jam untuk tanggal ini
+                                $detail_jam = $this->transaksi_model->get_schedule_detail_by_date($tanggal, $selected_flag_doc);
                                 ?>
-                                <div class="hour-item">
-                                    <div class="hour-info">
-                                        <span class="hour-label">
-                                            <i class="fas fa-clock text-warning"></i> <?=$hasil_id ?> <?=$hour->jam ?>
-                                        </span>
-                                        <span class="hour-count"><?= (int)$hour->count ?></span>
+                                <div class="schedule-item">
+                                    <div class="schedule-header">
+                                        <div class="schedule-info">
+                                            <span class="schedule-date">
+                                                <i class="fas fa-calendar-day text-primary"></i> <?= $tanggal_formatted ?>
+                                            </span>
+                                            <span class="schedule-count"><?= (int)$schedule->total_count ?></span>
+                                        </div>
+                                        <div class="schedule-gender-summary">
+                                            <span class="gender-badge male">
+                                                <i class="fas fa-mars"></i> <?= (int)$schedule->total_male ?>
+                                            </span>
+                                            <span class="gender-badge female">
+                                                <i class="fas fa-venus"></i> <?= (int)$schedule->total_female ?>
+                                            </span>
+                                        </div>
                                     </div>
-                                    <div class="progress mb-2">
-                                        <div class="progress-bar bg-warning" style="width: <?= $maxHourCount > 0 ? ($hour->count / $maxHourCount) * 100 : 0 ?>%"></div>
+                                    <div class="progress mb-3">
+                                        <div class="progress-bar bg-primary" style="width: <?= $maxDateCount > 0 ? ($schedule->total_count / $maxDateCount) * 100 : 0 ?>%"></div>
                                     </div>
-                                    <?php if ($detail): ?>
-                                        <div class="hour-gender-breakdown d-flex justify-content-between small text-muted">
-                                        <a href="<?= base_url('database/index?flag_doc=&tanggaljam=&status=&gender=L') ?>" 
-                                        class="gender-link male">
-                                            <span><i class="fas fa-mars text-primary"></i> Laki-laki: <strong><?= (int)$detail->male_count ?></strong></span>
-                                        </a>
-
-                                        <a href="<?= base_url('database/index?&flag_doc=&tanggaljam=&status=&gender=P') ?>" 
-                                        class="gender-link female">
-                                            <span><i class="fas fa-venus text-danger"></i> Perempuan: <strong><?= (int)$detail->female_count ?></strong></span>
-                                        </a>
+                                    
+                                    <!-- Detail jam untuk tanggal ini -->
+                                    <?php if (!empty($detail_jam)): ?>
+                                        <div class="schedule-details">
+                                            <h6 class="detail-title">
+                                                <i class="fas fa-clock text-warning"></i> Detail Jam Kunjungan:
+                                            </h6>
+                                            <div class="time-slots">
+                                                <?php foreach ($detail_jam as $jam): ?>
+                                                    <div class="time-slot">
+                                                        <div class="time-info">
+                                                            <span class="time-label">
+                                                                <i class="fas fa-clock text-info"></i> <?= $jam->jam ?>
+                                                            </span>
+                                                            <span class="time-count"><?= (int)$jam->total_count ?></span>
+                                                        </div>
+                                                        <div class="time-gender-breakdown">
+                                                            <a href="<?= base_url('database/index?flag_doc=' . ($selected_flag_doc ?: '') . '&tanggaljam=' . $tanggal . ' ' . $jam->jam . '&status=&gender=L') ?>" 
+                                                               class="gender-link male">
+                                                                <span><i class="fas fa-mars text-primary"></i> Laki-laki: <strong><?= (int)$jam->male_count ?></strong></span>
+                                                            </a>
+                                                            <a href="<?= base_url('database/index?flag_doc=' . ($selected_flag_doc ?: '') . '&tanggaljam=' . $tanggal . ' ' . $jam->jam . '&status=&gender=P') ?>" 
+                                                               class="gender-link female">
+                                                                <span><i class="fas fa-venus text-danger"></i> Perempuan: <strong><?= (int)$jam->female_count ?></strong></span>
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            </div>
                                         </div>
                                     <?php endif; ?>
                                 </div>
@@ -279,17 +298,18 @@
 }
 
 /* Statistics Styles */
-.gender-stats, .hour-stats {
-    max-height: 300px;
+.gender-stats, .hour-stats, .schedule-stats {
+    max-height: 500px;
     overflow-y: auto;
 }
 
-.gender-item, .hour-item {
-    margin-bottom: 1rem;
-    padding: 1rem;
+.gender-item, .hour-item, .schedule-item {
+    margin-bottom: 1.5rem;
+    padding: 1.5rem;
     background: var(--light-color);
     border-radius: var(--border-radius);
     border-left: 4px solid var(--primary-color);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .gender-info, .hour-info {
@@ -314,6 +334,127 @@
     border-radius: 20px;
     font-weight: bold;
     font-size: 0.9rem;
+}
+
+/* Schedule Styles */
+.schedule-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.schedule-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.schedule-date {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--dark-color);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.schedule-count {
+    background: var(--primary-color);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    font-weight: bold;
+    font-size: 1.1rem;
+    min-width: 50px;
+    text-align: center;
+}
+
+.schedule-gender-summary {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.gender-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.gender-badge.male {
+    background: rgba(0, 123, 255, 0.1);
+    color: #007bff;
+    border: 1px solid rgba(0, 123, 255, 0.3);
+}
+
+.gender-badge.female {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+.schedule-details {
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    margin-top: 1rem;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+.detail-title {
+    color: var(--dark-color);
+    font-weight: 600;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.time-slots {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.time-slot {
+    background: rgba(248, 249, 250, 0.8);
+    border-radius: 8px;
+    padding: 0.75rem;
+    border-left: 3px solid var(--info-color);
+}
+
+.time-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.time-label {
+    font-weight: 600;
+    color: var(--dark-color);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.time-count {
+    background: var(--info-color);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 15px;
+    font-weight: bold;
+    font-size: 0.85rem;
+}
+
+.time-gender-breakdown {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
 }
 
 .progress {
@@ -391,6 +532,27 @@
         align-self: flex-end;
     }
     
+    .schedule-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .schedule-info {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .schedule-gender-summary {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    
+    .time-gender-breakdown {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
     .filter-form .row {
         gap: 1rem;
     }
@@ -462,8 +624,23 @@
 }
 
 .gender-stats::-webkit-scrollbar-thumb:hover,
-.hour-stats::-webkit-scrollbar-thumb:hover {
+.hour-stats::-webkit-scrollbar-thumb:hover,
+.schedule-stats::-webkit-scrollbar-thumb:hover {
     background: var(--primary-light);
+}
+
+.schedule-stats::-webkit-scrollbar {
+    width: 6px;
+}
+
+.schedule-stats::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.schedule-stats::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 3px;
 }
 .gender-link {
     display: inline-flex;

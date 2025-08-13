@@ -293,4 +293,45 @@ class Transaksi_model extends CI_Model {
         $this->db->order_by('jam', 'ASC');
         return $this->db->get()->result();
     }
+
+    public function get_schedule_by_date($flag_doc = null) {
+        $this->db->select("tanggal,
+            SUM(CASE WHEN gender = 'L' THEN 1 ELSE 0 END) AS total_male,
+            SUM(CASE WHEN gender = 'P' THEN 1 ELSE 0 END) AS total_female,
+            COUNT(*) AS total_count");
+        $this->db->from($this->table);
+        $this->db->where('status', 2); // Only Done status
+        $this->db->where('tanggal IS NOT NULL');
+        $this->db->where('tanggal !=', '');
+        $this->db->where('jam IS NOT NULL');
+        $this->db->where('jam !=', '');
+        
+        if ($flag_doc) {
+            $this->db->where('flag_doc', $flag_doc);
+        }
+        
+        $this->db->group_by('tanggal');
+        $this->db->order_by('tanggal', 'ASC');
+        return $this->db->get()->result();
+    }
+
+    public function get_schedule_detail_by_date($tanggal, $flag_doc = null) {
+        $this->db->select("jam,
+            SUM(CASE WHEN gender = 'L' THEN 1 ELSE 0 END) AS male_count,
+            SUM(CASE WHEN gender = 'P' THEN 1 ELSE 0 END) AS female_count,
+            COUNT(*) AS total_count");
+        $this->db->from($this->table);
+        $this->db->where('status', 2); // Only Done status
+        $this->db->where('tanggal', $tanggal);
+        $this->db->where('jam IS NOT NULL');
+        $this->db->where('jam !=', '');
+        
+        if ($flag_doc) {
+            $this->db->where('flag_doc', $flag_doc);
+        }
+        
+        $this->db->group_by('jam');
+        $this->db->order_by('jam', 'ASC');
+        return $this->db->get()->result();
+    }
 } 

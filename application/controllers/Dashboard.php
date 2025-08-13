@@ -46,6 +46,9 @@ class Dashboard extends CI_Controller {
         // Get detailed hour x gender stats (Done only)
         $data['hour_gender_stats'] = $this->transaksi_model->get_hour_gender_stats($flag_doc);
         
+        // Get schedule grouped by date
+        $data['schedule_by_date'] = $this->transaksi_model->get_schedule_by_date($flag_doc);
+        
         $this->load->view('templates/sidebar');
         $this->load->view('templates/header', $data);
         $this->load->view('dashboard/index', $data);
