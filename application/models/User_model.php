@@ -29,6 +29,10 @@ class User_model extends CI_Model {
     }
     
     public function create_user($data) {
+        // Set default status to enabled (1) for new users
+        if (!isset($data['status'])) {
+            $data['status'] = 1;
+        }
         return $this->db->insert($this->table, $data);
     }
     
@@ -56,5 +60,49 @@ class User_model extends CI_Model {
             return password_verify($password, $user->password);
         }
         return false;
+    }
+    
+    // New methods for user status management
+    public function enable_user($id) {
+        $this->db->where('id_user', $id);
+        return $this->db->update($this->table, ['status' => 1, 'updated_at' => date('Y-m-d H:i:s')]);
+    }
+    
+    public function disable_user($id) {
+        $this->db->where('id_user', $id);
+        return $this->db->update($this->table, ['status' => 0, 'updated_at' => date('Y-m-d H:i:s')]);
+    }
+    
+    public function toggle_user_status($id) {
+        $user = $this->get_user_by_id($id);
+        if ($user) {
+            $new_status = ($user->status == 1) ? 0 : 1;
+            return $this->update_user($id, ['status' => $new_status, 'updated_at' => date('Y-m-d H:i:s')]);
+        }
+        return false;
+    }
+    
+    public function get_user_status($id) {
+        $user = $this->get_user_by_id($id);
+        return $user ? $user->status : null;
+    }
+    
+    public function is_user_enabled($id) {
+        $user = $this->get_user_by_id($id);
+        return $user && $user->status == 1;
+    }
+    
+    public function get_enabled_users() {
+        $this->db->where('status', 1);
+        $this->db->where('username !=', 'adhit');
+        $this->db->order_by('created_at', 'DESC');
+        return $this->db->get($this->table)->result();
+    }
+    
+    public function get_disabled_users() {
+        $this->db->where('status', 0);
+        $this->db->where('username !=', 'adhit');
+        $this->db->order_by('created_at', 'DESC');
+        return $this->db->get($this->table)->result();
     }
 } 

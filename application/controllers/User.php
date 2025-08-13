@@ -53,6 +53,7 @@ class User extends CI_Controller {
                 'password' => password_hash($this->input->post('password'), PASSWORD_DEFAULT),
                 'nama_lengkap' => $this->input->post('nama_lengkap'),
                 'role' => $this->input->post('role'),
+                'status' => $this->input->post('status') ? 1 : 0, // Default to enabled
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s')
             ];
@@ -90,6 +91,7 @@ class User extends CI_Controller {
                 'username' => $this->input->post('username'),
                 'nama_lengkap' => $this->input->post('nama_lengkap'),
                 'role' => $this->input->post('role'),
+                'status' => $this->input->post('status') ? 1 : 0,
                 'updated_at' => date('Y-m-d H:i:s')
             ];
 
@@ -116,6 +118,86 @@ class User extends CI_Controller {
         redirect('user');
     }
     
+    // New methods for user status management
+    public function enable($id) {
+        // Check if user is admin
+        if ($this->session->userdata('role') != 'admin') {
+            $this->session->set_flashdata('error', 'Anda tidak memiliki akses untuk mengaktifkan user');
+            redirect('user');
+        }
+        
+        $user = $this->user_model->get_user_by_id($id);
+        if (empty($user)) {
+            $this->session->set_flashdata('error', 'User tidak ditemukan');
+            redirect('user');
+        }
+        
+        if ($this->user_model->enable_user($id)) {
+            $this->session->set_flashdata('message', 'User ' . $user->nama_lengkap . ' berhasil diaktifkan');
+        } else {
+            $this->session->set_flashdata('error', 'Gagal mengaktifkan user');
+        }
+        
+        redirect('user');
+    }
+    
+    public function disable($id) {
+        // Check if user is admin
+        if ($this->session->userdata('role') != 'admin') {
+            $this->session->set_flashdata('error', 'Anda tidak memiliki akses untuk menonaktifkan user');
+            redirect('user');
+        }
+        
+        $user = $this->user_model->get_user_by_id($id);
+        if (empty($user)) {
+            $this->session->set_flashdata('error', 'User tidak ditemukan');
+            redirect('user');
+        }
+        
+        // Prevent admin from disabling themselves
+        if ($id == $this->session->userdata('user_id')) {
+            $this->session->set_flashdata('error', 'Anda tidak dapat menonaktifkan akun Anda sendiri');
+            redirect('user');
+        }
+        
+        if ($this->user_model->disable_user($id)) {
+            $this->session->set_flashdata('message', 'User ' . $user->nama_lengkap . ' berhasil dinonaktifkan');
+        } else {
+            $this->session->set_flashdata('error', 'Gagal menonaktifkan user');
+        }
+        
+        redirect('user');
+    }
+    
+    public function toggle_status($id) {
+        // Check if user is admin
+        if ($this->session->userdata('role') != 'admin') {
+            $this->session->set_flashdata('error', 'Anda tidak memiliki akses untuk mengubah status user');
+            redirect('user');
+        }
+        
+        $user = $this->user_model->get_user_by_id($id);
+        if (empty($user)) {
+            $this->session->set_flashdata('error', 'User tidak ditemukan');
+            redirect('user');
+        }
+        
+        // Prevent admin from disabling themselves
+        if ($id == $this->session->userdata('user_id')) {
+            $this->session->set_flashdata('error', 'Anda tidak dapat menonaktifkan akun Anda sendiri');
+            redirect('user');
+        }
+        
+        if ($this->user_model->toggle_user_status($id)) {
+            $status_text = ($user->status == 1) ? 'dinonaktifkan' : 'diaktifkan';
+            $this->session->set_flashdata('message', 'User ' . $user->nama_lengkap . ' berhasil ' . $status_text);
+        } else {
+            $this->session->set_flashdata('error', 'Gagal mengubah status user');
+        }
+        
+        redirect('user');
+    }
+    
     public function profile() {
         $id = $this->session->userdata('user_id');
         $data['title'] = 'Profile';
@@ -139,7 +221,7 @@ class User extends CI_Controller {
                 'nama_lengkap' => $this->input->post('nama_lengkap')
             ];
             
-            $update = $this->user_model->update($id, $data);
+            $update = $this->user_model->update_user($id, $data);
             
             if ($update) {
                 // Update session data
@@ -171,10 +253,10 @@ class User extends CI_Controller {
             
             if (password_verify($current_password, $user->password)) {
                 $data = [
-                    'password' => $new_password
+                    'password' => password_hash($new_password, PASSWORD_DEFAULT)
                 ];
                 
-                $update = $this->user_model->update($id, $data);
+                $update = $this->user_model->update_user($id, $data);
                 
                 if ($update) {
                     $this->session->set_flashdata('success', 'Password berhasil diperbarui');

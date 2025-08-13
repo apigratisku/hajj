@@ -66,6 +66,24 @@
                             </div>
                         </div>
                         
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="status" class="form-label">
+                                        <i class="fas fa-toggle-on"></i> Status User
+                                    </label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="status" name="status" value="1" <?= (isset($user->status) && $user->status == 1) ? 'checked' : ''; ?>>
+                                        <label class="form-check-label" for="status">
+                                            User Aktif (dapat login)
+                                        </label>
+                                    </div>
+                                    <small class="text-muted">Centang untuk mengaktifkan user, kosongkan untuk menonaktifkan</small>
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+                        
                         <div class="form-actions">
                             <button type="submit" class="btn btn-tambah btn-lg">
                                 <i class="fas fa-save"></i> Update User
@@ -333,6 +351,32 @@
 
 .form-group:hover .modern-input {
     border-color: var(--primary-light);
+}
+
+/* Form Switch Styles */
+.form-check-input {
+    width: 3rem;
+    height: 1.5rem;
+    margin-top: 0;
+    background-color: #dee2e6;
+    border: 1px solid #dee2e6;
+    border-radius: 1rem;
+    transition: var(--transition);
+}
+
+.form-check-input:checked {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+}
+
+.form-check-input:focus {
+    box-shadow: 0 0 0 0.2rem rgba(139, 69, 19, 0.25);
+}
+
+.form-check-label {
+    margin-left: 0.5rem;
+    font-weight: 500;
+    color: var(--dark-color);
 }
 </style>
 

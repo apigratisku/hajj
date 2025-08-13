@@ -34,6 +34,12 @@ class Auth extends CI_Controller {
             $user = $this->user_model->get_user_by_username($username);
             
             if ($user && password_verify($password, $user->password)) {
+                // Check if user is enabled
+                if (isset($user->status) && $user->status == 0) {
+                    $this->session->set_flashdata('error', 'Akun Anda telah dinonaktifkan. Silakan hubungi admin untuk mengaktifkan kembali.');
+                    redirect('auth');
+                }
+                
                 // Update last login time
                 $this->user_model->update_user($user->id_user, ['last_login' => date('Y-m-d H:i:s')]);
                 

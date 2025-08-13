@@ -33,6 +33,9 @@
                                     </div>
                                     <div class="user-role">
                                         <span class="role-badge role-<?= $user->role ?>"><?= ucfirst($user->role) ?></span>
+                                        <span class="status-badge status-<?= isset($user->status) ? $user->status : 1 ?>">
+                                            <?= (isset($user->status) && $user->status == 0) ? 'Nonaktif' : 'Aktif' ?>
+                                        </span>
                                     </div>
                                 </div>
                                 <div class="mobile-user-actions">
@@ -40,9 +43,20 @@
                                         <i class="fas fa-edit"></i> Edit
                                     </a>
                                     <?php if($this->session->userdata('role') == 'admin'): ?>
-                                    <a href="<?= base_url('user/delete/'.$user->id_user); ?>" class="btn btn-sm btn-delete-mobile" onclick="return confirm('Apakah Anda yakin ingin menghapus user ini?')">
-                                        <i class="fas fa-trash"></i> Hapus
-                                    </a>
+                                        <?php if (isset($user->status) && $user->status == 0): ?>
+                                        <a href="<?= base_url('user/enable/'.$user->id_user); ?>" class="btn btn-sm btn-success-mobile" onclick="return confirm('Aktifkan user ini?')">
+                                            <i class="fas fa-check"></i> Aktifkan
+                                        </a>
+                                        <?php else: ?>
+                                        <a href="<?= base_url('user/disable/'.$user->id_user); ?>" class="btn btn-sm btn-warning-mobile" onclick="return confirm('Nonaktifkan user ini?')">
+                                            <i class="fas fa-ban"></i> Nonaktifkan
+                                        </a>
+                                        <?php endif; ?>
+                                        <?php if($user->id_user != $this->session->userdata('user_id')): ?>
+                                        <a href="<?= base_url('user/delete/'.$user->id_user); ?>" class="btn btn-sm btn-delete-mobile" onclick="return confirm('Apakah Anda yakin ingin menghapus user ini?')">
+                                            <i class="fas fa-trash"></i> Hapus
+                                        </a>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                 </div>
                             </div>
@@ -54,18 +68,19 @@
                     <div class="table-responsive d-none d-lg-block">
                         <table class="table table-bordered table-striped table-hover" id="user-table">
                             <thead>
-                                <tr>
-                                    <th class="text-center">No</th>
-                                    <th class="text-center">Username</th>
-                                    <th class="text-center">Nama Lengkap</th>
-                                    <th class="text-center">Role</th>
-                                    <th class="text-center">Aksi</th>
-                                </tr>
+                                                                    <tr>
+                                        <th class="text-center">No</th>
+                                        <th class="text-center">Username</th>
+                                        <th class="text-center">Nama Lengkap</th>
+                                        <th class="text-center">Role</th>
+                                        <th class="text-center">Status</th>
+                                        <th class="text-center">Aksi</th>
+                                    </tr>
                             </thead>
                             <tbody>
                                 <?php if (empty($users)): ?>
                                     <tr>
-                                        <td colspan="5" class="text-center">Tidak ada data user</td>
+                                        <td colspan="6" class="text-center">Tidak ada data user</td>
                                     </tr>
                                 <?php else: ?>
                                     <?php $no = 1; foreach ($users as $user): ?>
@@ -77,13 +92,29 @@
                                             <span class="role-badge role-<?= $user->role ?>"><?= ucfirst($user->role); ?></span>
                                         </td>
                                         <td class="text-center">
+                                            <span class="status-badge status-<?= isset($user->status) ? $user->status : 1 ?>">
+                                                <?= (isset($user->status) && $user->status == 0) ? 'Nonaktif' : 'Aktif' ?>
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
                                             <a href="<?= base_url('user/edit/'.$user->id_user); ?>" class="btn btn-sm btn-brown btn-edit" data-bs-toggle="tooltip" title="Edit">
                                                 <i class="fas fa-edit"></i>
                                             </a>
                                             <?php if($this->session->userdata('role') == 'admin'): ?>
-                                            <a href="<?= base_url('user/delete/'.$user->id_user); ?>" class="btn btn-sm btn-danger btn-delete" data-bs-toggle="tooltip" title="Hapus" onclick="return confirm('Apakah Anda yakin ingin menghapus user ini?')">
-                                                <i class="fas fa-trash"></i>
-                                            </a>
+                                                <?php if (isset($user->status) && $user->status == 0): ?>
+                                                <a href="<?= base_url('user/enable/'.$user->id_user); ?>" class="btn btn-sm btn-success" data-bs-toggle="tooltip" title="Aktifkan" onclick="return confirm('Aktifkan user ini?')">
+                                                    <i class="fas fa-check"></i>
+                                                </a>
+                                                <?php else: ?>
+                                                <a href="<?= base_url('user/disable/'.$user->id_user); ?>" class="btn btn-sm btn-warning" data-bs-toggle="tooltip" title="Nonaktifkan" onclick="return confirm('Nonaktifkan user ini?')">
+                                                    <i class="fas fa-ban"></i>
+                                                </a>
+                                                <?php endif; ?>
+                                                <?php if($user->id_user != $this->session->userdata('user_id')): ?>
+                                                <a href="<?= base_url('user/delete/'.$user->id_user); ?>" class="btn btn-sm btn-danger btn-delete" data-bs-toggle="tooltip" title="Hapus" onclick="return confirm('Apakah Anda yakin ingin menghapus user ini?')">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                                <?php endif; ?>
                                             <?php endif; ?>
                                         </td>
                                     </tr>
@@ -248,6 +279,33 @@
     color: white;
 }
 
+/* Status Badge Styles */
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-left: 0.5rem;
+}
+
+.status-1 {
+    background: var(--success-color);
+    color: white;
+}
+
+.status-0 {
+    background: var(--danger-color);
+    color: white;
+}
+
+/* Mobile Status Badge */
+.mobile-user-role .status-badge {
+    margin-top: 0.25rem;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.6rem;
+}
+
 .mobile-user-actions {
     display: flex;
     gap: 0.5rem;
@@ -281,6 +339,36 @@
     background: #c82333;
     border-color: #c82333;
     color: white;
+    transform: translateY(-1px);
+}
+
+.btn-success-mobile {
+    background: var(--success-color);
+    border-color: var(--success-color);
+    color: white;
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+}
+
+.btn-success-mobile:hover {
+    background: #218838;
+    border-color: #218838;
+    color: white;
+    transform: translateY(-1px);
+}
+
+.btn-warning-mobile {
+    background: var(--warning-color);
+    border-color: var(--warning-color);
+    color: #212529;
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+}
+
+.btn-warning-mobile:hover {
+    background: #e0a800;
+    border-color: #e0a800;
+    color: #212529;
     transform: translateY(-1px);
 }
 
