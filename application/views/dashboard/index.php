@@ -42,7 +42,7 @@
 
     <!-- Statistics Cards -->
     <div class="row mb-4">
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="dashboard-card">
                 <div class="row">
                     <div class="col-md-3 text-center">
@@ -58,7 +58,7 @@
             </div>
         </div>
         
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="dashboard-card">
                 <div class="row">
                     <div class="col-md-3 text-center">
@@ -74,17 +74,32 @@
             </div>
         </div>
         
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="dashboard-card">
                 <div class="row">
                     <div class="col-md-3 text-center">
                         <div class="icon">
-                            <i class="fas fa-users"></i>
+                            <i class="fas fa-times-circle"></i>
                         </div>
                     </div>
                     <div class="col-md-9">
-                        <div class="count"><?= $total_user ?></div>
-                        <div class="title">Total User Aplikasi</div>
+                        <div class="count"><?= $stats_already ?></div>
+                        <div class="title">Status Already <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="dashboard-card">
+                <div class="row">
+                    <div class="col-md-3 text-center">
+                        <div class="icon">
+                        <i class="fas fa-crosshairs"></i>
+                        </div>
+                    </div>
+                    <div class="col-md-9">
+                        <div class="count"><?= $stats_on_target ?></div>
+                        <div class="title">Status On Target <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
                     </div>
                 </div>
             </div>

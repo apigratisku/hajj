@@ -275,7 +275,7 @@ class Database extends CI_Controller {
                 'email' => trim($this->input->post('email')) ?: null,
                 'barcode' => trim($this->input->post('barcode')) ?: null,
                 'gender' => $this->input->post('gender') ?: null,
-                'status' => $this->input->post('status') !== null ? $this->input->post('status') : null,
+                'status' => $this->input->post('status') !== null ? $this->input->post('status', true) : null,
                 'tanggal' => $this->input->post('tanggal') ?: null,
                 'jam' => $this->input->post('jam') ?: null,
                 'flag_doc' => trim($this->input->post('flag_doc')) ?: null,
@@ -316,6 +316,7 @@ class Database extends CI_Controller {
         // Get JSON input
         $input = json_decode(file_get_contents('php://input'), true);
         
+        
         if (!$input) {
             $this->output->set_status_header(400);
             $this->output->set_output(json_encode(['success' => false, 'message' => 'Invalid input data']));
@@ -337,10 +338,18 @@ class Database extends CI_Controller {
         $data = [];
         foreach ($allowedFields as $field) {
             if (array_key_exists($field, $input)) {
-                if ($field === 'tgl_lahir' && empty($input[$field])) {
+                $value = $input[$field];
+        
+                if ($field === 'tgl_lahir' && empty($value)) {
                     $data[$field] = null;
-                } else {
-                    $data[$field] = trim($input[$field]) ?: null;
+                } 
+                // ✅ Khusus field yang boleh bernilai "0", jangan pakai ?: null
+                elseif ($field === 'status') {
+                    $data[$field] = $value; // Biarkan "0", "1", "2" tetap masuk
+                }
+                // Untuk field lain: tetap pakai trim dan null jika kosong
+                else {
+                    $data[$field] = trim($value) ?: null;
                 }
             }
         }
@@ -348,6 +357,7 @@ class Database extends CI_Controller {
         
         // Debug: Log the data being updated
         log_message('debug', 'Database update_ajax - Updating peserta ID: ' . $id . ' with data: ' . json_encode($data));
+       
         
         try {
             // Update data

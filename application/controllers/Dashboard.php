@@ -37,6 +37,8 @@ class Dashboard extends CI_Controller {
         
         // Get detailed statistics based on flag_doc and status = 2 (Done)
         $data['stats'] = $this->transaksi_model->get_dashboard_stats($flag_doc);
+        $data['stats_on_target'] = $this->transaksi_model->get_dashboard_stats_on_target($flag_doc);
+        $data['stats_already'] = $this->transaksi_model->get_dashboard_stats_already($flag_doc);
         
         // Get data by gender for selected flag_doc
         $data['gender_stats'] = $this->transaksi_model->get_gender_stats($flag_doc);

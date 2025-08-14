@@ -247,6 +247,28 @@ class Transaksi_model extends CI_Model {
         return $result ? $result->total_done : 0;
     }
     
+    public function get_dashboard_stats_on_target($flag_doc = null) {
+        $this->db->select('COUNT(*) as total_on_target');
+        $this->db->from($this->table);
+        $this->db->where('status', 0); // Only On Target status
+        if ($flag_doc) {
+            $this->db->where('flag_doc', $flag_doc);
+        }
+        $result = $this->db->get()->row();
+        return $result ? $result->total_on_target : 0;
+    }
+    
+    public function get_dashboard_stats_already($flag_doc = null) {
+        $this->db->select('COUNT(*) as total_already');
+        $this->db->from($this->table);
+        $this->db->where('status', 1); // Only Already status
+        if ($flag_doc) {
+            $this->db->where('flag_doc', $flag_doc);
+        }
+        $result = $this->db->get()->row();
+        return $result ? $result->total_already : 0;
+    }
+    
     public function get_gender_stats($flag_doc = null) {
         $this->db->select('gender, COUNT(*) as count');
         $this->db->from($this->table);
