@@ -11,6 +11,7 @@ class Database extends CI_Controller {
     public function __construct() {
         parent::__construct();
         $this->load->model('transaksi_model');
+        $this->load->model('peserta_reject_model');
         $this->load->library('form_validation');
         $this->load->library('session');
         $this->load->helper('url');
@@ -928,6 +929,7 @@ class Database extends CI_Controller {
             $success_count = 0;
             $error_count = 0;
             $errors = [];
+            $rejected_data = [];
     
             // Fungsi konversi tanggal seragam
             $convertDate = function($dateValue) {
@@ -1054,6 +1056,9 @@ class Database extends CI_Controller {
             
             
             
+            // Truncate tabel peserta_reject sebelum memulai import
+            $this->peserta_reject_model->delete_all();
+            
             // Start from row 2 (skip header)
             for ($row = 2; $row <= $highestRow; $row++) {
                 $nama_peserta = trim($sheet->getCellByColumnAndRow(0, $row)->getValue());
@@ -1088,8 +1093,31 @@ class Database extends CI_Controller {
                 if (empty($nama_peserta) || empty($nomor_paspor) || empty($password)) {
                     $errors[] = "Row $row: Nama Peserta, Nomor Paspor, dan Password harus diisi";
                     $error_count++;
+                    
+                    // Simpan data yang gagal ke tabel peserta_reject
+                    $reject_data = [
+                        'nama' => $nama_peserta,
+                        'nomor_paspor' => $nomor_paspor,
+                        'no_visa' => $no_visa ?: null,
+                        'tgl_lahir' => '1900-01-01', // Default date untuk menghindari null
+                        'password' => $password,
+                        'nomor_hp' => $nomor_hp ?: null,
+                        'email' => $email ?: null,
+                        'gender' => 'L', // Default gender
+                        'status' => 0,
+                        'tanggal' => '1900-01-01', // Default date untuk menghindari null
+                        'jam' => '00:00:00', // Default time untuk menghindari null
+                        'flag_doc' => $flag_doc,
+                        'reject_reason' => "Nama Peserta, Nomor Paspor, atau Password sudah ada format yang salah",
+                        'row_number' => $row
+                    ];
+                    
+                    $this->peserta_reject_model->insert($reject_data);
+                    $rejected_data[] = $reject_data;
                     continue;
                 }
+                
+
                 
                 // Process status
                 $status_value = 0; // Default to 'On Target'
@@ -1123,13 +1151,60 @@ class Database extends CI_Controller {
                 $tanggal_value   = $convertDate($tanggal_excel);
                 $jam_value       = $convertTime($jam_excel);
 
-                
+                // Validate email format - reject if contains double quotes
+                if (!empty($email) && strpos($email, '"') !== false) {
+                    $errors[] = "Row $row: Email '$email' mengandung tanda petik ganda yang tidak diperbolehkan";
+                    $error_count++;
+                    
+                    // Simpan data yang gagal ke tabel peserta_reject
+                    $reject_data = [
+                        'nama' => $nama_peserta,
+                        'nomor_paspor' => $nomor_paspor,
+                        'no_visa' => $no_visa ?: null,
+                        'tgl_lahir' => $tgl_lahir_value ?: '1900-01-01',
+                        'password' => $password,
+                        'nomor_hp' => $nomor_hp ?: null,
+                        'email' => $email ?: null,
+                        'gender' => $gender_value ?: 'L',
+                        'status' => $status_value,
+                        'tanggal' => $tanggal_value ?: '1900-01-01',
+                        'jam' => $jam_value ?: '00:00:00',
+                        'flag_doc' => $flag_doc,
+                        'reject_reason' => "Email mengandung tanda petik ganda (\") yang tidak diperbolehkan",
+                        'row_number' => $row
+                    ];
+                    
+                    $this->peserta_reject_model->insert($reject_data);
+                    $rejected_data[] = $reject_data;
+                    continue;
+                }
     
                 // Check if peserta already exists
                 $existing_peserta = $this->transaksi_model->get_by_passport($nomor_paspor);
                 if ($existing_peserta) {
                     $errors[] = "Row $row: Peserta dengan nomor paspor '$nomor_paspor' sudah ada";
                     $error_count++;
+                    
+                    // Simpan data yang gagal ke tabel peserta_reject
+                    $reject_data = [
+                        'nama' => $nama_peserta,
+                        'nomor_paspor' => $nomor_paspor,
+                        'no_visa' => $no_visa ?: null,
+                        'tgl_lahir' => $tgl_lahir_value ?: '1900-01-01',
+                        'password' => $password,
+                        'nomor_hp' => $nomor_hp ?: null,
+                        'email' => $email ?: null,
+                        'gender' => $gender_value ?: 'L',
+                        'status' => $status_value,
+                        'tanggal' => $tanggal_value ?: '1900-01-01',
+                        'jam' => $jam_value ?: '00:00:00',
+                        'flag_doc' => $flag_doc,
+                        'reject_reason' => "Nomor paspor '$nomor_paspor' sudah ada dalam database",
+                        'row_number' => $row
+                    ];
+                    
+                    $this->peserta_reject_model->insert($reject_data);
+                    $rejected_data[] = $reject_data;
                     continue;
                 }
                 
@@ -1143,7 +1218,7 @@ class Database extends CI_Controller {
                     'nomor_hp' => $nomor_hp ?: null,
                     'email' => $email ?: null,
                     'gender' => $gender_value,
-                    'status' => $status,
+                    'status' => $status_value,
                     'tanggal' => $tanggal_value,
                     'jam' => $jam_value,
                     'flag_doc' => $flag_doc,
@@ -1157,6 +1232,27 @@ class Database extends CI_Controller {
                 } else {
                     $errors[] = "Row $row: Gagal menyimpan data peserta";
                     $error_count++;
+                    
+                    // Simpan data yang gagal ke tabel peserta_reject
+                    $reject_data = [
+                        'nama' => $nama_peserta,
+                        'nomor_paspor' => $nomor_paspor,
+                        'no_visa' => $no_visa ?: null,
+                        'tgl_lahir' => $tgl_lahir_value ?: '1900-01-01',
+                        'password' => $password,
+                        'nomor_hp' => $nomor_hp ?: null,
+                        'email' => $email ?: null,
+                        'gender' => $gender_value ?: 'L',
+                        'status' => $status_value,
+                        'tanggal' => $tanggal_value ?: '1900-01-01',
+                        'jam' => $jam_value ?: '00:00:00',
+                        'flag_doc' => $flag_doc,
+                        'reject_reason' => "Gagal menyimpan data ke database",
+                        'row_number' => $row
+                    ];
+                    
+                    $this->peserta_reject_model->insert($reject_data);
+                    $rejected_data[] = $reject_data;
                 }
             }
             
@@ -1166,13 +1262,18 @@ class Database extends CI_Controller {
             }
             if ($error_count > 0) {
                 $this->session->set_flashdata('error', "Gagal mengimport $error_count data. " . implode('; ', array_slice($errors, 0, 5)));
+                
+                // Simpan informasi data yang ditolak ke session untuk ditampilkan di halaman import
+                $this->session->set_flashdata('rejected_count', count($rejected_data));
+                $this->session->set_flashdata('rejected_data', $rejected_data);
             }
             
         } catch (Exception $e) {
             $this->session->set_flashdata('error', 'Error saat membaca file: ' . $e->getMessage());
         }
-        
-        redirect('database/import');
+        // Ambil URL untuk redirect
+        $redirect_back = $this->input->post('redirect_back') ?: 'database/import';
+        redirect($redirect_back);
     }
     
 
@@ -1278,6 +1379,323 @@ class Database extends CI_Controller {
         header('Content-Disposition: attachment;filename="template_import_peserta.xlsx"');
         header('Cache-Control: max-age=0');
         
+        $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel2007');
+        $objWriter->save('php://output');
+        exit;
+    }
+
+    public function rejected_data() {
+        $data['title'] = 'Data Import Ditolak';
+        
+        // Get filters from GET parameters
+        $filters = [
+            'nama' => trim($this->input->get('nama')),
+            'nomor_paspor' => trim($this->input->get('nomor_paspor')),
+            'no_visa' => trim($this->input->get('no_visa')),
+            'flag_doc' => trim($this->input->get('flag_doc')),
+            'tanggaljam' => trim($this->input->get('tanggaljam')),
+            'status' => trim($this->input->get('status')),
+            'gender' => trim($this->input->get('gender'))
+        ];
+        
+        // Remove empty filters
+        $filters = array_filter($filters, function($value) {
+            return $value !== '' && $value !== null;
+        });
+        
+        // Pagination settings
+        $per_page = 10;
+        $page = $this->input->get('page') ? $this->input->get('page') : 1;
+        $offset = ($page - 1) * $per_page;
+        
+        // Get data
+        $data['rejected_data'] = $this->peserta_reject_model->get_paginated_filtered($per_page, $offset, $filters);
+        
+        // Get total count for pagination
+        $total_rows = $this->peserta_reject_model->count_filtered($filters);
+        
+        // Load pagination library
+        $this->load->library('pagination');
+        
+        // Build base URL with current filters
+        $base_url = base_url('database/rejected_data');
+        $query_params = [];
+        
+        // Preserve current filters in pagination links
+        foreach ($filters as $key => $value) {
+            if (!empty($value)) {
+                $query_params[$key] = $value;
+            }
+        }
+        
+        // Build query string
+        if (!empty($query_params)) {
+            $base_url .= '?' . http_build_query($query_params);
+        }
+        
+        $config['base_url'] = $base_url;
+        $config['total_rows'] = $total_rows;
+        $config['per_page'] = $per_page;
+        $config['page_query_string'] = TRUE;
+        $config['query_string_segment'] = 'page';
+        
+        // Pagination styling
+        $config['full_tag_open'] = '<nav><ul class="pagination justify-content-center">';
+        $config['full_tag_close'] = '</ul></nav>';
+        $config['num_tag_open'] = '<li class="page-item">';
+        $config['num_tag_close'] = '</li>';
+        $config['cur_tag_open'] = '<li class="page-item active"><span class="page-link">';
+        $config['cur_tag_close'] = '</span></li>';
+        $config['next_tag_open'] = '<li class="page-item">';
+        $config['next_tag_close'] = '</li>';
+        $config['prev_tag_open'] = '<li class="page-item">';
+        $config['prev_tag_close'] = '</li>';
+        $config['first_tag_open'] = '<li class="page-item">';
+        $config['first_tag_close'] = '</li>';
+        $config['last_tag_open'] = '<li class="page-item">';
+        $config['last_tag_close'] = '</li>';
+        $config['anchor_class'] = 'page-link';
+        
+        $this->pagination->initialize($config);
+        $data['pagination'] = $this->pagination->create_links();
+        
+        $this->load->view('templates/sidebar');
+        $this->load->view('templates/header', $data);
+        $this->load->view('database/rejected_data', $data);
+        $this->load->view('templates/footer');
+    }
+
+    public function download_rejected_data() {
+        // Load PHPExcel library
+        require_once APPPATH . 'third_party/PHPExcel/Classes/PHPExcel.php';
+        
+        // Get all rejected data
+        $rejected_data = $this->peserta_reject_model->get_all();
+        
+        // Create new PHPExcel object
+        $objPHPExcel = new PHPExcel();
+        
+        // Set document properties
+        $objPHPExcel->getProperties()->setCreator("Hajj System")
+                                   ->setLastModifiedBy("Hajj System")
+                                   ->setTitle("Data Import Ditolak")
+                                   ->setSubject("Data peserta yang gagal diimport")
+                                   ->setDescription("Data peserta yang ditolak saat proses import");
+        
+        // Add header row
+        $headers = [
+            'Nama Peserta',
+            'Nomor Paspor',
+            'No Visa',
+            'Tanggal Lahir',
+            'Password',
+            'No. HP',
+            'Email',
+            'Gender',
+            'Status',
+            'Tanggal',
+            'Jam',
+            'Flag Dokumen',
+            'Alasan Penolakan',
+            'Nomor Baris Excel',
+            'Tanggal Ditolak'
+        ];
+        
+        $objPHPExcel->setActiveSheetIndex(0);
+        $sheet = $objPHPExcel->getActiveSheet();
+
+        // Set header style
+        $headerStyle = [
+            'font' => [
+                'bold' => true,
+                'color' => ['rgb' => 'FFFFFF'],
+            ],
+            'fill' => [
+                'type' => PHPExcel_Style_Fill::FILL_SOLID,
+                'color' => ['rgb' => 'DC3545'],
+            ],
+            'alignment' => [
+                'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER,
+                'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER,
+            ],
+        ];
+
+        // Add headers
+        foreach ($headers as $col => $header) {
+            $colLetter = PHPExcel_Cell::stringFromColumnIndex($col);
+            $sheet->setCellValue($colLetter . '1', $header);
+            $sheet->getStyle($colLetter . '1')->applyFromArray($headerStyle);
+        }
+
+        // Add data
+        foreach ($rejected_data as $row => $data) {
+            $row_num = $row + 2; // Start from row 2 (after header)
+            
+            $sheet->setCellValue('A' . $row_num, $data->nama);
+            $sheet->setCellValue('B' . $row_num, $data->nomor_paspor);
+            $sheet->setCellValue('C' . $row_num, $data->no_visa);
+            $sheet->setCellValue('D' . $row_num, $data->tgl_lahir);
+            $sheet->setCellValue('E' . $row_num, $data->password);
+            $sheet->setCellValue('F' . $row_num, $data->nomor_hp);
+            $sheet->setCellValue('G' . $row_num, $data->email);
+            $sheet->setCellValue('H' . $row_num, $data->gender);
+            $sheet->setCellValue('I' . $row_num, $data->status);
+            $sheet->setCellValue('J' . $row_num, $data->tanggal);
+            $sheet->setCellValue('K' . $row_num, $data->jam);
+            $sheet->setCellValue('L' . $row_num, $data->flag_doc);
+            $sheet->setCellValue('M' . $row_num, $data->reject_reason);
+            $sheet->setCellValue('N' . $row_num, $data->row_number);
+            $sheet->setCellValue('O' . $row_num, $data->created_at);
+        }
+
+        // Auto-size columns
+        foreach (range('A', 'O') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // Set filename
+        $filename = 'data_import_ditolak_' . date('Y-m-d_H-i-s') . '.xlsx';
+
+        // Set headers for download
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+
+        // Create Excel file
+        $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel2007');
+        $objWriter->save('php://output');
+        exit;
+    }
+
+    public function clear_rejected_data() {
+        $result = $this->peserta_reject_model->delete_all();
+        
+        if ($result) {
+            $this->session->set_flashdata('success', 'Semua data yang ditolak berhasil dihapus');
+        } else {
+            $this->session->set_flashdata('error', 'Gagal menghapus data yang ditolak');
+        }
+        
+        redirect('database/rejected_data');
+    }
+
+    public function delete_rejected($id) {
+        $result = $this->peserta_reject_model->delete($id);
+        
+        if ($result) {
+            $this->session->set_flashdata('success', 'Data yang ditolak berhasil dihapus');
+        } else {
+            $this->session->set_flashdata('error', 'Gagal menghapus data yang ditolak');
+        }
+        
+        redirect('database/rejected_data');
+    }
+
+    public function download_failed_import() {
+        // Load PHPExcel library
+        require_once APPPATH . 'third_party/PHPExcel/Classes/PHPExcel.php';
+        
+        // Get all rejected data
+        $rejected_data = $this->peserta_reject_model->get_all();
+        
+        if (empty($rejected_data)) {
+            $this->session->set_flashdata('error', 'Tidak ada data yang gagal diimport');
+            redirect('database/rejected_data');
+        }
+        
+        // Create new PHPExcel object
+        $objPHPExcel = new PHPExcel();
+        
+        // Set document properties
+        $objPHPExcel->getProperties()
+            ->setCreator('Sistem Haji')
+            ->setLastModifiedBy('Sistem Haji')
+            ->setTitle('Data Import Gagal')
+            ->setSubject('Data yang gagal masuk ke database')
+            ->setDescription('Data peserta yang gagal diimport ke database')
+            ->setKeywords('import, gagal, peserta')
+            ->setCategory('Data Import');
+        
+        // Set headers
+        $headers = [
+            'Nama Peserta',
+            'Nomor Paspor',
+            'No Visa',
+            'Tanggal Lahir',
+            'Password',
+            'No. HP',
+            'Email',
+            'Gender',
+            'Status',
+            'Tanggal',
+            'Jam',
+            'Flag Dokumen',
+            'Alasan Penolakan',
+            'Nomor Baris Excel',
+            'Tanggal Ditolak'
+        ];
+        
+        $objPHPExcel->setActiveSheetIndex(0);
+        $sheet = $objPHPExcel->getActiveSheet();
+
+        // Set header style
+        $headerStyle = [
+            'font' => [
+                'bold' => true,
+                'color' => ['rgb' => 'FFFFFF'],
+            ],
+            'fill' => [
+                'type' => PHPExcel_Style_Fill::FILL_SOLID,
+                'color' => ['rgb' => 'DC3545'],
+            ],
+            'alignment' => [
+                'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER,
+                'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER,
+            ],
+        ];
+
+        // Add headers
+        foreach ($headers as $col => $header) {
+            $colLetter = PHPExcel_Cell::stringFromColumnIndex($col);
+            $sheet->setCellValue($colLetter . '1', $header);
+            $sheet->getStyle($colLetter . '1')->applyFromArray($headerStyle);
+        }
+
+        // Add data
+        foreach ($rejected_data as $row => $data) {
+            $row_num = $row + 2; // Start from row 2 (after header)
+            
+            $sheet->setCellValue('A' . $row_num, $data->nama);
+            $sheet->setCellValue('B' . $row_num, $data->nomor_paspor);
+            $sheet->setCellValue('C' . $row_num, $data->no_visa);
+            $sheet->setCellValue('D' . $row_num, $data->tgl_lahir);
+            $sheet->setCellValue('E' . $row_num, $data->password);
+            $sheet->setCellValue('F' . $row_num, $data->nomor_hp);
+            $sheet->setCellValue('G' . $row_num, $data->email);
+            $sheet->setCellValue('H' . $row_num, $data->gender);
+            $sheet->setCellValue('I' . $row_num, $data->status);
+            $sheet->setCellValue('J' . $row_num, $data->tanggal);
+            $sheet->setCellValue('K' . $row_num, $data->jam);
+            $sheet->setCellValue('L' . $row_num, $data->flag_doc);
+            $sheet->setCellValue('M' . $row_num, $data->reject_reason);
+            $sheet->setCellValue('N' . $row_num, $data->row_number);
+            $sheet->setCellValue('O' . $row_num, $data->created_at);
+        }
+
+        // Auto-size columns
+        foreach (range('A', 'O') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // Set filename
+        $filename = 'data_import_gagal_' . date('Y-m-d_H-i-s') . '.xlsx';
+
+        // Set headers for download
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+
+        // Create Excel file
         $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel2007');
         $objWriter->save('php://output');
         exit;

@@ -29,6 +29,11 @@ $route['database/download/(:num)'] = 'database/download/$1';
 $route['database/print_laporan/(:num)'] = 'database/print_laporan/$1';
 $route['database/hapus/(:num)'] = 'database/hapus/$1';
 $route['database/index2'] = 'database/index2';
+$route['database/rejected_data'] = 'database/rejected_data';
+$route['database/download_rejected_data'] = 'database/download_rejected_data';
+$route['database/download_failed_import'] = 'database/download_failed_import';
+$route['database/clear_rejected_data'] = 'database/clear_rejected_data';
+$route['database/delete_rejected/(:num)'] = 'database/delete_rejected/$1';
 $route['todo'] = 'todo';
 
 

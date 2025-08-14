@@ -150,7 +150,7 @@ class Transaksi_model extends CI_Model {
         }
     
         // Urut berdasarkan abjad nama
-        $this->db->order_by('peserta.nama', 'ASC');
+        $this->db->order_by('peserta.flag_doc', 'DESC');
         $this->db->limit($limit, $offset);
         return $this->db->get()->result();
     }

@@ -15,10 +15,34 @@
                 return new bootstrap.Tooltip(tooltipTriggerEl)
             });
             
-            // Auto-hide alerts after 5 seconds
+            // Auto-hide alerts after 5 seconds (except error alerts)
             setTimeout(function() {
-                $('.alert').alert('close');
-            }, 5000);
+                $('.alert:not(.persistent-error)').alert('close');
+            }, 1800000);
+            
+            // Disable auto-dismiss for error alerts
+            $('.persistent-error').each(function() {
+                // Remove any auto-dismiss functionality
+                $(this).css({
+                    'animation': 'none',
+                    'transition': 'none'
+                });
+                
+                // Ensure the alert stays visible
+                $(this).addClass('show').css({
+                    'display': 'block',
+                    'opacity': '1'
+                });
+                
+                // Override Bootstrap's auto-dismiss if any
+                if (typeof bootstrap !== 'undefined') {
+                    const alertElement = this;
+                    const bsAlert = new bootstrap.Alert(alertElement);
+                    // Disable auto-dismiss
+                    bsAlert._config.delay = 0;
+                    bsAlert._config.autohide = false;
+                }
+            });
             
             // AJAX setup
             $.ajaxSetup({

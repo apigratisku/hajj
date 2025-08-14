@@ -99,6 +99,47 @@
             transform: translateX(5px);
         }
         
+        /* Global Persistent Error Alert Styles */
+        .persistent-error {
+            border-left: 5px solid #dc3545 !important;
+            background-color: #f8d7da !important;
+            border-color: #f5c6cb !important;
+            color: #721c24 !important;
+            animation: none !important;
+            transition: none !important;
+        }
+        
+        .persistent-error .btn-close {
+            color: #721c24 !important;
+            opacity: 0.8;
+        }
+        
+        .persistent-error .btn-close:hover {
+            opacity: 1;
+        }
+        
+        /* Disable auto-dismiss for error alerts */
+        .persistent-error.alert-dismissible {
+            padding-right: 1rem;
+        }
+        
+        /* Ensure error alert stays visible */
+        .persistent-error.show {
+            display: block !important;
+            opacity: 1 !important;
+        }
+        
+        /* Custom animation for error alert */
+        @keyframes errorPulse {
+            0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+        }
+        
+        .persistent-error {
+            animation: errorPulse 2s infinite;
+        }
+        
         .sidebar ul li a i {
             margin-right: 10px;
             width: 20px;

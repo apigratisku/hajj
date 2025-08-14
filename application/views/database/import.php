@@ -14,9 +14,18 @@
                         </div>
                     <?php endif; ?>
                     
-                    <?php if($this->session->flashdata('error')): ?>
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            <?= $this->session->flashdata('error') ?>
+                    
+                    
+                    <?php if($this->session->flashdata('rejected_count')): ?>
+                        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                            <h6><i class="fas fa-exclamation-triangle"></i> Data Import Ditolak</h6>
+                            <p class="mb-2">Sebanyak <strong><?= $this->session->flashdata('rejected_count') ?></strong> data ditolak saat proses import.</p>
+                            <div class="d-flex gap-2">
+                                <a href="<?= base_url('database/download_rejected_data') ?>" class="btn btn-danger btn-sm">
+                                    <i class="fas fa-download"></i> Download Data Ditolak
+                                </a>
+
+                            </div>
                             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
                     <?php endif; ?>
@@ -187,4 +196,74 @@
     font-size: 0.875rem;
     vertical-align: middle;
 }
+
+/* Persistent Error Alert Styles */
+.persistent-error {
+    border-left: 5px solid #dc3545 !important;
+    background-color: #f8d7da !important;
+    border-color: #f5c6cb !important;
+    color: #721c24 !important;
+    animation: none !important;
+    transition: none !important;
+}
+
+.persistent-error .btn-close {
+    color: #721c24 !important;
+    opacity: 0.8;
+}
+
+.persistent-error .btn-close:hover {
+    opacity: 1;
+}
+
+/* Disable auto-dismiss for error alerts */
+.persistent-error.alert-dismissible {
+    padding-right: 1rem;
+}
+
+/* Ensure error alert stays visible */
+.persistent-error.show {
+    display: block !important;
+    opacity: 1 !important;
+}
+
+/* Custom animation for error alert */
+@keyframes errorPulse {
+    0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+}
+
+.persistent-error {
+    animation: errorPulse 2s infinite;
+}
 </style>
+
+<script>
+// Disable auto-dismiss for error alerts
+document.addEventListener('DOMContentLoaded', function() {
+    // Find all error alerts and prevent auto-dismiss
+    const errorAlerts = document.querySelectorAll('.persistent-error');
+    errorAlerts.forEach(function(alert) {
+        // Remove any auto-dismiss functionality
+        alert.style.animation = 'none';
+        alert.style.transition = 'none';
+        
+        // Ensure the alert stays visible
+        alert.classList.add('show');
+        alert.style.display = 'block';
+        alert.style.opacity = '1';
+    });
+    
+    // Override Bootstrap's auto-dismiss if any
+    if (typeof bootstrap !== 'undefined') {
+        const alertList = document.querySelectorAll('.persistent-error');
+        alertList.forEach(function(alert) {
+            const bsAlert = new bootstrap.Alert(alert);
+            // Disable auto-dismiss
+            bsAlert._config.delay = 0;
+            bsAlert._config.autohide = false;
+        });
+    }
+});
+</script>
