@@ -151,6 +151,7 @@ class Transaksi_model extends CI_Model {
     
         // Urut berdasarkan abjad nama
         $this->db->order_by('peserta.flag_doc', 'DESC');
+        $this->db->order_by('peserta.id', 'DESC');
         $this->db->limit($limit, $offset);
         return $this->db->get()->result();
     }
@@ -170,12 +171,11 @@ class Transaksi_model extends CI_Model {
 
         $this->db->where('peserta.status', 0);
         $this->db->order_by('peserta.flag_doc', 'DESC');
+        $this->db->order_by('peserta.id', 'DESC');
         $this->db->limit($limit, $offset);
         return $this->db->get()->result();
     }
 
-  
-    
 
     public function count_filtered($filters = []) {
         $this->db->from($this->table);
