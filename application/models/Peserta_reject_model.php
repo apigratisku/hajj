@@ -22,6 +22,16 @@ class Peserta_reject_model extends CI_Model {
             $filtered_data['created_at'] = date('Y-m-d H:i:s');
             $filtered_data['updated_at'] = date('Y-m-d H:i:s');
             
+            // Check if data already exists (to prevent duplicate entries)
+            if (!empty($filtered_data['nomor_paspor'])) {
+                $this->db->where('nomor_paspor', $filtered_data['nomor_paspor']);
+                $existing = $this->db->get($this->table)->row();
+                if ($existing) {
+                    log_message('info', 'Reject data already exists for passport: ' . $filtered_data['nomor_paspor']);
+                    return $existing->id; // Return existing ID instead of inserting duplicate
+                }
+            }
+            
             $this->db->insert($this->table, $filtered_data);
             
             if ($this->db->affected_rows() > 0) {
@@ -35,7 +45,8 @@ class Peserta_reject_model extends CI_Model {
             }
         } catch (Exception $e) {
             log_message('error', 'Exception in reject insert method: ' . $e->getMessage());
-            throw $e;
+            // Don't throw exception, just return false
+            return false;
         }
     }
     

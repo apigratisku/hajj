@@ -14,17 +14,29 @@
                         </div>
                     <?php endif; ?>
                     
-                    
+                    <?php if($this->session->flashdata('error')): ?>
+                        <div class="alert alert-danger alert-dismissible fade show persistent-error" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <div class="flex-grow-1">
+                                    <strong>Error Import Data:</strong><br>
+                                    <?= $this->session->flashdata('error') ?>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    <?php endif; ?>
                     
                     <?php if($this->session->flashdata('rejected_count')): ?>
                         <div class="alert alert-warning alert-dismissible fade show" role="alert">
                             <h6><i class="fas fa-exclamation-triangle"></i> Data Import Ditolak</h6>
                             <p class="mb-2">Sebanyak <strong><?= $this->session->flashdata('rejected_count') ?></strong> data ditolak saat proses import.</p>
                             <div class="d-flex gap-2">
+                               
                                 <a href="<?= base_url('database/download_rejected_data') ?>" class="btn btn-danger btn-sm">
                                     <i class="fas fa-download"></i> Download Data Ditolak
                                 </a>
-
+                               
                             </div>
                             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>

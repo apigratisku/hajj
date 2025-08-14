@@ -885,6 +885,16 @@ class Database extends CI_Controller {
         }
     }
 
+    private function insert_reject_data($reject_data, $row) {
+        try {
+            $this->peserta_reject_model->insert($reject_data);
+            return true;
+        } catch (Exception $e) {
+            log_message('error', 'Failed to insert reject data for row ' . $row . ': ' . $e->getMessage());
+            return false;
+        }
+    }
+
     public function import() {
         $data['title'] = 'Import Data Peserta';
         
@@ -1057,7 +1067,12 @@ class Database extends CI_Controller {
             
             
             // Truncate tabel peserta_reject sebelum memulai import
-            $this->peserta_reject_model->delete_all();
+            try {
+                $this->peserta_reject_model->delete_all();
+            } catch (Exception $e) {
+                log_message('error', 'Failed to truncate peserta_reject table: ' . $e->getMessage());
+                // Continue with import even if truncate fails
+            }
             
             // Start from row 2 (skip header)
             for ($row = 2; $row <= $highestRow; $row++) {
@@ -1112,8 +1127,9 @@ class Database extends CI_Controller {
                         'row_number' => $row
                     ];
                     
-                    $this->peserta_reject_model->insert($reject_data);
-                    $rejected_data[] = $reject_data;
+                    if ($this->insert_reject_data($reject_data, $row)) {
+                        $rejected_data[] = $reject_data;
+                    }
                     continue;
                 }
                 
@@ -1174,8 +1190,9 @@ class Database extends CI_Controller {
                         'row_number' => $row
                     ];
                     
-                    $this->peserta_reject_model->insert($reject_data);
-                    $rejected_data[] = $reject_data;
+                    if ($this->insert_reject_data($reject_data, $row)) {
+                        $rejected_data[] = $reject_data;
+                    }
                     continue;
                 }
     
@@ -1203,8 +1220,9 @@ class Database extends CI_Controller {
                         'row_number' => $row
                     ];
                     
-                    $this->peserta_reject_model->insert($reject_data);
-                    $rejected_data[] = $reject_data;
+                    if ($this->insert_reject_data($reject_data, $row)) {
+                        $rejected_data[] = $reject_data;
+                    }
                     continue;
                 }
                 
@@ -1226,11 +1244,39 @@ class Database extends CI_Controller {
                     'updated_at' => date('Y-m-d H:i:s')
                 ];
                 
-                $result = $this->transaksi_model->insert($peserta_data);
-                if ($result) {
-                    $success_count++;
-                } else {
-                    $errors[] = "Row $row: Gagal menyimpan data peserta";
+                try {
+                    $result = $this->transaksi_model->insert($peserta_data);
+                    if ($result) {
+                        $success_count++;
+                    } else {
+                        $errors[] = "Row $row: Gagal menyimpan data peserta";
+                        $error_count++;
+                        
+                        // Simpan data yang gagal ke tabel peserta_reject
+                        $reject_data = [
+                            'nama' => $nama_peserta,
+                            'nomor_paspor' => $nomor_paspor,
+                            'no_visa' => $no_visa ?: null,
+                            'tgl_lahir' => $tgl_lahir_value ?: '1900-01-01',
+                            'password' => $password,
+                            'nomor_hp' => $nomor_hp ?: null,
+                            'email' => $email ?: null,
+                            'gender' => $gender_value ?: 'L',
+                            'status' => $status_value,
+                            'tanggal' => $tanggal_value ?: '1900-01-01',
+                            'jam' => $jam_value ?: '00:00:00',
+                            'flag_doc' => $flag_doc,
+                            'reject_reason' => "Gagal menyimpan data ke database",
+                            'row_number' => $row
+                        ];
+                        
+                        if ($this->insert_reject_data($reject_data, $row)) {
+                            $rejected_data[] = $reject_data;
+                        }
+                    }
+                } catch (Exception $e) {
+                    log_message('error', 'Failed to insert peserta data for row ' . $row . ': ' . $e->getMessage());
+                    $errors[] = "Row $row: Error database - " . $e->getMessage();
                     $error_count++;
                     
                     // Simpan data yang gagal ke tabel peserta_reject
@@ -1247,12 +1293,13 @@ class Database extends CI_Controller {
                         'tanggal' => $tanggal_value ?: '1900-01-01',
                         'jam' => $jam_value ?: '00:00:00',
                         'flag_doc' => $flag_doc,
-                        'reject_reason' => "Gagal menyimpan data ke database",
+                        'reject_reason' => "Error database: " . $e->getMessage(),
                         'row_number' => $row
                     ];
                     
-                    $this->peserta_reject_model->insert($reject_data);
-                    $rejected_data[] = $reject_data;
+                    if ($this->insert_reject_data($reject_data, $row)) {
+                        $rejected_data[] = $reject_data;
+                    }
                 }
             }
             
@@ -1269,8 +1316,10 @@ class Database extends CI_Controller {
             }
             
         } catch (Exception $e) {
-            $this->session->set_flashdata('error', 'Error saat membaca file: ' . $e->getMessage());
+            log_message('error', 'Import error: ' . $e->getMessage());
+            $this->session->set_flashdata('error', 'Terjadi kesalahan saat memproses file. Silakan coba lagi atau hubungi administrator.');
         }
+        
         // Ambil URL untuk redirect
         $redirect_back = $this->input->post('redirect_back') ?: 'database/import';
         redirect($redirect_back);
