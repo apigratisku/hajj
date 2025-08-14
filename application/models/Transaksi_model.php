@@ -169,7 +169,7 @@ class Transaksi_model extends CI_Model {
         }
 
         $this->db->where('peserta.status', 0);
-        $this->db->order_by('peserta.nama', 'ASC');
+        $this->db->order_by('peserta.flag_doc', 'DESC');
         $this->db->limit($limit, $offset);
         return $this->db->get()->result();
     }

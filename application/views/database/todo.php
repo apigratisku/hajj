@@ -167,6 +167,7 @@
                                                     </option>
                                                 <?php endforeach; endif; ?>
                                             </select>
+                                            <input type="hidden" name="redirect_back" value="<?= current_url() ?: site_url(uri_string()) ?>">
                                             </td>
                                             <td class="col-aksi">
                                                 <button class="mobile-table-btn mobile-table-btn-edit btn-edit" onclick="toggleEditMobileTable(this)">
@@ -287,6 +288,7 @@
                                                     </option>
                                                 <?php endforeach; endif; ?>
                                             </select>
+                                            <input type="hidden" name="redirect_back" value="<?= current_url() ?: site_url(uri_string()) ?>">
                                         </td>
                                         <td class="text-center aksi"  style="white-space: nowrap;width: auto;">
                                             <button class="btn btn-sm btn-brown btn-edit" data-bs-toggle="tooltip" title="Edit" onclick="toggleEdit(this)">
