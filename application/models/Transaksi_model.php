@@ -212,12 +212,12 @@ class Transaksi_model extends CI_Model {
     }
     
     public function get_unique_flag_doc() {
-        $this->db->select('*');
+        $this->db->select('flag_doc, MAX(created_at) as created_at');
         $this->db->from($this->table);
         $this->db->where('flag_doc IS NOT NULL');
         $this->db->where('flag_doc !=', '');
         $this->db->group_by('flag_doc');
-        $this->db->order_by('nama', 'ASC');
+        $this->db->order_by('created_at', 'DESC');
         return $this->db->get()->result();
     }
     
@@ -229,7 +229,7 @@ class Transaksi_model extends CI_Model {
         $this->db->where("tanggal != ''");
         $this->db->where("jam != ''");
         $this->db->group_by("tanggaljam");
-        $this->db->order_by('nama', 'ASC');
+        $this->db->order_by('created_at', 'DESC');
         return $this->db->get()->result();
     }
     
