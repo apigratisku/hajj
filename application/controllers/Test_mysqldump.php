@@ -39,10 +39,10 @@ class Test_mysqldump extends CI_Controller {
 
         // Test 3: Check if we can execute mysqldump
         echo "<h3>3. Testing mysqldump execution</h3>";
-        if ($mysqldump_path) {
+        if ($mysqldump_path && function_exists('exec')) {
             $output = array();
             $return_var = 0;
-            exec("{$mysqldump_path} --version 2>&1", $output, $return_var);
+            @exec("{$mysqldump_path} --version 2>&1", $output, $return_var);
             
             if ($return_var === 0) {
                 echo "<p style='color: green;'>✓ mysqldump is executable</p>";
@@ -51,6 +51,8 @@ class Test_mysqldump extends CI_Controller {
                 echo "<p style='color: red;'>✗ mysqldump execution failed</p>";
                 echo "<p><strong>Error:</strong> " . implode(' ', $output) . "</p>";
             }
+        } else {
+            echo "<p style='color: orange;'>⚠ exec() function is disabled. Using alternative backup method.</p>";
         }
 
         // Test 4: Check database configuration
@@ -111,7 +113,7 @@ class Test_mysqldump extends CI_Controller {
             
             $output = array();
             $return_var = 0;
-            exec($command, $output, $return_var);
+            @exec($command, $output, $return_var);
             
             if ($return_var === 0 && file_exists($test_file)) {
                 $file_size = filesize($test_file);
@@ -127,7 +129,8 @@ class Test_mysqldump extends CI_Controller {
                 echo "<p><strong>Output:</strong> " . implode('<br>', $output) . "</p>";
             }
         } else {
-            echo "<p style='color: red;'>✗ Cannot test backup - mysqldump or exec not available</p>";
+            echo "<p style='color: orange;'>⚠ exec() function is disabled. Using PHP-based backup method.</p>";
+            echo "<p style='color: green;'>✓ Alternative backup method available</p>";
         }
 
         echo "<hr>";
@@ -206,15 +209,20 @@ class Test_mysqldump extends CI_Controller {
     }
     
     private function is_command_available($command) {
+        // Check if exec function is available
+        if (!function_exists('exec')) {
+            return false;
+        }
+        
         $output = array();
         $return_var = 0;
         
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
             // Windows
-            exec("where {$command} 2>nul", $output, $return_var);
+            @exec("where {$command} 2>nul", $output, $return_var);
         } else {
             // Unix/Linux
-            exec("which {$command} 2>/dev/null", $output, $return_var);
+            @exec("which {$command} 2>/dev/null", $output, $return_var);
         }
         
         return $return_var === 0 && !empty($output);

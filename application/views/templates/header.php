@@ -4,7 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= isset($title) ? $title . ' - ' : '' ?>Sistem Pendataan Kunjungan Peserta Haji dan Umrah</title>
-    <link rel="icon" href="<?= base_url('assets/img/hajj_logo.png') ?>" type="image/x-icon">
+    
+    <!-- Favicon Configuration -->
+    <link rel="icon" type="image/png" sizes="32x32" href="<?= base_url('assets/img/hajj_logo.png') ?>">
+    <link rel="icon" type="image/png" sizes="16x16" href="<?= base_url('assets/img/hajj_logo.png') ?>">
+    <link rel="shortcut icon" href="<?= base_url('assets/img/hajj_logo.png') ?>" type="image/x-icon">
+    <link rel="apple-touch-icon" href="<?= base_url('assets/img/hajj_logo.png') ?>">
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">

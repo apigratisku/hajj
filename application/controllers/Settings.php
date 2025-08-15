@@ -63,28 +63,36 @@ class Settings extends CI_Controller {
             // Test database connection first
             $this->test_database_connection($hostname, $username, $password, $database);
             
-            // Check if mysqldump is available
-            $mysqldump_path = $this->find_mysqldump();
-            if (!$mysqldump_path) {
-                // Try alternative method for cPanel
-                $mysqldump_path = $this->find_mysqldump_alternative();
+            // Check if exec is available, otherwise use PHP-based backup
+            if (function_exists('exec')) {
+                // Check if mysqldump is available
+                $mysqldump_path = $this->find_mysqldump();
                 if (!$mysqldump_path) {
-                    throw new Exception('mysqldump tidak ditemukan. Pastikan MySQL client tools terinstall atau hubungi administrator hosting.');
+                    // Try alternative method for cPanel
+                    $mysqldump_path = $this->find_mysqldump_alternative();
+                    if (!$mysqldump_path) {
+                        throw new Exception('mysqldump tidak ditemukan. Pastikan MySQL client tools terinstall atau hubungi administrator hosting.');
+                    }
                 }
+            } else {
+                // Use PHP-based backup method
+                $this->create_php_backup($hostname, $username, $password, $database, $backup_path);
+                $return_var = 0;
+                $output = [];
             }
             
-            // Create mysqldump command with proper escaping (cPanel optimized)
-            $escaped_password = escapeshellarg($password);
-            $command = "{$mysqldump_path} --host=" . escapeshellarg($hostname) . 
-                      " --user=" . escapeshellarg($username) . 
-                      " --password={$escaped_password} " . 
-                      "--single-transaction --routines --triggers " .
-                      escapeshellarg($database) . " > " . escapeshellarg($backup_path) . " 2>&1";
-            
-            // Execute backup command
-            $output = [];
-            $return_var = 0;
-            exec($command, $output, $return_var);
+                // Create mysqldump command with proper escaping (cPanel optimized)
+                $escaped_password = escapeshellarg($password);
+                $command = "{$mysqldump_path} --host=" . escapeshellarg($hostname) . 
+                          " --user=" . escapeshellarg($username) . 
+                          " --password={$escaped_password} " . 
+                          "--single-transaction --routines --triggers " .
+                          escapeshellarg($database) . " > " . escapeshellarg($backup_path) . " 2>&1";
+                
+                // Execute backup command
+                $output = [];
+                $return_var = 0;
+                @exec($command, $output, $return_var);
             
             // Log the command for debugging (without password)
             $log_command = "{$mysqldump_path} --host=" . escapeshellarg($hostname) . 
@@ -186,28 +194,36 @@ class Settings extends CI_Controller {
             // Test database connection first
             $this->test_database_connection($hostname, $username, $password, $database);
             
-            // Check if mysqldump is available
-            $mysqldump_path = $this->find_mysqldump();
-            if (!$mysqldump_path) {
-                // Try alternative method for cPanel
-                $mysqldump_path = $this->find_mysqldump_alternative();
+            // Check if exec is available, otherwise use PHP-based backup
+            if (function_exists('exec')) {
+                // Check if mysqldump is available
+                $mysqldump_path = $this->find_mysqldump();
                 if (!$mysqldump_path) {
-                    throw new Exception('mysqldump tidak ditemukan. Pastikan MySQL client tools terinstall atau hubungi administrator hosting.');
+                    // Try alternative method for cPanel
+                    $mysqldump_path = $this->find_mysqldump_alternative();
+                    if (!$mysqldump_path) {
+                        throw new Exception('mysqldump tidak ditemukan. Pastikan MySQL client tools terinstall atau hubungi administrator hosting.');
+                    }
                 }
+                
+                // Create mysqldump command with proper escaping (cPanel optimized)
+                $escaped_password = escapeshellarg($password);
+                $command = "{$mysqldump_path} --host=" . escapeshellarg($hostname) . 
+                          " --user=" . escapeshellarg($username) . 
+                          " --password={$escaped_password} " . 
+                          "--single-transaction --routines --triggers " .
+                          escapeshellarg($database) . " > " . escapeshellarg($backup_path) . " 2>&1";
+                
+                // Execute backup command
+                $output = [];
+                $return_var = 0;
+                @exec($command, $output, $return_var);
+            } else {
+                // Use PHP-based backup method
+                $this->create_php_backup($hostname, $username, $password, $database, $backup_path);
+                $return_var = 0;
+                $output = [];
             }
-            
-            // Create mysqldump command with proper escaping (cPanel optimized)
-            $escaped_password = escapeshellarg($password);
-            $command = "{$mysqldump_path} --host=" . escapeshellarg($hostname) . 
-                      " --user=" . escapeshellarg($username) . 
-                      " --password={$escaped_password} " . 
-                      "--single-transaction --routines --triggers " .
-                      escapeshellarg($database) . " > " . escapeshellarg($backup_path) . " 2>&1";
-            
-            // Execute backup command
-            $output = [];
-            $return_var = 0;
-            exec($command, $output, $return_var);
             
             if ($return_var !== 0 || !file_exists($backup_path)) {
                 $error_msg = 'Gagal membuat backup database lokal';
@@ -599,6 +615,76 @@ class Settings extends CI_Controller {
         if (!$result) {
             $mysqli->close();
             throw new Exception('User database tidak memiliki privilege SELECT. Hubungi administrator hosting.');
+        }
+        
+        $mysqli->close();
+    }
+    
+    private function create_php_backup($hostname, $username, $password, $database, $backup_path) {
+        // Create backup using pure PHP without exec()
+        $mysqli = new mysqli($hostname, $username, $password, $database);
+        
+        if ($mysqli->connect_error) {
+            throw new Exception('Gagal terhubung ke database: ' . $mysqli->connect_error);
+        }
+        
+        // Set charset
+        $mysqli->set_charset('utf8');
+        
+        // Start backup file
+        $backup_content = "-- PHP Generated Database Backup\n";
+        $backup_content .= "-- Generated on: " . date('Y-m-d H:i:s') . "\n";
+        $backup_content .= "-- Database: {$database}\n\n";
+        $backup_content .= "SET FOREIGN_KEY_CHECKS=0;\n";
+        $backup_content .= "SET SQL_MODE = \"NO_AUTO_VALUE_ON_ZERO\";\n";
+        $backup_content .= "SET AUTOCOMMIT = 0;\n";
+        $backup_content .= "START TRANSACTION;\n";
+        $backup_content .= "SET time_zone = \"+00:00\";\n\n";
+        
+        // Get all tables
+        $tables_result = $mysqli->query("SHOW TABLES");
+        if (!$tables_result) {
+            throw new Exception('Gagal mendapatkan daftar tabel');
+        }
+        
+        while ($table_row = $tables_result->fetch_array()) {
+            $table_name = $table_row[0];
+            
+            // Get table structure
+            $create_table_result = $mysqli->query("SHOW CREATE TABLE `{$table_name}`");
+            if ($create_table_result) {
+                $create_table_row = $create_table_result->fetch_array();
+                $backup_content .= "-- Table structure for table `{$table_name}`\n";
+                $backup_content .= "DROP TABLE IF EXISTS `{$table_name}`;\n";
+                $backup_content .= $create_table_row[1] . ";\n\n";
+            }
+            
+            // Get table data
+            $data_result = $mysqli->query("SELECT * FROM `{$table_name}`");
+            if ($data_result && $data_result->num_rows > 0) {
+                $backup_content .= "-- Dumping data for table `{$table_name}`\n";
+                
+                while ($row = $data_result->fetch_assoc()) {
+                    $values = array();
+                    foreach ($row as $value) {
+                        if ($value === null) {
+                            $values[] = 'NULL';
+                        } else {
+                            $values[] = "'" . $mysqli->real_escape_string($value) . "'";
+                        }
+                    }
+                    $backup_content .= "INSERT INTO `{$table_name}` VALUES (" . implode(', ', $values) . ");\n";
+                }
+                $backup_content .= "\n";
+            }
+        }
+        
+        $backup_content .= "SET FOREIGN_KEY_CHECKS=1;\n";
+        $backup_content .= "COMMIT;\n";
+        
+        // Write to file
+        if (file_put_contents($backup_path, $backup_content) === false) {
+            throw new Exception('Gagal menulis file backup');
         }
         
         $mysqli->close();
