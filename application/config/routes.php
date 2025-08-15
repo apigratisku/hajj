@@ -34,6 +34,7 @@ $route['database/download_rejected_data'] = 'database/download_rejected_data';
 $route['database/download_failed_import'] = 'database/download_failed_import';
 $route['database/clear_rejected_data'] = 'database/clear_rejected_data';
 $route['database/delete_rejected/(:num)'] = 'database/delete_rejected/$1';
+$route['database/download_barcode_attachments'] = 'database/download_barcode_attachments';
 $route['todo'] = 'todo';
 
 
@@ -54,6 +55,11 @@ $route['settings/get_backup_files'] = 'settings/get_backup_files';
 
 // Test route
 $route['test_mysqldump'] = 'test_mysqldump';
+
+// Upload routes
+$route['upload/upload_barcode'] = 'upload/upload_barcode';
+$route['upload/delete_barcode'] = 'upload/delete_barcode';
+$route['upload/view_barcode/(:any)'] = 'upload/view_barcode/$1';
 
 // Setup routes
 $route['setup'] = 'setup';

@@ -153,8 +153,18 @@ class Database extends CI_Controller {
         $this->load->view('templates/footer');
     }
     public function delete($id) {
-            $this->transaksi_model->delete($id);
-            redirect('database');
+        // Get peserta data before deletion
+        $peserta = $this->transaksi_model->get_by_id($id);
+        
+        if ($peserta) {
+            // Delete barcode file if exists
+            if (!empty($peserta->barcode)) {
+                $this->delete_barcode_file($peserta->barcode);
+            }
+        }
+        
+        $this->transaksi_model->delete($id);
+        redirect('database');
     }   
     
     public function download($id) {
@@ -265,6 +275,15 @@ class Database extends CI_Controller {
         if ($this->form_validation->run() == FALSE) {
             $this->edit($id);
         } else {
+            // Check if barcode field is being cleared (file deletion)
+            $new_barcode = trim($this->input->post('barcode')) ?: null;
+            $old_barcode = $current_peserta->barcode;
+            
+            // If barcode is being cleared and there was a previous file, delete it
+            if (empty($new_barcode) && !empty($old_barcode)) {
+                $this->delete_barcode_file($old_barcode);
+            }
+            
             // Prepare data with proper handling of empty values
             $data = [
                 'nama' => trim($this->input->post('nama')),
@@ -274,7 +293,7 @@ class Database extends CI_Controller {
                 'password' => trim($this->input->post('password')),
                 'nomor_hp' => trim($this->input->post('nomor_hp')) ?: null,
                 'email' => trim($this->input->post('email')) ?: null,
-                'barcode' => trim($this->input->post('barcode')) ?: null,
+                'barcode' => $new_barcode,
                 'gender' => $this->input->post('gender') ?: null,
                 'status' => $this->input->post('status') !== null ? $this->input->post('status', true) : null,
                 'tanggal' => $this->input->post('tanggal') ?: null,
@@ -358,6 +377,9 @@ class Database extends CI_Controller {
         
         // Debug: Log the data being updated
         log_message('debug', 'Database update_ajax - Updating peserta ID: ' . $id . ' with data: ' . json_encode($data));
+        log_message('debug', 'Database update_ajax - Raw input: ' . json_encode($input));
+        log_message('debug', 'Database update_ajax - Barcode value: ' . (isset($data['barcode']) ? $data['barcode'] : 'NOT SET'));
+        log_message('debug', 'Database update_ajax - Allowed fields: ' . json_encode($allowedFields));
        
         
         try {
@@ -1748,5 +1770,149 @@ class Database extends CI_Controller {
         $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel2007');
         $objWriter->save('php://output');
         exit;
+    }
+    
+    /**
+     * Download barcode attachments as ZIP file based on filters
+     */
+    public function download_barcode_attachments() {
+        // Check if user is logged in
+        if (!$this->session->userdata('logged_in')) {
+            $this->session->set_flashdata('error', 'Anda harus login terlebih dahulu');
+            redirect('auth');
+        }
+        
+        // Get filters from GET parameters
+        $tanggaljam = $this->input->get('tanggaljam');
+        $flag_doc = $this->input->get('flag_doc');
+        $status = $this->input->get('status');
+        
+        // Build query to find records with barcode files
+        $this->db->select('id, nama, barcode, tanggal, jam, flag_doc');
+        $this->db->from('peserta');
+        $this->db->where('barcode IS NOT NULL');
+        $this->db->where('barcode !=', '');
+        $this->db->where('barcode !=', '-');
+        
+        // Apply filters
+        if (!empty($tanggaljam)) {
+            $this->db->like("CONCAT(tanggal, ' ', jam)", $tanggaljam);
+        }
+        
+        if (!empty($flag_doc)) {
+            if ($flag_doc === 'null') {
+                $this->db->where('(flag_doc IS NULL OR flag_doc = "")');
+            } else {
+                $this->db->where('flag_doc', $flag_doc);
+            }
+        }
+        
+        if (!empty($status) && $status !== '') {
+            $this->db->where('status', $status);
+        }
+        
+        $this->db->order_by('tanggal', 'ASC');
+        $this->db->order_by('jam', 'ASC');
+        
+        $results = $this->db->get()->result();
+        
+        if (empty($results)) {
+            $this->session->set_flashdata('error', 'Tidak ada file barcode yang ditemukan dengan filter yang diberikan');
+            redirect('database');
+        }
+        
+        // Create ZIP file
+        $zip_filename = 'barcode_attachments_' . date('Y-m-d_H-i-s') . '.zip';
+        $zip_path = FCPATH . 'temp/' . $zip_filename;
+        
+        // Create temp directory if not exists
+        $temp_dir = FCPATH . 'temp/';
+        if (!is_dir($temp_dir)) {
+            mkdir($temp_dir, 0755, true);
+        }
+        
+        $zip = new ZipArchive();
+        if ($zip->open($zip_path, ZipArchive::CREATE) !== TRUE) {
+            $this->session->set_flashdata('error', 'Gagal membuat file ZIP');
+            redirect('database');
+        }
+        
+        $barcode_dir = FCPATH . 'assets/uploads/barcode/';
+        $added_files = 0;
+        
+        foreach ($results as $record) {
+            $barcode_file = $barcode_dir . $record->barcode;
+            
+            if (file_exists($barcode_file)) {
+                // Create descriptive filename for ZIP
+                $file_extension = pathinfo($record->barcode, PATHINFO_EXTENSION);
+                $descriptive_name = sprintf(
+                    '%s_%s_%s_%s.%s',
+                    $record->nama,
+                    $record->tanggal,
+                    $record->jam,
+                    $record->flag_doc,
+                    $file_extension
+                );
+                
+                // Clean filename for ZIP (remove special characters)
+                $descriptive_name = preg_replace('/[^a-zA-Z0-9._-]/', '_', $descriptive_name);
+                
+                // Add file to ZIP
+                if ($zip->addFile($barcode_file, $descriptive_name)) {
+                    $added_files++;
+                }
+            }
+        }
+        
+        $zip->close();
+        
+        if ($added_files === 0) {
+            unlink($zip_path);
+            $this->session->set_flashdata('error', 'Tidak ada file barcode yang valid ditemukan');
+            redirect('database');
+        }
+        
+        // Set headers for download
+        header('Content-Type: application/zip');
+        header('Content-Disposition: attachment; filename="' . $zip_filename . '"');
+        header('Content-Length: ' . filesize($zip_path));
+        header('Cache-Control: no-cache, must-revalidate');
+        header('Expires: 0');
+        
+        // Output file and delete
+        readfile($zip_path);
+        unlink($zip_path);
+        exit;
+    }
+    
+    /**
+     * Delete barcode file from uploads directory
+     */
+    private function delete_barcode_file($filename) {
+        if (empty($filename)) {
+            return false;
+        }
+        
+        // Validate filename for security
+        if (!preg_match('/^[a-zA-Z0-9._-]+$/', $filename)) {
+            log_message('error', 'Invalid filename for deletion: ' . $filename);
+            return false;
+        }
+        
+        $file_path = FCPATH . 'assets/uploads/barcode/' . $filename;
+        
+        if (file_exists($file_path)) {
+            if (unlink($file_path)) {
+                log_message('info', 'Barcode file deleted: ' . $filename);
+                return true;
+            } else {
+                log_message('error', 'Failed to delete barcode file: ' . $filename);
+                return false;
+            }
+        } else {
+            log_message('warning', 'Barcode file not found for deletion: ' . $filename);
+            return false;
+        }
     }
 } 

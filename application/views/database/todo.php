@@ -98,7 +98,7 @@
                                         <?php else: ?>
                                         <?php foreach ($peserta as $p): ?>
                                         <tr data-id="<?= $p->id ?>">
-                                            <td class="col-nama" data-field="nama" data-value="<?= $p->nama ?>">
+                                            <td class="col-nama" data-field="nama" data-value="<?= $p->nama ?>" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px;">
                                             <span class="value copyable-text" data-field="nama" data-value="<?= $p->nama ?>" onclick="copyToClipboard('<?= htmlspecialchars($p->nama, ENT_QUOTES) ?>', 'Nama Peserta')" title="Klik untuk copy"><?= $p->nama ?></span>
                                             <input type="text" class="mobile-edit-field" value="<?= $p->nama ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                             </td>
@@ -127,8 +127,28 @@
                                             <input type="email" class="mobile-edit-field" value="<?= $p->email ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                             </td>
                                             <td class="col-barcode" data-field="barcode" data-value="<?= $p->barcode ?>">
-                                            <span class="value copyable-text" data-field="barcode" data-value="<?= $p->barcode ?>" onclick="copyToClipboard('<?= htmlspecialchars($p->barcode ?: '-', ENT_QUOTES) ?>', 'Barcode')" title="Klik untuk copy"><?= $p->barcode ?: '-' ?></span>
-                                            <input type="text" class="mobile-edit-field" value="<?= $p->barcode ?>" style="display:none;">
+                                            <span class="value">
+                                                <?php if($p->barcode): ?>
+                                                <a href="<?= base_url('upload/view_barcode/' . $p->barcode) ?>" target="_blank" title="Lihat gambar barcode"><i class="fas fa-check-circle" style="color: green;"></i></a>
+                                                <?php else: ?>
+                                                <i class="fas fa-times-circle" style="color: red;" title="Tidak ada barcode"></i>
+                                                <?php endif; ?>
+                                            </span>
+                                            <div class="mobile-edit-field" style="display:none;">
+                                                <div class="mobile-barcode-edit-container">
+                                                    <input type="text" class="mobile-table-edit-field" value="<?= $p->barcode ?>" placeholder="Barcode atau upload">
+                                                    <button type="button" class="mobile-table-btn mobile-table-btn-upload barcode-upload-btn" title="Upload Gambar Barcode">
+                                                        <i class="fas fa-camera"></i>
+                                                    </button>
+                                                </div>
+                                                <input type="file" class="barcode-file-input" accept="image/*" style="display: none;">
+                                                <div class="mobile-barcode-preview" style="display: none;">
+                                                    <img class="barcode-preview-img" src="" alt="Preview" style="max-width: 60px; max-height: 45px;">
+                                                </div>
+                                                <button type="button" class="mobile-table-btn mobile-table-btn-danger barcode-remove-btn" style="display: none;">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
                                             </td>
                                             <td class="col-gender" data-field="gender" data-value="<?= $p->gender ?>">
                                             <span class="value" data-field="gender" data-value="<?= $p->gender ?>"><?= $p->gender ?: '-' ?></span>
@@ -251,8 +271,29 @@
                                         <input type="email" class="form-control edit-field" value="<?= $p->email ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                         </td>
                                         <td class="barcode text-center" data-field="barcode" data-value="<?= $p->barcode ?>">
-                                        <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->barcode ?: '-', ENT_QUOTES) ?>', 'Barcode')" title="Klik untuk copy"><?= $p->barcode ?: '-' ?></span>
-                                        <input type="text" class="form-control edit-field" value="<?= $p->barcode ?>" style="display:none;" >
+                                          <span class="display-value">
+                                         <?php if($p->barcode): ?>
+                                         <a href="<?= base_url('upload/view_barcode/' . $p->barcode) ?>" target="_blank" title="Lihat gambar barcode"><i class="fas fa-check-circle" style="color: green;"></i></a>
+                                         <?php else: ?>
+                                         <i class="fas fa-times-circle" style="color: red;" title="Tidak ada barcode"></i>
+                                         <?php endif; ?>
+                                         </span>
+                                        
+                                        <div class="edit-field" style="display:none;">
+                                            <div class="barcode-edit-container">
+                                                <input type="text" class="form-control" value="<?= $p->barcode ?>" placeholder="Masukkan barcode atau upload gambar">
+                                                <button type="button" class="btn btn-outline-primary btn-sm ms-1 barcode-upload-btn" title="Upload Gambar Barcode">
+                                                    <i class="fas fa-camera"></i>
+                                                </button>
+                                            </div>
+                                            <input type="file" class="barcode-file-input" accept="image/*" style="display: none;">
+                                            <div class="barcode-preview mt-2" style="display: none;">
+                                                <img class="barcode-preview-img img-thumbnail" src="" alt="Preview" style="max-width: 100px; max-height: 75px;">
+                                            </div>
+                                            <button type="button" class="btn btn-sm btn-danger mt-1 barcode-remove-btn" style="display: none;">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
                                         </td>
                                         <td class="gender text-center" data-field="gender" data-value="<?= $p->gender ?>">
                                         <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->gender ?: '-', ENT_QUOTES) ?>', 'Gender')" title="Klik untuk copy"><?= $p->gender ?: '-' ?></span>
@@ -608,6 +649,11 @@
     max-width: 90px;
 }
 
+.mobile-excel-table .col-barcode {
+    min-width: 80px;
+    max-width: 90px;
+}
+
 .mobile-excel-table .col-gender {
     min-width: 40px;
     max-width: 50px;
@@ -666,6 +712,7 @@
 
 /* Mobile Edit Fields */
 .mobile-edit-field {
+    display: none; /* Hidden by default, shown when editing */
     width: 100%;
     padding: 2px 4px;
     border: 1px solid var(--primary-color);
@@ -1058,6 +1105,16 @@
         padding: 1px 4px;
         min-width: 40px;
     }
+    
+    .mobile-barcode-preview img {
+        max-width: 50px;
+        max-height: 40px;
+    }
+    
+    .mobile-barcode-edit-container .mobile-table-edit-field {
+        font-size: 8px;
+        min-height: 18px;
+    }
 }
 
 @media (max-width: 576px) {
@@ -1087,6 +1144,22 @@
     .mobile-table-btn i {
         font-size: 6px;
     }
+    
+    .mobile-barcode-preview img {
+        max-width: 40px;
+        max-height: 30px;
+    }
+    
+    .mobile-barcode-edit-container .mobile-table-edit-field {
+        font-size: 7px;
+        min-height: 16px;
+    }
+    
+    .mobile-table-btn-upload,
+    .mobile-table-btn-danger {
+        min-width: 14px;
+        height: 14px;
+    }
 }
 
 /* Animation Effects */
@@ -1107,6 +1180,127 @@
 
 .mobile-excel-table tbody tr {
     animation: slideIn 0.2s ease-out;
+}
+
+/* Barcode Upload Styles */
+.barcode-edit-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.barcode-edit-container .form-control {
+    flex: 1;
+}
+
+.barcode-preview {
+    border: 2px dashed #dee2e6;
+    border-radius: var(--border-radius);
+    padding: 0.5rem;
+    text-align: center;
+    background-color: #f8f9fa;
+    margin-top: 0.5rem;
+}
+
+.barcode-preview img {
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+}
+
+.barcode-preview button {
+    margin-top: 0.25rem;
+}
+
+/* Hide remove button by default */
+.barcode-remove-btn {
+    display: none;
+}
+
+.mobile-table-btn-danger {
+    display: none; /* Hidden by default, shown when editing */
+}
+
+/* Mobile Barcode Edit Styles */
+.mobile-barcode-edit-container {
+    display: none; /* Hidden by default, shown when editing */
+    align-items: center;
+    gap: 2px;
+    margin-bottom: 2px;
+}
+
+.mobile-barcode-edit-container .mobile-table-edit-field {
+    flex: 1;
+    min-width: 0;
+    font-size: 9px;
+    padding: 2px 4px;
+    min-height: 20px;
+    border: 1px solid var(--primary-color);
+    border-radius: 3px;
+}
+
+.mobile-barcode-preview {
+    display: none; /* Hidden by default, shown when editing */
+    border: 1px dashed #dee2e6;
+    border-radius: 4px;
+    padding: 2px;
+    text-align: center;
+    background-color: #f8f9fa;
+    margin-top: 2px;
+}
+
+.mobile-barcode-preview.active {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 4px;
+    border: 1px dashed #dee2e6;
+    border-radius: 4px;
+    background-color: #f8f9fa;
+    margin-top: 2px;
+}
+
+.mobile-barcode-preview img {
+    border-radius: 2px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    max-width: 60px;
+    max-height: 45px;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+}
+
+.mobile-table-btn-upload {
+    background: var(--info-color);
+    color: white;
+    min-width: 18px;
+    height: 18px;
+    padding: 1px;
+    border: none;
+    border-radius: 3px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mobile-table-btn-danger {
+    background: var(--danger-color);
+    color: white;
+    min-width: 16px;
+    height: 16px;
+    padding: 1px;
+    margin-top: 1px;
+    border: none;
+    border-radius: 3px;
+    display: none; /* Hidden by default, shown when editing */
+    align-items: center;
+    justify-content: center;
+}
+
+.mobile-table-btn-upload:hover,
+.mobile-table-btn-danger:hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 </style>
 
@@ -1242,8 +1436,55 @@ function toggleEditMobileTable(button) {
     // Add editing class for visual feedback
     row.classList.add('editing');
     
-    editFields.forEach(field => field.style.display = 'block');
+    editFields.forEach(field => {
+        // Check if it's a container (like barcode) or regular input
+        if (field.classList.contains('mobile-barcode-edit-container')) {
+            field.style.display = 'flex';
+        } else {
+            field.style.display = 'block';
+        }
+    });
     displayValues.forEach(value => value.style.display = 'none');
+    
+    // Special handling for barcode field in mobile
+    const barcodeContainer = row.querySelector('.mobile-barcode-edit-container');
+    if (barcodeContainer) {
+        barcodeContainer.style.display = 'flex';
+        // Show preview if barcode exists
+        const barcodeValue = row.querySelector('[data-field="barcode"]').getAttribute('data-value');
+        console.log('Todo mobile barcode value for preview:', barcodeValue);
+        
+        if (barcodeValue && barcodeValue !== '-' && barcodeValue !== '') {
+            const preview = row.querySelector('.mobile-barcode-preview');
+            if (preview) {
+                preview.classList.add('active');
+                const previewImg = preview.querySelector('.barcode-preview-img');
+                if (previewImg) {
+                    // Add timestamp to prevent browser cache
+                    const timestamp = new Date().getTime();
+                    previewImg.src = '<?= base_url('upload/view_barcode/') ?>' + barcodeValue + '?t=' + timestamp;
+                    console.log('Todo mobile preview image src set to:', previewImg.src);
+                }
+            }
+            
+            // Show remove button if barcode exists
+            const removeBtn = row.querySelector('.barcode-remove-btn');
+            if (removeBtn) {
+                removeBtn.style.display = 'inline-flex';
+                console.log('Todo mobile remove button displayed');
+            } else {
+                console.log('Todo mobile remove button not found');
+            }
+        } else {
+            console.log('No todo mobile barcode value to show preview');
+        }
+    }
+    
+    // Special handling for barcode file input
+    const barcodeFileInput = row.querySelector('.barcode-file-input');
+    if (barcodeFileInput) {
+        barcodeFileInput.style.display = 'none'; // Keep hidden
+    }
     
     editBtn.style.display = 'none';
     saveBtn.style.display = 'inline-block';
@@ -1270,10 +1511,39 @@ function cancelEditMobileTable(button) {
         }
     });
     
+    // Special handling for barcode field in mobile
+    const barcodeContainer = row.querySelector('.mobile-barcode-edit-container');
+    if (barcodeContainer) {
+        const barcodeInput = barcodeContainer.querySelector('input');
+        const originalBarcode = row.querySelector('[data-field="barcode"]').getAttribute('data-value');
+        if (barcodeInput) {
+            barcodeInput.value = originalBarcode || '';
+            console.log('Reset barcode input to original value:', originalBarcode);
+        }
+        // Hide preview if exists
+        const preview = row.querySelector('.mobile-barcode-preview');
+        if (preview) {
+            preview.classList.remove('active');
+        }
+        
+        // Hide remove button
+        const removeBtn = row.querySelector('.barcode-remove-btn');
+        if (removeBtn) {
+            removeBtn.style.display = 'none';
+        }
+    }
+    
     // Remove editing class
     row.classList.remove('editing');
     
-    editFields.forEach(field => field.style.display = 'none');
+    editFields.forEach(field => {
+        // Check if it's a container (like barcode) or regular input
+        if (field.classList.contains('mobile-barcode-edit-container')) {
+            field.style.display = 'none';
+        } else {
+            field.style.display = 'none';
+        }
+    });
     displayValues.forEach(value => value.style.display = 'inline');
     
     editBtn.style.display = 'inline-block';
@@ -1303,6 +1573,22 @@ function saveRowMobileTable(button) {
         }
     });
     
+    // Special handling for barcode field in mobile (it's inside a container)
+    const barcodeContainer = row.querySelector('.mobile-barcode-edit-container');
+    if (barcodeContainer) {
+        const barcodeInput = barcodeContainer.querySelector('input');
+        if (barcodeInput) {
+            data['barcode'] = barcodeInput.value;
+            console.log('Mobile barcode value found in container:', barcodeInput.value);
+            console.log('Mobile barcode input field:', barcodeInput);
+            console.log('Mobile barcode container:', barcodeContainer);
+        } else {
+            console.log('Mobile barcode input not found in container');
+        }
+    } else {
+        console.log('Mobile barcode container not found');
+    }
+    
     // Validate that we have data to save
     if (!hasData || Object.keys(data).length === 0) {
         showAlert('Tidak ada data yang dapat disimpan', 'error');
@@ -1312,6 +1598,8 @@ function saveRowMobileTable(button) {
     // Debug logging
     console.log('Saving data:', data);
     console.log('Row ID:', rowId);
+    console.log('Barcode value in data:', data.barcode);
+    console.log('Data keys:', Object.keys(data));
     
     // Show loading state
     saveBtn.disabled = true;
@@ -1359,6 +1647,25 @@ function saveRowMobileTable(button) {
                 valueElement.setAttribute('data-value', field.value);
             });
             
+            // Special handling for barcode field display update
+            const barcodeContainer = row.querySelector('.mobile-barcode-edit-container');
+            if (barcodeContainer) {
+                const barcodeInput = barcodeContainer.querySelector('input');
+                const barcodeValueElement = row.querySelector('[data-field="barcode"] .value');
+                if (barcodeInput && barcodeValueElement) {
+                    const barcodeValue = barcodeInput.value;
+                    // Update display value for barcode
+                    if (barcodeValue && barcodeValue !== '') {
+                        // Add timestamp to prevent browser cache
+                        const timestamp = new Date().getTime();
+                        barcodeValueElement.innerHTML = '<a href="<?= base_url('upload/view_barcode/') ?>' + barcodeValue + '?t=' + timestamp + '" target="_blank" title="Lihat gambar barcode"><i class="fas fa-check-circle" style="color: green;"></i></a>';
+                    } else {
+                        barcodeValueElement.innerHTML = '<i class="fas fa-times-circle" style="color: red;" title="Tidak ada barcode"></i>';
+                    }
+                    barcodeValueElement.setAttribute('data-value', barcodeValue);
+                }
+            }
+            
             showAlert('Data berhasil diperbarui', 'success');
             // Auto refresh setelah 1 detik
             setTimeout(() => {
@@ -1368,7 +1675,14 @@ function saveRowMobileTable(button) {
             // Remove editing class
             row.classList.remove('editing');
             
-            editFields.forEach(field => field.style.display = 'none');
+            editFields.forEach(field => {
+                // Check if it's a container (like barcode) or regular input
+                if (field.classList.contains('mobile-barcode-edit-container')) {
+                    field.style.display = 'none';
+                } else {
+                    field.style.display = 'none';
+                }
+            });
             displayValues.forEach(value => value.style.display = 'inline');
             editBtn.style.display = 'inline-block';
             saveBtn.style.display = 'none';
@@ -1408,6 +1722,40 @@ function toggleEdit(button) {
     editFields.forEach(field => field.style.display = 'block');
     displayValues.forEach(value => value.style.display = 'none');
     
+    // Special handling for barcode field
+    const barcodeContainer = row.querySelector('.barcode-edit-container');
+    if (barcodeContainer) {
+        barcodeContainer.style.display = 'block';
+        // Show preview if barcode exists
+        const barcodeValue = row.querySelector('[data-field="barcode"]').getAttribute('data-value');
+        console.log('Todo barcode value for preview:', barcodeValue);
+        
+        if (barcodeValue && barcodeValue !== '-' && barcodeValue !== '') {
+            const preview = row.querySelector('.barcode-preview');
+            if (preview) {
+                preview.style.display = 'block';
+                const previewImg = preview.querySelector('.barcode-preview-img');
+                if (previewImg) {
+                    // Add timestamp to prevent browser cache
+                    const timestamp = new Date().getTime();
+                    previewImg.src = '<?= base_url('upload/view_barcode/') ?>' + barcodeValue + '?t=' + timestamp;
+                    console.log('Todo preview image src set to:', previewImg.src);
+                }
+            }
+            
+            // Show remove button if barcode exists
+            const removeBtn = row.querySelector('.barcode-remove-btn');
+            if (removeBtn) {
+                removeBtn.style.display = 'inline-block';
+                console.log('Todo remove button displayed');
+            } else {
+                console.log('Todo remove button not found');
+            }
+        } else {
+            console.log('No todo barcode value to show preview');
+        }
+    }
+    
     editBtn.style.display = 'none';
     saveBtn.style.display = 'inline-block';
     cancelBtn.style.display = 'inline-block';
@@ -1429,6 +1777,27 @@ function cancelEdit(button) {
             field.value = field.closest('td').getAttribute('data-value') || '';
         }
     });
+    
+    // Special handling for barcode field
+    const barcodeContainer = row.querySelector('.barcode-edit-container');
+    if (barcodeContainer) {
+        const barcodeInput = barcodeContainer.querySelector('input');
+        const originalBarcode = row.querySelector('[data-field="barcode"]').getAttribute('data-value');
+        if (barcodeInput) {
+            barcodeInput.value = originalBarcode || '';
+        }
+        // Hide preview if exists
+        const preview = row.querySelector('.barcode-preview');
+        if (preview) {
+            preview.style.display = 'none';
+        }
+        
+        // Hide remove button
+        const removeBtn = row.querySelector('.barcode-remove-btn');
+        if (removeBtn) {
+            removeBtn.style.display = 'none';
+        }
+    }
     
     editFields.forEach(field => field.style.display = 'none');
     displayValues.forEach(value => value.style.display = 'inline');
@@ -1452,6 +1821,26 @@ function saveRow(button) {
         const fieldName = field.closest('td').getAttribute('data-field');
         data[fieldName] = field.value;
     });
+    
+    // Special handling for barcode field (it's inside a container)
+    const barcodeContainer = row.querySelector('.barcode-edit-container');
+    if (barcodeContainer) {
+        const barcodeInput = barcodeContainer.querySelector('input');
+        if (barcodeInput) {
+            data['barcode'] = barcodeInput.value;
+            console.log('Barcode value found in container:', barcodeInput.value);
+        }
+    } else {
+        // Fallback: try to find barcode input directly
+        const barcodeInput = row.querySelector('input[data-field="barcode"], .edit-field[data-field="barcode"]');
+        if (barcodeInput) {
+            data['barcode'] = barcodeInput.value;
+            console.log('Barcode value found directly:', barcodeInput.value);
+        }
+    }
+    
+    // Debug logging
+    console.log('Saving data to server:', data);
     
     fetch('<?= base_url('todo/update_ajax/') ?>' + rowId, {
         method: 'POST',
@@ -1539,557 +1928,25 @@ function showAlert(message, type) {
     setTimeout(() => {
         alertDiv.remove();
     }, 3000);
-}
-
-// Initialize functionality when page loads
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize pagination enhancement
-    enhancePagination();
-    
-    // Initialize search form enhancement
-    enhanceSearchForms();
-    
-    // Debug pagination data
-    debugPaginationData();
-    
-    // Any mobile-specific initialization can go here
-});
-
-// Debug pagination data
-function debugPaginationData() {
-    console.log('=== Pagination Debug Info ===');
-    console.log('Total rows:', <?= isset($total_rows) ? $total_rows : 'null' ?>);
-    console.log('Per page:', <?= isset($per_page) ? $per_page : 'null' ?>);
-    console.log('Current page:', <?= isset($current_page) ? $current_page : 'null' ?>);
-    console.log('Offset:', <?= isset($offset) ? $offset : 'null' ?>);
-    console.log('Pagination HTML:', document.querySelector('.pagination-container')?.innerHTML);
-    console.log('=============================');
-}
-
-// Enhanced search form functionality
-function enhanceSearchForms() {
-    // Mobile search form
-    const mobileForm = document.getElementById('mobileSearchForm');
-    if (mobileForm) {
-        mobileForm.addEventListener('submit', function(e) {
-            // Show loading state
-            const submitBtn = this.querySelector('button[type="submit"]');
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mencari...';
-            }
-            
-            // Add loading overlay to container
-            const container = document.querySelector('.mobile-data-container, .table-responsive');
-            if (container) {
-                container.style.opacity = '0.6';
-                container.style.pointerEvents = 'none';
-            }
-        });
-    }
-    
-    // Desktop search form
-    const desktopForm = document.querySelector('.desktop-form');
-    if (desktopForm) {
-        desktopForm.addEventListener('submit', function(e) {
-            // Show loading state
-            const submitBtn = this.querySelector('button[type="submit"]');
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mencari...';
-            }
-        });
-    }
-}
-</script><script>
-// Copy to clipboard function
-function copyToClipboard(text, fieldName) {
-    // Handle empty or dash values
-    if (!text || text === '-' || text === '') {
-        showAlert('Tidak ada teks untuk di-copy', 'warning');
-        return;
-    }
-    
-    // Add loading state
-    const clickedElement = event.target;
-    const removeLoading = addCopyLoadingState(clickedElement);
-    
-    // Try to use the modern Clipboard API first
-    if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(text).then(() => {
-            removeLoading();
-            showCopySuccess(fieldName, text);
-        }).catch(err => {
-            console.error('Clipboard API failed:', err);
-            removeLoading();
-            fallbackCopyTextToClipboard(text, fieldName);
-        });
-    } else {
-        // Fallback for older browsers or non-secure contexts
-        removeLoading();
-        fallbackCopyTextToClipboard(text, fieldName);
-    }
-}
-
-// Fallback copy function for older browsers
-function fallbackCopyTextToClipboard(text, fieldName) {
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
-    
-    // Avoid scrolling to bottom
-    textArea.style.top = '0';
-    textArea.style.left = '0';
-    textArea.style.position = 'fixed';
-    textArea.style.opacity = '0';
-    
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    
-    try {
-        const successful = document.execCommand('copy');
-        if (successful) {
-            showCopySuccess(fieldName, text);
-        } /*else {
-            showAlert('Gagal copy teks ke clipboard', 'error');
-        }*/
-    } catch (err) {
-        console.error('Fallback copy failed:', err);
-        //showAlert('Gagal copy teks ke clipboard', 'error');
-    }
-    
-    document.body.removeChild(textArea);
-}
-
-// Show copy success message
-function showCopySuccess(fieldName, text) {
-    // Create a temporary success indicator on the clicked element
-    const clickedElement = event.target;
-    const originalText = clickedElement.textContent;
-    
-    // Show visual feedback
-    clickedElement.style.backgroundColor = 'rgba(40, 167, 69, 0.2)';
-    clickedElement.style.color = '#155724';
-    clickedElement.style.fontWeight = 'bold';
-    
-    // Show success message
-    showAlert(`${fieldName} berhasil di-copy: "${text}"`, 'success');
-    
-    // Reset visual feedback after 1 second
-    setTimeout(() => {
-        clickedElement.style.backgroundColor = '';
-        clickedElement.style.color = '';
-        clickedElement.style.fontWeight = '';
-    }, 1000);
-}
-
-// Add loading state to copy function
-function addCopyLoadingState(element) {
-    const originalText = element.textContent;
-    element.textContent = '📋 Copying...';
-    element.style.opacity = '0.7';
-    element.style.pointerEvents = 'none';
-    
-    return () => {
-        element.textContent = originalText;
-        element.style.opacity = '';
-        element.style.pointerEvents = '';
-    };
-}
-
-// Mobile search toggle
-function toggleMobileSearch() {
-    const form = document.getElementById('mobileSearchForm');
-    if (form.style.display === 'none') {
-        form.style.display = 'block';
-        form.style.animation = 'slideIn 0.3s ease-out';
-    } else {
-        form.style.display = 'none';
-    }
 }
 
 // Enhanced pagination functionality
 function enhancePagination() {
-    // Debug: Log current URL and parameters
-    console.log('Current URL:', window.location.href);
-    console.log('Current filters:', {
-        nama: new URLSearchParams(window.location.search).get('nama'),
-        nomor_paspor: new URLSearchParams(window.location.search).get('nomor_paspor'),
-        no_visa: new URLSearchParams(window.location.search).get('no_visa'),
-        flag_doc: new URLSearchParams(window.location.search).get('flag_doc'),
-        tanggaljam: new URLSearchParams(window.location.search).get('tanggaljam'),
-        page: new URLSearchParams(window.location.search).get('page')
-    });
-    
-    // Add click event listeners to pagination links
-    const paginationLinks = document.querySelectorAll('.pagination a');
-    console.log('Found pagination links:', paginationLinks.length);
-    
-    if (paginationLinks.length > 0) {
-        paginationLinks.forEach(link => {
+    const pagination = document.querySelector('.pagination');
+    if (pagination) {
+        // Add loading state to pagination links
+        const links = pagination.querySelectorAll('a');
+        links.forEach(link => {
             link.addEventListener('click', function(e) {
-                console.log('Pagination link clicked:', link.href);
-                
                 // Show loading state
-                const container = document.querySelector('.mobile-data-container, .table-responsive');
+                const container = document.querySelector('.table-responsive, .mobile-table-container');
                 if (container) {
                     container.style.opacity = '0.6';
                     container.style.pointerEvents = 'none';
-                    
-                    // Add loading indicator
-                    const loadingDiv = document.createElement('div');
-                    loadingDiv.className = 'loading-overlay';
-                    loadingDiv.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
-                    loadingDiv.style.cssText = 'position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000;';
-                    
-                    container.style.position = 'relative';
-                    container.appendChild(loadingDiv);
                 }
-                
-                // Add a small delay to show loading state
-                setTimeout(() => {
-                    window.location.href = link.href;
-                }, 100);
             });
         });
-    } else {
-        console.log('No pagination links found');
     }
-}
-
-// Mobile edit functions
-function toggleEditMobile(button) {
-    const card = button.closest('.mobile-card-item');
-    const editFields = card.querySelectorAll('.mobile-edit-field');
-    const values = card.querySelectorAll('.value');
-    const editBtn = card.querySelector('.btn-edit-mobile');
-    const saveBtn = card.querySelector('.btn-save-mobile');
-    const cancelBtn = card.querySelector('.btn-cancel-mobile');
-    
-    // Add editing class for visual feedback
-    card.classList.add('editing');
-    
-    editFields.forEach(field => field.style.display = 'block');
-    values.forEach(value => value.style.display = 'none');
-    
-    editBtn.style.display = 'none';
-    saveBtn.style.display = 'inline-flex';
-    cancelBtn.style.display = 'inline-flex';
-}
-
-function cancelEditMobile(button) {
-    const card = button.closest('.mobile-card-item');
-    const editFields = card.querySelectorAll('.mobile-edit-field');
-    const values = card.querySelectorAll('.value');
-    const editBtn = card.querySelector('.btn-edit-mobile');
-    const saveBtn = card.querySelector('.btn-save-mobile');
-    const cancelBtn = card.querySelector('.btn-cancel-mobile');
-    
-    editFields.forEach((field, index) => {
-        const valueElement = values[index];
-        const originalValue = valueElement.getAttribute('data-value');
-        
-        if (field.tagName === 'SELECT') {
-            field.value = originalValue || '';
-        } else {
-            field.value = originalValue || '';
-        }
-    });
-    
-    // Remove editing class
-    card.classList.remove('editing');
-    
-    editFields.forEach(field => field.style.display = 'none');
-    values.forEach(value => value.style.display = 'inline');
-    
-    editBtn.style.display = 'inline-flex';
-    saveBtn.style.display = 'none';
-    cancelBtn.style.display = 'none';
-}
-
-function saveRowMobile(button) {
-    const card = button.closest('.mobile-card-item');
-    const rowId = card.getAttribute('data-id');
-    const editFields = card.querySelectorAll('.mobile-edit-field');
-    const values = card.querySelectorAll('.value');
-    const editBtn = card.querySelector('.btn-edit-mobile');
-    const saveBtn = card.querySelector('.btn-save-mobile');
-    const cancelBtn = card.querySelector('.btn-cancel-mobile');
-    
-    const data = {};
-    let hasData = false;
-    
-    editFields.forEach((field, index) => {
-        // Get the corresponding value element to find the field name
-        const valueElement = values[index];
-        const fieldName = valueElement.getAttribute('data-field');
-        if (fieldName) {
-            data[fieldName] = field.value;
-            hasData = true;
-        }
-    });
-    
-    // Validate that we have data to save
-    if (!hasData || Object.keys(data).length === 0) {
-        showAlert('Tidak ada data yang dapat disimpan', 'error');
-        return;
-    }
-    
-    // Debug logging
-    console.log('Saving data:', data);
-    console.log('Row ID:', rowId);
-    
-    // Show loading state
-    saveBtn.disabled = true;
-    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-    
-    // Create AbortController for timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-    
-    fetch('<?= base_url('todo/update_ajax/') ?>' + rowId, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify(data),
-        signal: controller.signal
-    })
-    .then(response => {
-        if (response.status === 401) {
-            showAlert('Session expired. Silakan login ulang.', 'error');
-            setTimeout(() => {
-                window.location.href = '<?= base_url('auth') ?>';
-            }, 2000);
-            return;
-        }
-        return response.json();
-    })
-    .then(result => {
-        if (!result) return;
-        
-        if (result.success) {
-            editFields.forEach((field, index) => {
-                const valueElement = values[index];
-                const fieldName = valueElement.getAttribute('data-field');
-                let displayValue = field.value;
-                
-                if (fieldName === 'status') {
-                    const statusMap = {0: 'On Target', 1: 'Already', 2: 'Done'};
-                    displayValue = statusMap[field.value] || field.value;
-                    valueElement.className = `value status-badge status-${field.value}`;
-                }
-                
-                valueElement.textContent = displayValue;
-                valueElement.setAttribute('data-value', field.value);
-            });
-            
-            showAlert('Data berhasil diperbarui', 'success');
-            // Auto refresh setelah 1 detik
-            setTimeout(() => {
-                location.reload();
-            }, 1000);
-            
-            // Remove editing class
-            card.classList.remove('editing');
-            
-            editFields.forEach(field => field.style.display = 'none');
-            values.forEach(value => value.style.display = 'inline');
-            editBtn.style.display = 'inline-flex';
-            saveBtn.style.display = 'none';
-            cancelBtn.style.display = 'none';
-        } else {
-            showAlert('Gagal memperbarui data: ' + result.message, 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        if (error.name === 'AbortError') {
-            showAlert('Request timeout. Silakan coba lagi.', 'error');
-        } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            showAlert('Koneksi terputus. Silakan periksa koneksi internet Anda.', 'error');
-        } else {
-            showAlert('Terjadi kesalahan saat memperbarui data: ' + error.message, 'error');
-        }
-    })
-    .finally(() => {
-        // Clear timeout
-        clearTimeout(timeoutId);
-        // Reset button state
-        saveBtn.disabled = false;
-        saveBtn.innerHTML = '<i class="fas fa-save"></i>';
-    });
-}
-
-// Desktop edit functions (existing)
-function toggleEdit(button) {
-    const row = button.closest('tr');
-    const editFields = row.querySelectorAll('.edit-field');
-    const displayValues = row.querySelectorAll('.display-value');
-    const editBtn = row.querySelector('.btn-edit');
-    const saveBtn = row.querySelector('.btn-save');
-    const cancelBtn = row.querySelector('.btn-cancel');
-    
-    editFields.forEach(field => field.style.display = 'block');
-    displayValues.forEach(value => value.style.display = 'none');
-    
-    editBtn.style.display = 'none';
-    saveBtn.style.display = 'inline-block';
-    cancelBtn.style.display = 'inline-block';
-}
-
-function cancelEdit(button) {
-    const row = button.closest('tr');
-    const editFields = row.querySelectorAll('.edit-field');
-    const displayValues = row.querySelectorAll('.display-value');
-    const editBtn = row.querySelector('.btn-edit');
-    const saveBtn = row.querySelector('.btn-save');
-    const cancelBtn = row.querySelector('.btn-cancel');
-    
-    editFields.forEach((field, index) => {
-        if (field.tagName === 'SELECT') {
-            const originalValue = field.closest('td').getAttribute('data-value');
-            field.value = originalValue || '';
-        } else {
-            field.value = field.closest('td').getAttribute('data-value') || '';
-        }
-    });
-    
-    editFields.forEach(field => field.style.display = 'none');
-    displayValues.forEach(value => value.style.display = 'inline');
-    
-    editBtn.style.display = 'inline-block';
-    saveBtn.style.display = 'none';
-    cancelBtn.style.display = 'none';
-}
-
-function saveRow(button) {
-    const row = button.closest('tr');
-    const rowId = row.getAttribute('data-id');
-    const editFields = row.querySelectorAll('.edit-field');
-    const displayValues = row.querySelectorAll('.display-value');
-    const editBtn = row.querySelector('.btn-edit');
-    const saveBtn = row.querySelector('.btn-save');
-    const cancelBtn = row.querySelector('.btn-cancel');
-    
-    const data = {};
-    editFields.forEach(field => {
-        const fieldName = field.closest('td').getAttribute('data-field');
-        data[fieldName] = field.value;
-    });
-    
-    fetch('<?= base_url('todo/update_ajax/') ?>' + rowId, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => {
-        if (response.status === 401) {
-            showAlert('Session expired. Silakan login ulang.', 'error');
-            setTimeout(() => {
-                window.location.href = '<?= base_url('auth') ?>';
-            }, 2000);
-            return;
-        }
-        return response.json();
-    })
-    .then(result => {
-        if (!result) return;
-        
-        if (result.success) {
-            editFields.forEach((field, index) => {
-                const fieldName = field.closest('td').getAttribute('data-field');
-                let displayValue = field.value;
-                
-                if (fieldName === 'tgl_lahir' && field.value) {
-                    const date = new Date(field.value);
-                    displayValue = date.toLocaleDateString('id-ID');
-                } else if (fieldName === 'status') {
-                    const statusMap = {0: 'On Target', 1: 'Already', 2: 'Done'};
-                    displayValue = statusMap[field.value] || field.value;
-                } else if (fieldName === 'gender') {
-                    const genderMap = {'L': 'Laki-laki', 'P': 'Perempuan', '': ''};
-                    displayValue = genderMap[field.value] || field.value;
-                }
-                
-                displayValues[index].textContent = displayValue;
-                field.setAttribute('data-value', field.value);
-            });
-            
-            showAlert('Data berhasil diperbarui', 'success');
-            // Auto refresh setelah 1 detik
-            setTimeout(() => {
-                location.reload();
-            }, 1000);
-            
-            editFields.forEach(field => field.style.display = 'none');
-            displayValues.forEach(value => value.style.display = 'inline');
-            editBtn.style.display = 'inline-block';
-            saveBtn.style.display = 'none';
-            cancelBtn.style.display = 'none';
-        } else {
-            showAlert('Gagal memperbarui data: ' + result.message, 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showAlert('Terjadi kesalahan saat memperbarui data', 'error');
-    });
-}
-
-function showAlert(message, type) {
-    const alertDiv = document.createElement('div');
-    
-    // Determine alert class based on type
-    let alertClass = 'alert-danger';
-    if (type === 'success') {
-        alertClass = 'alert-success';
-    } else if (type === 'warning') {
-        alertClass = 'alert-warning';
-    } else if (type === 'info') {
-        alertClass = 'alert-info';
-    }
-    
-    alertDiv.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
-    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px; max-width: 90vw;';
-    alertDiv.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    document.body.appendChild(alertDiv);
-    
-    setTimeout(() => {
-        alertDiv.remove();
-    }, 3000);
-}
-
-// Initialize functionality when page loads
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize pagination enhancement
-    enhancePagination();
-    
-    // Initialize search form enhancement
-    enhanceSearchForms();
-    
-    // Debug pagination data
-    debugPaginationData();
-    
-    // Any mobile-specific initialization can go here
-});
-
-// Debug pagination data
-function debugPaginationData() {
-    console.log('=== Pagination Debug Info ===');
-    console.log('Total rows:', <?= isset($total_rows) ? $total_rows : 'null' ?>);
-    console.log('Per page:', <?= isset($per_page) ? $per_page : 'null' ?>);
-    console.log('Current page:', <?= isset($current_page) ? $current_page : 'null' ?>);
-    console.log('Offset:', <?= isset($offset) ? $offset : 'null' ?>);
-    console.log('Pagination HTML:', document.querySelector('.pagination-container')?.innerHTML);
-    console.log('=============================');
 }
 
 // Enhanced search form functionality
@@ -2127,4 +1984,525 @@ function enhanceSearchForms() {
         });
     }
 }
+
+// Debug pagination data
+function debugPaginationData() {
+    console.log('=== Pagination Debug Info ===');
+    console.log('Total rows:', <?= isset($total_rows) ? $total_rows : 'null' ?>);
+    console.log('Per page:', <?= isset($per_page) ? $per_page : 'null' ?>);
+    console.log('Current page:', <?= isset($current_page) ? $current_page : 'null' ?>);
+    console.log('Offset:', <?= isset($offset) ? $offset : 'null' ?>);
+    console.log('Pagination HTML:', document.querySelector('.pagination-container')?.innerHTML);
+    console.log('=============================');
+}
+
+// Barcode upload functions
+function initializeBarcodeUpload() {
+    // Add event listeners for barcode upload buttons
+    document.addEventListener('click', function(e) {
+        const uploadBtn = e.target.closest('.barcode-upload-btn');
+        if (uploadBtn) {
+            e.preventDefault();
+            uploadBarcodeImage(uploadBtn);
+        }
+        
+        const removeBtn = e.target.closest('.barcode-remove-btn');
+        if (removeBtn) {
+            e.preventDefault();
+            removeBarcodeImage(removeBtn);
+        }
+    });
+}
+
+function uploadBarcodeImage(button) {
+    const row = button.closest('tr');
+    const fileInput = row.querySelector('.barcode-file-input');
+    console.log('File input found:', fileInput);
+    
+    // Check if this is mobile or desktop table
+    const isMobile = row.closest('.mobile-excel-table') !== null;
+    
+    let barcodeInput, flagDocCell, flagDocValue;
+    
+    if (isMobile) {
+        // Mobile table
+        barcodeInput = row.querySelector('.mobile-barcode-edit-container input');
+        flagDocCell = row.querySelector('[data-field="flag_doc"]');
+        flagDocValue = flagDocCell ? flagDocCell.getAttribute('data-value') : '';
+        console.log('Mobile table detected. Barcode input:', barcodeInput);
+    } else {
+        // Desktop table
+        barcodeInput = row.querySelector('.barcode-edit-container input');
+        flagDocCell = row.querySelector('[data-field="flag_doc"]');
+        flagDocValue = flagDocCell ? flagDocCell.getAttribute('data-value') : '';
+        console.log('Desktop table detected. Barcode input:', barcodeInput);
+    }
+    
+    // Check if flag_doc is empty or just dash
+    if (!flagDocValue || flagDocValue === '-' || flagDocValue.trim() === '') {
+        showAlert('Flag dokumen harus diisi terlebih dahulu. Silakan edit field Flag Dokumen dan pilih flag yang sesuai.', 'error');
+        console.log('Flag doc validation failed. Value:', flagDocValue);
+        return;
+    }
+    
+    console.log('Flag doc validation passed. Value:', flagDocValue);
+    
+    fileInput.click();
+    
+    fileInput.onchange = function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                showAlert('Pilih file gambar yang valid', 'error');
+                return;
+            }
+            
+            // Validate file size (5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                showAlert('Ukuran file terlalu besar. Maksimal 5MB', 'error');
+                return;
+            }
+            
+            // Show preview based on table type
+            let preview, previewImg;
+            if (isMobile) {
+                preview = row.querySelector('.mobile-barcode-preview');
+                previewImg = row.querySelector('.mobile-barcode-preview .barcode-preview-img');
+            } else {
+                preview = row.querySelector('.barcode-preview');
+                previewImg = row.querySelector('.barcode-preview .barcode-preview-img');
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                if (isMobile) {
+                    preview.classList.add('active');
+                } else {
+                    preview.style.display = 'block';
+                }
+                console.log('Preview updated with selected file');
+            };
+            reader.readAsDataURL(file);
+            
+            // Upload file
+            uploadBarcodeFile(file, flagDocValue, barcodeInput, row);
+        }
+    };
+}
+
+function uploadBarcodeFile(file, flagDoc, barcodeInput, row) {
+    const formData = new FormData();
+    formData.append('barcode_image', file);
+    formData.append('flag_doc', flagDoc);
+    
+    // Get existing barcode filename for replacement
+    const existingBarcode = barcodeInput.value;
+    if (existingBarcode && existingBarcode.trim() !== '') {
+        formData.append('existing_barcode', existingBarcode);
+        console.log('Replacing existing barcode:', existingBarcode);
+    }
+    
+    // Show loading state
+    const button = row.querySelector('.barcode-upload-btn');
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    
+    fetch('<?= base_url('upload/upload_barcode') ?>', {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData
+    })
+    .then(response => {
+        if (response.status === 401) {
+            showAlert('Session expired. Silakan login ulang.', 'error');
+            setTimeout(() => {
+                window.location.href = '<?= base_url('auth') ?>';
+            }, 2000);
+            return;
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (!data) return;
+        button.disabled = false;
+        button.innerHTML = originalText;
+        
+        if (data.status === 'success') {
+            barcodeInput.value = data.barcode_value; // Gunakan barcode_value untuk database
+            console.log('Barcode uploaded successfully. Value set to:', data.barcode_value);
+            console.log('Barcode input field:', barcodeInput);
+            console.log('Barcode input value after set:', barcodeInput.value);
+            
+            // Update data-value attribute of the td element
+            const barcodeTd = row.querySelector('[data-field="barcode"]');
+            if (barcodeTd) {
+                barcodeTd.setAttribute('data-value', data.barcode_value);
+                console.log('Updated barcode td data-value to:', data.barcode_value);
+            }
+            
+            // Update preview with new image
+            const isMobile = row.closest('.mobile-excel-table') !== null;
+            let preview, previewImg;
+            if (isMobile) {
+                preview = row.querySelector('.mobile-barcode-preview');
+                previewImg = row.querySelector('.mobile-barcode-preview .barcode-preview-img');
+            } else {
+                preview = row.querySelector('.barcode-preview');
+                previewImg = row.querySelector('.barcode-preview .barcode-preview-img');
+            }
+            
+            if (preview && previewImg) {
+                // Add timestamp to prevent browser cache
+                const timestamp = new Date().getTime();
+                previewImg.src = '<?= base_url('upload/view_barcode/') ?>' + data.barcode_value + '?t=' + timestamp;
+                if (isMobile) {
+                    preview.classList.add('active');
+                } else {
+                    preview.style.display = 'block';
+                }
+                console.log('Updated preview with new image:', data.barcode_value);
+            }
+            
+            showAlert('Gambar barcode berhasil diupload!', 'success');
+            
+            // Reset file input for next upload
+            const fileInput = row.querySelector('.barcode-file-input');
+            if (fileInput) {
+                fileInput.value = '';
+            }
+        } else {
+            showAlert(data.message || 'Gagal mengupload gambar', 'error');
+            // Remove preview on error
+            const isMobile = row.closest('.mobile-excel-table') !== null;
+            let preview;
+            if (isMobile) {
+                preview = row.querySelector('.mobile-barcode-preview');
+                preview.classList.remove('active');
+            } else {
+                preview = row.querySelector('.barcode-preview');
+                preview.style.display = 'none';
+            }
+            
+            // Reset file input on error
+            const fileInput = row.querySelector('.barcode-file-input');
+            if (fileInput) {
+                fileInput.value = '';
+            }
+        }
+    })
+    .catch(error => {
+        button.disabled = false;
+        button.innerHTML = originalText;
+        showAlert('Terjadi kesalahan saat mengupload gambar', 'error');
+        console.error('Upload error:', error);
+        
+        // Remove preview on error
+        const isMobile = row.closest('.mobile-excel-table') !== null;
+        let preview;
+        if (isMobile) {
+            preview = row.querySelector('.mobile-barcode-preview');
+            preview.classList.remove('active');
+        } else {
+            preview = row.querySelector('.barcode-preview');
+            preview.style.display = 'none';
+        }
+        
+        // Reset file input on error
+        const fileInput = row.querySelector('.barcode-file-input');
+        if (fileInput) {
+            fileInput.value = '';
+        }
+    });
+}
+
+function removeBarcodeImage(button) {
+    const row = button.closest('tr');
+    
+    // Check if this is mobile or desktop table
+    const isMobile = row.closest('.mobile-excel-table') !== null;
+    
+    let preview, fileInput, barcodeInput;
+    
+    if (isMobile) {
+        // Mobile table
+        preview = row.querySelector('.mobile-barcode-preview');
+        fileInput = row.querySelector('.barcode-file-input');
+        barcodeInput = row.querySelector('.mobile-barcode-edit-container input');
+    } else {
+        // Desktop table
+        preview = row.querySelector('.barcode-preview');
+        fileInput = row.querySelector('.barcode-file-input');
+        barcodeInput = row.querySelector('.barcode-edit-container input');
+    }
+    
+    // Get existing barcode value from database
+    const barcodeTd = row.querySelector('[data-field="barcode"]');
+    const existingBarcode = barcodeTd ? barcodeTd.getAttribute('data-value') : '';
+    
+    console.log('=== REMOVE BARCODE DEBUG ===');
+    console.log('Existing barcode from database:', existingBarcode);
+    console.log('Is mobile:', isMobile);
+    console.log('================================');
+    
+    // Delete file from server if exists
+    if (existingBarcode && existingBarcode.trim() !== '' && existingBarcode !== '-' && existingBarcode !== 'null') {
+        deleteBarcodeFileFromServer(existingBarcode, isMobile);
+        
+        // Also clear barcode from database if not in edit mode
+        const isEditing = row.classList.contains('editing') || row.querySelector('.edit-field[style*="block"]') !== null;
+        if (!isEditing) {
+            // Auto save empty barcode to database
+            const rowId = row.getAttribute('data-id');
+            if (rowId) {
+                autoSaveBarcodeToDatabase(row, '');
+            }
+        }
+    } else {
+        // Show notification for mobile even if no file to delete
+        if (isMobile) {
+            showAlert('Barcode berhasil dihapus', 'success');
+        }
+    }
+    
+    if (isMobile) {
+        preview.classList.remove('active');
+    } else {
+        preview.style.display = 'none';
+    }
+    fileInput.value = '';
+    barcodeInput.value = '';
+    
+    // Update data-value attribute of the td element
+    if (barcodeTd) {
+        barcodeTd.setAttribute('data-value', '');
+        console.log('Cleared barcode td data-value');
+    }
+    
+    // Clear preview image source
+    if (preview) {
+        const previewImg = preview.querySelector('.barcode-preview-img');
+        if (previewImg) {
+            previewImg.src = '';
+        }
+    }
+    
+    console.log('Barcode image removed and preview cleared');
+}
+
+// Delete barcode file from server
+function deleteBarcodeFileFromServer(filename, isMobile = false) {
+    console.log('Attempting to delete barcode file from server:', filename);
+    
+    const formData = new FormData();
+    formData.append('filename', filename);
+    
+    fetch('<?= base_url('upload/delete_barcode') ?>', {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData
+    })
+    .then(response => {
+        if (response.status === 401) {
+            console.error('Session expired while deleting barcode file');
+            return;
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data && data.status === 'success') {
+            console.log('Barcode file successfully deleted from server:', filename);
+            // Show success notification for mobile
+            if (isMobile) {
+                showAlert('File barcode berhasil dihapus dari server', 'success');
+            }
+        } else {
+            console.error('Failed to delete barcode file from server:', data ? data.message : 'Unknown error');
+            // Show error notification for mobile
+            if (isMobile) {
+                showAlert('Gagal menghapus file barcode dari server', 'error');
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting barcode file from server:', error);
+        // Show error notification for mobile
+        if (isMobile) {
+            showAlert('Terjadi kesalahan saat menghapus file barcode', 'error');
+        }
+    });
+}
+
+// Auto save barcode to database after successful upload
+function autoSaveBarcodeToDatabase(row, barcodeValue) {
+    console.log('=== AUTO SAVE FUNCTION START ===');
+    console.log('Row element:', row);
+    console.log('Barcode value:', barcodeValue);
+    
+    const rowId = row.getAttribute('data-id');
+    console.log('Row ID:', rowId);
+    
+    if (!rowId) {
+        console.error('Row ID not found for auto save');
+        return;
+    }
+    
+    // Check if row is in edit mode
+    const isMobile = row.closest('.mobile-excel-table') !== null;
+    const isEditing = row.classList.contains('editing') || row.querySelector('.edit-field[style*="block"]') !== null;
+    
+    // Get existing barcode value from database
+    const barcodeTd = row.querySelector('[data-field="barcode"]');
+    const existingBarcode = barcodeTd ? barcodeTd.getAttribute('data-value') : '';
+    
+    console.log('=== AUTO SAVE REPLACE DEBUG ===');
+    console.log('Existing barcode from database:', existingBarcode);
+    console.log('New barcode value:', barcodeValue);
+    console.log('Is replacing:', existingBarcode && existingBarcode !== '-' && existingBarcode !== 'null');
+    console.log('==================================');
+    
+    const data = {
+        barcode: barcodeValue
+    };
+    
+    console.log('=== AUTO SAVE BARCODE DEBUG ===');
+    console.log('Auto saving barcode to database. Row ID:', rowId, 'Barcode value:', barcodeValue);
+    console.log('Row element:', row);
+    console.log('Is mobile table:', isMobile);
+    console.log('Is editing mode:', isEditing);
+    console.log('Data to send:', data);
+    console.log('================================');
+    
+    // For barcode upload/replace, always save immediately regardless of edit mode
+    // This ensures the database is updated with the new barcode value
+    if (isEditing && barcodeValue) {
+        console.log('Row is in edit mode, but barcode upload should still save immediately');
+        // Continue with auto-save even in edit mode for barcode uploads
+    }
+    
+    // Show loading state
+    const saveBtn = row.querySelector('.btn-save');
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    }
+    
+    console.log('=== SENDING FETCH REQUEST ===');
+    console.log('URL:', '<?= base_url('todo/update_ajax/') ?>' + rowId);
+    console.log('Data to send:', data);
+    console.log('================================');
+    
+    fetch('<?= base_url('todo/update_ajax/') ?>' + rowId, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        console.log('=== FETCH RESPONSE ===');
+        console.log('Raw response:', response);
+        if (response.status === 401) {
+            showAlert('Session expired. Silakan login ulang.', 'error');
+            setTimeout(() => {
+                window.location.href = '<?= base_url('auth') ?>';
+            }, 2000);
+            return;
+        }
+        return response.json();
+    })
+    .then(result => {
+        if (!result) return;
+        
+        console.log('=== DATABASE UPDATE RESULT ===');
+        console.log('Server response:', result);
+        console.log('Success status:', result.success);
+        console.log('Message:', result.message);
+        console.log('================================');
+        
+        if (result.success) {
+            console.log('Barcode successfully saved to database');
+            // Update display value for barcode
+            let barcodeValueElement;
+            
+            if (isMobile) {
+                barcodeValueElement = row.querySelector('[data-field="barcode"] .value');
+            } else {
+                barcodeValueElement = row.querySelector('[data-field="barcode"] .display-value');
+            }
+            
+            console.log('=== DISPLAY UPDATE DEBUG ===');
+            console.log('Is mobile:', isMobile);
+            console.log('Barcode value element found:', barcodeValueElement);
+            console.log('New barcode value:', barcodeValue);
+            console.log('================================');
+            
+            if (barcodeValueElement) {
+                if (barcodeValue && barcodeValue.trim() !== '') {
+                    // Add timestamp to prevent browser cache
+                    const timestamp = new Date().getTime();
+                    barcodeValueElement.innerHTML = '<a href="<?= base_url('upload/view_barcode/') ?>' + barcodeValue + '?t=' + timestamp + '" target="_blank" title="Lihat gambar barcode"><i class="fas fa-check-circle" style="color: green;"></i></a>';
+                } else {
+                    // Show empty barcode icon
+                    barcodeValueElement.innerHTML = '<i class="fas fa-times-circle" style="color: red;" title="Tidak ada barcode"></i>';
+                }
+                barcodeValueElement.setAttribute('data-value', barcodeValue);
+                console.log('Updated barcode display value');
+            }
+            
+            if (barcodeValue && barcodeValue.trim() !== '') {
+                // Check if this is a replace operation
+                const isReplacing = existingBarcode && existingBarcode.trim() !== '' && existingBarcode !== '-' && existingBarcode !== 'null';
+                if (isReplacing) {
+                    showAlert('Barcode berhasil diganti dan disimpan ke database', 'success');
+                } else {
+                    showAlert('Barcode berhasil disimpan ke database', 'success');
+                }
+            } else {
+                showAlert('Barcode berhasil dihapus dari database', 'success');
+            }
+            
+            // Auto refresh disabled for better user experience
+            // Data is already updated in the display
+            // setTimeout(() => {
+            //     location.reload();
+            // }, 1000);
+            
+        } else {
+            showAlert(result.message || 'Gagal menyimpan barcode ke database', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error during auto save:', error);
+        showAlert('Terjadi kesalahan saat menyimpan barcode ke database: ' + error.message, 'error');
+    })
+    .finally(() => {
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="fas fa-save"></i>';
+        }
+    });
+}
+
+// Initialize functionality when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize pagination enhancement
+    enhancePagination();
+    
+    // Initialize search form enhancement
+    enhanceSearchForms();
+    
+    // Initialize barcode upload functionality
+    initializeBarcodeUpload();
+    
+    // Debug pagination data
+    debugPaginationData();
+});
 </script>

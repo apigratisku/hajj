@@ -68,7 +68,35 @@
                                     <label for="barcode" class="form-label">
                                         <i class="fas fa-barcode"></i> Barcode
                                     </label>
-                                    <input type="text" class="form-control mobile-input" id="barcode" name="barcode" value="<?= $peserta->barcode ?>" placeholder="Masukkan barcode">
+                                    <div class="barcode-input-container">
+                                        <input type="text" class="form-control mobile-input" id="barcode" name="barcode" value="<?= $peserta->barcode ?>" placeholder="Masukkan barcode atau upload gambar">
+                                        <button type="button" class="btn btn-outline-primary btn-sm ms-2" id="btnUploadBarcode" title="Upload Gambar Barcode">
+                                            <i class="fas fa-camera"></i>
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Hidden file input -->
+                                    <input type="file" id="barcodeImageInput" accept="image/*" style="display: none;">
+                                    
+                                    <!-- Barcode image preview -->
+                                    <div id="barcodePreview" class="mt-2" style="display: none;">
+                                        <div class="barcode-preview-container">
+                                            <img id="barcodePreviewImg" src="" alt="Preview Barcode" class="img-thumbnail" style="max-width: 200px; max-height: 150px;">
+                                            <div class="barcode-preview-actions mt-2">
+                                                <button type="button" class="btn btn-sm btn-danger" id="btnRemoveBarcode">
+                                                    <i class="fas fa-trash"></i> Hapus
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Upload progress -->
+                                    <div id="uploadProgress" class="mt-2" style="display: none;">
+                                        <div class="progress">
+                                            <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                                        </div>
+                                        <small class="text-muted">Mengupload gambar...</small>
+                                    </div>
                                 </div>
                                 
                                 <div class="form-group">
@@ -415,4 +443,196 @@
 .mobile-input[value]:not([value=""]):focus {
     background-color: white;
 }
-</style> 
+
+/* Barcode Upload Styles */
+.barcode-input-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.barcode-input-container .form-control {
+    flex: 1;
+}
+
+.barcode-preview-container {
+    border: 2px dashed #dee2e6;
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    text-align: center;
+    background-color: #f8f9fa;
+}
+
+.barcode-preview-container img {
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+}
+
+.barcode-preview-actions {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.progress {
+    height: 0.5rem;
+    border-radius: var(--border-radius);
+    background-color: #e9ecef;
+}
+
+.progress-bar {
+    background-color: var(--primary-color);
+    transition: width 0.3s ease;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Barcode upload functionality
+    const btnUploadBarcode = document.getElementById('btnUploadBarcode');
+    const barcodeImageInput = document.getElementById('barcodeImageInput');
+    const barcodePreview = document.getElementById('barcodePreview');
+    const barcodePreviewImg = document.getElementById('barcodePreviewImg');
+    const btnRemoveBarcode = document.getElementById('btnRemoveBarcode');
+    const uploadProgress = document.getElementById('uploadProgress');
+    const progressBar = uploadProgress.querySelector('.progress-bar');
+    const barcodeInput = document.getElementById('barcode');
+    const flagDocInput = document.getElementById('flag_doc');
+    
+    let uploadedFilename = null;
+    
+    // Trigger file input when upload button is clicked
+    btnUploadBarcode.addEventListener('click', function() {
+        barcodeImageInput.click();
+    });
+    
+    // Handle file selection
+    barcodeImageInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                alert('Pilih file gambar yang valid');
+                return;
+            }
+            
+            // Validate file size (5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Ukuran file terlalu besar. Maksimal 5MB');
+                return;
+            }
+            
+            // Check if flag_doc is filled
+            if (!flagDocInput.value.trim()) {
+                alert('Flag dokumen harus diisi terlebih dahulu');
+                flagDocInput.focus();
+                return;
+            }
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                barcodePreviewImg.src = e.target.result;
+                barcodePreview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+            
+            // Upload file
+            uploadBarcodeImage(file);
+        }
+    });
+    
+    // Remove barcode image
+    btnRemoveBarcode.addEventListener('click', function() {
+        barcodePreview.style.display = 'none';
+        barcodeImageInput.value = '';
+        uploadedFilename = null;
+        
+        // Clear barcode input if it contains the uploaded filename
+        if (barcodeInput.value === uploadedFilename) {
+            barcodeInput.value = '';
+        }
+    });
+    
+    function uploadBarcodeImage(file) {
+        const formData = new FormData();
+        formData.append('barcode_image', file);
+        formData.append('flag_doc', flagDocInput.value.trim());
+        
+        // Show progress
+        uploadProgress.style.display = 'block';
+        progressBar.style.width = '0%';
+        
+        // Simulate progress
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+            progress += Math.random() * 30;
+            if (progress > 90) progress = 90;
+            progressBar.style.width = progress + '%';
+        }, 200);
+        
+        fetch('<?= base_url('upload/upload_barcode') ?>', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            clearInterval(progressInterval);
+            progressBar.style.width = '100%';
+            
+            setTimeout(() => {
+                uploadProgress.style.display = 'none';
+                
+                if (data.status === 'success') {
+                    uploadedFilename = data.barcode_value;
+                    barcodeInput.value = data.barcode_value; // Gunakan barcode_value untuk database
+                    
+                    // Show success message
+                    showAlert('success', 'Gambar barcode berhasil diupload!');
+                } else {
+                    showAlert('error', data.message || 'Gagal mengupload gambar');
+                    barcodePreview.style.display = 'none';
+                }
+            }, 500);
+        })
+        .catch(error => {
+            clearInterval(progressInterval);
+            uploadProgress.style.display = 'none';
+            barcodePreview.style.display = 'none';
+            showAlert('error', 'Terjadi kesalahan saat mengupload gambar');
+            console.error('Upload error:', error);
+        });
+    }
+    
+    function showAlert(type, message) {
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+        const icon = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle';
+        
+        const alertHtml = `
+            <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                <div class="d-flex align-items-center">
+                    <i class="${icon} me-2"></i>
+                    <div class="flex-grow-1">${message}</div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        
+        // Insert alert at the top of card-body
+        const cardBody = document.querySelector('.card-body');
+        cardBody.insertAdjacentHTML('afterbegin', alertHtml);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                alert.style.opacity = '0';
+                setTimeout(() => alert.remove(), 300);
+            });
+        }, 5000);
+    }
+});
+</script> 

@@ -63,6 +63,12 @@ class Transaksi_model extends CI_Model {
             // Filter data to only include existing fields
             $filtered_data = array_intersect_key($data, array_flip($fields));
             
+            // Debug: Log field filtering
+            log_message('debug', 'Transaksi_model update - Available fields: ' . json_encode($fields));
+            log_message('debug', 'Transaksi_model update - Input data: ' . json_encode($data));
+            log_message('debug', 'Transaksi_model update - Filtered data: ' . json_encode($filtered_data));
+            log_message('debug', 'Transaksi_model update - Barcode in filtered data: ' . (isset($filtered_data['barcode']) ? $filtered_data['barcode'] : 'NOT FOUND'));
+            
             // Add updated_at timestamp
             $filtered_data['updated_at'] = date('Y-m-d H:i:s');
             

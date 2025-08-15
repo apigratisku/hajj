@@ -144,8 +144,18 @@ class Todo extends CI_Controller {
         $this->load->view('templates/footer');
     }
     public function delete($id) {
-            $this->transaksi_model->delete($id);
-            redirect('database');
+        // Get peserta data before deletion
+        $peserta = $this->transaksi_model->get_by_id($id);
+        
+        if ($peserta) {
+            // Delete barcode file if exists
+            if (!empty($peserta->barcode)) {
+                $this->delete_barcode_file($peserta->barcode);
+            }
+        }
+        
+        $this->transaksi_model->delete($id);
+        redirect('todo');
     }   
     
     public function download($id) {
@@ -265,7 +275,7 @@ class Todo extends CI_Controller {
                 'nomor_hp' => $this->input->post('nomor_hp'),
                 'email' => $this->input->post('email'),
                 'gender' => $this->input->post('gender'),
-                'status' => $this->input->post('status') ? $this->input->post('status') : 0,
+                'status' => $this->input->post('status') !== null ? $this->input->post('status', true) : null,
                 'tanggal' => $this->input->post('tanggal'),
                 'jam' => $this->input->post('jam'),
                 'flag_doc' => $this->input->post('flag_doc'),
@@ -313,15 +323,35 @@ class Todo extends CI_Controller {
             return;
         }
         
+        // Check if barcode field is being cleared (file deletion)
+        $new_barcode = null;
+        if (array_key_exists('barcode', $input)) {
+            $new_barcode = trim($input['barcode']) ?: null;
+        }
+        $old_barcode = $current_peserta->barcode;
+        
+        // If barcode is being cleared and there was a previous file, delete it
+        if (empty($new_barcode) && !empty($old_barcode)) {
+            $this->delete_barcode_file($old_barcode);
+        }
+        
         // Prepare data for update only for fields provided
         $allowedFields = ['nama','flag_doc','nomor_paspor','no_visa','tgl_lahir','password','nomor_hp','email','barcode','gender','status','tanggal','jam'];
         $data = [];
         foreach ($allowedFields as $field) {
             if (array_key_exists($field, $input)) {
-                if ($field === 'tgl_lahir' && empty($input[$field])) {
+                $value = $input[$field];
+        
+                if ($field === 'tgl_lahir' && empty($value)) {
                     $data[$field] = null;
-                } else {
-                    $data[$field] = trim($input[$field]) ?: null;
+                } 
+                // ✅ Khusus field yang boleh bernilai "0", jangan pakai ?: null
+                elseif ($field === 'status') {
+                    $data[$field] = $value; // Biarkan "0", "1", "2" tetap masuk
+                }
+                // Untuk field lain: tetap pakai trim dan null jika kosong
+                else {
+                    $data[$field] = trim($value) ?: null;
                 }
             }
         }
@@ -329,6 +359,8 @@ class Todo extends CI_Controller {
         
         // Debug: Log the data being updated
         log_message('debug', 'Todo update_ajax - Updating peserta ID: ' . $id . ' with data: ' . json_encode($data));
+        log_message('debug', 'Todo update_ajax - Raw input: ' . json_encode($input));
+        log_message('debug', 'Todo update_ajax - Barcode value: ' . (isset($data['barcode']) ? $data['barcode'] : 'NOT SET'));
         
         try {
             // Update data
@@ -879,5 +911,35 @@ class Todo extends CI_Controller {
         $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel2007');
         $objWriter->save('php://output');
         exit;
+    }
+    
+    /**
+     * Delete barcode file from uploads directory
+     */
+    private function delete_barcode_file($filename) {
+        if (empty($filename)) {
+            return false;
+        }
+        
+        // Validate filename for security
+        if (!preg_match('/^[a-zA-Z0-9._-]+$/', $filename)) {
+            log_message('error', 'Invalid filename for deletion: ' . $filename);
+            return false;
+        }
+        
+        $file_path = FCPATH . 'assets/uploads/barcode/' . $filename;
+        
+        if (file_exists($file_path)) {
+            if (unlink($file_path)) {
+                log_message('info', 'Barcode file deleted: ' . $filename);
+                return true;
+            } else {
+                log_message('error', 'Failed to delete barcode file: ' . $filename);
+                return false;
+            }
+        } else {
+            log_message('warning', 'Barcode file not found for deletion: ' . $filename);
+            return false;
+        }
     }
 } 
