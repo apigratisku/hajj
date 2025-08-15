@@ -215,8 +215,8 @@
                                                     <img class="barcode-preview-img" src="" alt="Preview" style="max-width: 60px; max-height: 45px;">
                                                 </div>
                                                 <button type="button" class="mobile-table-btn mobile-table-btn-danger barcode-remove-btn" style="display: none;">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
                                             </div>
                                             </td>
                                             <td class="col-gender" data-field="gender" data-value="<?= $p->gender ?>">
@@ -360,8 +360,8 @@
                                                 <img class="barcode-preview-img img-thumbnail" src="" alt="Preview" style="max-width: 100px; max-height: 75px;">
                                             </div>
                                             <button type="button" class="btn btn-sm btn-danger mt-1 barcode-remove-btn" style="display: none;">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
                                         </div>
                                         </td>
                                         <td class="gender text-center" data-field="gender" data-value="<?= $p->gender ?>">
