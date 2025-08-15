@@ -47,6 +47,7 @@ class Settings extends CI_Controller {
             $password = $this->db->password;
             $database = $this->db->database;
             
+            
             // Create backup filename with timestamp
             $backup_filename = 'backup_' . $database . '_' . date('Y-m-d_H-i-s') . '.sql';
             $backup_path = FCPATH . 'backups/' . $backup_filename;
