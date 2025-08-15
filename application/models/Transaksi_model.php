@@ -333,6 +333,7 @@ class Transaksi_model extends CI_Model {
         $this->db->where('tanggal !=', '');
         $this->db->where('jam IS NOT NULL');
         $this->db->where('jam !=', '');
+        $this->db->where('selesai !=', 2);
         
         if ($flag_doc) {
             $this->db->where('flag_doc', $flag_doc);
@@ -353,6 +354,7 @@ class Transaksi_model extends CI_Model {
         $this->db->where('tanggal', $tanggal);
         $this->db->where('jam IS NOT NULL');
         $this->db->where('jam !=', '');
+        $this->db->where('selesai !=', 2);
         
         if ($flag_doc) {
             $this->db->where('flag_doc', $flag_doc);
@@ -361,5 +363,27 @@ class Transaksi_model extends CI_Model {
         $this->db->group_by('jam');
         $this->db->order_by('jam', 'ASC');
         return $this->db->get()->result();
+    }
+
+    public function update_status_massal($tanggal, $jam, $flag_doc = null) {
+        $this->db->where('tanggal', $tanggal);
+        $this->db->where('jam', $jam);
+        $this->db->where('selesai !=', 2); // Update hanya yang belum status 2
+        
+        if ($flag_doc) {
+            $this->db->where('flag_doc', $flag_doc);
+        }
+        
+        $data = [
+            'selesai' => 2,
+            'updated_at' => date('Y-m-d H:i:s')
+        ];
+        
+        $result = $this->db->update($this->table, $data);
+        
+        // Log untuk debugging
+        log_message('debug', 'Update massal - Tanggal: ' . $tanggal . ', Jam: ' . $jam . ', Flag Doc: ' . $flag_doc . ', Affected Rows: ' . $this->db->affected_rows());
+        
+        return $result;
     }
 } 

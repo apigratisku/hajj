@@ -1,7 +1,7 @@
 <!-- Content Body -->
 <div class="content-body">
     <!-- Flag Doc Filter -->
-    <div class="row mb-4">
+    <div class="row mb-0">
         <div class="col-12">
             <div class="card mobile-card">
                 <div class="card-header bg-brown text-white">
@@ -40,66 +40,119 @@
         </div>
     </div>
 
+    <!-- Statistics Cards Toggle Button -->
+    <div class="row mb-2">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                
+                <div class="toggle-buttons">
+                    <!-- Desktop Toggle -->
+                    <button class="btn btn-outline-primary btn-sm d-none d-md-inline-block toggle-stats-btn" 
+                            data-target="desktop-stats" 
+                            data-action="toggle">
+                        <i class="fas fa-eye-slash"></i> 
+                        <span class="toggle-text">Tampilkan</span> Statistik
+                    </button>
+                    <!-- Mobile Toggle -->
+                    <button class="btn btn-outline-primary btn-sm d-md-none toggle-stats-btn" 
+                            data-target="mobile-stats" 
+                            data-action="toggle">
+                        <i class="fas fa-eye-slash"></i> 
+                        <span class="toggle-text">Tampilkan</span> Statistik
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Statistics Cards -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="dashboard-card">
-                <div class="row">
-                    <div class="col-md-3 text-center">
-                        <div class="icon">
-                            <i class="fas fa-user-friends"></i>
-                        </div>
+    <div class="row mb-2 stats-container" id="desktop-stats" style="display: none;">
+        <div class="col-12">
+            <div class="stats-horizontal-container">
+                <div class="stats-item">
+                    <div class="stats-icon">
+                        <i class="fas fa-user-friends"></i>
                     </div>
-                    <div class="col-md-9">
-                        <div class="count"><?= $total_peserta ?></div>
-                        <div class="title">Total Peserta</div>
+                    <div class="stats-content">
+                        <div class="stats-count"><?= $total_peserta ?></div>
+                        <div class="stats-title">Total Peserta</div>
                     </div>
                 </div>
-            </div>
-        </div>
-        
-        <div class="col-md-3">
-            <div class="dashboard-card">
-                <div class="row">
-                    <div class="col-md-3 text-center">
-                        <div class="icon">
-                            <i class="fas fa-check-circle"></i>
-                        </div>
+                
+                <div class="stats-item">
+                    <div class="stats-icon">
+                        <i class="fas fa-check-circle"></i>
                     </div>
-                    <div class="col-md-9">
-                        <div class="count"><?= $stats ?></div>
-                        <div class="title">Status Done <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
+                    <div class="stats-content">
+                        <div class="stats-count"><?= $stats ?></div>
+                        <div class="stats-title">Status Done <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
                     </div>
                 </div>
-            </div>
-        </div>
-        
-        <div class="col-md-3">
-            <div class="dashboard-card">
-                <div class="row">
-                    <div class="col-md-3 text-center">
-                        <div class="icon">
-                            <i class="fas fa-times-circle"></i>
-                        </div>
+                
+                <div class="stats-item">
+                    <div class="stats-icon">
+                        <i class="fas fa-times-circle"></i>
                     </div>
-                    <div class="col-md-9">
-                        <div class="count"><?= $stats_already ?></div>
-                        <div class="title">Status Already <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
+                    <div class="stats-content">
+                        <div class="stats-count"><?= $stats_already ?></div>
+                        <div class="stats-title">Status Already <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
                     </div>
                 </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="dashboard-card">
-                <div class="row">
-                    <div class="col-md-3 text-center">
-                        <div class="icon">
+                
+                <div class="stats-item">
+                    <div class="stats-icon">
                         <i class="fas fa-crosshairs"></i>
-                        </div>
                     </div>
-                    <div class="col-md-9">
-                        <div class="count"><?= $stats_on_target ?></div>
-                        <div class="title">Status On Target <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
+                    <div class="stats-content">
+                        <div class="stats-count"><?= $stats_on_target ?></div>
+                        <div class="stats-title">Status On Target <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Statistics Cards -->
+    <div class="row mb-2 stats-container d-md-none" id="mobile-stats" style="display: none;">
+        <div class="col-12">
+            <div class="stats-horizontal-container mobile-stats-horizontal">
+                <div class="stats-item mobile-stats-item">
+                    <div class="stats-icon">
+                        <i class="fas fa-user-friends"></i>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-count"><?= $total_peserta ?></div>
+                        <div class="stats-title">Total Peserta</div>
+                    </div>
+                </div>
+                
+                <div class="stats-item mobile-stats-item">
+                    <div class="stats-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-count"><?= $stats ?></div>
+                        <div class="stats-title">Status Done</div>
+                    </div>
+                </div>
+                
+                <div class="stats-item mobile-stats-item">
+                    <div class="stats-icon">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-count"><?= $stats_already ?></div>
+                        <div class="stats-title">Status Already</div>
+                    </div>
+                </div>
+                
+                <div class="stats-item mobile-stats-item">
+                    <div class="stats-icon">
+                        <i class="fas fa-crosshairs"></i>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-count"><?= $stats_on_target ?></div>
+                        <div class="stats-title">Status On Target</div>
                     </div>
                 </div>
             </div>
@@ -165,12 +218,37 @@
                                             </h6>
                                             <div class="time-slots">
                                                 <?php foreach ($detail_jam as $jam): ?>
+                                                    <?php
+                                                    // Cek kondisi untuk menampilkan tombol Selesai
+                                                    $current_date = date('Y-m-d');
+                                                    $current_time = date('H:i:s');
+                                                    $schedule_datetime = $tanggal . ' ' . $jam->jam . ':00';
+                                                    $current_datetime = $current_date . ' ' . $current_time;
+                                                    
+                                                    // Tombol muncul jika:
+                                                    // 1. Tanggal sudah lewat, atau
+                                                    // 2. Tanggal sama tapi jam sudah lewat
+                                                    $show_complete_button = false;
+                                                    if ($tanggal < $current_date) {
+                                                        $show_complete_button = true;
+                                                    } elseif ($tanggal == $current_date && $jam->jam <= $current_time) {
+                                                        $show_complete_button = true;
+                                                    }
+                                                    ?>
                                                     <div class="time-slot">
                                                         <div class="time-info">
                                                             <span class="time-label">
                                                                 <i class="fas fa-clock text-info"></i> <?= $jam->jam ?>
                                                             </span>
                                                             <span class="time-count"><?= (int)$jam->total_count ?></span>
+                                                            <?php if ($show_complete_button): ?>
+                                                                <button class="btn btn-success btn-sm complete-btn" 
+                                                                        data-tanggal="<?= $tanggal ?>" 
+                                                                        data-jam="<?= $jam->jam ?>" 
+                                                                        data-flag-doc="<?= $selected_flag_doc ?>">
+                                                                    <i class="fas fa-check"></i> Selesai
+                                                                </button>
+                                                            <?php endif; ?>
                                                         </div>
                                                         <div class="time-gender-breakdown">
                                                             <a href="<?= base_url('database/index?flag_doc=' . ($selected_flag_doc ?: '') . '&tanggaljam=' . $tanggal . ' ' . $jam->jam . '&status=&gender=L') ?>" 
@@ -575,6 +653,73 @@
     .filter-form .col-md-6 {
         width: 100%;
     }
+
+    /* Mobile Toggle Button */
+    .toggle-buttons {
+        width: 100%;
+        text-align: center;
+        margin-top: 0.5rem;
+    }
+
+    .toggle-stats-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+    }
+
+    /* Horizontal Stats Responsive */
+    .stats-horizontal-container {
+        flex-direction: column;
+        gap: 0.75rem;
+        padding: 0.75rem;
+    }
+
+    .stats-item {
+        width: 100%;
+        justify-content: center;
+        padding: 0.5rem;
+        border-bottom: 1px solid rgba(139, 69, 19, 0.1);
+    }
+
+    .stats-item:last-child {
+        border-bottom: none;
+    }
+
+    .stats-item::after {
+        display: none;
+    }
+
+    .stats-icon {
+        font-size: 1.5rem;
+        min-width: 40px;
+    }
+
+    .stats-count {
+        font-size: 1.4rem;
+    }
+
+    .stats-title {
+        font-size: 0.8rem;
+    }
+
+    /* Mobile Stats Cards (Legacy) */
+    .mobile-stats-card {
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .mobile-stats-card .icon {
+        font-size: 1.5rem;
+    }
+
+    .mobile-stats-card .count {
+        font-size: 1.25rem;
+    }
+
+    .mobile-stats-card .title {
+        font-size: 0.75rem;
+    }
 }
 
 @media (max-width: 576px) {
@@ -701,4 +846,488 @@
 .gender-link.female:hover {
     background-color: #e63946;
 }
-</style> 
+
+/* Tombol Selesai Styles */
+.complete-btn {
+    margin-left: 10px;
+    padding: 5px 12px;
+    font-size: 0.8rem;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.complete-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.complete-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Loading state untuk tombol */
+.complete-btn.loading {
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.complete-btn.loading i {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Toggle Button Styles */
+.toggle-stats-btn {
+    border-radius: var(--border-radius);
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    transition: var(--transition);
+    border: 2px solid var(--primary-color);
+    background: transparent;
+    color: var(--primary-color);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.toggle-stats-btn:hover {
+    background: var(--primary-color);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.toggle-stats-btn.active {
+    background: var(--primary-color);
+    color: white;
+}
+
+.toggle-stats-btn.active i {
+    transform: rotate(180deg);
+}
+
+.toggle-stats-btn i {
+    transition: transform 0.3s ease;
+}
+
+/* Horizontal Stats Layout */
+.stats-horizontal-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 249, 250, 0.95));
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    box-shadow: var(--shadow);
+    border-left: 4px solid var(--gold);
+    position: relative;
+    overflow: hidden;
+}
+
+.stats-horizontal-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary-color), var(--accent-color), var(--primary-color));
+    background-size: 200% 100%;
+    animation: gradientShift 3s ease-in-out infinite;
+}
+
+.stats-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    transition: var(--transition);
+    flex: 1;
+    text-align: center;
+    position: relative;
+}
+
+.stats-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1px;
+    height: 60%;
+    background: linear-gradient(to bottom, transparent, var(--primary-color), transparent);
+}
+
+.stats-item:hover {
+    background: rgba(139, 69, 19, 0.05);
+    transform: translateY(-2px);
+}
+
+.stats-icon {
+    font-size: 1.8rem;
+    color: var(--gold);
+    min-width: 45px;
+    text-align: center;
+}
+
+.stats-content {
+    flex: 1;
+}
+
+.stats-count {
+    font-size: 1.6rem;
+    font-weight: bold;
+    color: var(--dark-color);
+    margin-bottom: 0.2rem;
+    line-height: 1;
+}
+
+.stats-title {
+    font-size: 0.9rem;
+    color: var(--secondary-color);
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+/* Mobile Horizontal Stats */
+.mobile-stats-horizontal {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+}
+
+.mobile-stats-item {
+    width: 100%;
+    justify-content: center;
+    padding: 0.75rem;
+    border-bottom: 1px solid rgba(139, 69, 19, 0.1);
+}
+
+.mobile-stats-item:last-child {
+    border-bottom: none;
+}
+
+.mobile-stats-item::after {
+    display: none;
+}
+
+.mobile-stats-item .stats-icon {
+    font-size: 1.4rem;
+    min-width: 35px;
+}
+
+.mobile-stats-item .stats-count {
+    font-size: 1.3rem;
+}
+
+.mobile-stats-item .stats-title {
+    font-size: 0.75rem;
+}
+
+/* Mobile Stats Cards (Legacy - keeping for reference) */
+.mobile-stats-card {
+    padding: 1rem;
+    text-align: center;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+    border-left: 4px solid var(--gold);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 249, 250, 0.95));
+    position: relative;
+    overflow: hidden;
+}
+
+.mobile-stats-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary-color), var(--accent-color), var(--primary-color));
+    background-size: 200% 100%;
+    animation: gradientShift 3s ease-in-out infinite;
+}
+
+.mobile-stats-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-hover);
+}
+
+.mobile-stats-card .icon {
+    font-size: 2rem;
+    color: var(--gold);
+    margin-bottom: 0.5rem;
+}
+
+.mobile-stats-card .count {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--dark-color);
+    margin-bottom: 0.25rem;
+}
+
+.mobile-stats-card .title {
+    font-size: 0.85rem;
+    color: var(--secondary-color);
+    font-weight: 600;
+}
+
+/* Stats Container Animation */
+.stats-container {
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.stats-container.show {
+    animation: slideDown 0.3s ease-out;
+}
+
+.stats-container.hide {
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+        max-height: 0;
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        max-height: 500px;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+        max-height: 500px;
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-20px);
+        max-height: 0;
+    }
+}
+
+/* Alert styles */
+.alert {
+    border-radius: var(--border-radius);
+    border: none;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.alert-success {
+    background: linear-gradient(135deg, #d4edda, #c3e6cb);
+    color: #155724;
+    border-left: 4px solid #28a745;
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+    color: #721c24;
+    border-left: 4px solid #dc3545;
+}
+</style>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle tombol Selesai
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.complete-btn')) {
+            var button = e.target.closest('.complete-btn');
+            var tanggal = button.getAttribute('data-tanggal');
+            var jam = button.getAttribute('data-jam');
+            var flagDoc = button.getAttribute('data-flag-doc');
+            
+            // Konfirmasi sebelum melakukan update
+            if (!confirm('Apakah Anda yakin ingin menandai jadwal ' + tanggal + ' jam ' + jam + ' sebagai selesai? Ini akan mengupdate status semua peserta pada jadwal tersebut.')) {
+                return;
+            }
+            
+            // Set loading state
+            button.classList.add('loading');
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner"></i> Memproses...';
+            
+            // Kirim AJAX request
+            fetch('<?= base_url("dashboard/mark_schedule_complete") ?>', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    tanggal: tanggal,
+                    jam: jam,
+                    flag_doc: flagDoc
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status) {
+                    // Tampilkan pesan sukses
+                    showAlert('success', data.message);
+                    
+                    // Disable tombol setelah berhasil
+                    button.classList.remove('btn-success');
+                    button.classList.add('btn-secondary');
+                    button.innerHTML = '<i class="fas fa-check"></i> Selesai';
+                    button.disabled = true;
+                    
+                    // Reload halaman setelah 2 detik untuk memperbarui data
+                    setTimeout(function() {
+                        location.reload();
+                    }, 2000);
+                } else {
+                    // Tampilkan pesan error
+                    showAlert('danger', data.message);
+                    
+                    // Reset tombol
+                    button.classList.remove('loading');
+                    button.disabled = false;
+                    button.innerHTML = '<i class="fas fa-check"></i> Selesai';
+                }
+            })
+            .catch(error => {
+                // Tampilkan pesan error
+                showAlert('danger', 'Terjadi kesalahan saat memproses permintaan. Silakan coba lagi.');
+                
+                // Reset tombol
+                button.classList.remove('loading');
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-check"></i> Selesai';
+            });
+        }
+    });
+
+    // Handle tombol Toggle Statistics
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.toggle-stats-btn')) {
+            var button = e.target.closest('.toggle-stats-btn');
+            var target = button.getAttribute('data-target');
+            var action = button.getAttribute('data-action');
+            var targetElement = document.getElementById(target);
+            var toggleText = button.querySelector('.toggle-text');
+            var icon = button.querySelector('i');
+            
+            if (targetElement) {
+                if (action === 'toggle' || action === 'hide') {
+                    if (targetElement.style.display === 'none' || targetElement.style.display === '') {
+                        // Show statistics
+                        targetElement.style.display = 'block';
+                        targetElement.classList.add('show');
+                        targetElement.classList.remove('hide');
+                        
+                        // Update button
+                        button.classList.add('active');
+                        icon.className = 'fas fa-eye';
+                        toggleText.textContent = 'Sembunyikan';
+                        button.setAttribute('data-action', 'hide');
+                        
+                        // Save state to localStorage
+                        localStorage.setItem('stats_' + target + '_visible', 'true');
+                    } else {
+                        // Hide statistics
+                        targetElement.classList.add('hide');
+                        targetElement.classList.remove('show');
+                        
+                        setTimeout(function() {
+                            targetElement.style.display = 'none';
+                        }, 300);
+                        
+                        // Update button
+                        button.classList.remove('active');
+                        icon.className = 'fas fa-eye-slash';
+                        toggleText.textContent = 'Tampilkan';
+                        button.setAttribute('data-action', 'toggle');
+                        
+                        // Save state to localStorage
+                        localStorage.setItem('stats_' + target + '_visible', 'false');
+                    }
+                }
+            }
+        }
+    });
+
+    // Load saved state from localStorage
+    function loadStatsState() {
+        var desktopStats = document.getElementById('desktop-stats');
+        var mobileStats = document.getElementById('mobile-stats');
+        var desktopBtn = document.querySelector('[data-target="desktop-stats"]');
+        var mobileBtn = document.querySelector('[data-target="mobile-stats"]');
+        
+        // Check desktop state
+        if (desktopStats && desktopBtn) {
+            var desktopVisible = localStorage.getItem('stats_desktop-stats_visible');
+            if (desktopVisible === 'true') {
+                desktopStats.style.display = 'block';
+                desktopStats.classList.add('show');
+                desktopBtn.classList.add('active');
+                desktopBtn.querySelector('i').className = 'fas fa-eye';
+                desktopBtn.querySelector('.toggle-text').textContent = 'Sembunyikan';
+                desktopBtn.setAttribute('data-action', 'hide');
+            }
+        }
+        
+        // Check mobile state
+        if (mobileStats && mobileBtn) {
+            var mobileVisible = localStorage.getItem('stats_mobile-stats_visible');
+            if (mobileVisible === 'true') {
+                mobileStats.style.display = 'block';
+                mobileStats.classList.add('show');
+                mobileBtn.classList.add('active');
+                mobileBtn.querySelector('i').className = 'fas fa-eye';
+                mobileBtn.querySelector('.toggle-text').textContent = 'Sembunyikan';
+                mobileBtn.setAttribute('data-action', 'hide');
+            }
+        }
+    }
+
+    // Initialize stats state
+    loadStatsState();
+    
+    // Fungsi untuk menampilkan alert
+    function showAlert(type, message) {
+        var alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+        var alertHtml = '<div class="alert ' + alertClass + ' alert-dismissible fade show" role="alert">' +
+                        '<i class="fas fa-' + (type === 'success' ? 'check-circle' : 'exclamation-triangle') + '"></i> ' +
+                        message +
+                        '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
+                        '</div>';
+        
+        // Tambahkan alert di bagian atas content
+        var contentBody = document.querySelector('.content-body');
+        if (contentBody) {
+            contentBody.insertAdjacentHTML('afterbegin', alertHtml);
+        }
+        
+        // Auto hide alert setelah 5 detik
+        setTimeout(function() {
+            var alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                alert.style.opacity = '0';
+                setTimeout(function() {
+                    if (alert.parentNode) {
+                        alert.parentNode.removeChild(alert);
+                    }
+                }, 300);
+            });
+        }, 5000);
+    }
+});
+</script> 
