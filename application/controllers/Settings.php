@@ -24,6 +24,9 @@ class Settings extends CI_Controller {
     public function index() {
         $data['title'] = 'Pengaturan Sistem';
         
+        // Add debug information
+        $data['debug_info'] = $this->get_debug_info();
+        
         $this->load->view('templates/sidebar');
         $this->load->view('templates/header', $data);
         $this->load->view('settings/index', $data);
@@ -74,13 +77,7 @@ class Settings extends CI_Controller {
                         throw new Exception('mysqldump tidak ditemukan. Pastikan MySQL client tools terinstall atau hubungi administrator hosting.');
                     }
                 }
-            } else {
-                // Use PHP-based backup method
-                $this->create_php_backup($hostname, $username, $password, $database, $backup_path);
-                $return_var = 0;
-                $output = [];
-            }
-            
+                
                 // Create mysqldump command with proper escaping (cPanel optimized)
                 $escaped_password = escapeshellarg($password);
                 $command = "{$mysqldump_path} --host=" . escapeshellarg($hostname) . 
@@ -93,16 +90,25 @@ class Settings extends CI_Controller {
                 $output = [];
                 $return_var = 0;
                 @exec($command, $output, $return_var);
+                
+                // Log the command for debugging (without password)
+                $log_command = "{$mysqldump_path} --host=" . escapeshellarg($hostname) . 
+                              " --user=" . escapeshellarg($username) . 
+                              " --password=*** " . 
+                              "--single-transaction --routines --triggers " .
+                              escapeshellarg($database) . " > " . escapeshellarg($backup_path);
+                log_message('debug', 'Backup command: ' . $log_command);
+                log_message('debug', 'Return code: ' . $return_var);
+                log_message('debug', 'Output: ' . implode("\n", $output));
+            } else {
+                // Use PHP-based backup method
+                log_message('debug', 'Using PHP-based backup method (exec disabled)');
+                $this->create_php_backup($hostname, $username, $password, $database, $backup_path);
+                $return_var = 0;
+                $output = [];
+            }
             
-            // Log the command for debugging (without password)
-            $log_command = "{$mysqldump_path} --host=" . escapeshellarg($hostname) . 
-                          " --user=" . escapeshellarg($username) . 
-                          " --password=*** " . 
-                          "--single-transaction --routines --triggers " .
-                          escapeshellarg($database) . " > " . escapeshellarg($backup_path);
-            log_message('debug', 'Backup command: ' . $log_command);
-            log_message('debug', 'Return code: ' . $return_var);
-            log_message('debug', 'Output: ' . implode("\n", $output));
+
             
             if ($return_var === 0 && file_exists($backup_path)) {
                 // Get file size
@@ -133,8 +139,32 @@ class Settings extends CI_Controller {
                         $error_msg = 'Database tidak ditemukan. Periksa nama database.';
                     } elseif (strpos($output_str, 'Can\'t connect') !== false) {
                         $error_msg = 'Tidak dapat terhubung ke server database. Periksa hostname database.';
+                    } elseif (strpos($output_str, 'command not found') !== false) {
+                        $error_msg = 'mysqldump tidak ditemukan. Sistem akan menggunakan metode backup PHP.';
                     }
                 }
+                
+                // If exec failed and we have a backup file, check if it's valid
+                if (file_exists($backup_path)) {
+                    $file_size = filesize($backup_path);
+                    if ($file_size > 0) {
+                        // File exists and has content, consider it successful
+                        $file_size_formatted = $this->format_bytes($file_size);
+                        $response = [
+                            'status' => 'success',
+                            'message' => 'Backup database berhasil dibuat (metode alternatif)',
+                            'filename' => $backup_filename,
+                            'file_size' => $file_size_formatted,
+                            'download_url' => base_url('settings/download_backup/' . $backup_filename)
+                        ];
+                        
+                        $this->output
+                            ->set_content_type('application/json')
+                            ->set_output(json_encode($response));
+                        return;
+                    }
+                }
+                
                 throw new Exception($error_msg);
             }
             
@@ -478,12 +508,17 @@ class Settings extends CI_Controller {
     }
     
     private function is_command_available($command) {
+        // Check if exec function is available first
+        if (!function_exists('exec')) {
+            return false;
+        }
+        
         $output = array();
         $return_var = 0;
         
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
             // Windows
-            exec("where {$command} 2>nul", $output, $return_var);
+            @exec("where {$command} 2>nul", $output, $return_var);
         } else {
             // Unix/Linux (cPanel compatible)
             // Try multiple methods to find the command
@@ -494,7 +529,7 @@ class Settings extends CI_Controller {
             );
             
             foreach ($methods as $method) {
-                exec($method, $output, $return_var);
+                @exec($method, $output, $return_var);
                 if ($return_var === 0 && !empty($output)) {
                     return true;
                 }
@@ -563,29 +598,31 @@ class Settings extends CI_Controller {
             }
         }
         
-        // Try to find via shell command
-        $output = array();
-        $return_var = 0;
-        
-        // Try multiple shell commands
-        $commands = array(
-            'which mysqldump',
-            'command -v mysqldump',
-            'type mysqldump',
-            'find /opt -name mysqldump 2>/dev/null | head -1',
-            'find /usr -name mysqldump 2>/dev/null | head -1',
-            'find /usr/local -name mysqldump 2>/dev/null | head -1'
-        );
-        
-        foreach ($commands as $cmd) {
-            exec($cmd . ' 2>/dev/null', $output, $return_var);
-            if ($return_var === 0 && !empty($output)) {
-                $found_path = trim($output[0]);
-                if (file_exists($found_path) && is_executable($found_path)) {
-                    return $found_path;
+        // Try to find via shell command (only if exec is available)
+        if (function_exists('exec')) {
+            $output = array();
+            $return_var = 0;
+            
+            // Try multiple shell commands
+            $commands = array(
+                'which mysqldump',
+                'command -v mysqldump',
+                'type mysqldump',
+                'find /opt -name mysqldump 2>/dev/null | head -1',
+                'find /usr -name mysqldump 2>/dev/null | head -1',
+                'find /usr/local -name mysqldump 2>/dev/null | head -1'
+            );
+            
+            foreach ($commands as $cmd) {
+                @exec($cmd . ' 2>/dev/null', $output, $return_var);
+                if ($return_var === 0 && !empty($output)) {
+                    $found_path = trim($output[0]);
+                    if (file_exists($found_path) && is_executable($found_path)) {
+                        return $found_path;
+                    }
                 }
+                $output = array(); // Reset for next command
             }
-            $output = array(); // Reset for next command
         }
         
         return false;
@@ -644,11 +681,14 @@ class Settings extends CI_Controller {
         // Get all tables
         $tables_result = $mysqli->query("SHOW TABLES");
         if (!$tables_result) {
-            throw new Exception('Gagal mendapatkan daftar tabel');
+            $mysqli->close();
+            throw new Exception('Gagal mendapatkan daftar tabel: ' . $mysqli->error);
         }
         
+        $table_count = 0;
         while ($table_row = $tables_result->fetch_array()) {
             $table_name = $table_row[0];
+            $table_count++;
             
             // Get table structure
             $create_table_result = $mysqli->query("SHOW CREATE TABLE `{$table_name}`");
@@ -657,6 +697,8 @@ class Settings extends CI_Controller {
                 $backup_content .= "-- Table structure for table `{$table_name}`\n";
                 $backup_content .= "DROP TABLE IF EXISTS `{$table_name}`;\n";
                 $backup_content .= $create_table_row[1] . ";\n\n";
+            } else {
+                log_message('warning', 'Failed to get structure for table: ' . $table_name);
             }
             
             // Get table data
@@ -684,9 +726,56 @@ class Settings extends CI_Controller {
         
         // Write to file
         if (file_put_contents($backup_path, $backup_content) === false) {
-            throw new Exception('Gagal menulis file backup');
+            $mysqli->close();
+            throw new Exception('Gagal menulis file backup ke: ' . $backup_path);
         }
         
+        log_message('info', 'PHP backup completed successfully. Tables backed up: ' . $table_count);
         $mysqli->close();
+    }
+    
+    private function get_debug_info() {
+        $debug = array();
+        
+        // Check exec function
+        $debug['exec_available'] = function_exists('exec');
+        
+        // Check mysqldump availability
+        if (function_exists('exec')) {
+            $debug['mysqldump_path'] = $this->find_mysqldump();
+            $debug['mysqldump_alternative'] = $this->find_mysqldump_alternative();
+        } else {
+            $debug['mysqldump_path'] = 'N/A (exec disabled)';
+            $debug['mysqldump_alternative'] = 'N/A (exec disabled)';
+        }
+        
+        // Check backup directory
+        $backup_dir = FCPATH . 'backups';
+        $debug['backup_dir_exists'] = is_dir($backup_dir);
+        $debug['backup_dir_writable'] = is_writable($backup_dir);
+        $debug['backup_dir_path'] = $backup_dir;
+        
+        // Check database connection
+        try {
+            $hostname = $this->db->hostname;
+            $username = $this->db->username;
+            $password = $this->db->password;
+            $database = $this->db->database;
+            
+            $mysqli = new mysqli($hostname, $username, $password, $database);
+            $debug['db_connection'] = !$mysqli->connect_error;
+            $debug['db_error'] = $mysqli->connect_error;
+            $mysqli->close();
+        } catch (Exception $e) {
+            $debug['db_connection'] = false;
+            $debug['db_error'] = $e->getMessage();
+        }
+        
+        // PHP version and extensions
+        $debug['php_version'] = PHP_VERSION;
+        $debug['mysqli_available'] = extension_loaded('mysqli');
+        $debug['ftp_available'] = extension_loaded('ftp');
+        
+        return $debug;
     }
 }

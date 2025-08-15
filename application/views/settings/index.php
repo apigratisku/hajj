@@ -62,6 +62,21 @@
                                         </small>
                                     </div>
                                     
+                                    <!-- Debug Information -->
+                                    <div class="mt-3 p-2 bg-light border rounded">
+                                        <small class="text-muted">
+                                            <strong>Debug Info:</strong><br>
+                                            <i class="fas fa-code"></i> PHP: <?= $debug_info['php_version'] ?><br>
+                                            <i class="fas fa-terminal"></i> Exec: <?= $debug_info['exec_available'] ? 'Available' : 'Disabled' ?><br>
+                                            <i class="fas fa-database"></i> DB: <?= $debug_info['db_connection'] ? 'Connected' : 'Error: ' . $debug_info['db_error'] ?><br>
+                                            <i class="fas fa-folder"></i> Backup Dir: <?= $debug_info['backup_dir_exists'] ? 'Exists' : 'Missing' ?> 
+                                            (<?= $debug_info['backup_dir_writable'] ? 'Writable' : 'Not Writable' ?>)<br>
+                                            <?php if ($debug_info['exec_available']): ?>
+                                            <i class="fas fa-search"></i> mysqldump: <?= $debug_info['mysqldump_path'] ? $debug_info['mysqldump_path'] : 'Not Found' ?><br>
+                                            <?php endif; ?>
+                                        </small>
+                                    </div>
+                                    
                                     <!-- Loading indicator -->
                                     <div class="loading-indicator mt-3" id="loadingLocal" style="display: none;">
                                         <div class="d-flex align-items-center">
@@ -359,7 +374,8 @@ function backupDatabaseLocal() {
         method: 'POST',
         headers: {
             'X-Requested-With': 'XMLHttpRequest'
-        }
+        },
+        timeout: 300000 // 5 minutes timeout
     })
     .then(response => response.json())
     .then(response => {
@@ -450,7 +466,8 @@ function backupDatabaseFtp() {
         headers: {
             'X-Requested-With': 'XMLHttpRequest'
         },
-        body: formData
+        body: formData,
+        timeout: 300000 // 5 minutes timeout
     })
     .then(response => response.json())
     .then(response => {
