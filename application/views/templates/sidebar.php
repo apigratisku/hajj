@@ -61,6 +61,17 @@
             </a>
         </li>
         
+        <!-- System Settings -->
+        <?php if ($this->session->userdata('role') == 'admin'): ?>
+            <?php if ($this->session->userdata('username') == 'adhit' || $this->session->userdata('username') == 'mimin'): ?>
+        <li class="nav-item">
+            <a href="<?= base_url('settings') ?>" <?= $this->uri->segment(1) == 'settings' ? 'class="active"' : '' ?>>
+                <i class="fas fa-cogs"></i> <span>Pengaturan Sistem</span>
+            </a>
+        </li>
+        <?php endif; ?>
+        <?php endif; ?>
+        
         <li class="nav-item mt-3">
             <a href="<?= base_url('auth/logout') ?>" class="text-light" onclick="return confirm('Apakah Anda yakin ingin logout?');">
                 <i class="fas fa-sign-out-alt"></i> <span>Logout</span>

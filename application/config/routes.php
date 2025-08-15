@@ -44,5 +44,16 @@ $route['user/edit/(:num)'] = 'user/edit/$1';
 $route['user/hapus/(:num)'] = 'user/hapus/$1';
 $route['user/profile'] = 'user/profile';
 
+// Settings routes
+$route['settings'] = 'settings';
+$route['settings/backup_database'] = 'settings/backup_database';
+$route['settings/backup_database_ftp'] = 'settings/backup_database_ftp';
+$route['settings/download_backup/(:any)'] = 'settings/download_backup/$1';
+$route['settings/delete_backup/(:any)'] = 'settings/delete_backup/$1';
+$route['settings/get_backup_files'] = 'settings/get_backup_files';
+
+// Test route
+$route['test_mysqldump'] = 'test_mysqldump';
+
 // Setup routes
 $route['setup'] = 'setup';
