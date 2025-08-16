@@ -333,7 +333,7 @@ class Transaksi_model extends CI_Model {
         $this->db->where('tanggal !=', '');
         $this->db->where('jam IS NOT NULL');
         $this->db->where('jam !=', '');
-        //$this->db->where('selesai !=', 2);
+        $this->db->where('selesai !=', 2);
         
         if ($flag_doc) {
             $this->db->where('flag_doc', $flag_doc);
@@ -354,7 +354,7 @@ class Transaksi_model extends CI_Model {
         $this->db->where('tanggal', $tanggal);
         $this->db->where('jam IS NOT NULL');
         $this->db->where('jam !=', '');
-        //$this->db->where('selesai !=', 2);
+        $this->db->where('selesai !=', 2);
         
         if ($flag_doc) {
             $this->db->where('flag_doc', $flag_doc);
@@ -368,7 +368,7 @@ class Transaksi_model extends CI_Model {
     public function update_status_massal($tanggal, $jam, $flag_doc = null) {
         $this->db->where('tanggal', $tanggal);
         $this->db->where('jam', $jam);
-        //$this->db->where('selesai !=', 2); // Update hanya yang belum status 2
+        $this->db->where('selesai !=', 2); // Update hanya yang belum status 2
         
         if ($flag_doc) {
             $this->db->where('flag_doc', $flag_doc);
