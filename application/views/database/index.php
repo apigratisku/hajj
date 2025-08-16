@@ -43,7 +43,7 @@
                                         <option value="">Waktu</option>
                                         <?php if (!empty($tanggaljam_list)): foreach ($tanggaljam_list as $tanggaljam): ?>
                                             <option value="<?= htmlspecialchars($tanggaljam->tanggaljam) ?>" <?= (isset($_GET['tanggaljam']) && $_GET['tanggaljam'] === $tanggaljam->tanggaljam) ? 'selected' : '' ?>>
-                                                <?= htmlspecialchars($tanggaljam->tanggaljam) ?>
+                                                <?= date('d-m-Y H:i:s', strtotime($tanggaljam->tanggaljam)) ?>
                                             </option>
                                         <?php endforeach; endif; ?>
                                     </select>
@@ -110,7 +110,7 @@
                                         <option value="">Waktu</option>
                                         <?php if (!empty($tanggaljam_list)): foreach ($tanggaljam_list as $tanggaljam): ?>
                                             <option value="<?= htmlspecialchars($tanggaljam->tanggaljam) ?>" <?= (isset($_GET['tanggaljam']) && $_GET['tanggaljam'] === $tanggaljam->tanggaljam) ? 'selected' : '' ?>>
-                                                <?= htmlspecialchars($tanggaljam->tanggaljam) ?>
+                                            <?= date('d-m-Y H:i:s', strtotime($tanggaljam->tanggaljam)) ?>
                                             </option>
                                         <?php endforeach; endif; ?>
                                     </select>

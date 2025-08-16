@@ -37,6 +37,9 @@
                                             <?= (isset($user->status) && $user->status == 0) ? 'Nonaktif' : 'Aktif' ?>
                                         </span>
                                     </div>
+                                    <div class="user-last-login">
+                                        <span class="role-badge role-admin">Login Terakhir: <?= $user->last_login ? date('d/m/Y H:i:s', strtotime($user->last_login)) : '-' ?></span>
+                                    </div>
                                 </div>
                                 <div class="mobile-user-actions">
                                     <a href="<?= base_url('user/edit/'.$user->id_user); ?>" class="btn btn-sm btn-edit-mobile">
@@ -74,6 +77,7 @@
                                         <th class="text-center">Nama Lengkap</th>
                                         <th class="text-center">Role</th>
                                         <th class="text-center">Status</th>
+                                        <th class="text-center">Login Terakhir</th>
                                         <th class="text-center">Aksi</th>
                                     </tr>
                             </thead>
@@ -95,6 +99,9 @@
                                             <span class="status-badge status-<?= isset($user->status) ? $user->status : 1 ?>">
                                                 <?= (isset($user->status) && $user->status == 0) ? 'Nonaktif' : 'Aktif' ?>
                                             </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <?= $user->last_login ? date('d/m/Y H:i:s', strtotime($user->last_login)) : '-' ?>
                                         </td>
                                         <td class="text-center">
                                             <a href="<?= base_url('user/edit/'.$user->id_user); ?>" class="btn btn-sm btn-brown btn-edit" data-bs-toggle="tooltip" title="Edit">
