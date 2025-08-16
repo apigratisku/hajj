@@ -85,8 +85,16 @@
                     <div class="desktop-search-container d-none d-md-block">
                         <form method="get" action="<?= base_url('database/index') ?>" class="desktop-form">
                             <div class="row g-2 align-items-center">
-                                
-                                <div class="col-md-2">
+                                <div class="col-md-1">
+                                    <input type="text" name="nama" value="<?= isset($_GET['nama']) ? htmlspecialchars($_GET['nama']) : '' ?>" class="form-control form-control-sm" placeholder="Nama Peserta">
+                                </div>
+                                <div class="col-md-1">
+                                    <input type="text" name="nomor_paspor" value="<?= isset($_GET['nomor_paspor']) ? htmlspecialchars($_GET['nomor_paspor']) : '' ?>" class="form-control form-control-sm" placeholder="No Paspor" >
+                                </div>
+                                <div class="col-md-1">
+                                    <input type="text" name="no_visa" value="<?= isset($_GET['no_visa']) ? htmlspecialchars($_GET['no_visa']) : '' ?>" class="form-control form-control-sm" placeholder="No Visa">
+                                </div>
+                                <div class="col-md-1">
                                     <select name="flag_doc" class="form-select form-control-sm">
                                         <option value="">Semua Flag Dokumen</option>
                                         <option value="null" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === 'null') ? 'selected' : '' ?>>Tanpa Flag Dokumen</option>

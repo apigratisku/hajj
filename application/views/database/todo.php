@@ -12,7 +12,9 @@
                             </div>
                             <div class="mobile-search-form" id="mobileSearchForm" style="display: none;">
                                 <form method="get" action="<?= base_url('todo/index') ?>" class="mobile-form" id="mobileSearchForm">
-                                
+                                    <div class="form-group">
+                                        <input type="text" name="nama" class="form-control mobile-input" placeholder="Nama Peserta">
+                                    </div>
                                     <div class="form-group">
                                         <select name="flag_doc" class="form-select mobile-input">
                                             <option value="">Semua Flag Dokumen</option>
@@ -40,7 +42,9 @@
                     <div class="desktop-search-container d-none d-md-block">
                         <form method="get" action="<?= base_url('todo/index') ?>" class="desktop-form">
                             <div class="row g-2 align-items-center">
-                                
+                                <div class="col-md-2">
+                                    <input type="text" name="nama" class="form-control form-control-sm" placeholder="Nama Peserta">
+                                </div>
                                 <div class="col-md-2">
                                     <select name="flag_doc" class="form-select form-control-sm">
                                         <option value="">Semua Flag Dokumen</option>

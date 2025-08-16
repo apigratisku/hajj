@@ -165,7 +165,11 @@ class Transaksi_model extends CI_Model {
     public function get_paginated_filtered_todo($limit, $offset, $filters = []) {
         $this->db->select('peserta.*');
         $this->db->from($this->table);
-    
+
+        if (!empty($filters['nama'])) {
+            $this->db->like('peserta.nama', $filters['nama']);
+        }
+
         if (isset($filters['flag_doc'])) {
             // Handle flag_doc filter more precisely
             if ($filters['flag_doc'] === null || $filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
@@ -235,7 +239,7 @@ class Transaksi_model extends CI_Model {
         $this->db->where("tanggal != ''");
         $this->db->where("jam != ''");
         $this->db->group_by("tanggaljam");
-        $this->db->order_by('created_at', 'DESC');
+        $this->db->order_by('tanggaljam', 'ASC');
         return $this->db->get()->result();
     }
     
