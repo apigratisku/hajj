@@ -355,7 +355,9 @@ class Todo extends CI_Controller {
                 }
             }
         }
+        // Add system fields
         $data['updated_at'] = date('Y-m-d H:i:s');
+        $data['history_update'] = $this->session->userdata('user_id') ?: null;
         
         // Debug: Log the data being updated
         log_message('debug', 'Todo update_ajax - Updating peserta ID: ' . $id . ' with data: ' . json_encode($data));

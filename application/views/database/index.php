@@ -162,6 +162,9 @@
                                             <th class="col-jam">Jam</th>
                                             <th class="col-status">Status</th>
                                             <th class="col-flag">Flag</th>
+                                            <?php if($this->session->userdata('role') == 'admin'): ?>
+                                            <th class="col-history">Update Terakhir</th>
+                                            <?php endif; ?>
                                             <th class="col-aksi">Aksi</th>
                                         </tr>
                                     </thead>
@@ -266,6 +269,17 @@
                                             </select>
                                             <input type="hidden" name="redirect_back" value="<?= current_url() ?: site_url(uri_string()) ?>">
                                             </td>
+                                            <?php if($this->session->userdata('role') == 'admin'): ?>
+                                            <td class="col-history">
+                                                <?php 
+                                                $user = null;
+                                                if ($p->history_update) {
+                                                    $user = $this->user_model->get_user_by_id($p->history_update);
+                                                }
+                                                ?>
+                                                <?= ($user && isset($user->nama_lengkap)) ? $user->nama_lengkap : '-' ?>
+                                            </td>
+                                            <?php endif; ?>
                                             <td class="col-aksi">
                                                 <button class="mobile-table-btn mobile-table-btn-edit btn-edit" onclick="toggleEditMobileTable(this)">
                                                     <i class="fas fa-edit"></i>
@@ -308,6 +322,9 @@
                                         <th class="text-center">Jam</th>
                                         <th class="text-center">Status</th>
                                         <th class="text-center">Flag Dokumen</th>
+                                        <?php if($this->session->userdata('role') == 'admin'): ?>
+                                        <th class="text-center">Update Terakhir</th>
+                                        <?php endif; ?>
                                         <th width="100" class="text-center">Aksi</th>
                                     </tr>
                                 </thead>
@@ -408,7 +425,17 @@
                                             </select>
                                             <input type="hidden" name="redirect_back" value="<?= current_url() ?: site_url(uri_string()) ?>">
                                         </td>
-                                        
+                                        <?php if($this->session->userdata('role') == 'admin'): ?>
+                                        <td class="col-history text-center">
+                                                <?php 
+                                                $user = null;
+                                                if ($p->history_update) {
+                                                    $user = $this->user_model->get_user_by_id($p->history_update);
+                                                }
+                                                ?>
+                                                <?= ($user && isset($user->nama_lengkap)) ? $user->nama_lengkap : '-' ?>
+                                            </td>
+                                        <?php endif; ?>
                                         <td class="text-center aksi"  style="white-space: nowrap;width: auto;">
                                             <button class="btn btn-sm btn-brown btn-edit" data-bs-toggle="tooltip" title="Edit" onclick="toggleEdit(this)">
                                                 <i class="fas fa-edit"></i>

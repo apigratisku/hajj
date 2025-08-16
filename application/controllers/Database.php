@@ -12,6 +12,7 @@ class Database extends CI_Controller {
         parent::__construct();
         $this->load->model('transaksi_model');
         $this->load->model('peserta_reject_model');
+        $this->load->model('user_model');
         $this->load->library('form_validation');
         $this->load->library('session');
         $this->load->helper('url');
@@ -299,6 +300,7 @@ class Database extends CI_Controller {
                 'tanggal' => $this->input->post('tanggal') ?: null,
                 'jam' => $this->input->post('jam') ?: null,
                 'flag_doc' => trim($this->input->post('flag_doc')) ?: null,
+                'history_update' => $this->session->userdata('user_id') ?: null,
                 'updated_at' => date('Y-m-d H:i:s')
             ];
             
@@ -373,13 +375,18 @@ class Database extends CI_Controller {
                 }
             }
         }
+        
+        // Add system fields
         $data['updated_at'] = date('Y-m-d H:i:s');
+        $data['history_update'] = $this->session->userdata('user_id') ?: null;
         
         // Debug: Log the data being updated
         log_message('debug', 'Database update_ajax - Updating peserta ID: ' . $id . ' with data: ' . json_encode($data));
         log_message('debug', 'Database update_ajax - Raw input: ' . json_encode($input));
         log_message('debug', 'Database update_ajax - Barcode value: ' . (isset($data['barcode']) ? $data['barcode'] : 'NOT SET'));
         log_message('debug', 'Database update_ajax - Allowed fields: ' . json_encode($allowedFields));
+        log_message('debug', 'Database update_ajax - History update value: ' . (isset($data['history_update']) ? $data['history_update'] : 'NOT SET'));
+        log_message('debug', 'Database update_ajax - User ID from session: ' . $this->session->userdata('user_id'));
        
         
         try {
