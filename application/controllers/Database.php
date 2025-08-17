@@ -934,6 +934,10 @@ class Database extends CI_Controller {
     }
 
     public function process_import() {
+        // Set error reporting to prevent database errors from showing
+        error_reporting(E_ALL & ~E_NOTICE & ~E_WARNING);
+        ini_set('display_errors', 0);
+        
         // Check if file was uploaded
         if (!isset($_FILES['excel_file']) || $_FILES['excel_file']['error'] !== UPLOAD_ERR_OK) {
             $this->session->set_flashdata('error', 'File tidak ditemukan atau terjadi error saat upload');
@@ -1102,6 +1106,9 @@ class Database extends CI_Controller {
                 log_message('error', 'Failed to truncate peserta_reject table: ' . $e->getMessage());
                 // Continue with import even if truncate fails
             }
+            
+            // Set database error handling to prevent fatal errors
+            $this->db->db_debug = FALSE;
             
             // Start from row 2 (skip header)
             for ($row = 2; $row <= $highestRow; $row++) {
@@ -1305,7 +1312,25 @@ class Database extends CI_Controller {
                     }
                 } catch (Exception $e) {
                     log_message('error', 'Failed to insert peserta data for row ' . $row . ': ' . $e->getMessage());
-                    $errors[] = "Row $row: Error database - " . $e->getMessage();
+                    
+                    // Handle specific database errors gracefully
+                    $error_message = $e->getMessage();
+                    $reject_reason = "Error database: " . $error_message;
+                    
+                    // Check for duplicate entry errors
+                    if (strpos($error_message, 'Duplicate entry') !== false) {
+                        if (strpos($error_message, 'no_visa') !== false) {
+                            $reject_reason = "Nomor visa sudah ada dalam database";
+                        } elseif (strpos($error_message, 'nomor_paspor') !== false) {
+                            $reject_reason = "Nomor paspor sudah ada dalam database";
+                        } elseif (strpos($error_message, 'email') !== false) {
+                            $reject_reason = "Email sudah ada dalam database";
+                        } else {
+                            $reject_reason = "Data duplikat ditemukan dalam database";
+                        }
+                    }
+                    
+                    $errors[] = "Row $row: " . $reject_reason;
                     $error_count++;
                     
                     // Simpan data yang gagal ke tabel peserta_reject
@@ -1322,7 +1347,7 @@ class Database extends CI_Controller {
                         'tanggal' => $tanggal_value ?: '1900-01-01',
                         'jam' => $jam_value ?: '00:00:00',
                         'flag_doc' => $flag_doc,
-                        'reject_reason' => "Error database: " . $e->getMessage(),
+                        'reject_reason' => $reject_reason,
                         'row_number' => $row
                     ];
                     
@@ -1346,7 +1371,19 @@ class Database extends CI_Controller {
             
         } catch (Exception $e) {
             log_message('error', 'Import error: ' . $e->getMessage());
-            $this->session->set_flashdata('error', 'Terjadi kesalahan saat memproses file. Silakan coba lagi atau hubungi administrator.');
+            
+            // Handle specific database errors gracefully
+            $error_message = $e->getMessage();
+            $user_friendly_message = 'Terjadi kesalahan saat memproses file. Silakan coba lagi atau hubungi administrator.';
+            
+            // Check for specific database errors
+            if (strpos($error_message, 'Duplicate entry') !== false) {
+                $user_friendly_message = 'Ditemukan data duplikat dalam file. Data yang duplikat akan disimpan dalam file terpisah. Silakan download data yang ditolak untuk melihat detailnya.';
+            } elseif (strpos($error_message, 'MySQL') !== false || strpos($error_message, 'database') !== false) {
+                $user_friendly_message = 'Terjadi kesalahan database. Silakan coba lagi atau hubungi administrator.';
+            }
+            
+            $this->session->set_flashdata('error', $user_friendly_message);
         }
         
         // Ambil URL untuk redirect
