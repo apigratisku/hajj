@@ -97,9 +97,9 @@ class Dashboard extends CI_Controller {
         
         if (!$can_complete) {
             echo json_encode(['status' => false, 'message' => 'Jadwal belum waktunya untuk diselesaikan']);
-            return;
-        }
-        
+        return;
+    }
+
         // Update status massal
         $result = $this->transaksi_model->update_status_massal($tanggal, $jam, $flag_doc);
         
