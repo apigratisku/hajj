@@ -47,12 +47,11 @@ class Settings extends CI_Controller {
             $password = $this->db->password;
             $database = $this->db->database;
             
-            
             // Create backup filename with timestamp
             $backup_filename = 'backup_' . $database . '_' . date('Y-m-d_H-i-s') . '.sql';
             $backup_path = FCPATH . 'backups/' . $backup_filename;
             
-            // Create backups directory if it doesn't exist (cPanel optimized)
+            // Create backups directory if it doesn't exist
             if (!is_dir(FCPATH . 'backups')) {
                 if (!mkdir(FCPATH . 'backups', 0755, true)) {
                     throw new Exception('Gagal membuat direktori backups. Periksa permission folder.');
@@ -219,7 +218,7 @@ class Settings extends CI_Controller {
             $backup_filename = 'backup_' . $database . '_' . date('Y-m-d_H-i-s') . '.sql';
             $backup_path = FCPATH . 'backups/' . $backup_filename;
             
-            // Create backups directory if it doesn't exist (cPanel optimized)
+            // Create backups directory if it doesn't exist
             if (!is_dir(FCPATH . 'backups')) {
                 if (!mkdir(FCPATH . 'backups', 0755, true)) {
                     throw new Exception('Gagal membuat direktori backups. Periksa permission folder.');
@@ -649,11 +648,11 @@ class Settings extends CI_Controller {
     }
     
     private function test_database_connection($hostname, $username, $password, $database) {
-        // Test database connection using mysqli
+        // Test database connection using mysqli - mengikuti pola syncdb.php
         $mysqli = new mysqli($hostname, $username, $password, $database);
         
         if ($mysqli->connect_error) {
-            $error_msg = 'Gagal terhubung ke database: ' . $mysqli->connect_error;
+            $error_msg = 'Koneksi gagal: ' . $mysqli->connect_error;
             
             // Provide specific error messages for common issues
             if ($mysqli->connect_errno == 1045) {
@@ -679,20 +678,18 @@ class Settings extends CI_Controller {
     
     private function create_php_backup($hostname, $username, $password, $database, $backup_path) {
         // Create backup using pure PHP without exec() - Format phpMyAdmin SQL Dump
+        // Mengikuti skema dari syncdb.php yang berhasil
         $mysqli = new mysqli($hostname, $username, $password, $database);
         
         if ($mysqli->connect_error) {
             throw new Exception('Gagal terhubung ke database: ' . $mysqli->connect_error);
         }
         
-        // Set charset
-        $mysqli->set_charset('utf8');
-        
-        // Open file for writing
+        // Buka file
         $handle = fopen($backup_path, 'w');
         if (!$handle) {
             $mysqli->close();
-            throw new Exception('Gagal membuka file untuk menulis: ' . $backup_path);
+            throw new Exception('Gagal buka file untuk menulis: ' . $backup_path);
         }
         
         // -------------------------------
@@ -803,6 +800,7 @@ class Settings extends CI_Controller {
     
     private function cleanup_old_backups($max_days = 7) {
         // Clean up old backup files (older than $max_days days)
+        // Mengikuti pola dari syncdb.php
         $backup_dir = FCPATH . 'backups/';
         $now = time();
         $deleted_count = 0;
@@ -813,17 +811,20 @@ class Settings extends CI_Controller {
             foreach ($backup_files as $file) {
                 $filename = basename($file);
                 
-                // Check if filename matches backup pattern
+                // Check if filename matches backup pattern - mengikuti pola syncdb.php
                 if (preg_match('/^backup_.*_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.sql$/', $filename)) {
-                    $file_time = filemtime($file);
-                    $days_old = ($now - $file_time) / (60 * 60 * 24);
-                    
-                    if ($days_old > $max_days) {
-                        if (unlink($file)) {
-                            $deleted_count++;
-                            log_message('info', 'Deleted old backup file: ' . $filename);
-                        } else {
-                            log_message('warning', 'Failed to delete old backup file: ' . $filename);
+                    // Extract date from filename like in syncdb.php
+                    if (preg_match('/_(\d{4}-\d{2}-\d{2})_(\d{2})-(\d{2})-(\d{2})\.sql/', $filename, $matches)) {
+                        $file_time = strtotime($matches[1] . ' ' . $matches[2] . ':' . $matches[3] . ':' . $matches[4]);
+                        $days_old = ($now - $file_time) / (60 * 60 * 24);
+                        
+                        if ($days_old > $max_days) {
+                            if (unlink($file)) {
+                                $deleted_count++;
+                                log_message('info', 'Deleted old backup file: ' . $filename);
+                            } else {
+                                log_message('warning', 'Failed to delete old backup file: ' . $filename);
+                            }
                         }
                     }
                 }
@@ -835,11 +836,12 @@ class Settings extends CI_Controller {
     
     private function cleanup_old_ftp_backups($ftp_host, $ftp_username, $ftp_password, $ftp_path, $max_days = 7) {
         // Clean up old backup files on FTP server (older than $max_days days)
+        // Mengikuti pola dari syncdb.php
         $deleted_count = 0;
         $now = time();
         
         try {
-            $ftp_connection = ftp_connect($ftp_host, 21, 30);
+            $ftp_connection = ftp_connect($ftp_host, 21);
             if (!$ftp_connection) {
                 log_message('warning', 'Failed to connect to FTP for cleanup: ' . $ftp_host);
                 return 0;
@@ -859,12 +861,11 @@ class Settings extends CI_Controller {
                 foreach ($files as $file) {
                     $filename = basename($file);
                     
-                    // Check if filename matches backup pattern
+                    // Check if filename matches backup pattern - mengikuti pola syncdb.php
                     if (preg_match('/^backup_.*_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.sql$/', $filename)) {
-                        // Get file modification time
-                        $file_time = ftp_mdtm($ftp_connection, $file);
-                        
-                        if ($file_time !== -1) {
+                        // Extract date from filename like in syncdb.php
+                        if (preg_match('/_(\d{4}-\d{2}-\d{2})_(\d{2})-(\d{2})-(\d{2})\.sql/', $file, $matches)) {
+                            $file_time = strtotime($matches[1] . ' ' . $matches[2] . ':' . $matches[3] . ':' . $matches[4]);
                             $days_old = ($now - $file_time) / (60 * 60 * 24);
                             
                             if ($days_old > $max_days) {
