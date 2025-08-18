@@ -40,6 +40,14 @@ class Settings extends CI_Controller {
             return;
         }
 
+        // Enhanced logging for debugging
+        log_message('info', '=== BACKUP DATABASE STARTED ===');
+        log_message('info', 'Request Method: ' . $_SERVER['REQUEST_METHOD']);
+        log_message('info', 'User Agent: ' . $_SERVER['HTTP_USER_AGENT']);
+        log_message('info', 'Remote IP: ' . $_SERVER['REMOTE_ADDR']);
+        log_message('info', 'Session User ID: ' . $this->session->userdata('user_id'));
+        log_message('info', 'Session Role: ' . $this->session->userdata('role'));
+
         try {
             // Get database configuration
             $hostname = $this->db->hostname;
@@ -47,25 +55,50 @@ class Settings extends CI_Controller {
             $password = $this->db->password;
             $database = $this->db->database;
             
+            // Log database configuration (without password)
+            log_message('info', 'Database Host: ' . $hostname);
+            log_message('info', 'Database User: ' . $username);
+            log_message('info', 'Database Name: ' . $database);
+            log_message('info', 'Database Password: [HIDDEN]');
+            
             
             // Create backup filename with timestamp
             $backup_filename = 'backup_' . $database . '_' . date('Y-m-d_H-i-s') . '.sql';
             $backup_path = FCPATH . 'backups/' . $backup_filename;
             
+            log_message('info', 'Backup Filename: ' . $backup_filename);
+            log_message('info', 'Backup Path: ' . $backup_path);
+            log_message('info', 'FCPATH: ' . FCPATH);
+            
             // Create backups directory if it doesn't exist (cPanel optimized)
             if (!is_dir(FCPATH . 'backups')) {
+                log_message('info', 'Backup directory does not exist, creating...');
                 if (!mkdir(FCPATH . 'backups', 0755, true)) {
+                    log_message('error', 'Failed to create backup directory: ' . FCPATH . 'backups');
+                    log_message('error', 'Current permissions: ' . substr(sprintf('%o', fileperms(FCPATH)), -4));
                     throw new Exception('Gagal membuat direktori backups. Periksa permission folder.');
+                } else {
+                    log_message('info', 'Backup directory created successfully');
                 }
+            } else {
+                log_message('info', 'Backup directory already exists');
             }
             
             // Ensure directory is writable
             if (!is_writable(FCPATH . 'backups')) {
+                log_message('error', 'Backup directory is not writable: ' . FCPATH . 'backups');
+                log_message('error', 'Directory permissions: ' . substr(sprintf('%o', fileperms(FCPATH . 'backups')), -4));
+                log_message('error', 'Current user: ' . get_current_user());
+                log_message('error', 'Process user: ' . posix_getpwuid(posix_geteuid())['name']);
                 throw new Exception('Direktori backups tidak dapat ditulis. Periksa permission folder.');
+            } else {
+                log_message('info', 'Backup directory is writable');
             }
             
             // Test database connection first
+            log_message('info', 'Testing database connection...');
             $this->test_database_connection($hostname, $username, $password, $database);
+            log_message('info', 'Database connection test passed');
             
             // Prioritize PHP-based backup method for better cPanel compatibility
             // Only use mysqldump if explicitly available and exec is enabled
@@ -85,6 +118,7 @@ class Settings extends CI_Controller {
             }
             
             if ($use_mysqldump) {
+                log_message('info', 'Using mysqldump method for backup');
                 // Create mysqldump command with proper escaping (cPanel optimized)
                 $escaped_password = escapeshellarg($password);
                 $command = "{$mysqldump_path} --host=" . escapeshellarg($hostname) . 
@@ -96,6 +130,7 @@ class Settings extends CI_Controller {
                 // Execute backup command
                 $output = [];
                 $return_var = 0;
+                log_message('info', 'Executing mysqldump command...');
                 @exec($command, $output, $return_var);
                 
                 // Log the command for debugging (without password)
@@ -104,12 +139,12 @@ class Settings extends CI_Controller {
                               " --password=*** " . 
                               "--single-transaction --routines --triggers " .
                               escapeshellarg($database) . " > " . escapeshellarg($backup_path);
-                log_message('debug', 'Backup command: ' . $log_command);
-                log_message('debug', 'Return code: ' . $return_var);
-                log_message('debug', 'Output: ' . implode("\n", $output));
+                log_message('info', 'Backup command: ' . $log_command);
+                log_message('info', 'Return code: ' . $return_var);
+                log_message('info', 'Output: ' . implode("\n", $output));
             } else {
                 // Use PHP-based backup method (recommended for cPanel)
-                log_message('debug', 'Using PHP-based backup method (phpMyAdmin format)');
+                log_message('info', 'Using PHP-based backup method (phpMyAdmin format)');
                 $this->create_php_backup($hostname, $username, $password, $database, $backup_path);
                 $return_var = 0;
                 $output = [];
@@ -117,17 +152,28 @@ class Settings extends CI_Controller {
             
 
             
+            log_message('info', 'Checking backup result...');
+            log_message('info', 'Return var: ' . $return_var);
+            log_message('info', 'File exists: ' . (file_exists($backup_path) ? 'Yes' : 'No'));
+            
             if ($return_var === 0 && file_exists($backup_path)) {
+                log_message('info', 'Backup file created successfully');
                 // Get file size
                 $file_size = filesize($backup_path);
+                log_message('info', 'Backup file size: ' . $file_size . ' bytes');
+                
                 if ($file_size === 0) {
+                    log_message('error', 'Backup file is empty');
                     throw new Exception('File backup kosong. Periksa konfigurasi database.');
                 }
                 
                 $file_size_formatted = $this->format_bytes($file_size);
+                log_message('info', 'Backup file size formatted: ' . $file_size_formatted);
                 
                 // Clean up old backup files
+                log_message('info', 'Cleaning up old backup files...');
                 $deleted_count = $this->cleanup_old_backups(7);
+                log_message('info', 'Deleted ' . $deleted_count . ' old backup files');
                 
                 $response = [
                     'status' => 'success',
@@ -136,20 +182,29 @@ class Settings extends CI_Controller {
                     'file_size' => $file_size_formatted,
                     'download_url' => base_url('settings/download_backup/' . $backup_filename)
                 ];
+                
+                log_message('info', 'Backup completed successfully');
+                log_message('info', 'Response: ' . json_encode($response));
             } else {
+                log_message('error', 'Backup failed - return var: ' . $return_var . ', file exists: ' . (file_exists($backup_path) ? 'Yes' : 'No'));
                 $error_msg = 'Gagal membuat backup database';
                 if (!empty($output)) {
+                    log_message('error', 'Backup output: ' . implode(' ', $output));
                     $error_msg .= ': ' . implode(' ', $output);
                     
                     // Check for specific mysqldump errors
                     $output_str = implode(' ', $output);
                     if (strpos($output_str, 'Access denied') !== false) {
+                        log_message('error', 'Access denied error detected');
                         $error_msg = 'Access denied untuk user database. Periksa username dan password database.';
                     } elseif (strpos($output_str, 'Unknown database') !== false) {
+                        log_message('error', 'Unknown database error detected');
                         $error_msg = 'Database tidak ditemukan. Periksa nama database.';
                     } elseif (strpos($output_str, 'Can\'t connect') !== false) {
+                        log_message('error', 'Connection error detected');
                         $error_msg = 'Tidak dapat terhubung ke server database. Periksa hostname database.';
                     } elseif (strpos($output_str, 'command not found') !== false) {
+                        log_message('error', 'Command not found error detected');
                         $error_msg = 'mysqldump tidak ditemukan. Sistem akan menggunakan metode backup PHP.';
                     }
                 }
@@ -179,12 +234,21 @@ class Settings extends CI_Controller {
             }
             
         } catch (Exception $e) {
-            log_message('error', 'Backup database error: ' . $e->getMessage());
+            log_message('error', '=== BACKUP DATABASE EXCEPTION ===');
+            log_message('error', 'Exception message: ' . $e->getMessage());
+            log_message('error', 'Exception file: ' . $e->getFile());
+            log_message('error', 'Exception line: ' . $e->getLine());
+            log_message('error', 'Exception trace: ' . $e->getTraceAsString());
+            log_message('error', '=== END BACKUP DATABASE EXCEPTION ===');
+            
             $response = [
                 'status' => 'error',
                 'message' => 'Gagal membuat backup database: ' . $e->getMessage()
             ];
         }
+        
+        log_message('info', '=== BACKUP DATABASE COMPLETED ===');
+        log_message('info', 'Final response: ' . json_encode($response));
         
         $this->output
             ->set_content_type('application/json')
@@ -459,6 +523,7 @@ class Settings extends CI_Controller {
     
     private function find_mysqldump() {
         // Common paths for mysqldump (prioritized for cPanel)
+        log_message('info', '=== SEARCHING FOR MYSQLDUMP ===');
         $possible_paths = array(
             'mysqldump',
             '/usr/bin/mysqldump',
@@ -519,17 +584,25 @@ class Settings extends CI_Controller {
         );
         
         foreach ($possible_paths as $path) {
+            log_message('info', 'Checking path: ' . $path);
             if (is_executable($path) || $this->is_command_available($path)) {
+                log_message('info', 'Found mysqldump at: ' . $path);
+                log_message('info', '=== MYSQLDUMP SEARCH COMPLETED ===');
                 return $path;
+            } else {
+                log_message('info', 'Path not available: ' . $path);
             }
         }
         
+        log_message('info', 'No mysqldump found in any of the paths');
+        log_message('info', '=== MYSQLDUMP SEARCH COMPLETED ===');
         return false;
     }
     
     private function is_command_available($command) {
         // Check if exec function is available first
         if (!function_exists('exec')) {
+            log_message('info', 'Exec function not available');
             return false;
         }
         
@@ -538,9 +611,12 @@ class Settings extends CI_Controller {
         
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
             // Windows
+            log_message('info', 'Windows OS detected, using "where" command');
             @exec("where {$command} 2>nul", $output, $return_var);
+            log_message('info', 'Windows command result: ' . $return_var . ', output: ' . implode(', ', $output));
         } else {
             // Unix/Linux (cPanel compatible)
+            log_message('info', 'Unix/Linux OS detected, trying multiple methods');
             // Try multiple methods to find the command
             $methods = array(
                 "which {$command} 2>/dev/null",
@@ -549,18 +625,26 @@ class Settings extends CI_Controller {
             );
             
             foreach ($methods as $method) {
+                log_message('info', 'Trying method: ' . $method);
                 @exec($method, $output, $return_var);
+                log_message('info', 'Method result: ' . $return_var . ', output: ' . implode(', ', $output));
                 if ($return_var === 0 && !empty($output)) {
+                    log_message('info', 'Command found via method: ' . $method);
                     return true;
                 }
             }
             
             // If command not found via PATH, check if it's a direct path
+            log_message('info', 'Checking if command is a direct executable path');
             if (file_exists($command) && is_executable($command)) {
+                log_message('info', 'Command found as direct executable: ' . $command);
                 return true;
+            } else {
+                log_message('info', 'Command not found as direct executable: ' . $command);
             }
         }
         
+        log_message('info', 'Command not available: ' . $command);
         return false;
     }
     
@@ -650,48 +734,81 @@ class Settings extends CI_Controller {
     
     private function test_database_connection($hostname, $username, $password, $database) {
         // Test database connection using mysqli - mengikuti pola syncdb.php
+        log_message('info', '=== TESTING DATABASE CONNECTION ===');
+        log_message('info', 'Testing connection to: ' . $hostname . ' / ' . $database);
+        
         $mysqli = new mysqli($hostname, $username, $password, $database);
         
         if ($mysqli->connect_error) {
+            log_message('error', 'Database connection failed: ' . $mysqli->connect_error);
+            log_message('error', 'Connection errno: ' . $mysqli->connect_errno);
+            
             $error_msg = 'Koneksi gagal: ' . $mysqli->connect_error;
             
             // Provide specific error messages for common issues
             if ($mysqli->connect_errno == 1045) {
+                log_message('error', 'Access denied error (1045) detected');
                 $error_msg = 'Access denied untuk user database. Periksa username dan password database.';
             } elseif ($mysqli->connect_errno == 1049) {
+                log_message('error', 'Unknown database error (1049) detected');
                 $error_msg = 'Database tidak ditemukan. Periksa nama database.';
             } elseif ($mysqli->connect_errno == 2002) {
+                log_message('error', 'Connection error (2002) detected');
                 $error_msg = 'Tidak dapat terhubung ke server database. Periksa hostname database.';
             }
             
+            log_message('error', '=== DATABASE CONNECTION TEST FAILED ===');
             throw new Exception($error_msg);
         }
         
+        log_message('info', 'Database connection successful');
+        
         // Test if user has SELECT privilege
+        log_message('info', 'Testing SELECT privilege...');
         $result = $mysqli->query("SHOW TABLES");
         if (!$result) {
+            log_message('error', 'SELECT privilege test failed: ' . $mysqli->error);
             $mysqli->close();
+            log_message('error', '=== DATABASE CONNECTION TEST FAILED ===');
             throw new Exception('User database tidak memiliki privilege SELECT. Hubungi administrator hosting.');
         }
         
+        log_message('info', 'SELECT privilege test passed');
         $mysqli->close();
+        log_message('info', '=== DATABASE CONNECTION TEST PASSED ===');
     }
     
         private function create_php_backup($hostname, $username, $password, $database, $backup_path) {
         // Create backup using pure PHP without exec() - Format phpMyAdmin SQL Dump
         // Mengikuti skema dari syncdb.php yang berhasil
+        log_message('info', '=== PHP BACKUP STARTED ===');
+        log_message('info', 'Hostname: ' . $hostname);
+        log_message('info', 'Username: ' . $username);
+        log_message('info', 'Database: ' . $database);
+        log_message('info', 'Backup path: ' . $backup_path);
+        
         $mysqli = new mysqli($hostname, $username, $password, $database);
         
         if ($mysqli->connect_error) {
+            log_message('error', 'MySQL connection failed: ' . $mysqli->connect_error);
+            log_message('error', 'MySQL connect errno: ' . $mysqli->connect_errno);
             throw new Exception('Gagal terhubung ke database: ' . $mysqli->connect_error);
         }
         
+        log_message('info', 'MySQL connection successful');
+        
         // Buka file
+        log_message('info', 'Opening backup file for writing: ' . $backup_path);
         $handle = fopen($backup_path, 'w');
         if (!$handle) {
+            log_message('error', 'Failed to open backup file for writing: ' . $backup_path);
+            log_message('error', 'File permissions: ' . substr(sprintf('%o', fileperms(dirname($backup_path))), -4));
+            log_message('error', 'Directory writable: ' . (is_writable(dirname($backup_path)) ? 'Yes' : 'No'));
             $mysqli->close();
             throw new Exception('Gagal buka file untuk menulis: ' . $backup_path);
         }
+        
+        log_message('info', 'Backup file opened successfully');
         
         // -------------------------------
         // HEADER phpMyAdmin
@@ -719,17 +836,21 @@ class Settings extends CI_Controller {
         // -------------------------------
         // DUMP SEMUA TABEL
         // -------------------------------
+        log_message('info', 'Getting list of tables...');
         $tables = $mysqli->query("SHOW TABLES");
         if (!$tables) {
+            log_message('error', 'Failed to get tables list: ' . $mysqli->error);
             fclose($handle);
             $mysqli->close();
             throw new Exception('Gagal mendapatkan daftar tabel: ' . $mysqli->error);
         }
         
+        log_message('info', 'Tables query executed successfully');
         $table_count = 0;
         while ($table_row = $tables->fetch_row()) {
             $table = $table_row[0];
             $table_count++;
+            log_message('info', 'Processing table ' . $table_count . ': ' . $table);
             
             // Struktur Tabel
             fwrite($handle, "\n--\n-- Table structure for table `$table`\n--\n\n");
@@ -739,8 +860,9 @@ class Settings extends CI_Controller {
             if ($create_result) {
                 $create_row = $create_result->fetch_row();
                 fwrite($handle, $create_row[1] . ";\n\n");
+                log_message('info', 'Table structure written for: ' . $table);
             } else {
-                log_message('warning', 'Failed to get structure for table: ' . $table);
+                log_message('warning', 'Failed to get structure for table: ' . $table . ' - Error: ' . $mysqli->error);
                 continue;
             }
             
@@ -763,8 +885,11 @@ class Settings extends CI_Controller {
             // Get table data
             $data_result = $mysqli->query("SELECT * FROM `$table`");
             if ($data_result && $data_result->num_rows > 0) {
+                log_message('info', 'Table ' . $table . ' has ' . $data_result->num_rows . ' rows');
                 $rows = [];
+                $row_count = 0;
                 while ($row = $data_result->fetch_row()) {
+                    $row_count++;
                     $values = array_map(function($value) use ($mysqli) {
                         if ($value === null) {
                             return 'NULL';
@@ -772,16 +897,24 @@ class Settings extends CI_Controller {
                         return "'" . $mysqli->real_escape_string($value) . "'";
                     }, $row);
                     $rows[] = '(' . implode(', ', $values) . ')';
+                    
+                    // Log progress every 1000 rows
+                    if ($row_count % 1000 === 0) {
+                        log_message('info', 'Processed ' . $row_count . ' rows for table ' . $table);
+                    }
                 }
                 
                 if (count($rows) > 0) {
                     fwrite($handle, implode(",\n", $rows));
                     fwrite($handle, ";\n\n");
+                    log_message('info', 'Data written for table ' . $table . ' (' . count($rows) . ' rows)');
                 } else {
                     fwrite($handle, ";\n\n");
+                    log_message('info', 'No data rows for table ' . $table);
                 }
             } else {
                 fwrite($handle, ";\n\n");
+                log_message('info', 'Table ' . $table . ' is empty or query failed');
             }
         }
         
@@ -797,6 +930,7 @@ class Settings extends CI_Controller {
         $mysqli->close();
         
         log_message('info', 'PHP backup completed successfully. Tables backed up: ' . $table_count);
+        log_message('info', '=== PHP BACKUP COMPLETED ===');
     }
     
     private function cleanup_old_backups($max_days = 7) {
