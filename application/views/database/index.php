@@ -291,9 +291,9 @@
                                                     <i class="fas fa-times"></i>
                                                 </button>
                                                 <?php if($this->session->userdata('role') == 'admin'): ?>
-                                                    <a href="<?= site_url('database/delete/' . $p->id) ?>" class="mobile-table-btn mobile-table-btn-delete btn-delete" onclick="return confirm('Apakah Anda yakin ingin menghapus data ini?')">
+                                                    <button type="button" class="mobile-table-btn mobile-table-btn-delete btn-delete" onclick="deleteData(<?= $p->id ?>)">
                                                     <i class="fas fa-trash"></i>
-                                                </a>
+                                                </button>
                                                 <?php endif; ?>
                                             </td>
                                         </tr>   
@@ -447,9 +447,9 @@
                                                 <i class="fas fa-times"></i>
                                             </button>
                                             <?php if($this->session->userdata('role') == 'admin'): ?>
-                                                <a href="<?= site_url('database/delete/' . $p->id) ?>" class="btn btn-sm btn-danger btn-action" data-bs-toggle="tooltip" title="Delete" onclick="return confirm('Apakah Anda yakin ingin menghapus data ini?')">
+                                                <button type="button" class="btn btn-sm btn-danger btn-action" data-bs-toggle="tooltip" title="Delete" onclick="deleteData(<?= $p->id ?>)">
                                                 <i class="fas fa-trash"></i>
-                                            </a>
+                                            </button>
                                             <?php endif; ?>
                                         </td>
                                     </tr>
@@ -2046,9 +2046,27 @@ function saveRow(button) {
             });
             
             showAlert('Data berhasil diperbarui', 'success');
-            // Auto refresh setelah 1 detik
+            // Redirect back to previous page with filters after 1 second
             setTimeout(() => {
-                location.reload();
+                const currentUrl = new URL(window.location.href);
+                const params = new URLSearchParams(currentUrl.search);
+                
+                // Build redirect URL with current filters
+                let redirectUrl = '<?= base_url('database/index') ?>';
+                const queryParams = [];
+                
+                // Add all current filters
+                ['nama', 'nomor_paspor', 'no_visa', 'flag_doc', 'tanggaljam', 'status', 'gender', 'page'].forEach(param => {
+                    if (params.has(param) && params.get(param)) {
+                        queryParams.push(`${param}=${encodeURIComponent(params.get(param))}`);
+                    }
+                });
+                
+                if (queryParams.length > 0) {
+                    redirectUrl += '?' + queryParams.join('&');
+                }
+                
+                window.location.href = redirectUrl;
             }, 1000);
             
             editFields.forEach(field => field.style.display = 'none');
@@ -2692,9 +2710,27 @@ function saveRowMobileTable(button) {
             }
             
             showAlert('Data berhasil diperbarui', 'success');
-            // Auto refresh setelah 1 detik
+            // Redirect back to previous page with filters after 1 second
             setTimeout(() => {
-                location.reload();
+                const currentUrl = new URL(window.location.href);
+                const params = new URLSearchParams(currentUrl.search);
+                
+                // Build redirect URL with current filters
+                let redirectUrl = '<?= base_url('database/index') ?>';
+                const queryParams = [];
+                
+                // Add all current filters
+                ['nama', 'nomor_paspor', 'no_visa', 'flag_doc', 'tanggaljam', 'status', 'gender', 'page'].forEach(param => {
+                    if (params.has(param) && params.get(param)) {
+                        queryParams.push(`${param}=${encodeURIComponent(params.get(param))}`);
+                    }
+                });
+                
+                if (queryParams.length > 0) {
+                    redirectUrl += '?' + queryParams.join('&');
+                }
+                
+                window.location.href = redirectUrl;
             }, 1000);
             
             // Remove editing class
@@ -2834,9 +2870,27 @@ function saveRow(button) {
             });
             
             showAlert('Data berhasil diperbarui', 'success');
-            // Auto refresh setelah 1 detik
+            // Redirect back to previous page with filters after 1 second
             setTimeout(() => {
-                location.reload();
+                const currentUrl = new URL(window.location.href);
+                const params = new URLSearchParams(currentUrl.search);
+                
+                // Build redirect URL with current filters
+                let redirectUrl = '<?= base_url('database/index') ?>';
+                const queryParams = [];
+                
+                // Add all current filters
+                ['nama', 'nomor_paspor', 'no_visa', 'flag_doc', 'tanggaljam', 'status', 'gender', 'page'].forEach(param => {
+                    if (params.has(param) && params.get(param)) {
+                        queryParams.push(`${param}=${encodeURIComponent(params.get(param))}`);
+                    }
+                });
+                
+                if (queryParams.length > 0) {
+                    redirectUrl += '?' + queryParams.join('&');
+                }
+                
+                window.location.href = redirectUrl;
             }, 1000);
             
             editFields.forEach(field => field.style.display = 'none');
@@ -2896,6 +2950,41 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Any mobile-specific initialization can go here
 });
+
+// Delete data function with filter preservation
+function deleteData(id) {
+    if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
+        // Get current filters from URL
+        const currentUrl = new URL(window.location.href);
+        const params = new URLSearchParams(currentUrl.search);
+        
+        // Build redirect URL with current filters
+        let redirectUrl = '<?= base_url('database/index') ?>';
+        const queryParams = [];
+        
+        // Add all current filters
+        ['nama', 'nomor_paspor', 'no_visa', 'flag_doc', 'tanggaljam', 'status', 'gender', 'page'].forEach(param => {
+            if (params.has(param) && params.get(param)) {
+                queryParams.push(`${param}=${encodeURIComponent(params.get(param))}`);
+            }
+        });
+        
+        if (queryParams.length > 0) {
+            redirectUrl += '?' + queryParams.join('&');
+        }
+        
+        // Show loading state
+        const button = event.target.closest('button');
+        if (button) {
+            const originalHTML = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            
+            // Perform delete with redirect
+            window.location.href = '<?= base_url('database/delete/') ?>' + id + '?redirect=' + encodeURIComponent(redirectUrl);
+        }
+    }
+}
 
 // Download barcode attachments function
 function downloadBarcodeAttachments() {

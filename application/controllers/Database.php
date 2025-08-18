@@ -165,7 +165,22 @@ class Database extends CI_Controller {
         }
         
         $this->transaksi_model->delete($id);
-        redirect('database');
+        
+        // Check if redirect URL is provided
+        $redirect_url = $this->input->get('redirect');
+        if ($redirect_url) {
+            // Decode the redirect URL
+            $redirect_url = urldecode($redirect_url);
+            
+            // Validate that the redirect URL is safe (only allow redirect to our own domain)
+            if (strpos($redirect_url, base_url()) === 0 || strpos($redirect_url, '/database/') === 0) {
+                redirect($redirect_url);
+            }
+        }
+        
+        // Fallback: Redirect back to previous page with filters
+        $redirect_url = $this->get_redirect_url_with_filters();
+        redirect($redirect_url);
     }   
     
     public function download($id) {
@@ -312,7 +327,10 @@ class Database extends CI_Controller {
                 
                 if ($result) {
                     $this->session->set_flashdata('success', 'Data peserta berhasil diperbarui');
-                    redirect('database');
+                    
+                    // Redirect back to previous page with filters
+                    $redirect_url = $this->get_redirect_url_with_filters();
+                    redirect($redirect_url);
                 } else {
                     $this->session->set_flashdata('error', 'Gagal memperbarui data peserta. Silakan coba lagi.');
                     $this->edit($id);
@@ -1958,5 +1976,39 @@ class Database extends CI_Controller {
             log_message('warning', 'Barcode file not found for deletion: ' . $filename);
             return false;
         }
+    }
+    
+    /**
+     * Get redirect URL with current filters and pagination
+     */
+    private function get_redirect_url_with_filters() {
+        $base_url = base_url('database/index');
+        $query_params = [];
+        
+        // Get current filters from GET parameters
+        $filters = [
+            'nama' => $this->input->get('nama'),
+            'nomor_paspor' => $this->input->get('nomor_paspor'),
+            'no_visa' => $this->input->get('no_visa'),
+            'flag_doc' => $this->input->get('flag_doc'),
+            'tanggaljam' => $this->input->get('tanggaljam'),
+            'status' => $this->input->get('status'),
+            'gender' => $this->input->get('gender'),
+            'page' => $this->input->get('page')
+        ];
+        
+        // Add non-empty filters to query parameters
+        foreach ($filters as $key => $value) {
+            if (!empty($value) && $value !== '') {
+                $query_params[$key] = $value;
+            }
+        }
+        
+        // Build query string
+        if (!empty($query_params)) {
+            $base_url .= '?' . http_build_query($query_params);
+        }
+        
+        return $base_url;
     }
 } 
