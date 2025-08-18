@@ -145,55 +145,12 @@ class Settings extends CI_Controller {
             $this->test_database_connection($hostname, $username, $password, $database);
             log_message('info', 'Database connection test passed');
             
-            // Prioritize PHP-based backup method for better cPanel compatibility
-            // Only use mysqldump if explicitly available and exec is enabled
-            $use_mysqldump = false;
-            
-            if (function_exists('exec')) {
-                // Check if mysqldump is available
-                $mysqldump_path = $this->find_mysqldump();
-                if ($mysqldump_path) {
-                    $use_mysqldump = true;
-                    log_message('debug', 'mysqldump found at: ' . $mysqldump_path);
-                } else {
-                    log_message('debug', 'mysqldump not found, using PHP backup method');
-                }
-            } else {
-                log_message('debug', 'exec function disabled, using PHP backup method');
-            }
-            
-            if ($use_mysqldump) {
-                log_message('info', 'Using mysqldump method for backup');
-                // Create mysqldump command with proper escaping (cPanel optimized)
-                $escaped_password = escapeshellarg($password);
-                $command = "{$mysqldump_path} --host=" . escapeshellarg($hostname) . 
-                          " --user=" . escapeshellarg($username) . 
-                          " --password={$escaped_password} " . 
-                          "--single-transaction --routines --triggers " .
-                          escapeshellarg($database) . " > " . escapeshellarg($backup_path) . " 2>&1";
-                
-                // Execute backup command
-                $output = [];
-                $return_var = 0;
-                log_message('info', 'Executing mysqldump command...');
-                @exec($command, $output, $return_var);
-                
-                // Log the command for debugging (without password)
-                $log_command = "{$mysqldump_path} --host=" . escapeshellarg($hostname) . 
-                              " --user=" . escapeshellarg($username) . 
-                              " --password=*** " . 
-                              "--single-transaction --routines --triggers " .
-                              escapeshellarg($database) . " > " . escapeshellarg($backup_path);
-                log_message('info', 'Backup command: ' . $log_command);
-                log_message('info', 'Return code: ' . $return_var);
-                log_message('info', 'Output: ' . implode("\n", $output));
-            } else {
-                // Use PHP-based backup method (recommended for cPanel)
-                log_message('info', 'Using PHP-based backup method (phpMyAdmin format)');
-                $this->create_php_backup($hostname, $username, $password, $database, $backup_path);
-                $return_var = 0;
-                $output = [];
-            }
+            // Force using PHP-based backup method for better hosting compatibility
+            // Skip mysqldump entirely to avoid escapeshellarg() and exec() issues
+            log_message('info', 'Using PHP-based backup method (phpMyAdmin format) - forced for hosting compatibility');
+            $this->create_php_backup($hostname, $username, $password, $database, $backup_path);
+            $return_var = 0;
+            $output = [];
             
 
             
@@ -343,43 +300,12 @@ class Settings extends CI_Controller {
             // Test database connection first
             $this->test_database_connection($hostname, $username, $password, $database);
             
-            // Prioritize PHP-based backup method for better cPanel compatibility
-            // Only use mysqldump if explicitly available and exec is enabled
-            $use_mysqldump = false;
-            
-            if (function_exists('exec')) {
-                // Check if mysqldump is available
-                $mysqldump_path = $this->find_mysqldump();
-                if ($mysqldump_path) {
-                    $use_mysqldump = true;
-                    log_message('debug', 'mysqldump found at: ' . $mysqldump_path);
-                } else {
-                    log_message('debug', 'mysqldump not found, using PHP backup method');
-                }
-            } else {
-                log_message('debug', 'exec function disabled, using PHP backup method');
-            }
-            
-            if ($use_mysqldump) {
-                // Create mysqldump command with proper escaping (cPanel optimized)
-                $escaped_password = escapeshellarg($password);
-                $command = "{$mysqldump_path} --host=" . escapeshellarg($hostname) . 
-                          " --user=" . escapeshellarg($username) . 
-                          " --password={$escaped_password} " . 
-                          "--single-transaction --routines --triggers " .
-                          escapeshellarg($database) . " > " . escapeshellarg($backup_path) . " 2>&1";
-                
-                // Execute backup command
-                $output = [];
-                $return_var = 0;
-                @exec($command, $output, $return_var);
-            } else {
-                // Use PHP-based backup method (recommended for cPanel)
-                log_message('debug', 'Using PHP-based backup method (phpMyAdmin format)');
-                $this->create_php_backup($hostname, $username, $password, $database, $backup_path);
-                $return_var = 0;
-                $output = [];
-            }
+            // Force using PHP-based backup method for better hosting compatibility
+            // Skip mysqldump entirely to avoid escapeshellarg() and exec() issues
+            log_message('debug', 'Using PHP-based backup method (phpMyAdmin format) - forced for hosting compatibility');
+            $this->create_php_backup($hostname, $username, $password, $database, $backup_path);
+            $return_var = 0;
+            $output = [];
             
             if ($return_var !== 0 || !file_exists($backup_path)) {
                 $error_msg = 'Gagal membuat backup database lokal';

@@ -54,15 +54,15 @@
                                             </a>
                                         </small>
                                         <br>
-                                        <small class="text-muted">
-                                            <i class="fas fa-server"></i> 
-                                            <strong>cPanel Ready:</strong> Sistem backup sudah dioptimalkan untuk cPanel hosting
-                                        </small>
+                                                                                 <small class="text-muted">
+                                             <i class="fas fa-server"></i> 
+                                             <strong>Hosting Compatible:</strong> Sistem backup menggunakan PHP murni tanpa exec/mysqldump
+                                         </small>
                                         <br>
-                                        <small class="text-muted">
-                                            <i class="fas fa-exclamation-triangle"></i> 
-                                            <strong>Troubleshooting:</strong> Jika terjadi error "Access denied", periksa privilege user database
-                                        </small>
+                                                                                 <small class="text-muted">
+                                             <i class="fas fa-exclamation-triangle"></i> 
+                                             <strong>Troubleshooting:</strong> Sistem menggunakan PHP murni, tidak memerlukan exec/mysqldump
+                                         </small>
                                         <br>
                                         <small class="text-muted">
                                             <i class="fas fa-lightbulb"></i> 
