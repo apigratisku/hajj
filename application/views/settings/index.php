@@ -45,35 +45,7 @@
                                         <i class="fas fa-vial"></i> Test Connection
                                     </button>
                                     
-                                    <!-- Debug info -->
-                                    <div class="mt-2">
-                                        <small class="text-muted">
-                                            <i class="fas fa-info-circle"></i> 
-                                            <a href="<?= base_url('test_mysqldump') ?>" target="_blank" class="text-decoration-none">
-                                                Test konfigurasi mysqldump
-                                            </a>
-                                        </small>
-                                        <br>
-                                                                                 <small class="text-muted">
-                                             <i class="fas fa-server"></i> 
-                                             <strong>Hosting Compatible:</strong> Sistem backup menggunakan PHP murni tanpa exec/mysqldump
-                                         </small>
-                                        <br>
-                                                                                 <small class="text-muted">
-                                             <i class="fas fa-exclamation-triangle"></i> 
-                                             <strong>Troubleshooting:</strong> Sistem menggunakan PHP murni, tidak memerlukan exec/mysqldump
-                                         </small>
-                                        <br>
-                                        <small class="text-muted">
-                                            <i class="fas fa-lightbulb"></i> 
-                                            <strong>Tips:</strong> Gunakan tombol "Test Connection" untuk cek koneksi sebelum backup
-                                        </small>
-                                        <br>
-                                        <small class="text-muted">
-                                            <i class="fas fa-file-alt"></i> 
-                                            <strong>Log:</strong> Cek file log di <code>application/logs/</code> untuk detail error
-                                        </small>
-                                    </div>
+                                 
                                     
                                     <!-- Debug Information -->
                                     <div class="mt-3 p-2 bg-light border rounded" 

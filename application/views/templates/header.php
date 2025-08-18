@@ -40,7 +40,7 @@
             background: linear-gradient(135deg, rgba(139, 69, 19, 0.1), rgba(62, 39, 35, 0.1));
         }
         
-        /* Sidebar styles */
+        /* Sidebar styles - Ultra Compact */
         .sidebar {
             width: 280px;
             background: linear-gradient(to bottom, var(--dark-brown), var(--secondary-color));
@@ -55,7 +55,7 @@
         }
         
         .sidebar .sidebar-header {
-            padding: 20px;
+            padding: 15px; /* Reduced from 20px */
             background: rgba(0, 0, 0, 0.3);
             text-align: center;
             border-bottom: 1px solid rgba(218, 165, 32, 0.3);
@@ -63,18 +63,18 @@
         
         .sidebar .sidebar-header h3 {
             margin: 0;
-            font-size: 1.5rem;
+            font-size: 1.3rem; /* Reduced from 1.5rem */
             color: var(--gold);
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
         }
         
         .sidebar .user-info {
-            padding: 5px 0;
-            font-size: 0.85rem;
+            padding: 3px 0; /* Reduced from 5px */
+            font-size: 0.8rem; /* Reduced from 0.85rem */
         }
         
         .sidebar ul.components {
-            padding: 15px 0;
+            padding: 12px 0; /* Reduced from 15px */
             flex: 1;
             overflow-y: auto;
         }
@@ -82,16 +82,16 @@
         .sidebar ul li {
             padding: 0;
             list-style-type: none;
-            margin-bottom: 5px;
+            margin-bottom: 3px; /* Reduced from 5px */
         }
         
         .sidebar ul li a {
-            padding: 12px 20px;
+            padding: 10px 15px; /* Reduced from 12px 20px */
             display: block;
             color: rgba(255, 255, 255, 0.8);
             text-decoration: none;
             transition: all 0.3s;
-            font-size: 0.95rem;
+            font-size: 0.9rem; /* Reduced from 0.95rem */
             border-left: 3px solid transparent;
             border-radius: 0 5px 5px 0;
         }
@@ -153,99 +153,99 @@
         }
         
         .sidebar ul.submenu {
-            padding-left: 10px;
+            padding-left: 8px; /* Reduced from 10px */
             background: rgba(0, 0, 0, 0.2);
             border-radius: 0 0 5px 0;
-            margin-bottom: 10px;
+            margin-bottom: 8px; /* Reduced from 10px */
         }
         
         .sidebar ul.submenu li a {
-            padding: 10px 15px 10px 45px;
-            font-size: 0.9rem;
+            padding: 8px 12px 8px 40px; /* Reduced from 10px 15px 10px 45px */
+            font-size: 0.85rem; /* Reduced from 0.9rem */
             position: relative;
         }
         
         .sidebar ul.submenu li a i {
-            font-size: 0.8rem;
+            font-size: 0.75rem; /* Reduced from 0.8rem */
             width: 15px;
         }
         
         .nav-section-divider {
             height: 1px;
             background: rgba(218, 165, 32, 0.3);
-            margin: 15px 20px;
+            margin: 12px 15px; /* Reduced from 15px 20px */
         }
         
         .sidebar-footer {
             text-align: center;
-            padding: 15px;
+            padding: 12px; /* Reduced from 15px */
             background: rgba(0, 0, 0, 0.3);
-            font-size: 0.75rem;
+            font-size: 0.7rem; /* Reduced from 0.75rem */
             color: rgba(218, 165, 32, 0.7);
             border-top: 1px solid rgba(218, 165, 32, 0.3);
         }
         
-        /* Content styles */
+        /* Content styles - Ultra Compact */
         .content {
             width: calc(100% - 280px);
             margin-left: 280px;
-            padding: 20px;
+            padding: 15px; /* Reduced from 20px */
             transition: all 0.3s;
         }
         
         .content-header {
             background: rgba(255, 255, 255, 0.95);
-            padding: 15px 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            padding: 10px 15px; /* Reduced from 15px 20px */
+            border-radius: 8px; /* Reduced from 10px */
+            margin-bottom: 15px; /* Reduced from 20px */
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1); /* Reduced shadow */
             border: 1px solid var(--light-brown);
         }
         
         .content-header h1 {
             margin: 0;
-            font-size: 1.8rem;
+            font-size: 1.5rem; /* Reduced from 1.8rem */
             color: var(--dark-brown);
             font-weight: bold;
         }
         
         .content-body {
             background: rgba(255, 255, 255, 0.95);
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            padding: 15px; /* Reduced from 20px */
+            border-radius: 8px; /* Reduced from 10px */
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1); /* Reduced shadow */
             border: 1px solid var(--light-brown);
         }
         
-        /* Card styles for dashboard */
+        /* Card styles for dashboard - Ultra Compact */
         .dashboard-card {
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-            margin-bottom: 20px;
+            border-radius: 8px; /* Reduced from 10px */
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1); /* Reduced shadow */
+            padding: 15px; /* Reduced from 20px */
+            margin-bottom: 15px; /* Reduced from 20px */
             transition: all 0.3s;
-            border-left: 5px solid var(--gold);
+            border-left: 4px solid var(--gold); /* Reduced from 5px */
             background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 249, 250, 0.95));
         }
         
         .dashboard-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            transform: translateY(-3px); /* Reduced from -5px */
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15); /* Reduced shadow */
         }
         
         .dashboard-card .icon {
-            font-size: 3rem;
+            font-size: 2.5rem; /* Reduced from 3rem */
             color: var(--gold);
         }
         
         .dashboard-card .count {
-            font-size: 2.5rem;
+            font-size: 2rem; /* Reduced from 2.5rem */
             font-weight: bold;
             color: var(--dark-brown);
         }
         
         .dashboard-card .title {
-            font-size: 1.2rem;
+            font-size: 1rem; /* Reduced from 1.2rem */
             color: var(--secondary-color);
         }
         
@@ -281,22 +281,23 @@
             font-size: 0.875rem;
         }
         
-        /* Alert styling */
+        /* Alert styling - Ultra Compact */
         .alert {
-            margin-bottom: 20px;
-            border-radius: 10px;
+            margin-bottom: 15px; /* Reduced from 20px */
+            border-radius: 8px; /* Reduced from 10px */
             border: none;
+            padding: 10px 15px; /* Reduced padding */
         }
         
         .alert-success {
             background: rgba(25, 135, 84, 0.1);
-            border-left: 4px solid var(--success-color);
+            border-left: 3px solid var(--success-color); /* Reduced from 4px */
             color: var(--dark-brown);
         }
         
         .alert-danger {
             background: rgba(220, 53, 69, 0.1);
-            border-left: 4px solid var(--danger-color);
+            border-left: 3px solid var(--danger-color); /* Reduced from 4px */
             color: var(--dark-brown);
         }
         
@@ -335,7 +336,7 @@
             transition: all 0.3s ease;
         }
         
-        /* Responsive adjustments */
+        /* Responsive adjustments - Ultra Compact */
         @media (max-width: 768px) {
             .sidebar-toggle {
                 display: flex;
@@ -363,18 +364,163 @@
             }
             
             .sidebar ul li a i {
-                margin-right: 10px;
-                font-size: 1rem;
+                margin-right: 8px; /* Reduced from 10px */
+                font-size: 0.9rem; /* Reduced from 1rem */
+            }
+            
+            /* Mobile sidebar optimizations */
+            .sidebar .sidebar-header {
+                padding: 12px; /* Reduced from 15px */
+            }
+            
+            .sidebar .sidebar-header h3 {
+                font-size: 1.1rem; /* Reduced from 1.3rem */
+            }
+            
+            .sidebar ul.components {
+                padding: 10px 0; /* Reduced from 12px */
+            }
+            
+            .sidebar ul li a {
+                padding: 8px 12px; /* Reduced from 10px 15px */
+                font-size: 0.85rem; /* Reduced from 0.9rem */
+            }
+            
+            .sidebar ul.submenu li a {
+                padding: 6px 10px 6px 35px; /* Reduced from 8px 12px 8px 40px */
+                font-size: 0.8rem; /* Reduced from 0.85rem */
+            }
+            
+            .sidebar-footer {
+                padding: 10px; /* Reduced from 12px */
+                font-size: 0.65rem; /* Reduced from 0.7rem */
             }
             
             .content {
                 width: 100%;
                 margin-left: 0;
-                padding-top: 80px;
+                padding-top: 70px; /* Reduced from 80px */
+                padding: 10px; /* Reduced from 15px */
+            }
+            
+            .content-header {
+                padding: 8px 12px; /* Reduced from 10px 15px */
+                margin-bottom: 10px; /* Reduced from 15px */
+            }
+            
+            .content-header h1 {
+                font-size: 1.3rem; /* Reduced from 1.5rem */
+            }
+            
+            .content-body {
+                padding: 10px; /* Reduced from 15px */
+            }
+            
+            .dashboard-card {
+                padding: 10px; /* Reduced from 15px */
+                margin-bottom: 10px; /* Reduced from 15px */
+            }
+            
+            .dashboard-card .icon {
+                font-size: 2rem; /* Reduced from 2.5rem */
+            }
+            
+            .dashboard-card .count {
+                font-size: 1.5rem; /* Reduced from 2rem */
+            }
+            
+            .dashboard-card .title {
+                font-size: 0.9rem; /* Reduced from 1rem */
+            }
+            
+            .alert {
+                margin-bottom: 10px; /* Reduced from 15px */
+                padding: 8px 12px; /* Reduced from 10px 15px */
             }
             
             .sidebar-overlay.show {
                 display: block;
+            }
+        }
+        
+        /* Ultra Small Mobile - Extra Compact */
+        @media (max-width: 480px) {
+            .content {
+                padding: 8px; /* Even smaller */
+                padding-top: 60px; /* Reduced from 70px */
+            }
+            
+            .content-header {
+                padding: 6px 10px; /* Even smaller */
+                margin-bottom: 8px; /* Even smaller */
+            }
+            
+            .content-header h1 {
+                font-size: 1.1rem; /* Even smaller */
+            }
+            
+            .content-body {
+                padding: 8px; /* Even smaller */
+            }
+            
+            .dashboard-card {
+                padding: 8px; /* Even smaller */
+                margin-bottom: 8px; /* Even smaller */
+            }
+            
+            .dashboard-card .icon {
+                font-size: 1.5rem; /* Even smaller */
+            }
+            
+            .dashboard-card .count {
+                font-size: 1.2rem; /* Even smaller */
+            }
+            
+            .dashboard-card .title {
+                font-size: 0.8rem; /* Even smaller */
+            }
+            
+            .alert {
+                margin-bottom: 8px; /* Even smaller */
+                padding: 6px 10px; /* Even smaller */
+                font-size: 0.85rem; /* Smaller font */
+            }
+            
+            /* Sidebar toggle button optimization */
+            .sidebar-toggle {
+                width: 45px; /* Smaller button */
+                height: 45px; /* Smaller button */
+                font-size: 1rem; /* Smaller icon */
+                top: 15px; /* Closer to top */
+                left: 15px; /* Closer to left */
+            }
+            
+            /* Ultra small mobile sidebar optimizations */
+            .sidebar .sidebar-header {
+                padding: 10px; /* Even smaller */
+            }
+            
+            .sidebar .sidebar-header h3 {
+                font-size: 1rem; /* Even smaller */
+            }
+            
+            .sidebar ul.components {
+                padding: 8px 0; /* Even smaller */
+            }
+            
+            .sidebar ul li a {
+                padding: 6px 10px; /* Even smaller */
+                font-size: 0.8rem; /* Even smaller */
+            }
+            
+            .sidebar ul.submenu li a {
+                padding: 5px 8px 5px 30px; /* Even smaller */
+                font-size: 0.75rem; /* Even smaller */
+            }
+            
+            .sidebar-footer {
+                padding: 8px; /* Even smaller */
+                font-size: 0.6rem; /* Even smaller */
             }
         }
     </style>

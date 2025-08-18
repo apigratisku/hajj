@@ -40,8 +40,8 @@
         </div>
     </div>
 
-    <!-- Statistics Cards Toggle Button -->
-    <div class="row mb-2">
+    <!-- Statistics Cards Toggle Button - Ultra Compact -->
+    <div class="row mb-1">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 
@@ -66,7 +66,7 @@
     </div>
 
     <!-- Statistics Cards -->
-    <div class="row mb-2 stats-container" id="desktop-stats" style="display: none;">
+    <div class="row mb-1 stats-container" id="desktop-stats" style="display: none;">
         <div class="col-12">
             <div class="stats-horizontal-container">
                 <div class="stats-item">
@@ -113,7 +113,7 @@
     </div>
 
     <!-- Mobile Statistics Cards -->
-    <div class="row mb-2 stats-container d-md-none" id="mobile-stats" style="display: none;">
+    <div class="row mb-1 stats-container d-md-none" id="mobile-stats" style="display: none;">
         <div class="col-12">
             <div class="stats-horizontal-container mobile-stats-horizontal">
                 <div class="stats-item mobile-stats-item">
@@ -160,7 +160,7 @@
     </div>
     
     <!-- Detailed Statistics -->
-    <div class="row mb-4">
+    <div class="row mb-2">
         
         <!-- Schedule Statistics -->
         <div class="col-md-12">
@@ -206,16 +206,12 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="progress mb-3">
-                                        <div class="progress-bar bg-primary" style="width: <?= $maxDateCount > 0 ? ($schedule->total_count / $maxDateCount) * 100 : 0 ?>%"></div>
-                                    </div>
+                                    
                                     
                                     <!-- Detail jam untuk tanggal ini -->
                                     <?php if (!empty($detail_jam)): ?>
                                         <div class="schedule-details">
-                                            <h6 class="detail-title">
-                                                <i class="fas fa-clock text-warning"></i> Detail Jam Kunjungan:
-                                            </h6>
+                                           
                                             <div class="time-slots">
                                                 <?php foreach ($detail_jam as $jam): ?>
                                                     <?php
@@ -297,41 +293,41 @@
     --transition: all 0.3s ease;
 }
 
-/* Mobile Card Styles */
+/* Mobile Card Styles - Ultra Compact */
 .mobile-card {
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow);
+    border-radius: 8px; /* Smaller radius */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Smaller shadow */
     border: none;
     overflow: hidden;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.75rem; /* Smaller margin */
 }
 
 .mobile-card .card-header {
     background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
     border: none;
-    padding: 1rem 1.5rem;
+    padding: 0.5rem 1rem; /* Smaller padding */
 }
 
 .mobile-card .card-body {
-    padding: 1.5rem;
+    padding: 0.75rem; /* Smaller padding */
 }
 
-/* Filter Form Styles */
+/* Filter Form Styles - Ultra Compact */
 .filter-form {
     margin-bottom: 0;
 }
 
 .mobile-input {
-    border: 2px solid #e9ecef;
-    border-radius: var(--border-radius);
-    padding: 0.75rem 1rem;
-    font-size: 1rem;
+    border: 1px solid #e9ecef; /* Reduced border */
+    border-radius: 6px; /* Smaller radius */
+    padding: 0.4rem 0.6rem; /* Smaller padding */
+    font-size: 0.85rem; /* Smaller font */
     transition: var(--transition);
 }
 
 .mobile-input:focus {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.2rem rgba(139, 69, 19, 0.25);
+    box-shadow: 0 0 0 0.1rem rgba(139, 69, 19, 0.25); /* Smaller shadow */
     outline: none;
 }
 
@@ -429,53 +425,56 @@
     font-size: 0.9rem;
 }
 
-/* Schedule Styles */
+/* Schedule Styles - Ultra Compact Default */
 .schedule-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
+    margin-bottom: 0.25rem; /* Further reduced */
+    padding: 0.25rem 0; /* Reduced padding */
 }
 
 .schedule-info {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.25rem; /* Further reduced */
+    flex: 1;
 }
 
 .schedule-date {
-    font-weight: 700;
-    font-size: 1.1rem;
+    font-weight: 600;
+    font-size: 0.9rem; /* Smaller font */
     color: var(--dark-color);
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.15rem; /* Minimal gap */
 }
 
 .schedule-count {
     background: var(--primary-color);
     color: white;
-    padding: 0.5rem 1rem;
-    border-radius: 25px;
+    padding: 0.15rem 0.3rem; /* Even smaller */
+    border-radius: 8px; /* Smaller radius */
     font-weight: bold;
-    font-size: 1.1rem;
-    min-width: 50px;
+    font-size: 0.8rem; /* Smaller font */
+    min-width: 25px; /* Smaller width */
     text-align: center;
 }
 
 .schedule-gender-summary {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.15rem; /* Minimal gap */
+    flex-shrink: 0;
 }
 
 .gender-badge {
-    padding: 0.25rem 0.75rem;
-    border-radius: 15px;
+    padding: 0.1rem 0.3rem; /* Smaller padding */
+    border-radius: 6px; /* Smaller radius */
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 0.7rem; /* Smaller font */
     display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.1rem; /* Minimal gap */
 }
 
 .gender-badge.male {
@@ -492,39 +491,40 @@
 
 .schedule-details {
     background: rgba(255, 255, 255, 0.8);
-    border-radius: var(--border-radius);
-    padding: 1rem;
-    margin-top: 1rem;
+    border-radius: 4px; /* Smaller radius */
+    padding: 0.25rem; /* Smaller padding */
+    margin-top: 0.25rem; /* Smaller margin */
     border: 1px solid rgba(0,0,0,0.1);
 }
 
 .detail-title {
     color: var(--dark-color);
     font-weight: 600;
-    margin-bottom: 1rem;
+    margin-bottom: 0.25rem; /* Smaller margin */
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.15rem; /* Minimal gap */
+    font-size: 0.8rem; /* Smaller font */
 }
 
 .time-slots {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.15rem; /* Minimal gap */
 }
 
 .time-slot {
     background: rgba(248, 249, 250, 0.8);
-    border-radius: 8px;
-    padding: 0.75rem;
-    border-left: 3px solid var(--info-color);
+    border-radius: 4px; /* Smaller radius */
+    padding: 0.25rem; /* Smaller padding */
+    border-left: 2px solid var(--info-color);
 }
 
 .time-info {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.15rem; /* Smaller margin */
 }
 
 .time-label {
@@ -532,22 +532,23 @@
     color: var(--dark-color);
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.15rem; /* Minimal gap */
+    font-size: 0.8rem; /* Smaller font */
 }
 
 .time-count {
     background: var(--info-color);
     color: white;
-    padding: 0.25rem 0.5rem;
-    border-radius: 15px;
+    padding: 0.1rem 0.25rem; /* Smaller padding */
+    border-radius: 6px; /* Smaller radius */
     font-weight: bold;
-    font-size: 0.85rem;
+    font-size: 0.7rem; /* Smaller font */
 }
 
 .time-gender-breakdown {
     display: flex;
     justify-content: space-between;
-    gap: 0.5rem;
+    gap: 0.15rem; /* Minimal gap */
 }
 
 .progress {
@@ -562,16 +563,17 @@
     transition: width 0.6s ease;
 }
 
-/* Button Styles */
+/* Button Styles - Ultra Compact */
 .btn {
-    border-radius: var(--border-radius);
-    padding: 0.75rem 1.5rem;
+    border-radius: 6px; /* Smaller radius */
+    padding: 0.4rem 0.8rem; /* Smaller padding */
     font-weight: 600;
     transition: var(--transition);
     border: none;
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.25rem; /* Smaller gap */
+    font-size: 0.85rem; /* Smaller font */
 }
 
 .btn-brown {
@@ -581,8 +583,8 @@
 
 .btn-brown:hover {
     background: linear-gradient(135deg, var(--primary-light), var(--primary-color)) !important;
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-hover);
+    transform: translateY(-1px); /* Smaller transform */
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15); /* Smaller shadow */
 }
 
 .btn-secondary {
@@ -592,67 +594,129 @@
 
 .btn-secondary:hover {
     background: #5a6268 !important;
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-hover);
+    transform: translateY(-1px); /* Smaller transform */
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15); /* Smaller shadow */
 }
 
-/* Responsive Design */
+/* Responsive Design - Ultra Compact */
 @media (max-width: 768px) {
     .mobile-card .card-body {
-        padding: 1rem;
+        padding: 0.5rem; /* Even smaller */
     }
     
     .dashboard-card {
-        padding: 1rem;
-        margin-bottom: 1rem;
+        padding: 0.5rem; /* Even smaller */
+        margin-bottom: 0.5rem; /* Even smaller */
     }
     
     .dashboard-card .count {
-        font-size: 1.5rem;
+        font-size: 1.1rem; /* Even smaller */
     }
     
     .dashboard-card .title {
-        font-size: 0.9rem;
+        font-size: 0.75rem; /* Even smaller */
     }
     
     .gender-info, .hour-info {
         flex-direction: column;
         align-items: flex-start;
-        gap: 0.5rem;
+        gap: 0.15rem; /* Minimal gap */
     }
     
     .gender-count, .hour-count {
         align-self: flex-end;
     }
     
+    /* Mobile-optimized schedule layout */
     .schedule-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1rem;
+        flex-direction: row; /* Keep horizontal for mobile */
+        align-items: center;
+        gap: 0.25rem; /* Minimal gap */
+        margin-bottom: 0.15rem; /* Minimal margin */
     }
     
     .schedule-info {
-        width: 100%;
-        justify-content: space-between;
+        width: auto;
+        justify-content: flex-start;
+        flex: 1;
+    }
+    
+    .schedule-date {
+        font-size: 0.8rem; /* Even smaller */
+    }
+    
+    .schedule-count {
+        padding: 0.1rem 0.25rem; /* Minimal padding */
+        font-size: 0.75rem;
+        min-width: 25px;
     }
     
     .schedule-gender-summary {
-        width: 100%;
-        justify-content: flex-start;
+        width: auto;
+        justify-content: flex-end;
+        flex-shrink: 0;
+    }
+    
+    .gender-badge {
+        padding: 0.05rem 0.2rem; /* Minimal padding */
+        font-size: 0.65rem;
+    }
+    
+    .schedule-details {
+        padding: 0.15rem; /* Minimal padding */
+        margin-top: 0.15rem;
+    }
+    
+    .detail-title {
+        font-size: 0.75rem;
+        margin-bottom: 0.15rem;
+    }
+    
+    .time-slots {
+        gap: 0.1rem; /* Minimal gap */
+    }
+    
+    .time-slot {
+        padding: 0.15rem; /* Minimal padding */
+    }
+    
+    .time-info {
+        margin-bottom: 0.1rem; /* Minimal margin */
+    }
+    
+    .time-label {
+        font-size: 0.75rem;
+    }
+    
+    .time-count {
+        padding: 0.05rem 0.2rem;
+        font-size: 0.65rem;
     }
     
     .time-gender-breakdown {
-        flex-direction: column;
-        gap: 0.5rem;
+        flex-direction: row; /* Keep horizontal */
+        gap: 0.1rem; /* Minimal gap */
     }
     
     .filter-form .row {
-        gap: 1rem;
+        gap: 0.25rem; /* Minimal gap */
     }
     
     .filter-form .col-md-6 {
         width: 100%;
     }
+    
+    /* Filter form optimizations */
+    .mobile-input {
+        padding: 0.3rem 0.5rem; /* Even smaller */
+        font-size: 0.8rem;
+    }
+    
+    .btn {
+        padding: 0.3rem 0.6rem; /* Even smaller */
+        font-size: 0.8rem;
+    }
+}
 
     /* Mobile Toggle Button */
     .toggle-buttons {
@@ -764,6 +828,206 @@
 .dashboard-card:nth-child(1) { animation-delay: 0.1s; }
 .dashboard-card:nth-child(2) { animation-delay: 0.2s; }
 .dashboard-card:nth-child(3) { animation-delay: 0.3s; }
+
+/* Ultra Compact Layout - Default for all devices */
+
+/* Card-based Layout Alternative */
+.schedule-card-layout {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.schedule-card {
+    background: white;
+    border-radius: 8px;
+    padding: 0.75rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-left: 4px solid var(--primary-color);
+}
+
+.schedule-card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid #eee;
+}
+
+.schedule-card .card-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--dark-color);
+}
+
+.schedule-card .card-count {
+    background: var(--primary-color);
+    color: white;
+    padding: 0.15rem 0.4rem;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+
+.schedule-card .time-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.schedule-card .time-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.25rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
+/* List Layout Alternative */
+.schedule-list-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.schedule-list-item {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem;
+    background: white;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border-left: 3px solid var(--primary-color);
+}
+
+.schedule-list-item .date-info {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.schedule-list-item .date-label {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--dark-color);
+}
+
+.schedule-list-item .count-badge {
+    background: var(--primary-color);
+    color: white;
+    padding: 0.1rem 0.3rem;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    font-weight: bold;
+}
+
+.schedule-list-item .gender-info {
+    display: flex;
+    gap: 0.25rem;
+    margin-left: 0.5rem;
+}
+
+.schedule-list-item .gender-badge {
+    padding: 0.1rem 0.25rem;
+    border-radius: 6px;
+    font-size: 0.65rem;
+}
+
+/* Ultra Compact Mobile Layout */
+@media (max-width: 480px) {
+    .schedule-item {
+        margin-bottom: 0.15rem; /* Even smaller */
+        padding: 0.15rem; /* Even smaller */
+    }
+    
+    .schedule-header {
+        margin-bottom: 0.1rem; /* Minimal */
+        padding: 0.1rem 0; /* Minimal */
+    }
+    
+    .schedule-date {
+        font-size: 0.75rem; /* Even smaller */
+    }
+    
+    .schedule-count {
+        padding: 0.05rem 0.2rem; /* Minimal */
+        font-size: 0.65rem; /* Even smaller */
+        min-width: 20px; /* Smaller */
+    }
+    
+    .gender-badge {
+        padding: 0.03rem 0.15rem; /* Minimal */
+        font-size: 0.6rem; /* Even smaller */
+    }
+    
+    .schedule-details {
+        padding: 0.1rem; /* Minimal */
+        margin-top: 0.1rem; /* Minimal */
+    }
+    
+    .detail-title {
+        font-size: 0.7rem; /* Even smaller */
+        margin-bottom: 0.1rem; /* Minimal */
+    }
+    
+    .time-slot {
+        padding: 0.1rem; /* Minimal */
+        margin-bottom: 0.05rem; /* Minimal */
+    }
+    
+    .time-label {
+        font-size: 0.7rem; /* Even smaller */
+    }
+    
+    .time-count {
+        padding: 0.03rem 0.15rem; /* Minimal */
+        font-size: 0.6rem; /* Even smaller */
+    }
+    
+    .time-gender-breakdown {
+        gap: 0.05rem; /* Minimal */
+    }
+    
+    .gender-link {
+        padding: 0.15rem 0.3rem; /* Even smaller */
+        margin: 0.05rem; /* Minimal */
+        font-size: 0.65rem; /* Even smaller */
+    }
+    
+    .complete-btn {
+        padding: 0.1rem 0.3rem; /* Even smaller */
+        font-size: 0.6rem; /* Even smaller */
+        margin-left: 0.15rem; /* Smaller */
+    }
+    
+    /* Filter optimizations for small screens */
+    .mobile-card .card-body {
+        padding: 0.25rem; /* Minimal */
+    }
+    
+    .mobile-card .card-header {
+        padding: 0.25rem 0.5rem; /* Minimal */
+    }
+    
+    .mobile-input {
+        padding: 0.2rem 0.4rem; /* Minimal */
+        font-size: 0.75rem; /* Even smaller */
+    }
+    
+    .btn {
+        padding: 0.2rem 0.4rem; /* Minimal */
+        font-size: 0.75rem; /* Even smaller */
+    }
+    
+    .filter-form .row {
+        gap: 0.15rem; /* Minimal */
+    }
+}
 
 /* Scrollbar Styling */
 .gender-stats::-webkit-scrollbar,
@@ -918,16 +1182,16 @@
     transition: transform 0.3s ease;
 }
 
-/* Horizontal Stats Layout */
+/* Horizontal Stats Layout - Ultra Compact */
 .stats-horizontal-container {
     display: flex;
     justify-content: space-between;
     align-items: center;
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 249, 250, 0.95));
-    border-radius: var(--border-radius);
-    padding: 1rem;
-    box-shadow: var(--shadow);
-    border-left: 4px solid var(--gold);
+    border-radius: 8px; /* Smaller radius */
+    padding: 0.5rem; /* Smaller padding */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Smaller shadow */
+    border-left: 3px solid var(--gold); /* Smaller border */
     position: relative;
     overflow: hidden;
 }
@@ -947,9 +1211,9 @@
 .stats-item {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.5rem 0.75rem;
-    border-radius: 8px;
+    gap: 0.5rem; /* Smaller gap */
+    padding: 0.25rem 0.5rem; /* Smaller padding */
+    border-radius: 6px; /* Smaller radius */
     transition: var(--transition);
     flex: 1;
     text-align: center;
@@ -969,13 +1233,13 @@
 
 .stats-item:hover {
     background: rgba(139, 69, 19, 0.05);
-    transform: translateY(-2px);
+    transform: translateY(-1px); /* Smaller transform */
 }
 
 .stats-icon {
-    font-size: 1.8rem;
+    font-size: 1.4rem; /* Smaller icon */
     color: var(--gold);
-    min-width: 45px;
+    min-width: 35px; /* Smaller width */
     text-align: center;
 }
 
@@ -984,31 +1248,31 @@
 }
 
 .stats-count {
-    font-size: 1.6rem;
+    font-size: 1.3rem; /* Smaller font */
     font-weight: bold;
     color: var(--dark-color);
-    margin-bottom: 0.2rem;
+    margin-bottom: 0.1rem; /* Smaller margin */
     line-height: 1;
 }
 
 .stats-title {
-    font-size: 0.9rem;
+    font-size: 0.8rem; /* Smaller font */
     color: var(--secondary-color);
     font-weight: 600;
     line-height: 1.2;
 }
 
-/* Mobile Horizontal Stats */
+/* Mobile Horizontal Stats - Ultra Compact */
 .mobile-stats-horizontal {
     flex-direction: column;
-    gap: 1rem;
-    padding: 1rem;
+    gap: 0.5rem; /* Smaller gap */
+    padding: 0.5rem; /* Smaller padding */
 }
 
 .mobile-stats-item {
     width: 100%;
     justify-content: center;
-    padding: 0.75rem;
+    padding: 0.4rem; /* Smaller padding */
     border-bottom: 1px solid rgba(139, 69, 19, 0.1);
 }
 
@@ -1021,16 +1285,16 @@
 }
 
 .mobile-stats-item .stats-icon {
-    font-size: 1.4rem;
-    min-width: 35px;
+    font-size: 1.2rem; /* Smaller icon */
+    min-width: 30px; /* Smaller width */
 }
 
 .mobile-stats-item .stats-count {
-    font-size: 1.3rem;
+    font-size: 1.1rem; /* Smaller font */
 }
 
 .mobile-stats-item .stats-title {
-    font-size: 0.75rem;
+    font-size: 0.7rem; /* Smaller font */
 }
 
 /* Mobile Stats Cards (Legacy - keeping for reference) */
@@ -1301,6 +1565,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize stats state
     loadStatsState();
     
+    // Layout is now default ultra compact
+    
     // Fungsi untuk menampilkan alert
     function showAlert(type, message) {
         var alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
@@ -1316,18 +1582,20 @@ document.addEventListener('DOMContentLoaded', function() {
             contentBody.insertAdjacentHTML('afterbegin', alertHtml);
         }
         
-        // Auto hide alert setelah 5 detik
-        setTimeout(function() {
-            var alerts = document.querySelectorAll('.alert');
-            alerts.forEach(function(alert) {
-                alert.style.opacity = '0';
-                setTimeout(function() {
-                    if (alert.parentNode) {
-                        alert.parentNode.removeChild(alert);
-                    }
-                }, 300);
-            });
-        }, 5000);
-    }
+            // Auto hide alert setelah 5 detik
+    setTimeout(function() {
+        var alerts = document.querySelectorAll('.alert');
+        alerts.forEach(function(alert) {
+            alert.style.opacity = '0';
+            setTimeout(function() {
+                if (alert.parentNode) {
+                    alert.parentNode.removeChild(alert);
+                }
+            }, 300);
+        });
+    }, 5000);
+}
+
+// Layout is now default ultra compact for all devices
 });
 </script> 
