@@ -67,18 +67,24 @@ class Settings extends CI_Controller {
             // Test database connection first
             $this->test_database_connection($hostname, $username, $password, $database);
             
-            // Check if exec is available, otherwise use PHP-based backup
+            // Prioritize PHP-based backup method for better cPanel compatibility
+            // Only use mysqldump if explicitly available and exec is enabled
+            $use_mysqldump = false;
+            
             if (function_exists('exec')) {
                 // Check if mysqldump is available
                 $mysqldump_path = $this->find_mysqldump();
-                if (!$mysqldump_path) {
-                    // Try alternative method for cPanel
-                    $mysqldump_path = $this->find_mysqldump_alternative();
-                    if (!$mysqldump_path) {
-                        throw new Exception('mysqldump tidak ditemukan. Pastikan MySQL client tools terinstall atau hubungi administrator hosting.');
-                    }
+                if ($mysqldump_path) {
+                    $use_mysqldump = true;
+                    log_message('debug', 'mysqldump found at: ' . $mysqldump_path);
+                } else {
+                    log_message('debug', 'mysqldump not found, using PHP backup method');
                 }
-                
+            } else {
+                log_message('debug', 'exec function disabled, using PHP backup method');
+            }
+            
+            if ($use_mysqldump) {
                 // Create mysqldump command with proper escaping (cPanel optimized)
                 $escaped_password = escapeshellarg($password);
                 $command = "{$mysqldump_path} --host=" . escapeshellarg($hostname) . 
@@ -102,8 +108,8 @@ class Settings extends CI_Controller {
                 log_message('debug', 'Return code: ' . $return_var);
                 log_message('debug', 'Output: ' . implode("\n", $output));
             } else {
-                // Use PHP-based backup method
-                log_message('debug', 'Using PHP-based backup method (exec disabled)');
+                // Use PHP-based backup method (recommended for cPanel)
+                log_message('debug', 'Using PHP-based backup method (phpMyAdmin format)');
                 $this->create_php_backup($hostname, $username, $password, $database, $backup_path);
                 $return_var = 0;
                 $output = [];
@@ -120,9 +126,12 @@ class Settings extends CI_Controller {
                 
                 $file_size_formatted = $this->format_bytes($file_size);
                 
+                // Clean up old backup files
+                $deleted_count = $this->cleanup_old_backups(7);
+                
                 $response = [
                     'status' => 'success',
-                    'message' => 'Backup database berhasil dibuat',
+                    'message' => 'Backup database berhasil dibuat' . ($deleted_count > 0 ? " (dihapus {$deleted_count} file lama)" : ''),
                     'filename' => $backup_filename,
                     'file_size' => $file_size_formatted,
                     'download_url' => base_url('settings/download_backup/' . $backup_filename)
@@ -225,18 +234,24 @@ class Settings extends CI_Controller {
             // Test database connection first
             $this->test_database_connection($hostname, $username, $password, $database);
             
-            // Check if exec is available, otherwise use PHP-based backup
+            // Prioritize PHP-based backup method for better cPanel compatibility
+            // Only use mysqldump if explicitly available and exec is enabled
+            $use_mysqldump = false;
+            
             if (function_exists('exec')) {
                 // Check if mysqldump is available
                 $mysqldump_path = $this->find_mysqldump();
-                if (!$mysqldump_path) {
-                    // Try alternative method for cPanel
-                    $mysqldump_path = $this->find_mysqldump_alternative();
-                    if (!$mysqldump_path) {
-                        throw new Exception('mysqldump tidak ditemukan. Pastikan MySQL client tools terinstall atau hubungi administrator hosting.');
-                    }
+                if ($mysqldump_path) {
+                    $use_mysqldump = true;
+                    log_message('debug', 'mysqldump found at: ' . $mysqldump_path);
+                } else {
+                    log_message('debug', 'mysqldump not found, using PHP backup method');
                 }
-                
+            } else {
+                log_message('debug', 'exec function disabled, using PHP backup method');
+            }
+            
+            if ($use_mysqldump) {
                 // Create mysqldump command with proper escaping (cPanel optimized)
                 $escaped_password = escapeshellarg($password);
                 $command = "{$mysqldump_path} --host=" . escapeshellarg($hostname) . 
@@ -250,7 +265,8 @@ class Settings extends CI_Controller {
                 $return_var = 0;
                 @exec($command, $output, $return_var);
             } else {
-                // Use PHP-based backup method
+                // Use PHP-based backup method (recommended for cPanel)
+                log_message('debug', 'Using PHP-based backup method (phpMyAdmin format)');
                 $this->create_php_backup($hostname, $username, $password, $database, $backup_path);
                 $return_var = 0;
                 $output = [];
@@ -310,9 +326,12 @@ class Settings extends CI_Controller {
                 unlink($backup_path);
             }
             
+            // Clean up old backup files on FTP server
+            $deleted_ftp_count = $this->cleanup_old_ftp_backups($ftp_host, $ftp_username, $ftp_password, $ftp_path, 7);
+            
             $response = [
                 'status' => 'success',
-                'message' => 'Backup database berhasil diupload ke server FTP',
+                'message' => 'Backup database berhasil diupload ke server FTP' . ($deleted_ftp_count > 0 ? " (dihapus {$deleted_ftp_count} file lama di FTP)" : ''),
                 'filename' => $backup_filename,
                 'ftp_host' => $ftp_host,
                 'ftp_path' => $ftp_path
@@ -659,7 +678,7 @@ class Settings extends CI_Controller {
     }
     
     private function create_php_backup($hostname, $username, $password, $database, $backup_path) {
-        // Create backup using pure PHP without exec()
+        // Create backup using pure PHP without exec() - Format phpMyAdmin SQL Dump
         $mysqli = new mysqli($hostname, $username, $password, $database);
         
         if ($mysqli->connect_error) {
@@ -669,70 +688,205 @@ class Settings extends CI_Controller {
         // Set charset
         $mysqli->set_charset('utf8');
         
-        // Start backup file
-        $backup_content = "-- PHP Generated Database Backup\n";
-        $backup_content .= "-- Generated on: " . date('Y-m-d H:i:s') . "\n";
-        $backup_content .= "-- Database: {$database}\n\n";
-        $backup_content .= "SET FOREIGN_KEY_CHECKS=0;\n";
-        $backup_content .= "SET SQL_MODE = \"NO_AUTO_VALUE_ON_ZERO\";\n";
-        $backup_content .= "SET AUTOCOMMIT = 0;\n";
-        $backup_content .= "START TRANSACTION;\n";
-        $backup_content .= "SET time_zone = \"+00:00\";\n\n";
+        // Open file for writing
+        $handle = fopen($backup_path, 'w');
+        if (!$handle) {
+            $mysqli->close();
+            throw new Exception('Gagal membuka file untuk menulis: ' . $backup_path);
+        }
         
-        // Get all tables
-        $tables_result = $mysqli->query("SHOW TABLES");
-        if (!$tables_result) {
+        // -------------------------------
+        // HEADER phpMyAdmin
+        // -------------------------------
+        fwrite($handle, "-- phpMyAdmin SQL Dump\n");
+        fwrite($handle, "-- version 5.2.2\n");
+        fwrite($handle, "-- https://www.phpmyadmin.net/\n");
+        fwrite($handle, "--\n");
+        fwrite($handle, "-- Host: $hostname\n");
+        fwrite($handle, "-- Database: `$database`\n");
+        fwrite($handle, "-- Generation Time: " . date('M d, Y \a\t h:i A') . "\n");
+        fwrite($handle, "-- Server version: " . $mysqli->server_info . "\n");
+        fwrite($handle, "-- PHP Version: " . PHP_VERSION . "\n");
+        fwrite($handle, "\n");
+        fwrite($handle, "SET SQL_MODE = \"NO_AUTO_VALUE_ON_ZERO\";\n");
+        fwrite($handle, "START TRANSACTION;\n");
+        fwrite($handle, "SET time_zone = \"+00:00\";\n");
+        fwrite($handle, "\n");
+        fwrite($handle, "/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;\n");
+        fwrite($handle, "/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;\n");
+        fwrite($handle, "/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;\n");
+        fwrite($handle, "/*!40101 SET NAMES utf8mb4 */;\n");
+        fwrite($handle, "\n");
+        
+        // -------------------------------
+        // DUMP SEMUA TABEL
+        // -------------------------------
+        $tables = $mysqli->query("SHOW TABLES");
+        if (!$tables) {
+            fclose($handle);
             $mysqli->close();
             throw new Exception('Gagal mendapatkan daftar tabel: ' . $mysqli->error);
         }
         
         $table_count = 0;
-        while ($table_row = $tables_result->fetch_array()) {
-            $table_name = $table_row[0];
+        while ($table_row = $tables->fetch_row()) {
+            $table = $table_row[0];
             $table_count++;
             
-            // Get table structure
-            $create_table_result = $mysqli->query("SHOW CREATE TABLE `{$table_name}`");
-            if ($create_table_result) {
-                $create_table_row = $create_table_result->fetch_array();
-                $backup_content .= "-- Table structure for table `{$table_name}`\n";
-                $backup_content .= "DROP TABLE IF EXISTS `{$table_name}`;\n";
-                $backup_content .= $create_table_row[1] . ";\n\n";
+            // Struktur Tabel
+            fwrite($handle, "\n--\n-- Table structure for table `$table`\n--\n\n");
+            fwrite($handle, "DROP TABLE IF EXISTS `$table`;\n");
+            
+            $create_result = $mysqli->query("SHOW CREATE TABLE `$table`");
+            if ($create_result) {
+                $create_row = $create_result->fetch_row();
+                fwrite($handle, $create_row[1] . ";\n\n");
             } else {
-                log_message('warning', 'Failed to get structure for table: ' . $table_name);
+                log_message('warning', 'Failed to get structure for table: ' . $table);
+                continue;
             }
             
-            // Get table data
-            $data_result = $mysqli->query("SELECT * FROM `{$table_name}`");
-            if ($data_result && $data_result->num_rows > 0) {
-                $backup_content .= "-- Dumping data for table `{$table_name}`\n";
-                
-                while ($row = $data_result->fetch_assoc()) {
-                    $values = array();
-                    foreach ($row as $value) {
-                        if ($value === null) {
-                            $values[] = 'NULL';
-                        } else {
-                            $values[] = "'" . $mysqli->real_escape_string($value) . "'";
-                        }
-                    }
-                    $backup_content .= "INSERT INTO `{$table_name}` VALUES (" . implode(', ', $values) . ");\n";
+            // Data Tabel
+            fwrite($handle, "--\n-- Dumping data for table `$table`\n--\n\n");
+            fwrite($handle, "INSERT INTO `$table` (");
+            
+            // Get column names
+            $columns_result = $mysqli->query("SHOW COLUMNS FROM `$table`");
+            if ($columns_result) {
+                $columns = [];
+                while ($col = $columns_result->fetch_row()) {
+                    $columns[] = $col[0];
                 }
-                $backup_content .= "\n";
+                fwrite($handle, "`" . implode('`, `', $columns) . "`");
+            }
+            
+            fwrite($handle, ") VALUES\n");
+            
+            // Get table data
+            $data_result = $mysqli->query("SELECT * FROM `$table`");
+            if ($data_result && $data_result->num_rows > 0) {
+                $rows = [];
+                while ($row = $data_result->fetch_row()) {
+                    $values = array_map(function($value) use ($mysqli) {
+                        if ($value === null) {
+                            return 'NULL';
+                        }
+                        return "'" . $mysqli->real_escape_string($value) . "'";
+                    }, $row);
+                    $rows[] = '(' . implode(', ', $values) . ')';
+                }
+                
+                if (count($rows) > 0) {
+                    fwrite($handle, implode(",\n", $rows));
+                    fwrite($handle, ";\n\n");
+                } else {
+                    fwrite($handle, ";\n\n");
+                }
+            } else {
+                fwrite($handle, ";\n\n");
             }
         }
         
-        $backup_content .= "SET FOREIGN_KEY_CHECKS=1;\n";
-        $backup_content .= "COMMIT;\n";
+        // -------------------------------
+        // AKHIR DUMP
+        // -------------------------------
+        fwrite($handle, "COMMIT;\n\n");
+        fwrite($handle, "/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;\n");
+        fwrite($handle, "/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;\n");
+        fwrite($handle, "/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;\n");
         
-        // Write to file
-        if (file_put_contents($backup_path, $backup_content) === false) {
-            $mysqli->close();
-            throw new Exception('Gagal menulis file backup ke: ' . $backup_path);
-        }
+        fclose($handle);
+        $mysqli->close();
         
         log_message('info', 'PHP backup completed successfully. Tables backed up: ' . $table_count);
-        $mysqli->close();
+    }
+    
+    private function cleanup_old_backups($max_days = 7) {
+        // Clean up old backup files (older than $max_days days)
+        $backup_dir = FCPATH . 'backups/';
+        $now = time();
+        $deleted_count = 0;
+        
+        if (is_dir($backup_dir)) {
+            $backup_files = glob($backup_dir . 'backup_*.sql');
+            
+            foreach ($backup_files as $file) {
+                $filename = basename($file);
+                
+                // Check if filename matches backup pattern
+                if (preg_match('/^backup_.*_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.sql$/', $filename)) {
+                    $file_time = filemtime($file);
+                    $days_old = ($now - $file_time) / (60 * 60 * 24);
+                    
+                    if ($days_old > $max_days) {
+                        if (unlink($file)) {
+                            $deleted_count++;
+                            log_message('info', 'Deleted old backup file: ' . $filename);
+                        } else {
+                            log_message('warning', 'Failed to delete old backup file: ' . $filename);
+                        }
+                    }
+                }
+            }
+        }
+        
+        return $deleted_count;
+    }
+    
+    private function cleanup_old_ftp_backups($ftp_host, $ftp_username, $ftp_password, $ftp_path, $max_days = 7) {
+        // Clean up old backup files on FTP server (older than $max_days days)
+        $deleted_count = 0;
+        $now = time();
+        
+        try {
+            $ftp_connection = ftp_connect($ftp_host, 21, 30);
+            if (!$ftp_connection) {
+                log_message('warning', 'Failed to connect to FTP for cleanup: ' . $ftp_host);
+                return 0;
+            }
+            
+            if (!ftp_login($ftp_connection, $ftp_username, $ftp_password)) {
+                log_message('warning', 'Failed to login to FTP for cleanup');
+                ftp_close($ftp_connection);
+                return 0;
+            }
+            
+            ftp_pasv($ftp_connection, true);
+            
+            // Get list of files
+            $files = ftp_nlist($ftp_connection, $ftp_path);
+            if ($files !== false) {
+                foreach ($files as $file) {
+                    $filename = basename($file);
+                    
+                    // Check if filename matches backup pattern
+                    if (preg_match('/^backup_.*_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.sql$/', $filename)) {
+                        // Get file modification time
+                        $file_time = ftp_mdtm($ftp_connection, $file);
+                        
+                        if ($file_time !== -1) {
+                            $days_old = ($now - $file_time) / (60 * 60 * 24);
+                            
+                            if ($days_old > $max_days) {
+                                if (ftp_delete($ftp_connection, $file)) {
+                                    $deleted_count++;
+                                    log_message('info', 'Deleted old FTP backup file: ' . $filename);
+                                } else {
+                                    log_message('warning', 'Failed to delete old FTP backup file: ' . $filename);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            ftp_close($ftp_connection);
+            
+        } catch (Exception $e) {
+            log_message('error', 'Error during FTP cleanup: ' . $e->getMessage());
+        }
+        
+        return $deleted_count;
     }
     
     private function get_debug_info() {
