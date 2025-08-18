@@ -41,6 +41,9 @@
                                     <button type="button" class="btn btn-primary btn-backup-local" id="btnBackupLocal">
                                         <i class="fas fa-download"></i> Backup & Download
                                     </button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm ms-2" onclick="testBackupConnection()">
+                                        <i class="fas fa-vial"></i> Test Connection
+                                    </button>
                                     
                                     <!-- Debug info -->
                                     <div class="mt-2">
@@ -60,10 +63,24 @@
                                             <i class="fas fa-exclamation-triangle"></i> 
                                             <strong>Troubleshooting:</strong> Jika terjadi error "Access denied", periksa privilege user database
                                         </small>
+                                        <br>
+                                        <small class="text-muted">
+                                            <i class="fas fa-lightbulb"></i> 
+                                            <strong>Tips:</strong> Gunakan tombol "Test Connection" untuk cek koneksi sebelum backup
+                                        </small>
+                                        <br>
+                                        <small class="text-muted">
+                                            <i class="fas fa-file-alt"></i> 
+                                            <strong>Log:</strong> Cek file log di <code>application/logs/</code> untuk detail error
+                                        </small>
                                     </div>
                                     
                                     <!-- Debug Information -->
-                                    <div class="mt-3 p-2 bg-light border rounded">
+                                    <div class="mt-3 p-2 bg-light border rounded" 
+                                         data-php-version="<?= $debug_info['php_version'] ?>"
+                                         data-exec-available="<?= $debug_info['exec_available'] ? 'true' : 'false' ?>"
+                                         data-db-connection="<?= $debug_info['db_connection'] ? 'true' : 'false' ?>"
+                                         data-backup-dir="<?= $debug_info['backup_dir_exists'] ? 'exists' : 'missing' ?>">
                                         <small class="text-muted">
                                             <strong>Debug Info:</strong><br>
                                             <i class="fas fa-code"></i> PHP: <?= $debug_info['php_version'] ?><br>
@@ -74,6 +91,10 @@
                                             <?php if ($debug_info['exec_available']): ?>
                                             <i class="fas fa-search"></i> mysqldump: <?= $debug_info['mysqldump_path'] ? $debug_info['mysqldump_path'] : 'Not Found' ?><br>
                                             <?php endif; ?>
+                                            <i class="fas fa-clock"></i> Max Exec Time: <?= ini_get('max_execution_time') ?>s<br>
+                                            <i class="fas fa-memory"></i> Memory Limit: <?= ini_get('memory_limit') ?><br>
+                                            <i class="fas fa-server"></i> Server: <?= isset($_SERVER['SERVER_SOFTWARE']) ? $_SERVER['SERVER_SOFTWARE'] : 'Unknown' ?><br>
+                                            <i class="fas fa-calendar"></i> Time: <?= date('Y-m-d H:i:s') ?>
                                         </small>
                                     </div>
                                     
@@ -370,14 +391,26 @@ function backupDatabaseLocal() {
     loading.style.display = 'block';
     result.style.display = 'none';
     
+    // Create AbortController for timeout handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutes timeout
+    
     fetch('<?= base_url('settings/backup_database') ?>', {
         method: 'POST',
         headers: {
-            'X-Requested-With': 'XMLHttpRequest'
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/x-www-form-urlencoded'
         },
-        timeout: 300000 // 5 minutes timeout
+        signal: controller.signal
     })
-    .then(response => response.json())
+    .then(response => {
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    })
     .then(response => {
         loading.style.display = 'none';
         btn.disabled = false;
@@ -422,13 +455,31 @@ function backupDatabaseLocal() {
         }
     })
     .catch(error => {
+        clearTimeout(timeoutId);
         loading.style.display = 'none';
         btn.disabled = false;
         
+        console.error('=== BACKUP ERROR DETAILS ===');
+        console.error('Error name:', error.name);
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        console.error('Error cause:', error.cause);
+        console.error('Timestamp:', new Date().toISOString());
+        console.error('URL:', window.location.href);
+        console.error('User Agent:', navigator.userAgent);
+        console.error('=============================');
+        
         let errorMessage = 'Terjadi kesalahan saat melakukan backup';
+        let errorDetails = '';
         
         if (error.name === 'TypeError') {
             errorMessage = 'Network Error: Periksa koneksi internet';
+            errorDetails = 'Detail: ' + error.message;
+        } else if (error.name === 'AbortError') {
+            errorMessage = 'Request timeout: Backup memakan waktu terlalu lama';
+            errorDetails = 'Coba lagi atau hubungi administrator hosting';
+        } else if (error.message) {
+            errorDetails = 'Detail: ' + error.message;
         }
         
         result.className = 'backup-result mt-3 error';
@@ -437,7 +488,16 @@ function backupDatabaseLocal() {
                 <i class="fas fa-exclamation-triangle me-2"></i>
                 <div>
                     <strong>Error!</strong> ${errorMessage}
+                    ${errorDetails ? '<br><small class="text-muted">' + errorDetails + '</small>' : ''}
                 </div>
+            </div>
+            <div class="mt-2">
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="showErrorDetails()">
+                    <i class="fas fa-bug"></i> Lihat Detail Error
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-info" onclick="checkHostingCompatibility()">
+                    <i class="fas fa-server"></i> Cek Kompatibilitas Hosting
+                </button>
             </div>
         `;
         result.style.display = 'block';
@@ -652,6 +712,98 @@ function showFlashMessage(type, message) {
             setTimeout(() => alert.remove(), 300);
         });
     }, 5000);
+}
+
+function showErrorDetails() {
+    const details = `
+=== DETAIL ERROR BACKUP ===
+URL: ${window.location.href}
+User Agent: ${navigator.userAgent}
+Timestamp: ${new Date().toISOString()}
+PHP Version: ${document.querySelector('[data-php-version]')?.dataset.phpVersion || 'Unknown'}
+Exec Available: ${document.querySelector('[data-exec-available]')?.dataset.execAvailable || 'Unknown'}
+Database Connected: ${document.querySelector('[data-db-connection]')?.dataset.dbConnection || 'Unknown'}
+Backup Dir: ${document.querySelector('[data-backup-dir]')?.dataset.backupDir || 'Unknown'}
+========================
+    `;
+    
+    console.log(details);
+    alert('Detail error telah ditampilkan di Console (F12 > Console). Silakan copy dan kirim ke administrator.');
+}
+
+function testBackupConnection() {
+    console.log('=== TESTING BACKUP CONNECTION ===');
+    
+    // Test basic fetch to backup endpoint
+    fetch('<?= base_url('settings/backup_database') ?>', {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: 'test=1'
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
+        return response.text();
+    })
+    .then(text => {
+        console.log('Response text:', text);
+        try {
+            const json = JSON.parse(text);
+            console.log('Response JSON:', json);
+            alert('Test berhasil! Response: ' + JSON.stringify(json, null, 2));
+        } catch (e) {
+            console.log('Response is not JSON:', text);
+            alert('Test berhasil tapi response bukan JSON. Lihat console untuk detail.');
+        }
+    })
+    .catch(error => {
+        console.error('Test failed:', error);
+        alert('Test gagal: ' + error.message + '\n\nLihat console untuk detail.');
+    });
+}
+
+function checkHostingCompatibility() {
+    const compatibilityCheck = {
+        phpVersion: '<?= PHP_VERSION ?>',
+        execAvailable: <?= function_exists('exec') ? 'true' : 'false' ?>,
+        mysqliAvailable: <?= extension_loaded('mysqli') ? 'true' : 'false' ?>,
+        ftpAvailable: <?= extension_loaded('ftp') ? 'true' : 'false' ?>,
+        backupDirExists: <?= is_dir(FCPATH . 'backups') ? 'true' : 'false' ?>,
+        backupDirWritable: <?= is_writable(FCPATH . 'backups') ? 'true' : 'false' ?>,
+        maxExecutionTime: <?= ini_get('max_execution_time') ?>,
+        memoryLimit: '<?= ini_get('memory_limit') ?>',
+        uploadMaxFilesize: '<?= ini_get('upload_max_filesize') ?>',
+        postMaxSize: '<?= ini_get('post_max_size') ?>'
+    };
+    
+    console.log('=== HOSTING COMPATIBILITY CHECK ===');
+    console.log('PHP Version:', compatibilityCheck.phpVersion);
+    console.log('Exec Function:', compatibilityCheck.execAvailable ? 'Available' : 'Disabled');
+    console.log('MySQLi Extension:', compatibilityCheck.mysqliAvailable ? 'Available' : 'Missing');
+    console.log('FTP Extension:', compatibilityCheck.ftpAvailable ? 'Available' : 'Missing');
+    console.log('Backup Directory Exists:', compatibilityCheck.backupDirExists);
+    console.log('Backup Directory Writable:', compatibilityCheck.backupDirWritable);
+    console.log('Max Execution Time:', compatibilityCheck.maxExecutionTime);
+    console.log('Memory Limit:', compatibilityCheck.memoryLimit);
+    console.log('Upload Max Filesize:', compatibilityCheck.uploadMaxFilesize);
+    console.log('Post Max Size:', compatibilityCheck.postMaxSize);
+    console.log('=====================================');
+    
+    let issues = [];
+    if (!compatibilityCheck.execAvailable) issues.push('Exec function disabled');
+    if (!compatibilityCheck.mysqliAvailable) issues.push('MySQLi extension missing');
+    if (!compatibilityCheck.backupDirExists) issues.push('Backup directory not found');
+    if (!compatibilityCheck.backupDirWritable) issues.push('Backup directory not writable');
+    if (compatibilityCheck.maxExecutionTime < 300) issues.push('Max execution time too low (< 300s)');
+    
+    if (issues.length > 0) {
+        alert('Kompatibilitas Hosting:\n\nMasalah yang ditemukan:\n' + issues.join('\n') + '\n\nDetail lengkap lihat di Console (F12 > Console)');
+    } else {
+        alert('Kompatibilitas Hosting: OK\n\nSemua requirement terpenuhi. Detail lengkap lihat di Console (F12 > Console)');
+    }
 }
 
 // Reset modal when closed

@@ -39,6 +39,27 @@ class Settings extends CI_Controller {
             show_404();
             return;
         }
+        
+        // Check if this is a test request
+        if ($this->input->post('test')) {
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode([
+                    'status' => 'test_success',
+                    'message' => 'Backup endpoint is accessible',
+                    'timestamp' => date('Y-m-d H:i:s'),
+                    'server_info' => [
+                        'php_version' => PHP_VERSION,
+                        'exec_available' => function_exists('exec'),
+                        'mysqli_available' => extension_loaded('mysqli'),
+                        'backup_dir_exists' => is_dir(FCPATH . 'backups'),
+                        'backup_dir_writable' => is_writable(FCPATH . 'backups'),
+                        'max_execution_time' => ini_get('max_execution_time'),
+                        'memory_limit' => ini_get('memory_limit')
+                    ]
+                ]));
+            return;
+        }
 
         // Enhanced logging for debugging
         log_message('info', '=== BACKUP DATABASE STARTED ===');
