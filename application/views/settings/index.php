@@ -80,7 +80,10 @@
                                          data-php-version="<?= $debug_info['php_version'] ?>"
                                          data-exec-available="<?= $debug_info['exec_available'] ? 'true' : 'false' ?>"
                                          data-db-connection="<?= $debug_info['db_connection'] ? 'true' : 'false' ?>"
-                                         data-backup-dir="<?= $debug_info['backup_dir_exists'] ? 'exists' : 'missing' ?>">
+                                         data-backup-dir="<?= $debug_info['backup_dir_exists'] ? 'exists' : 'missing' ?>"
+                                         data-session-user="<?= $this->session->userdata('user_id') ?>"
+                                         data-session-role="<?= $this->session->userdata('role') ?>"
+                                         data-session-logged="<?= $this->session->userdata('logged_in') ? 'true' : 'false' ?>">
                                         <small class="text-muted">
                                             <strong>Debug Info:</strong><br>
                                             <i class="fas fa-code"></i> PHP: <?= $debug_info['php_version'] ?><br>
@@ -94,7 +97,10 @@
                                             <i class="fas fa-clock"></i> Max Exec Time: <?= ini_get('max_execution_time') ?>s<br>
                                             <i class="fas fa-memory"></i> Memory Limit: <?= ini_get('memory_limit') ?><br>
                                             <i class="fas fa-server"></i> Server: <?= isset($_SERVER['SERVER_SOFTWARE']) ? $_SERVER['SERVER_SOFTWARE'] : 'Unknown' ?><br>
-                                            <i class="fas fa-calendar"></i> Time: <?= date('Y-m-d H:i:s') ?>
+                                            <i class="fas fa-calendar"></i> Time: <?= date('Y-m-d H:i:s') ?><br>
+                                            <i class="fas fa-user"></i> Session: <?= $this->session->userdata('logged_in') ? 'Logged In' : 'Not Logged In' ?> 
+                                            (<?= $this->session->userdata('role') ?>)<br>
+                                            <i class="fas fa-key"></i> User ID: <?= $this->session->userdata('user_id') ?: 'None' ?>
                                         </small>
                                     </div>
                                     
@@ -406,9 +412,23 @@ function backupDatabaseLocal() {
     .then(response => {
         clearTimeout(timeoutId);
         
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
+        
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
+        
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            // Response is not JSON, get text first
+            return response.text().then(text => {
+                console.log('Non-JSON response:', text.substring(0, 500));
+                throw new Error('Server mengembalikan response non-JSON. Kemungkinan session expired atau server error.');
+            });
+        }
+        
         return response.json();
     })
     .then(response => {
@@ -452,6 +472,13 @@ function backupDatabaseLocal() {
             
             // Show flash message
             showFlashMessage('error', response.message);
+            
+            // Check if redirect is needed
+            if (response.redirect) {
+                setTimeout(() => {
+                    window.location.href = response.redirect;
+                }, 2000);
+            }
         }
     })
     .catch(error => {
@@ -478,6 +505,9 @@ function backupDatabaseLocal() {
         } else if (error.name === 'AbortError') {
             errorMessage = 'Request timeout: Backup memakan waktu terlalu lama';
             errorDetails = 'Coba lagi atau hubungi administrator hosting';
+        } else if (error.name === 'SyntaxError') {
+            errorMessage = 'Server Error: Response tidak valid';
+            errorDetails = 'Kemungkinan session expired atau server error. Silakan refresh halaman dan coba lagi.';
         } else if (error.message) {
             errorDetails = 'Detail: ' + error.message;
         }
@@ -497,6 +527,12 @@ function backupDatabaseLocal() {
                 </button>
                 <button type="button" class="btn btn-sm btn-outline-info" onclick="checkHostingCompatibility()">
                     <i class="fas fa-server"></i> Cek Kompatibilitas Hosting
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-warning" onclick="location.reload()">
+                    <i class="fas fa-sync-alt"></i> Refresh Halaman
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.location.href='<?= base_url('auth') ?>'">
+                    <i class="fas fa-sign-in-alt"></i> Login Ulang
                 </button>
             </div>
         `;
@@ -724,6 +760,9 @@ PHP Version: ${document.querySelector('[data-php-version]')?.dataset.phpVersion 
 Exec Available: ${document.querySelector('[data-exec-available]')?.dataset.execAvailable || 'Unknown'}
 Database Connected: ${document.querySelector('[data-db-connection]')?.dataset.dbConnection || 'Unknown'}
 Backup Dir: ${document.querySelector('[data-backup-dir]')?.dataset.backupDir || 'Unknown'}
+Session Logged In: ${document.querySelector('[data-session-logged]')?.dataset.sessionLogged || 'Unknown'}
+Session Role: ${document.querySelector('[data-session-role]')?.dataset.sessionRole || 'Unknown'}
+Session User ID: ${document.querySelector('[data-session-user]')?.dataset.sessionUser || 'Unknown'}
 ========================
     `;
     
@@ -744,20 +783,27 @@ function testBackupConnection() {
         body: 'test=1'
     })
     .then(response => {
-        console.log('Response status:', response.status);
-        console.log('Response headers:', response.headers);
-        return response.text();
-    })
-    .then(text => {
-        console.log('Response text:', text);
-        try {
-            const json = JSON.parse(text);
-            console.log('Response JSON:', json);
-            alert('Test berhasil! Response: ' + JSON.stringify(json, null, 2));
-        } catch (e) {
-            console.log('Response is not JSON:', text);
-            alert('Test berhasil tapi response bukan JSON. Lihat console untuk detail.');
+        console.log('Test Response status:', response.status);
+        console.log('Test Response headers:', response.headers);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
+        
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            return response.text().then(text => {
+                console.log('Test Non-JSON response:', text.substring(0, 500));
+                throw new Error('Server mengembalikan response non-JSON. Kemungkinan session expired.');
+            });
+        }
+        
+        return response.json();
+    })
+    .then(data => {
+        console.log('Response data:', data);
+        alert('Test berhasil! Response: ' + JSON.stringify(data, null, 2));
     })
     .catch(error => {
         console.error('Test failed:', error);

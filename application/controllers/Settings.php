@@ -40,6 +40,30 @@ class Settings extends CI_Controller {
             return;
         }
         
+        // Check if user is still logged in
+        if (!$this->session->userdata('logged_in')) {
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode([
+                    'status' => 'error',
+                    'message' => 'Session expired. Silakan login kembali.',
+                    'redirect' => base_url('auth')
+                ]));
+            return;
+        }
+        
+        // Check if user is admin
+        if ($this->session->userdata('role') != 'admin') {
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode([
+                    'status' => 'error',
+                    'message' => 'Anda tidak memiliki akses ke halaman ini.',
+                    'redirect' => base_url('dashboard')
+                ]));
+            return;
+        }
+        
         // Check if this is a test request
         if ($this->input->post('test')) {
             $this->output
