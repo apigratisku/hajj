@@ -63,9 +63,7 @@ class Todo extends CI_Controller {
                     $filter_details[] = ucfirst($key) . ': ' . $value;
                 }
             }
-            if (!empty($filter_details)) {
-                $this->telegram_notification->filter_notification('Todo List', 'Filter', implode(', ', $filter_details));
-            }
+           
         }
         
         // Provide flag_doc options for filter select
