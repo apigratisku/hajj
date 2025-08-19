@@ -141,7 +141,9 @@ class Telegram_notification {
             'create' => 'Tambah Data User',
             'read' => 'Lihat Data User',
             'update' => 'Update Data User',
-            'delete' => 'Hapus Data User'
+            'delete' => 'Hapus Data User',
+            'enable' => 'Aktifkan User',
+            'disable' => 'Nonaktifkan User'
         ];
         
         $activity = isset($activity_map[$action]) ? $activity_map[$action] : $action;
@@ -199,6 +201,17 @@ class Telegram_notification {
      */
     public function dashboard_notification($action, $details = '') {
         $activity = "Dashboard: {$action}";
+        $message = $this->format_message($activity, $details);
+        $this->send_notification($message);
+    }
+    
+    /**
+     * Notifikasi untuk aktivitas Todo List
+     * @param string $action Aksi yang dilakukan di todo list
+     * @param string $details Detail tambahan (opsional)
+     */
+    public function todo_notification($action, $details = '') {
+        $activity = "Todo List: {$action}";
         $message = $this->format_message($activity, $details);
         $this->send_notification($message);
     }

@@ -6,11 +6,13 @@ Fitur ini menambahkan kemampuan untuk mengirim notifikasi real-time ke Telegram 
 
 1. **Login/Logout** - Notifikasi saat user login atau logout
 2. **CRUD Peserta** - Create, Read, Update, Delete data peserta
-3. **Import/Export** - Notifikasi saat import atau export data
-4. **Dashboard Activities** - Aktivitas di dashboard seperti mark schedule complete
-5. **Backup Database** - Notifikasi saat backup database berhasil/gagal
-6. **Download Files** - Notifikasi saat download file
-7. **Error Handling** - Notifikasi untuk error yang terjadi
+3. **CRUD User** - Create, Read, Update, Delete, Enable, Disable data user
+4. **Import/Export** - Notifikasi saat import atau export data
+5. **Dashboard Activities** - Aktivitas di dashboard seperti mark schedule complete
+6. **Todo List Activities** - Aktivitas di todo list seperti filter, update, export
+7. **Backup Database** - Notifikasi saat backup database berhasil/gagal
+8. **Download Files** - Notifikasi saat download file
+9. **Error Handling** - Notifikasi untuk error yang terjadi
 
 ## Konfigurasi Bot Telegram
 
@@ -41,17 +43,26 @@ $this->telegram_notification->logout_notification();
 // CRUD Peserta
 $this->telegram_notification->peserta_crud_notification($action, $peserta_name, $additional_info);
 
+// CRUD User
+$this->telegram_notification->user_crud_notification($action, $user_name, $additional_info);
+
 // Import/Export
 $this->telegram_notification->import_export_notification($action, $filename, $record_count, $success);
 
 // Dashboard
 $this->telegram_notification->dashboard_notification($action, $details);
 
+// Todo List
+$this->telegram_notification->todo_notification($action, $details);
+
 // Backup Database
 $this->telegram_notification->backup_notification($action, $filename, $success);
 
 // Download
 $this->telegram_notification->download_notification($file_type, $filename, $record_count);
+
+// Filter/Search
+$this->telegram_notification->filter_notification($module, $filter_type, $filter_value);
 
 // Error
 $this->telegram_notification->error_notification($error_type, $error_message, $module);
@@ -86,6 +97,42 @@ $this->telegram_notification->error_notification($error_type, $error_message, $m
 🔰 Level: admin
 ⚡ Aktivitas: Update Data Peserta
 📝 Detail: Nama: Ahmad Hidayat | ID: 1659
+```
+
+#### **Create Data User**:
+```
+📋 Log Report 19/08/2025 22.00
+👤 User: Admin Sistem
+🔰 Level: admin
+⚡ Aktivitas: Tambah Data User
+📝 Detail: Nama: John Doe | Username: johndoe, Role: operator
+```
+
+#### **Enable/Disable User**:
+```
+📋 Log Report 19/08/2025 22.00
+👤 User: Admin Sistem
+🔰 Level: admin
+⚡ Aktivitas: Aktifkan User
+📝 Detail: Nama: John Doe | Username: johndoe
+```
+
+#### **Todo List Update**:
+```
+📋 Log Report 19/08/2025 22.00
+👤 User: Admin Sistem
+🔰 Level: admin
+⚡ Aktivitas: Update Data Peserta
+📝 Detail: Nama: Ahmad Hidayat | ID: 1659 (Todo List)
+```
+
+#### **Todo List Filter**:
+```
+📋 Log Report 19/08/2025 22.00
+👤 User: Admin Sistem
+🔰 Level: admin
+⚡ Aktivitas: Filter Data Todo List
+📝 Detail: Filter: Nama: Ahmad, Flag_doc: Batch-001
 ```
 
 #### **Import Data**:
@@ -191,7 +238,102 @@ $this->session->unset_userdata('successful_count');
 $this->session->unset_userdata('successful_data');
 ```
 
-### **3. Controller Dashboard**
+### **3. Controller User**
+
+#### **Create User**:
+```php
+$result = $this->user_model->create_user($data);
+if ($result) {
+    // Kirim notifikasi Telegram untuk create user
+    $this->telegram_notification->user_crud_notification('create', $data['nama_lengkap'], 'Username: ' . $data['username'] . ', Role: ' . $data['role']);
+}
+```
+
+#### **Update User**:
+```php
+$result = $this->user_model->update_user($id, $data);
+if ($result) {
+    // Kirim notifikasi Telegram untuk update user
+    $this->telegram_notification->user_crud_notification('update', $data['nama_lengkap'], 'Username: ' . $data['username'] . ', Role: ' . $data['role']);
+}
+```
+
+#### **Delete User**:
+```php
+// Kirim notifikasi Telegram untuk delete user
+$this->telegram_notification->user_crud_notification('delete', $user->nama_lengkap, 'Username: ' . $user->username . ', Role: ' . $user->role);
+
+$this->user_model->delete_user($id);
+```
+
+#### **Enable User**:
+```php
+if ($this->user_model->enable_user($id)) {
+    // Kirim notifikasi Telegram untuk enable user
+    $this->telegram_notification->user_crud_notification('enable', $user->nama_lengkap, 'Username: ' . $user->username);
+}
+```
+
+#### **Disable User**:
+```php
+if ($this->user_model->disable_user($id)) {
+    // Kirim notifikasi Telegram untuk disable user
+    $this->telegram_notification->user_crud_notification('disable', $user->nama_lengkap, 'Username: ' . $user->username);
+}
+```
+
+### **4. Controller Todo**
+
+#### **Update Data Peserta (Todo)**:
+```php
+$result = $this->transaksi_model->update($id, $data);
+if ($result) {
+    // Kirim notifikasi Telegram untuk update data peserta dari Todo
+    $this->telegram_notification->peserta_crud_notification('update', $data['nama'], 'ID: ' . $id . ' (Todo List)');
+}
+```
+
+#### **Update Data Peserta AJAX (Todo)**:
+```php
+if ($result) {
+    // Kirim notifikasi Telegram untuk update data peserta dari Todo (AJAX)
+    $nama_peserta = isset($data['nama']) ? $data['nama'] : $current_peserta->nama;
+    $this->telegram_notification->peserta_crud_notification('update', $nama_peserta, 'ID: ' . $id . ' (Todo List - AJAX)');
+}
+```
+
+#### **Create Data Peserta (Todo)**:
+```php
+$result = $this->transaksi_model->insert($data);
+if ($result) {
+    // Kirim notifikasi Telegram untuk create data peserta dari Todo
+    $this->telegram_notification->peserta_crud_notification('create', $data['nama'], 'Username: ' . $data['nomor_paspor'] . ' (Todo List)');
+}
+```
+
+#### **Export Data (Todo)**:
+```php
+// Kirim notifikasi Telegram untuk export data dari Todo
+$this->telegram_notification->import_export_notification('Export', $filename, count($peserta), true);
+```
+
+#### **Filter Data (Todo)**:
+```php
+// Kirim notifikasi Telegram untuk filter Todo List jika ada filter yang aktif
+if (!empty($filters)) {
+    $filter_details = [];
+    foreach ($filters as $key => $value) {
+        if (!empty($value)) {
+            $filter_details[] = ucfirst($key) . ': ' . $value;
+        }
+    }
+    if (!empty($filter_details)) {
+        $this->telegram_notification->filter_notification('Todo List', 'Filter', implode(', ', $filter_details));
+    }
+}
+```
+
+### **5. Controller Dashboard**
 
 #### **Mark Schedule Complete**:
 ```php
@@ -205,7 +347,7 @@ if ($result) {
 }
 ```
 
-### **4. Controller Settings**
+### **6. Controller Settings**
 
 #### **Backup Database Berhasil**:
 ```php
@@ -242,28 +384,43 @@ $response = [
 - ✅ Logout
 
 ### **2. CRUD Peserta**
-- ✅ Create data peserta (jika ada)
+- ✅ Create data peserta
 - ✅ Read data peserta (jika ada)
 - ✅ Update data peserta
 - ✅ Delete data peserta
 
-### **3. Import/Export**
+### **3. CRUD User**
+- ✅ Create data user
+- ✅ Read data user (jika ada)
+- ✅ Update data user
+- ✅ Delete data user
+- ✅ Enable user
+- ✅ Disable user
+
+### **4. Import/Export**
 - ✅ Import data berhasil
 - ❌ Import data gagal
-- ✅ Export data (jika ada)
+- ✅ Export data
 - ✅ Download data berhasil
 
-### **4. Dashboard Activities**
+### **5. Dashboard Activities**
 - ✅ Mark schedule complete
 - ✅ Filter data
 - ✅ Search data
 
-### **5. System Administration**
+### **6. Todo List Activities**
+- ✅ Update data peserta
+- ✅ Create data peserta
+- ✅ Export data
+- ✅ Filter data
+- ✅ Search data
+
+### **7. System Administration**
 - ✅ Backup database berhasil
 - ❌ Backup database gagal
 - ✅ Update settings (jika ada)
 
-### **6. Error Handling**
+### **8. Error Handling**
 - ❌ Database errors
 - ❌ Import errors
 - ❌ System errors
@@ -283,7 +440,7 @@ $response = [
 ### **3. Operational Efficiency**
 - Notifikasi otomatis untuk backup database
 - Monitoring import/export data
-- Tracking aktivitas dashboard
+- Tracking aktivitas dashboard dan todo list
 
 ### **4. Audit Trail**
 - Log lengkap semua aktivitas user
@@ -304,17 +461,37 @@ $response = [
 3. Delete data peserta
 4. Cek notifikasi Telegram untuk delete
 
-### **3. Test Import/Export**
+### **3. Test CRUD User**
+1. Create user baru
+2. Cek notifikasi Telegram untuk create user
+3. Update data user
+4. Cek notifikasi Telegram untuk update user
+5. Enable/disable user
+6. Cek notifikasi Telegram untuk enable/disable
+7. Delete user
+8. Cek notifikasi Telegram untuk delete user
+
+### **4. Test Todo List**
+1. Update data peserta di todo list
+2. Cek notifikasi Telegram untuk update (Todo List)
+3. Create data peserta di todo list
+4. Cek notifikasi Telegram untuk create (Todo List)
+5. Export data dari todo list
+6. Cek notifikasi Telegram untuk export (Todo List)
+7. Filter data di todo list
+8. Cek notifikasi Telegram untuk filter (Todo List)
+
+### **5. Test Import/Export**
 1. Import file Excel
 2. Cek notifikasi Telegram untuk import berhasil/gagal
 3. Download data berhasil
 4. Cek notifikasi Telegram untuk download
 
-### **4. Test Dashboard**
+### **6. Test Dashboard**
 1. Klik tombol "Selesai" di jadwal
 2. Cek notifikasi Telegram untuk mark schedule complete
 
-### **5. Test Backup**
+### **7. Test Backup**
 1. Backup database
 2. Cek notifikasi Telegram untuk backup berhasil/gagal
 
@@ -380,5 +557,7 @@ Fitur Telegram notification ini memberikan kemampuan monitoring real-time yang k
 Fitur ini sangat berguna untuk:
 - **Security monitoring** - Deteksi aktivitas mencurigakan
 - **Operational monitoring** - Tracking backup, import/export
+- **User management** - Monitoring aktivitas user dan admin
+- **Todo list tracking** - Monitoring aktivitas di todo list
 - **Audit trail** - Log lengkap aktivitas user
 - **Error alerting** - Notifikasi error sistem

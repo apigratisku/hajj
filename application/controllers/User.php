@@ -8,6 +8,7 @@ class User extends CI_Controller {
         $this->load->model('user_model');
         $this->load->library('form_validation');
         $this->load->library('session');
+        $this->load->library('telegram_notification');
         $this->load->helper('url');
         $this->load->helper('form');
         
@@ -58,7 +59,11 @@ class User extends CI_Controller {
                 'updated_at' => date('Y-m-d H:i:s')
             ];
 
-            $this->user_model->create_user($data);
+            $result = $this->user_model->create_user($data);
+            if ($result) {
+                // Kirim notifikasi Telegram untuk create user
+                $this->telegram_notification->user_crud_notification('create', $data['nama_lengkap'], 'Username: ' . $data['username'] . ', Role: ' . $data['role']);
+            }
             $this->session->set_flashdata('message', 'User berhasil ditambahkan');
             redirect('user');
         }
@@ -100,7 +105,11 @@ class User extends CI_Controller {
                 $data['password'] = password_hash($this->input->post('password'), PASSWORD_DEFAULT);
             }
 
-            $this->user_model->update_user($id, $data);
+            $result = $this->user_model->update_user($id, $data);
+            if ($result) {
+                // Kirim notifikasi Telegram untuk update user
+                $this->telegram_notification->user_crud_notification('update', $data['nama_lengkap'], 'Username: ' . $data['username'] . ', Role: ' . $data['role']);
+            }
             $this->session->set_flashdata('message', 'User berhasil diupdate');
             redirect('user');
         }
@@ -113,6 +122,9 @@ class User extends CI_Controller {
             show_404();
         }
 
+        // Kirim notifikasi Telegram untuk delete user
+        $this->telegram_notification->user_crud_notification('delete', $user->nama_lengkap, 'Username: ' . $user->username . ', Role: ' . $user->role);
+        
         $this->user_model->delete_user($id);
         $this->session->set_flashdata('message', 'User berhasil dihapus');
         redirect('user');
@@ -133,6 +145,8 @@ class User extends CI_Controller {
         }
         
         if ($this->user_model->enable_user($id)) {
+            // Kirim notifikasi Telegram untuk enable user
+            $this->telegram_notification->user_crud_notification('enable', $user->nama_lengkap, 'Username: ' . $user->username);
             $this->session->set_flashdata('message', 'User ' . $user->nama_lengkap . ' berhasil diaktifkan');
         } else {
             $this->session->set_flashdata('error', 'Gagal mengaktifkan user');
@@ -161,6 +175,8 @@ class User extends CI_Controller {
         }
         
         if ($this->user_model->disable_user($id)) {
+            // Kirim notifikasi Telegram untuk disable user
+            $this->telegram_notification->user_crud_notification('disable', $user->nama_lengkap, 'Username: ' . $user->username);
             $this->session->set_flashdata('message', 'User ' . $user->nama_lengkap . ' berhasil dinonaktifkan');
         } else {
             $this->session->set_flashdata('error', 'Gagal menonaktifkan user');
