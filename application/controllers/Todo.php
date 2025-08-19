@@ -9,6 +9,15 @@ class Todo extends CI_Controller {
     }
 
     public function __construct() {
+        // Suppress all PHP errors and warnings to prevent HTML output
+        error_reporting(0);
+        ini_set('display_errors', 0);
+
+        // Clear any existing output buffer
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+        
         parent::__construct();
         $this->load->model('transaksi_model');
         $this->load->model('agent_model');
@@ -31,6 +40,15 @@ class Todo extends CI_Controller {
     }
 
     public function index() {
+        // Suppress all PHP errors and warnings to prevent HTML output
+        error_reporting(0);
+        ini_set('display_errors', 0);
+
+        // Clear any existing output buffer
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+        
         $this->load->model('transaksi_model');
         $data['title'] = 'To Do List';
         // Get filters from GET parameters and clean them
@@ -265,6 +283,15 @@ class Todo extends CI_Controller {
     }
     
     public function update($id) {
+        // Suppress all PHP errors and warnings to prevent HTML output
+        error_reporting(0);
+        ini_set('display_errors', 0);
+
+        // Clear any existing output buffer
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+        
         $current_peserta = $this->transaksi_model->get_by_id($id);
         
         if (!$current_peserta) {
@@ -312,6 +339,15 @@ class Todo extends CI_Controller {
     }
 
     public function update_ajax($id) {
+        // Suppress all PHP errors and warnings to prevent HTML output
+        error_reporting(0);
+        ini_set('display_errors', 0);
+
+        // Clear any existing output buffer
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+        
         // Check if it's an AJAX request
         if (!$this->is_ajax_request()) {
             $this->output->set_status_header(400);
@@ -329,6 +365,15 @@ class Todo extends CI_Controller {
         }
         
         // For inline mobile edits, allow partial updates (no hard required fields)
+        
+        // Check database connection
+        if (!$this->db->simple_query('SELECT 1')) {
+            log_message('error', 'Database connection failed in Todo update_ajax');
+            $this->output->set_status_header(500);
+            $this->output->set_content_type('application/json');
+            $this->output->set_output(json_encode(['success' => false, 'message' => 'Koneksi database gagal. Silakan coba lagi.']));
+            return;
+        }
         
         // Check if peserta exists
         $current_peserta = $this->transaksi_model->get_by_id($id);
@@ -380,6 +425,15 @@ class Todo extends CI_Controller {
         log_message('debug', 'Todo update_ajax - Barcode value: ' . (isset($data['barcode']) ? $data['barcode'] : 'NOT SET'));
         
         try {
+            // Final check to ensure no output has been sent
+            if (headers_sent()) {
+                log_message('error', 'Headers already sent in Todo update_ajax');
+                $this->output->set_status_header(500);
+                $this->output->set_content_type('application/json');
+                $this->output->set_output(json_encode(['success' => false, 'message' => 'Headers sudah terkirim. Silakan coba lagi.']));
+                return;
+            }
+            
             // Update data
             $result = $this->transaksi_model->update($id, $data);
             
@@ -400,6 +454,16 @@ class Todo extends CI_Controller {
             $this->output->set_status_header(500);
             $this->output->set_content_type('application/json');
             $this->output->set_output(json_encode(['success' => false, 'message' => 'Terjadi kesalahan saat memperbarui data: ' . $e->getMessage()]));
+        } catch (Error $e) {
+            log_message('error', 'Error in Todo update_ajax: ' . $e->getMessage());
+            $this->output->set_status_header(500);
+            $this->output->set_content_type('application/json');
+            $this->output->set_output(json_encode(['success' => false, 'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()]));
+        } catch (Throwable $e) {
+            log_message('error', 'Throwable in Todo update_ajax: ' . $e->getMessage());
+            $this->output->set_status_header(500);
+            $this->output->set_content_type('application/json');
+            $this->output->set_output(json_encode(['success' => false, 'message' => 'Terjadi kesalahan tidak terduga: ' . $e->getMessage()]));
         }
     }
 
@@ -943,6 +1007,15 @@ class Todo extends CI_Controller {
      * Delete barcode file from uploads directory
      */
     private function delete_barcode_file($filename) {
+        // Suppress all PHP errors and warnings to prevent HTML output
+        error_reporting(0);
+        ini_set('display_errors', 0);
+
+        // Clear any existing output buffer
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+        
         if (empty($filename)) {
             return false;
         }

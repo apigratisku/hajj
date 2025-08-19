@@ -374,6 +374,15 @@ class Database extends CI_Controller {
         
         // For inline mobile edits, allow partial updates (no hard required fields)
         
+        // Check database connection
+        if (!$this->db->simple_query('SELECT 1')) {
+            log_message('error', 'Database connection failed in Database update_ajax');
+            $this->output->set_status_header(500);
+            $this->output->set_content_type('application/json');
+            $this->output->set_output(json_encode(['success' => false, 'message' => 'Koneksi database gagal. Silakan coba lagi.']));
+            return;
+        }
+        
         // Check if peserta exists
         $current_peserta = $this->transaksi_model->get_by_id($id);
         if (!$current_peserta) {
@@ -417,6 +426,15 @@ class Database extends CI_Controller {
        
         
         try {
+            // Final check to ensure no output has been sent
+            if (headers_sent()) {
+                log_message('error', 'Headers already sent in Database update_ajax');
+                $this->output->set_status_header(500);
+                $this->output->set_content_type('application/json');
+                $this->output->set_output(json_encode(['success' => false, 'message' => 'Headers sudah terkirim. Silakan coba lagi.']));
+                return;
+            }
+            
             // Update data
             $result = $this->transaksi_model->update($id, $data);
             

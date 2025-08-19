@@ -6,6 +6,15 @@ class Transaksi_model extends CI_Model {
     private $table = 'peserta';
     
     public function __construct() {
+        // Suppress all PHP errors and warnings to prevent HTML output
+        error_reporting(0);
+        ini_set('display_errors', 0);
+
+        // Clear any existing output buffer
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+        
         parent::__construct();
         $this->load->database();
     }
@@ -19,6 +28,15 @@ class Transaksi_model extends CI_Model {
     
     
     public function get_by_id($id) {
+        // Suppress all PHP errors and warnings to prevent HTML output
+        error_reporting(0);
+        ini_set('display_errors', 0);
+
+        // Clear any existing output buffer
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+        
         $this->db->select('*');
         $this->db->from($this->table);
         $this->db->where('id', $id);
@@ -56,6 +74,15 @@ class Transaksi_model extends CI_Model {
     }
     
     public function update($id, $data) {
+        // Suppress all PHP errors and warnings to prevent HTML output
+        error_reporting(0);
+        ini_set('display_errors', 0);
+
+        // Clear any existing output buffer
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+        
         try {
             // Get table structure to check if fields exist
             $fields = $this->db->list_fields($this->table);
@@ -87,6 +114,12 @@ class Transaksi_model extends CI_Model {
             return $result;
         } catch (Exception $e) {
             log_message('error', 'Exception in update method: ' . $e->getMessage());
+            throw $e;
+        } catch (Error $e) {
+            log_message('error', 'Error in update method: ' . $e->getMessage());
+            throw $e;
+        } catch (Throwable $e) {
+            log_message('error', 'Throwable in update method: ' . $e->getMessage());
             throw $e;
         }
     }
