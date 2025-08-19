@@ -4,6 +4,10 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 class Settings extends CI_Controller {
 
     public function __construct() {
+        // Suppress all PHP errors and warnings to prevent HTML output
+        error_reporting(0);
+        ini_set('display_errors', 0);
+        
         parent::__construct();
         $this->load->model('user_model');
         $this->load->library('session');
@@ -23,6 +27,10 @@ class Settings extends CI_Controller {
     }
 
     public function index() {
+        // Suppress all PHP errors and warnings to prevent HTML output
+        error_reporting(0);
+        ini_set('display_errors', 0);
+        
         $data['title'] = 'Pengaturan Sistem';
         
         // Add debug information
@@ -35,6 +43,15 @@ class Settings extends CI_Controller {
     }
 
     public function backup_database() {
+        // Suppress all PHP errors and warnings to prevent HTML output
+        error_reporting(0);
+        ini_set('display_errors', 0);
+        
+        // Clear any existing output buffer
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+        
         // Check if request is AJAX or has X-Requested-With header
         if (!$this->input->is_ajax_request() && !$this->input->get_request_header('X-Requested-With')) {
             show_404();
@@ -265,6 +282,15 @@ class Settings extends CI_Controller {
     }
 
     public function backup_database_ftp() {
+        // Suppress all PHP errors and warnings to prevent HTML output
+        error_reporting(0);
+        ini_set('display_errors', 0);
+        
+        // Clear any existing output buffer
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+        
         // Check if request is AJAX or has X-Requested-With header
         if (!$this->input->is_ajax_request() && !$this->input->get_request_header('X-Requested-With')) {
             show_404();
@@ -393,6 +419,10 @@ class Settings extends CI_Controller {
     }
 
     public function download_backup($filename) {
+        // Suppress all PHP errors and warnings to prevent HTML output
+        error_reporting(0);
+        ini_set('display_errors', 0);
+        
         // Validate filename
         if (empty($filename) || !preg_match('/^backup_.*\.sql$/', $filename)) {
             $this->session->set_flashdata('error', 'Nama file tidak valid');
@@ -419,6 +449,10 @@ class Settings extends CI_Controller {
     }
 
     public function delete_backup($filename) {
+        // Suppress all PHP errors and warnings to prevent HTML output
+        error_reporting(0);
+        ini_set('display_errors', 0);
+        
         // Check if request is AJAX or has X-Requested-With header
         if (!$this->input->is_ajax_request() && !$this->input->get_request_header('X-Requested-With')) {
             show_404();
@@ -453,6 +487,10 @@ class Settings extends CI_Controller {
     }
 
     public function get_backup_files() {
+        // Suppress all PHP errors and warnings to prevent HTML output
+        error_reporting(0);
+        ini_set('display_errors', 0);
+        
         // Check if request is AJAX or has X-Requested-With header
         if (!$this->input->is_ajax_request() && !$this->input->get_request_header('X-Requested-With')) {
             show_404();
@@ -490,6 +528,10 @@ class Settings extends CI_Controller {
     }
 
     private function format_bytes($bytes, $precision = 2) {
+        // Suppress all PHP errors and warnings to prevent HTML output
+        error_reporting(0);
+        ini_set('display_errors', 0);
+        
         $units = array('B', 'KB', 'MB', 'GB', 'TB');
         
         for ($i = 0; $bytes > 1024 && $i < count($units) - 1; $i++) {
@@ -500,6 +542,10 @@ class Settings extends CI_Controller {
     }
     
     private function find_mysqldump() {
+        // Suppress all PHP errors and warnings to prevent HTML output
+        error_reporting(0);
+        ini_set('display_errors', 0);
+        
         // Common paths for mysqldump (prioritized for cPanel)
         log_message('info', '=== SEARCHING FOR MYSQLDUMP ===');
         $possible_paths = array(
@@ -578,6 +624,10 @@ class Settings extends CI_Controller {
     }
     
     private function is_command_available($command) {
+        // Suppress all PHP errors and warnings to prevent HTML output
+        error_reporting(0);
+        ini_set('display_errors', 0);
+        
         // Check if exec function is available first
         if (!function_exists('exec')) {
             log_message('info', 'Exec function not available');
@@ -627,6 +677,10 @@ class Settings extends CI_Controller {
     }
     
     private function find_mysqldump_alternative() {
+        // Suppress all PHP errors and warnings to prevent HTML output
+        error_reporting(0);
+        ini_set('display_errors', 0);
+        
         // Alternative method for cPanel - try to find mysqldump in common cPanel locations
         $possible_paths = array(
             '/usr/local/bin/mysqldump',
@@ -711,6 +765,10 @@ class Settings extends CI_Controller {
     }
     
     private function test_database_connection($hostname, $username, $password, $database) {
+        // Suppress all PHP errors and warnings to prevent HTML output
+        error_reporting(0);
+        ini_set('display_errors', 0);
+        
         // Test database connection using mysqli - mengikuti pola syncdb.php
         log_message('info', '=== TESTING DATABASE CONNECTION ===');
         log_message('info', 'Testing connection to: ' . $hostname . ' / ' . $database);
@@ -757,6 +815,10 @@ class Settings extends CI_Controller {
     }
     
     private function create_php_backup($hostname, $username, $password, $database, $backup_path) {
+        // Suppress all PHP errors and warnings to prevent HTML output
+        error_reporting(0);
+        ini_set('display_errors', 0);
+        
         // Create backup using pure PHP without exec() - Format phpMyAdmin SQL Dump
         // Mengikuti skema dari syncdb.php yang berhasil
         log_message('info', '=== PHP BACKUP STARTED ===');
@@ -912,6 +974,10 @@ class Settings extends CI_Controller {
     }
     
     private function cleanup_old_backups($max_days = 7) {
+        // Suppress all PHP errors and warnings to prevent HTML output
+        error_reporting(0);
+        ini_set('display_errors', 0);
+        
         // Clean up old backup files (older than $max_days days)
         // Mengikuti pola dari syncdb.php yang berhasil
         $backup_dir = FCPATH . 'backups/';
@@ -948,6 +1014,10 @@ class Settings extends CI_Controller {
     }
     
     private function cleanup_old_ftp_backups($ftp_host, $ftp_username, $ftp_password, $ftp_path, $max_days = 7) {
+        // Suppress all PHP errors and warnings to prevent HTML output
+        error_reporting(0);
+        ini_set('display_errors', 0);
+        
         // Clean up old backup files on FTP server (older than $max_days days)
         // Mengikuti pola dari syncdb.php yang berhasil
         $deleted_count = 0;
@@ -1004,6 +1074,10 @@ class Settings extends CI_Controller {
     }
     
     private function get_debug_info() {
+        // Suppress all PHP errors and warnings to prevent HTML output
+        error_reporting(0);
+        ini_set('display_errors', 0);
+        
         $debug = array();
         
         // Check exec function
