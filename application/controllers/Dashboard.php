@@ -8,6 +8,7 @@ class Dashboard extends CI_Controller {
         $this->load->model('transaksi_model');
         $this->load->model('user_model');
         $this->load->library('session');
+        $this->load->library('telegram_notification');
         $this->load->helper('url');
         
         // Check if user is logged in
@@ -104,6 +105,9 @@ class Dashboard extends CI_Controller {
         $result = $this->transaksi_model->update_status_massal($tanggal, $jam, $flag_doc);
         
         if ($result) {
+            // Kirim notifikasi Telegram untuk mark schedule complete
+            $this->telegram_notification->dashboard_notification('Mark Schedule Complete', "Tanggal: {$tanggal}, Jam: {$jam}, Flag Doc: {$flag_doc}");
+            
             echo json_encode(['status' => true, 'message' => 'Status berhasil diperbarui untuk jadwal ' . $tanggal . ' jam ' . $jam]);
         } else {
             echo json_encode(['status' => false, 'message' => 'Gagal memperbarui status']);

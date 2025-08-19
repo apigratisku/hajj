@@ -15,6 +15,7 @@ class Database extends CI_Controller {
         $this->load->model('user_model');
         $this->load->library('form_validation');
         $this->load->library('session');
+        $this->load->library('telegram_notification');
         $this->load->helper('url');
         $this->load->library('excel');
         
@@ -162,6 +163,11 @@ class Database extends CI_Controller {
             if (!empty($peserta->barcode)) {
                 $this->delete_barcode_file($peserta->barcode);
             }
+        }
+        
+        // Kirim notifikasi Telegram untuk delete data peserta
+        if ($peserta) {
+            $this->telegram_notification->peserta_crud_notification('delete', $peserta->nama, 'ID: ' . $id);
         }
         
         $this->transaksi_model->delete($id);
@@ -326,6 +332,9 @@ class Database extends CI_Controller {
                 $result = $this->transaksi_model->update($id, $data);
                 
                 if ($result) {
+                    // Kirim notifikasi Telegram untuk update data peserta
+                    $this->telegram_notification->peserta_crud_notification('update', $data['nama'], 'ID: ' . $id);
+                    
                     $this->session->set_flashdata('success', 'Data peserta berhasil diperbarui');
                     
                     // Redirect back to previous page with filters
@@ -1395,6 +1404,9 @@ class Database extends CI_Controller {
             
             // Set flash messages
             if ($success_count > 0) {
+                // Kirim notifikasi Telegram untuk import berhasil
+                $this->telegram_notification->import_export_notification('Import', $file['name'], $success_count, true);
+                
                 $this->session->set_flashdata('success', "Berhasil mengimport $success_count data peserta");
                 
                 // Simpan data yang berhasil di import ke session untuk download (menggunakan userdata agar tidak hilang)
@@ -1408,6 +1420,9 @@ class Database extends CI_Controller {
                 }
             }
             if ($error_count > 0) {
+                // Kirim notifikasi Telegram untuk import gagal
+                $this->telegram_notification->import_export_notification('Import', $file['name'], $error_count, false);
+                
                 $this->session->set_flashdata('error', "Gagal mengimport $error_count data. " . implode('; ', array_slice($errors, 0, 5)));
                 
                 // Simpan informasi data yang ditolak ke session untuk ditampilkan di halaman import
@@ -1976,6 +1991,9 @@ class Database extends CI_Controller {
         // Create Excel file
         $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel2007');
         $objWriter->save('php://output');
+        
+        // Kirim notifikasi Telegram untuk download data berhasil
+        $this->telegram_notification->download_notification('Data Import Berhasil', $filename, count($successful_data));
         
         // Clean up session data after successful download
         $this->session->unset_userdata('successful_count');

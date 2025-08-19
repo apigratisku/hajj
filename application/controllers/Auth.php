@@ -6,7 +6,7 @@ class Auth extends CI_Controller {
     public function __construct() {
         parent::__construct();
         $this->load->model('user_model');
-        $this->load->library(['form_validation', 'session']);
+        $this->load->library(['form_validation', 'session', 'telegram_notification']);
         $this->load->helper(['url', 'form']);
     }
 
@@ -52,8 +52,15 @@ class Auth extends CI_Controller {
                 ];
                 
                 $this->session->set_userdata($session_data);
+                
+                // Kirim notifikasi Telegram untuk login berhasil
+                $this->telegram_notification->login_notification(true, $username);
+                
                 redirect('dashboard');
             } else {
+                // Kirim notifikasi Telegram untuk login gagal
+                $this->telegram_notification->login_notification(false, $username);
+                
                 $this->session->set_flashdata('error', 'Kredensial tidak valid.');
                 redirect('auth');
             }
@@ -61,6 +68,9 @@ class Auth extends CI_Controller {
     }
     
     public function logout() {
+        // Kirim notifikasi Telegram untuk logout
+        $this->telegram_notification->logout_notification();
+        
         $this->session->sess_destroy();
         redirect('auth');
     }
