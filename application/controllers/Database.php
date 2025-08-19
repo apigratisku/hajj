@@ -991,6 +991,7 @@ class Database extends CI_Controller {
             $error_count = 0;
             $errors = [];
             $rejected_data = [];
+            $successful_data = []; // Array untuk menyimpan data yang berhasil di import
     
             // Fungsi konversi tanggal seragam
             $convertDate = function($dateValue) {
@@ -1302,6 +1303,23 @@ class Database extends CI_Controller {
                     $result = $this->transaksi_model->insert($peserta_data);
                     if ($result) {
                         $success_count++;
+                        
+                        // Simpan data yang berhasil di import
+                        $successful_data[] = [
+                            'nama' => $nama_peserta,
+                            'nomor_paspor' => $nomor_paspor,
+                            'no_visa' => $no_visa ?: '',
+                            'tgl_lahir' => $tgl_lahir_value ?: '',
+                            'password' => $password,
+                            'nomor_hp' => $nomor_hp ?: '',
+                            'email' => $email ?: '',
+                            'gender' => $gender_value,
+                            'status' => $status_value,
+                            'tanggal' => $tanggal_value ?: '',
+                            'jam' => $jam_value ?: '',
+                            'flag_doc' => $flag_doc,
+                            'row_number' => $row
+                        ];
                     } else {
                         $errors[] = "Row $row: Gagal menyimpan data peserta";
                         $error_count++;
@@ -1378,6 +1396,16 @@ class Database extends CI_Controller {
             // Set flash messages
             if ($success_count > 0) {
                 $this->session->set_flashdata('success', "Berhasil mengimport $success_count data peserta");
+                
+                // Simpan data yang berhasil di import ke session untuk download (menggunakan userdata agar tidak hilang)
+                $this->session->set_userdata('successful_count', count($successful_data));
+                $this->session->set_userdata('successful_data', $successful_data);
+                
+                // Console log untuk data yang berhasil di import
+                log_message('info', 'Import successful: ' . $success_count . ' records imported successfully');
+                foreach ($successful_data as $data) {
+                    log_message('info', 'Successfully imported: ' . $data['nama'] . ' - ' . $data['nomor_paspor'] . ' (Row: ' . $data['row_number'] . ')');
+                }
             }
             if ($error_count > 0) {
                 $this->session->set_flashdata('error', "Gagal mengimport $error_count data. " . implode('; ', array_slice($errors, 0, 5)));
@@ -1832,6 +1860,134 @@ class Database extends CI_Controller {
         $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel2007');
         $objWriter->save('php://output');
         exit;
+    }
+
+    public function download_successful_data() {
+        // Check if user is logged in
+        if (!$this->session->userdata('logged_in')) {
+            $this->session->set_flashdata('error', 'Anda harus login terlebih dahulu');
+            redirect('auth');
+        }
+        
+        // Load PHPExcel library
+        require_once APPPATH . 'third_party/PHPExcel/Classes/PHPExcel.php';
+        
+        // Get successful data from session using userdata instead of flashdata
+        $successful_data = $this->session->userdata('successful_data');
+        
+        // Debug logging
+        log_message('info', 'Download successful data - Session data: ' . json_encode($successful_data));
+        
+        if (empty($successful_data)) {
+            log_message('error', 'Download successful data - No data found in session');
+            $this->session->set_flashdata('error', 'Tidak ada data yang berhasil diimport untuk didownload. Silakan lakukan import terlebih dahulu.');
+            redirect('database/import');
+        }
+        
+        try {
+            // Create new PHPExcel object
+            $objPHPExcel = new PHPExcel();
+            
+            // Set document properties
+            $objPHPExcel->getProperties()
+                ->setCreator('Sistem Haji')
+                ->setLastModifiedBy('Sistem Haji')
+                ->setTitle('Data Import Berhasil')
+                ->setSubject('Data yang berhasil masuk ke database')
+                ->setDescription('Data peserta yang berhasil diimport ke database')
+                ->setKeywords('import, berhasil, peserta')
+                ->setCategory('Data Import');
+        
+        // Add header row
+        $headers = [
+            'Nama Peserta',
+            'Nomor Paspor',
+            'No Visa',
+            'Tanggal Lahir',
+            'Password',
+            'No. HP',
+            'Email',
+            'Gender',
+            'Status',
+            'Tanggal',
+            'Jam',
+            'Flag Dokumen',
+            'Nomor Baris Excel'
+        ];
+        
+        $objPHPExcel->setActiveSheetIndex(0);
+        $sheet = $objPHPExcel->getActiveSheet();
+
+        // Set header style
+        $headerStyle = [
+            'font' => [
+                'bold' => true,
+                'color' => ['rgb' => 'FFFFFF'],
+            ],
+            'fill' => [
+                'type' => PHPExcel_Style_Fill::FILL_SOLID,
+                'color' => ['rgb' => '28A745'], // Green color for success
+            ],
+            'alignment' => [
+                'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER,
+                'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER,
+            ],
+        ];
+
+        // Add headers
+        foreach ($headers as $col => $header) {
+            $colLetter = PHPExcel_Cell::stringFromColumnIndex($col);
+            $sheet->setCellValue($colLetter . '1', $header);
+            $sheet->getStyle($colLetter . '1')->applyFromArray($headerStyle);
+        }
+
+        // Add data
+        foreach ($successful_data as $row => $data) {
+            $row_num = $row + 2; // Start from row 2 (after header)
+            
+            $sheet->setCellValue('A' . $row_num, $data['nama']);
+            $sheet->setCellValue('B' . $row_num, $data['nomor_paspor']);
+            $sheet->setCellValue('C' . $row_num, $data['no_visa']);
+            $sheet->setCellValue('D' . $row_num, $data['tgl_lahir']);
+            $sheet->setCellValue('E' . $row_num, $data['password']);
+            $sheet->setCellValue('F' . $row_num, $data['nomor_hp']);
+            $sheet->setCellValue('G' . $row_num, $data['email']);
+            $sheet->setCellValue('H' . $row_num, $data['gender']);
+            $sheet->setCellValue('I' . $row_num, $data['status']);
+            $sheet->setCellValue('J' . $row_num, $data['tanggal']);
+            $sheet->setCellValue('K' . $row_num, $data['jam']);
+            $sheet->setCellValue('L' . $row_num, $data['flag_doc']);
+            $sheet->setCellValue('M' . $row_num, $data['row_number']);
+        }
+
+        // Auto-size columns
+        foreach (range('A', 'M') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // Set filename
+        $filename = 'data_import_berhasil_' . date('Y-m-d_H-i-s') . '.xlsx';
+
+        // Set headers for download
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+
+        // Create Excel file
+        $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel2007');
+        $objWriter->save('php://output');
+        
+        // Clean up session data after successful download
+        $this->session->unset_userdata('successful_count');
+        $this->session->unset_userdata('successful_data');
+        
+        exit;
+        
+        } catch (Exception $e) {
+            log_message('error', 'Download successful data error: ' . $e->getMessage());
+            $this->session->set_flashdata('error', 'Terjadi kesalahan saat membuat file Excel. Error: ' . $e->getMessage());
+            redirect('database/import');
+        }
     }
     
     /**

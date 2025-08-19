@@ -39,7 +39,7 @@ class Settings extends CI_Controller {
             show_404();
             return;
         }
-        
+
         // Check if user is still logged in
         if (!$this->session->userdata('logged_in')) {
             $this->output
@@ -148,9 +148,9 @@ class Settings extends CI_Controller {
             // Force using PHP-based backup method for better hosting compatibility
             // Skip mysqldump entirely to avoid escapeshellarg() and exec() issues
             log_message('info', 'Using PHP-based backup method (phpMyAdmin format) - forced for hosting compatibility');
-            $this->create_php_backup($hostname, $username, $password, $database, $backup_path);
-            $return_var = 0;
-            $output = [];
+                $this->create_php_backup($hostname, $username, $password, $database, $backup_path);
+                $return_var = 0;
+                $output = [];
             
 
             
@@ -303,9 +303,9 @@ class Settings extends CI_Controller {
             // Force using PHP-based backup method for better hosting compatibility
             // Skip mysqldump entirely to avoid escapeshellarg() and exec() issues
             log_message('debug', 'Using PHP-based backup method (phpMyAdmin format) - forced for hosting compatibility');
-            $this->create_php_backup($hostname, $username, $password, $database, $backup_path);
-            $return_var = 0;
-            $output = [];
+                $this->create_php_backup($hostname, $username, $password, $database, $backup_path);
+                $return_var = 0;
+                $output = [];
             
             if ($return_var !== 0 || !file_exists($backup_path)) {
                 $error_msg = 'Gagal membuat backup database lokal';
@@ -749,7 +749,7 @@ class Settings extends CI_Controller {
         log_message('info', '=== DATABASE CONNECTION TEST PASSED ===');
     }
     
-        private function create_php_backup($hostname, $username, $password, $database, $backup_path) {
+    private function create_php_backup($hostname, $username, $password, $database, $backup_path) {
         // Create backup using pure PHP without exec() - Format phpMyAdmin SQL Dump
         // Mengikuti skema dari syncdb.php yang berhasil
         log_message('info', '=== PHP BACKUP STARTED ===');
@@ -898,7 +898,7 @@ class Settings extends CI_Controller {
         fwrite($handle, "/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;\n");
         
         fclose($handle);
-        $mysqli->close();
+            $mysqli->close();
         
         log_message('info', 'PHP backup completed successfully. Tables backed up: ' . $table_count);
         log_message('info', '=== PHP BACKUP COMPLETED ===');

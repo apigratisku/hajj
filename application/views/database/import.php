@@ -27,6 +27,19 @@
                         </div>
                     <?php endif; ?>
                     
+                    <?php if($this->session->userdata('successful_count')): ?>
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <h6><i class="fas fa-check-circle"></i> Data Import Berhasil</h6>
+                            <p class="mb-2">Sebanyak <strong><?= $this->session->userdata('successful_count') ?></strong> data berhasil diimport ke database.</p>
+                            <div class="d-flex gap-2">
+                                <a href="<?= base_url('database/download_successful_data') ?>" class="btn btn-success btn-sm">
+                                    <i class="fas fa-download"></i> Download Data Berhasil
+                                </a>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    <?php endif; ?>
+
                     <?php if($this->session->flashdata('rejected_count')): ?>
                         <div class="alert alert-warning alert-dismissible fade show" role="alert">
                             <h6><i class="fas fa-exclamation-triangle"></i> Data Import Ditolak</h6>
@@ -277,5 +290,35 @@ document.addEventListener('DOMContentLoaded', function() {
             bsAlert._config.autohide = false;
         });
     }
+    
+    // Console log untuk data yang berhasil di import
+    <?php if($this->session->userdata('successful_count')): ?>
+    console.log('=== IMPORT SUCCESS LOG ===');
+    console.log('Total data berhasil diimport:', <?= $this->session->userdata('successful_count') ?>);
+    console.log('Timestamp:', new Date().toISOString());
+    console.log('User:', '<?= $this->session->userdata('nama_lengkap') ?>');
+    console.log('Session ID:', '<?= $this->session->session_id ?>');
+    
+    // Log detail data yang berhasil di import jika tersedia
+    <?php if($this->session->userdata('successful_data')): ?>
+    const successfulData = <?= json_encode($this->session->userdata('successful_data')) ?>;
+    console.log('Detail data berhasil:');
+    successfulData.forEach(function(data, index) {
+        console.log(`[${index + 1}] ${data.nama} - ${data.nomor_paspor} (Row: ${data.row_number})`);
+    });
+    <?php endif; ?>
+    
+    console.log('=== END IMPORT SUCCESS LOG ===');
+    <?php endif; ?>
+    
+    // Console log untuk data yang ditolak
+    <?php if($this->session->flashdata('rejected_count')): ?>
+    console.log('=== IMPORT REJECTED LOG ===');
+    console.log('Total data ditolak:', <?= $this->session->flashdata('rejected_count') ?>);
+    console.log('Timestamp:', new Date().toISOString());
+    console.log('User:', '<?= $this->session->userdata('nama_lengkap') ?>');
+    console.log('Session ID:', '<?= $this->session->session_id ?>');
+    console.log('=== END IMPORT REJECTED LOG ===');
+    <?php endif; ?>
 });
 </script>
