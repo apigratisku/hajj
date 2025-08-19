@@ -421,6 +421,10 @@ class Database extends CI_Controller {
             $result = $this->transaksi_model->update($id, $data);
             
             if ($result) {
+                // Kirim notifikasi Telegram untuk update data peserta via AJAX
+                $peserta_name = isset($data['nama']) ? $data['nama'] : $current_peserta->nama;
+                $this->telegram_notification->peserta_crud_notification('update', $peserta_name, 'ID: ' . $id);
+                
                 $this->output->set_content_type('application/json');
                 $this->output->set_output(json_encode(['success' => true, 'message' => 'Data berhasil diperbarui']));
             } else {

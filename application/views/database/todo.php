@@ -180,12 +180,12 @@
                                                 <option value="2" <?= $p->status == 2 ? 'selected' : '' ?>>Done</option>
                                             </select>
                                             </td>
-                                            <td class="col-flag" data-field="flag_doc" data-value="<?= $p->flag_doc ?>">
+                                                                                        <td class="col-flag" data-field="flag_doc" data-value="<?= $p->flag_doc ?>">
                                             <span class="value" data-field="flag_doc" data-value="<?= $p->flag_doc ?>"><?= $p->flag_doc ?: '-' ?></span>    
-                                            <select class="mobile-edit-field" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
-                                                <option value="">Flag Doc:</option>
+                                            <select class="mobile-edit-field flag-doc-select" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
+                                                <option value="">Pilih Flag Dokumen</option>
                                                 <?php if (!empty($flag_doc_list)): foreach ($flag_doc_list as $flag): ?>
-                                                    <option value="<?= htmlspecialchars($flag->flag_doc) ?>"
+                                                    <option value="<?= htmlspecialchars($flag->flag_doc) ?>" 
                                                         <?= (!empty($p->flag_doc) && $p->flag_doc === $flag->flag_doc) ? 'selected' : '' ?>>
                                                         <?= htmlspecialchars($flag->flag_doc) ?>
                                                     </option>
@@ -326,9 +326,10 @@
                                         </td>
                                         <td class="flag-doc text-center" data-field="flag_doc" data-value="<?= $p->flag_doc ?>">
                                         <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->flag_doc ?: '-', ENT_QUOTES) ?>', 'Flag Dokumen')" title="Klik untuk copy"><?= $p->flag_doc ?: '-' ?></span>
-                                                <select class="form-select edit-field" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
+                                                <select class="form-select edit-field flag-doc-select" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
+                                                <option value="">Pilih Flag Dokumen</option>
                                                 <?php if (!empty($flag_doc_list)): foreach ($flag_doc_list as $flag): ?>
-                                                    <option value="<?= htmlspecialchars($flag->flag_doc) ?>" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === $flag->flag_doc) ? 'selected' : '' ?>>
+                                                    <option value="<?= htmlspecialchars($flag->flag_doc) ?>" <?= (!empty($p->flag_doc) && $p->flag_doc === $flag->flag_doc) ? 'selected' : '' ?>>
                                                         <?= htmlspecialchars($flag->flag_doc) ?>
                                                     </option>
                                                 <?php endforeach; endif; ?>
@@ -1309,6 +1310,38 @@
 </style>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <style>
+    /* Searchable select styles */
+    .flag-doc-select {
+        position: relative;
+    }
+    
+    .flag-doc-select option {
+        padding: 8px 12px;
+    }
+    
+    /* Custom search input for select */
+    .select-search-wrapper {
+        position: relative;
+        display: inline-block;
+        width: 100%;
+    }
+    
+    .select-search-input {
+        width: 100%;
+        padding: 6px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 14px;
+        margin-bottom: 5px;
+    }
+    
+    .select-search-input:focus {
+        outline: none;
+        border-color: #8B4513;
+        box-shadow: 0 0 0 0.2rem rgba(139, 69, 19, 0.25);
+    }
+    </style>
     <script>
 // Copy to clipboard function (unchanged)
 function copyToClipboard(text, fieldName) {
@@ -1493,6 +1526,9 @@ function toggleEditMobileTable(button) {
     editBtn.style.display = 'none';
     saveBtn.style.display = 'inline-block';
     cancelBtn.style.display = 'inline-block';
+    
+    // Initialize searchable flag_doc selects for this row
+    initializeFlagDocSearchable();
 }
 
 function cancelEditMobileTable(button) {
@@ -1763,6 +1799,9 @@ function toggleEdit(button) {
     editBtn.style.display = 'none';
     saveBtn.style.display = 'inline-block';
     cancelBtn.style.display = 'inline-block';
+    
+    // Initialize searchable flag_doc selects for this row
+    initializeFlagDocSearchable();
 }
 
 function cancelEdit(button) {
@@ -2506,7 +2545,85 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize barcode upload functionality
     initializeBarcodeUpload();
     
+    // Initialize searchable flag_doc selects
+    makeFlagDocSelectsSearchable();
+    
     // Debug pagination data
     debugPaginationData();
 });
+
+// Make flag_doc selects searchable
+function makeFlagDocSelectsSearchable() {
+    const flagDocSelects = document.querySelectorAll('.flag-doc-select');
+    
+    flagDocSelects.forEach(select => {
+        // Create search input
+        const searchInput = document.createElement('input');
+        searchInput.type = 'text';
+        searchInput.className = 'select-search-input';
+        searchInput.placeholder = 'Ketik untuk mencari flag dokumen...';
+        searchInput.style.display = 'none';
+        
+        // Insert search input before the select
+        select.parentNode.insertBefore(searchInput, select);
+        
+        // Show search input when select is focused
+        select.addEventListener('focus', function() {
+            searchInput.style.display = 'block';
+            searchInput.focus();
+        });
+        
+        // Filter options based on search input
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const options = select.querySelectorAll('option');
+            
+            options.forEach(option => {
+                const optionText = option.textContent.toLowerCase();
+                if (optionText.includes(searchTerm) || option.value === '') {
+                    option.style.display = '';
+                } else {
+                    option.style.display = 'none';
+                }
+            });
+        });
+        
+        // Hide search input when select loses focus
+        select.addEventListener('blur', function() {
+            setTimeout(() => {
+                if (!searchInput.matches(':focus')) {
+                    searchInput.style.display = 'none';
+                    searchInput.value = '';
+                    // Reset all options to visible
+                    const options = select.querySelectorAll('option');
+                    options.forEach(option => {
+                        option.style.display = '';
+                    });
+                }
+            }, 200);
+        });
+        
+        // Handle search input blur
+        searchInput.addEventListener('blur', function() {
+            setTimeout(() => {
+                if (!select.matches(':focus')) {
+                    this.style.display = 'none';
+                    this.value = '';
+                    // Reset all options to visible
+                    const options = select.querySelectorAll('option');
+                    options.forEach(option => {
+                        option.style.display = '';
+                    });
+                }
+            }, 200);
+        });
+    });
+}
+
+// Re-initialize when edit mode is toggled
+function initializeFlagDocSearchable() {
+    setTimeout(() => {
+        makeFlagDocSelectsSearchable();
+    }, 100);
+}
 </script>
