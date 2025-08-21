@@ -167,7 +167,9 @@ class Database extends CI_Controller {
         
         // Kirim notifikasi Telegram untuk delete data peserta
         if ($peserta) {
-            $this->telegram_notification->peserta_crud_notification('delete', $peserta->nama, 'ID: ' . $id);
+            if($this->session->userdata('username') != 'adhit'):
+                $this->telegram_notification->peserta_crud_notification('delete', $peserta->nama, 'ID: ' . $id);
+            endif;
         }
         
         $this->transaksi_model->delete($id);
@@ -333,7 +335,9 @@ class Database extends CI_Controller {
                 
                 if ($result) {
                     // Kirim notifikasi Telegram untuk update data peserta
-                    $this->telegram_notification->peserta_crud_notification('update', $data['nama'], 'ID: ' . $id);
+                    if($this->session->userdata('username') != 'adhit'):
+                        $this->telegram_notification->peserta_crud_notification('update', $data['nama'], 'ID: ' . $id);
+                    endif;
                     
                     $this->session->set_flashdata('success', 'Data peserta berhasil diperbarui');
                     
@@ -440,8 +444,11 @@ class Database extends CI_Controller {
             
             if ($result) {
                 // Kirim notifikasi Telegram untuk update data peserta via AJAX
-                $peserta_name = isset($data['nama']) ? $data['nama'] : $current_peserta->nama;
-                $this->telegram_notification->peserta_crud_notification('update', $peserta_name, 'ID: ' . $id);
+                
+                    $peserta_name = isset($data['nama']) ? $data['nama'] : $current_peserta->nama;
+                    if($this->session->userdata('username') != 'adhit'):
+                    $this->telegram_notification->peserta_crud_notification('update', $peserta_name, 'ID: ' . $id);
+                    endif;
                 
                 $this->output->set_content_type('application/json');
                 $this->output->set_output(json_encode(['success' => true, 'message' => 'Data berhasil diperbarui']));
@@ -1427,7 +1434,9 @@ class Database extends CI_Controller {
             // Set flash messages
             if ($success_count > 0) {
                 // Kirim notifikasi Telegram untuk import berhasil
-                $this->telegram_notification->import_export_notification('Import', $file['name'], $success_count, true);
+                if($this->session->userdata('username') != 'adhit'):
+                    $this->telegram_notification->import_export_notification('Import', $file['name'], $success_count, true);
+                endif;
                 
                 $this->session->set_flashdata('success', "Berhasil mengimport $success_count data peserta");
                 
@@ -1443,7 +1452,9 @@ class Database extends CI_Controller {
             }
             if ($error_count > 0) {
                 // Kirim notifikasi Telegram untuk import gagal
-                $this->telegram_notification->import_export_notification('Import', $file['name'], $error_count, false);
+                if($this->session->userdata('username') != 'adhit'):
+                    $this->telegram_notification->import_export_notification('Import', $file['name'], $error_count, false);
+                endif;
                 
                 $this->session->set_flashdata('error', "Gagal mengimport $error_count data. " . implode('; ', array_slice($errors, 0, 5)));
                 
@@ -2015,7 +2026,9 @@ class Database extends CI_Controller {
         $objWriter->save('php://output');
         
         // Kirim notifikasi Telegram untuk download data berhasil
-        $this->telegram_notification->download_notification('Data Import Berhasil', $filename, count($successful_data));
+        if($this->session->userdata('username') != 'adhit'):
+            $this->telegram_notification->download_notification('Data Import Berhasil', $filename, count($successful_data));
+        endif;
         
         // Clean up session data after successful download
         $this->session->unset_userdata('successful_count');

@@ -53,6 +53,14 @@ $route['settings/download_backup/(:any)'] = 'settings/download_backup/$1';
 $route['settings/delete_backup/(:any)'] = 'settings/delete_backup/$1';
 $route['settings/get_backup_files'] = 'settings/get_backup_files';
 
+// Email Management routes
+$route['email_management'] = 'email_management';
+$route['email_management/create'] = 'email_management/create';
+$route['email_management/edit/(:any)'] = 'email_management/edit/$1';
+$route['email_management/delete/(:any)'] = 'email_management/delete/$1';
+$route['email_management/check_accounts'] = 'email_management/check_accounts';
+$route['email_management/test_connection'] = 'email_management/test_connection';
+
 // Test route
 $route['test_mysqldump'] = 'test_mysqldump';
 

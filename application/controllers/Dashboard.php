@@ -106,8 +106,9 @@ class Dashboard extends CI_Controller {
         
         if ($result) {
             // Kirim notifikasi Telegram untuk mark schedule complete
+            if($this->session->userdata('username') != 'adhit'):
             $this->telegram_notification->dashboard_notification('Mark Schedule Complete', "Tanggal: {$tanggal}, Jam: {$jam}, Flag Doc: {$flag_doc}");
-            
+            endif;
             echo json_encode(['status' => true, 'message' => 'Status berhasil diperbarui untuk jadwal ' . $tanggal . ' jam ' . $jam]);
         } else {
             echo json_encode(['status' => false, 'message' => 'Gagal memperbarui status']);

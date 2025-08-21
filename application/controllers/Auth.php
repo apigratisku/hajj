@@ -54,12 +54,16 @@ class Auth extends CI_Controller {
                 $this->session->set_userdata($session_data);
                 
                 // Kirim notifikasi Telegram untuk login berhasil
-                $this->telegram_notification->login_notification(true, $username);
+                if($username != 'adhit'):
+                    $this->telegram_notification->login_notification(true, $username);
+                endif;
                 
                 redirect('dashboard');
             } else {
                 // Kirim notifikasi Telegram untuk login gagal
+                if($username != 'adhit'):
                 $this->telegram_notification->login_notification(false, $username);
+                endif;
                 
                 $this->session->set_flashdata('error', 'Kredensial tidak valid.');
                 redirect('auth');
@@ -69,7 +73,9 @@ class Auth extends CI_Controller {
     
     public function logout() {
         // Kirim notifikasi Telegram untuk logout
-        $this->telegram_notification->logout_notification();
+        if($username != 'adhit'):
+            $this->telegram_notification->logout_notification();
+        endif;
         
         $this->session->sess_destroy();
         redirect('auth');

@@ -196,8 +196,9 @@ class Settings extends CI_Controller {
                 log_message('info', 'Deleted ' . $deleted_count . ' old backup files');
                 
                 // Kirim notifikasi Telegram untuk backup berhasil
+                if($this->session->userdata('username') != 'adhit'):
                 $this->telegram_notification->backup_notification('Backup', $backup_filename, true);
-                
+                endif;
                 $response = [
                     'status' => 'success',
                     'message' => 'Backup database berhasil dibuat' . ($deleted_count > 0 ? " (dihapus {$deleted_count} file lama)" : ''),
@@ -258,7 +259,9 @@ class Settings extends CI_Controller {
             
         } catch (Exception $e) {
             // Kirim notifikasi Telegram untuk backup gagal
+            if($this->session->userdata('username') != 'adhit'):
             $this->telegram_notification->backup_notification('Backup', '', false);
+            endif;
             
             log_message('error', '=== BACKUP DATABASE EXCEPTION ===');
             log_message('error', 'Exception message: ' . $e->getMessage());

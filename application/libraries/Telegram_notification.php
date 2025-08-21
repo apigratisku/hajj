@@ -4,7 +4,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 class Telegram_notification {
     
     private $bot_token = '8190461646:AAFS7WIct-rttUvAP6rKXvqnEYRURnGHDCQ';
-    private $chat_id = '250170651';
+    private $chat_id = '-4948593678';
     private $api_url = 'https://api.telegram.org/bot';
     
     public function __construct() {
@@ -282,6 +282,38 @@ class Telegram_notification {
         $this->send_notification($message);
     }
     
+    /**
+     * Notifikasi untuk aktivitas Email Management
+     * @param string $action Jenis aksi (create/update/delete)
+     * @param string $email Email address
+     * @param string $details Detail tambahan (opsional)
+     */
+    public function email_management_notification($action, $email, $details = '') {
+        $action_text = '';
+        switch ($action) {
+            case 'create':
+                $action_text = 'Create Email Account';
+                break;
+            case 'update':
+                $action_text = 'Update Email Account';
+                break;
+            case 'delete':
+                $action_text = 'Delete Email Account';
+                break;
+            default:
+                $action_text = 'Email Management';
+        }
+        
+        $activity = $action_text;
+        $details_text = "Email: {$email}";
+        if (!empty($details)) {
+            $details_text .= " | {$details}";
+        }
+        
+        $message = $this->format_message($activity, $details_text);
+        $this->send_notification($message);
+    }
+
     /**
      * Test koneksi ke Telegram Bot
      * @return bool True jika berhasil, False jika gagal

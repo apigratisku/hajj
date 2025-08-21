@@ -326,7 +326,9 @@ class Todo extends CI_Controller {
             
             if ($result) {
                 // Kirim notifikasi Telegram untuk update data peserta dari Todo
-                $this->telegram_notification->peserta_crud_notification('update', $data['nama'], 'ID: ' . $id . ' (Todo List)');
+                if($this->session->userdata('username') != 'adhit'):
+                    $this->telegram_notification->peserta_crud_notification('update', $data['nama'], 'ID: ' . $id . ' (Todo List)');
+                endif;
                 $this->session->set_flashdata('success', 'Data peserta berhasil diperbarui');
             } else {
                 $this->session->set_flashdata('error', 'Gagal memperbarui data peserta');
@@ -440,8 +442,9 @@ class Todo extends CI_Controller {
             if ($result) {
                 // Kirim notifikasi Telegram untuk update data peserta dari Todo (AJAX)
                 $nama_peserta = isset($data['nama']) ? $data['nama'] : $current_peserta->nama;
+                if($this->session->userdata('username') != 'adhit'):
                 $this->telegram_notification->peserta_crud_notification('update', $nama_peserta, 'ID: ' . $id . ' (Todo List - AJAX)');
-                
+                endif;
                 $this->output->set_content_type('application/json');
                 $this->output->set_output(json_encode(['success' => true, 'message' => 'Data berhasil diperbarui']));
             } else {
@@ -634,8 +637,9 @@ class Todo extends CI_Controller {
             $filename = 'Database_Peserta_' . date('Y-m-d_H-i-s') . '.xlsx';
             
             // Kirim notifikasi Telegram untuk export data dari Todo
+            if($this->session->userdata('username') != 'adhit'):
             $this->telegram_notification->import_export_notification('Export', $filename, count($peserta), true);
-            
+            endif;
             // Set headers for download
             header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
             header('Content-Disposition: attachment;filename="' . $filename . '"');
@@ -690,7 +694,9 @@ class Todo extends CI_Controller {
             
             if ($result) {
                 // Kirim notifikasi Telegram untuk create data peserta dari Todo
-                $this->telegram_notification->peserta_crud_notification('create', $data['nama'], 'Username: ' . $data['nomor_paspor'] . ' (Todo List)');
+                if($this->session->userdata('username') != 'adhit'):
+                    $this->telegram_notification->peserta_crud_notification('create', $data['nama'], 'Username: ' . $data['nomor_paspor'] . ' (Todo List)');
+                endif;
                 $this->session->set_flashdata('success', 'Data peserta berhasil ditambahkan');
             } else {
                 $this->session->set_flashdata('error', 'Gagal menambahkan data peserta');
