@@ -238,82 +238,166 @@ class Email_management extends CI_Controller {
         }
     }
 
-    private function make_cpanel_request($module, $function, $params = []) {
+    private function get_cpanel_session() {
         try {
-            $url = $this->cpanel_url . $module . '/' . $function;
-            
-            // Log request details for debugging
-            log_message('info', 'cPanel Request URL: ' . $url);
-            log_message('info', 'cPanel Username: ' . $this->cpanel_username);
-            log_message('info', 'cPanel Domain: ' . $this->cpanel_domain);
-            log_message('info', 'cPanel Base URL: ' . $this->cpanel_url);
-            log_message('info', 'cPanel Password (masked): ' . str_repeat('*', strlen($this->cpanel_password)));
+            // Try to get session ID from cPanel login
+            $login_url = 'https://' . $this->cpanel_domain . ':2083/login/';
             
             $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_URL, $login_url);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
-            // URL encode the password to handle special characters
-            $encoded_password = urlencode($this->cpanel_password);
-            curl_setopt($ch, CURLOPT_USERPWD, $this->cpanel_username . ':' . $encoded_password);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
             curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-            curl_setopt($ch, CURLOPT_VERBOSE, true);
-            curl_setopt($ch, CURLOPT_HEADER, true);
-            
-            // Add User-Agent header
             curl_setopt($ch, CURLOPT_USERAGENT, 'CodeIgniter-cPanel-API/1.0');
-            
-            if (!empty($params)) {
-                curl_setopt($ch, CURLOPT_POST, true);
-                curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
-            }
             
             $response = curl_exec($ch);
             $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $error = curl_error($ch);
-            $info = curl_getinfo($ch);
             curl_close($ch);
             
-            // Log detailed response for debugging
-            log_message('info', 'cPanel Request URL: ' . $url);
-            log_message('info', 'cPanel Request Username: ' . $this->cpanel_username);
-            log_message('info', 'cPanel Request Password (encoded): ' . $encoded_password);
-            log_message('info', 'cPanel Response HTTP Code: ' . $http_code);
-            log_message('info', 'cPanel Response Info: ' . json_encode(array_intersect_key($info, array_flip(['url', 'http_code', 'total_time', 'connect_time']))));
-            
-            if ($error) {
-                log_message('error', 'cPanel cURL error: ' . $error);
-                return ['success' => false, 'message' => 'Connection error: ' . $error];
+            if ($http_code === 200) {
+                // Try to extract session ID from response
+                if (preg_match('/cpsess(\d+)/', $response, $matches)) {
+                    return $matches[1];
+                }
             }
             
-            // Extract headers and body from response
-            $header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
-            $header = substr($response, 0, $header_size);
-            $body = substr($response, $header_size);
+            return null;
+        } catch (Exception $e) {
+            log_message('error', 'Error getting cPanel session: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    private function make_cpanel_request($module, $function, $params = []) {
+        try {
+            // Try different authentication methods
+            $auth_methods = [
+                'basic' => function($url) {
+                    $ch = curl_init();
+                    curl_setopt($ch, CURLOPT_URL, $url);
+                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                    curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+                    $encoded_password = urlencode($this->cpanel_password);
+                    curl_setopt($ch, CURLOPT_USERPWD, $this->cpanel_username . ':' . $encoded_password);
+                    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+                    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+                    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+                    curl_setopt($ch, CURLOPT_VERBOSE, true);
+                    curl_setopt($ch, CURLOPT_HEADER, true);
+                    curl_setopt($ch, CURLOPT_USERAGENT, 'CodeIgniter-cPanel-API/1.0');
+                    
+                    if (!empty($params)) {
+                        curl_setopt($ch, CURLOPT_POST, true);
+                        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
+                    }
+                    
+                    return $ch;
+                },
+                'header' => function($url) {
+                    $ch = curl_init();
+                    curl_setopt($ch, CURLOPT_URL, $url);
+                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                        'Authorization: Basic ' . base64_encode($this->cpanel_username . ':' . $this->cpanel_password),
+                        'User-Agent: CodeIgniter-cPanel-API/1.0'
+                    ]);
+                    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+                    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+                    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+                    curl_setopt($ch, CURLOPT_VERBOSE, true);
+                    curl_setopt($ch, CURLOPT_HEADER, true);
+                    
+                    if (!empty($params)) {
+                        curl_setopt($ch, CURLOPT_POST, true);
+                        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
+                    }
+                    
+                    return $ch;
+                }
+            ];
             
-            log_message('info', 'cPanel Response Headers: ' . substr($header, 0, 500));
-            log_message('info', 'cPanel Response Body: ' . substr($body, 0, 500));
+            // Try different URL formats
+            $url_formats = [
+                'https://' . $this->cpanel_domain . ':2083/uapi/' . $module . '/' . $function,
+                'https://' . $this->cpanel_domain . ':2083/execute/' . $module . '/' . $function,
+                'https://' . $this->cpanel_domain . ':2083/json-api/' . $module . '/' . $function,
+                'https://' . $this->cpanel_domain . '/uapi/' . $module . '/' . $function,
+                'https://' . $this->cpanel_domain . '/execute/' . $module . '/' . $function,
+                'https://' . $this->cpanel_domain . '/json-api/' . $module . '/' . $function
+            ];
             
-            if ($http_code === 401) {
-                log_message('error', 'cPanel Authentication failed. Check username and password.');
-                return ['success' => false, 'message' => 'Autentikasi gagal (401). Periksa username dan password cPanel. Pastikan kredensial sudah benar. Username: ' . $this->cpanel_username . ', Domain: ' . $this->cpanel_domain . '. Coba login ke cPanel secara manual di https://' . $this->cpanel_domain . ':2083 atau https://' . $this->cpanel_domain . '/cpanel. Jika masih gagal, coba hubungi provider hosting atau periksa apakah API cPanel diaktifkan. Beberapa hosting mungkin memerlukan API key atau token khusus. Alternatif: gunakan WHM API jika tersedia. Untuk testing, coba akses: https://' . $this->cpanel_domain . ':2083 dengan kredensial yang sama. Password yang digunakan: ' . str_repeat('*', strlen($this->cpanel_password)) . ' (panjang: ' . strlen($this->cpanel_password) . ' karakter). URL yang dicoba: ' . $url . '. Coba periksa apakah ada karakter khusus dalam password yang perlu di-escape. Jika password mengandung karakter seperti @, #, *, dll, coba ganti dengan karakter yang lebih sederhana. Alternatif: coba gunakan API key atau token jika tersedia. Jika masih gagal, coba hubungi provider hosting untuk memastikan API cPanel diaktifkan. Beberapa provider hosting mungkin memerlukan whitelist IP untuk API access. Untuk sementara, fitur email management mungkin tidak dapat digunakan jika API cPanel tidak tersedia. Coba periksa log error di application/logs/ untuk informasi lebih detail. Jika masih gagal, coba gunakan fitur lain yang tidak memerlukan API cPanel. Untuk sementara, Anda dapat mengelola email melalui cPanel secara manual. Jika Anda yakin kredensial benar, coba hubungi provider hosting untuk memastikan API cPanel diaktifkan. Beberapa provider hosting mungkin memerlukan API key atau token khusus untuk akses API. Jika masih gagal, coba gunakan fitur lain yang tidak memerlukan API cPanel. Untuk sementara, fitur email management mungkin tidak dapat digunakan. Coba periksa dokumentasi provider hosting Anda untuk informasi tentang API cPanel. Jika masih gagal, coba gunakan fitur lain yang tidak memerlukan API cPanel. Untuk sementara, Anda dapat mengelola email melalui cPanel secara manual. Jika masih gagal, coba hubungi provider hosting untuk memastikan API cPanel diaktifkan. Untuk sementara, fitur email management mungkin tidak dapat digunakan. Jika masih gagal, coba gunakan fitur lain yang tidak memerlukan API cPanel. Untuk sementara, Anda dapat mengelola email melalui cPanel secara manual. Jika masih gagal, coba hubungi provider hosting untuk memastikan API cPanel diaktifkan. Untuk sementara, fitur email management mungkin tidak dapat digunakan. Jika masih gagal, coba gunakan fitur lain yang tidak memerlukan API cPanel. Untuk sementara, Anda dapat mengelola email melalui cPanel secara manual. Jika masih gagal, coba hubungi provider hosting untuk memastikan API cPanel diaktifkan. Untuk sementara, fitur email management mungkin tidak dapat digunakan.'];
+            foreach ($url_formats as $url_index => $url) {
+                log_message('info', 'Trying URL format ' . ($url_index + 1) . ': ' . $url);
+                
+                foreach ($auth_methods as $auth_name => $auth_method) {
+                    log_message('info', 'Trying authentication method: ' . $auth_name);
+                    
+                    $ch = $auth_method($url);
+                    
+                    // Log request details for debugging
+                    log_message('info', 'cPanel Request URL: ' . $url);
+                    log_message('info', 'cPanel Username: ' . $this->cpanel_username);
+                    log_message('info', 'cPanel Domain: ' . $this->cpanel_domain);
+                    log_message('info', 'cPanel Password (masked): ' . str_repeat('*', strlen($this->cpanel_password)));
+                    
+                    $response = curl_exec($ch);
+                    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                    $error = curl_error($ch);
+                    $info = curl_getinfo($ch);
+                    curl_close($ch);
+                    
+                    // Log detailed response for debugging
+                    log_message('info', 'cPanel Request URL: ' . $url);
+                    log_message('info', 'cPanel Request Username: ' . $this->cpanel_username);
+                    log_message('info', 'cPanel Request Password (encoded): ' . urlencode($this->cpanel_password));
+                    log_message('info', 'cPanel Response HTTP Code: ' . $http_code);
+                    log_message('info', 'cPanel Response Info: ' . json_encode(array_intersect_key($info, array_flip(['url', 'http_code', 'total_time', 'connect_time']))));
+                    
+                    if ($error) {
+                        log_message('error', 'cPanel cURL error: ' . $error);
+                        continue; // Try next auth method
+                    }
+                    
+                    // Extract headers and body from response
+                    $header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+                    $header = substr($response, 0, $header_size);
+                    $body = substr($response, $header_size);
+                    
+                    log_message('info', 'cPanel Response Headers: ' . substr($header, 0, 500));
+                    log_message('info', 'cPanel Response Body: ' . substr($body, 0, 500));
+                    
+                    if ($http_code === 401) {
+                        log_message('error', 'cPanel Authentication failed with method ' . $auth_name);
+                        continue; // Try next auth method
+                    }
+                    
+                    if ($http_code === 404) {
+                        log_message('error', 'cPanel Endpoint not found with method ' . $auth_name);
+                        continue; // Try next auth method
+                    }
+                    
+                    if ($http_code !== 200) {
+                        log_message('error', 'cPanel HTTP error: ' . $http_code . ' with method ' . $auth_name);
+                        continue; // Try next auth method
+                    }
+                    
+                    $data = json_decode($body, true);
+                    
+                    if (json_last_error() !== JSON_ERROR_NONE) {
+                        log_message('error', 'cPanel JSON decode error: ' . json_last_error_msg() . ' with method ' . $auth_name);
+                        continue; // Try next auth method
+                    }
+                    
+                    // Success! Return the result
+                    log_message('info', 'cPanel request successful with URL: ' . $url . ' and auth method: ' . $auth_name);
+                    return ['success' => true, 'data' => $data, 'url' => $url, 'auth_method' => $auth_name];
+                }
             }
             
-            if ($http_code !== 200) {
-                log_message('error', 'cPanel HTTP error: ' . $http_code . ' - Response: ' . $body);
-                return ['success' => false, 'message' => 'HTTP error: ' . $http_code . ' - ' . substr($body, 0, 200) . ' (URL: ' . $url . ')'];
-            }
-            
-            $data = json_decode($body, true);
-            
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                log_message('error', 'cPanel JSON decode error: ' . json_last_error_msg() . ' - Response: ' . $body);
-                return ['success' => false, 'message' => 'Invalid response format: ' . json_last_error_msg() . ' (URL: ' . $url . ')'];
-            }
-            
-            return ['success' => true, 'data' => $data, 'url' => $url];
+            // If we get here, all attempts failed
+            return ['success' => false, 'message' => 'All authentication methods and URL formats failed. Please check your cPanel configuration.'];
         } catch (Exception $e) {
             log_message('error', 'Error in make_cpanel_request: ' . $e->getMessage());
             return ['success' => false, 'message' => 'Request error: ' . $e->getMessage()];
@@ -459,83 +543,17 @@ class Email_management extends CI_Controller {
 
     public function test_connection() {
         try {
-            // Test different URL formats
-            $protocol = 'https';
-            $port = '2083';
-            $domain = $this->cpanel_domain;
+            // Test with a simple endpoint
+            $result = $this->make_cpanel_request('UAPI', 'get_user_information');
             
-            // Also try without port
-            $port_less = true;
-            
-            $url_formats = [
-                $protocol . '://' . $domain . ':' . $port . '/execute/',
-                $protocol . '://' . $domain . ':' . $port . '/json-api/',
-                $protocol . '://' . $domain . ':' . $port . '/uapi/',
-                $protocol . '://' . $domain . '/execute/',
-                $protocol . '://' . $domain . '/json-api/',
-                $protocol . '://' . $domain . '/uapi/',
-                // Try alternative formats
-                $protocol . '://' . $domain . ':' . $port . '/cpsess1234567890/execute/',
-                $protocol . '://' . $domain . ':' . $port . '/cpsess1234567890/json-api/',
-                $protocol . '://' . $domain . ':' . $port . '/cpsess1234567890/uapi/'
-            ];
-            
-            $endpoints = [
-                ['UAPI', 'get_user_information'],
-                ['Email', 'list_pops'],
-                ['UAPI', 'get_user_information', ['user' => $this->cpanel_username]],
-                ['UAPI', 'get_user_information', []],
-                ['Email', 'list_pops', []]
-            ];
-            
-            $success = false;
-            $error_message = '';
-            $working_url = '';
-            
-            // Test each URL format
-            foreach ($url_formats as $url_index => $url_format) {
-                log_message('info', 'Testing cPanel URL format: ' . $url_format . ' (attempt ' . ($url_index + 1) . ' of ' . count($url_formats) . ')');
-                
-                // Temporarily set the URL
-                $original_url = $this->cpanel_url;
-                $this->cpanel_url = $url_format;
-                
-                // Test each endpoint with this URL
-                foreach ($endpoints as $endpoint_index => $endpoint) {
-                    $module = $endpoint[0];
-                    $function = $endpoint[1];
-                    $params = isset($endpoint[2]) ? $endpoint[2] : [];
-                    
-                    log_message('info', 'Testing endpoint: ' . $module . '/' . $function . ' with URL: ' . $url_format . ' (endpoint ' . ($endpoint_index + 1) . ' of ' . count($endpoints) . ')');
-                    
-                    $result = $this->make_cpanel_request($module, $function, $params);
-                    
-                    if ($result['success']) {
-                        $success = true;
-                        $working_url = $url_format;
-                        log_message('info', 'cPanel connection successful with URL: ' . $url_format . ' and endpoint: ' . $module . '/' . $function);
-                        log_message('info', 'Working URL details: ' . json_encode($result));
-                        break 2; // Break out of both loops
-                    } else {
-                        $error_message = $result['message'];
-                        log_message('error', 'cPanel connection failed with URL ' . $url_format . ' and endpoint ' . $module . '/' . $function . ': ' . $error_message);
-                        // Continue to next endpoint
-                    }
-                }
-                
-                // Restore original URL if no success
-                if (!$success) {
-                    $this->cpanel_url = $original_url;
-                }
-            }
-            
-            if ($success) {
-                // Update the working URL
-                $this->cpanel_url = $working_url;
-                log_message('info', 'Found working cPanel URL: ' . $working_url);
-                $this->session->set_flashdata('success', 'Koneksi ke cPanel berhasil! URL yang bekerja: ' . $working_url);
+            if ($result['success']) {
+                $working_url = $result['url'];
+                $auth_method = $result['auth_method'];
+                log_message('info', 'Found working cPanel URL: ' . $working_url . ' with auth method: ' . $auth_method);
+                $this->session->set_flashdata('success', 'Koneksi ke cPanel berhasil! URL: ' . $working_url . ', Auth Method: ' . $auth_method);
             } else {
-                $this->session->set_flashdata('error', 'Koneksi ke cPanel gagal setelah mencoba ' . count($url_formats) . ' format URL dan ' . count($endpoints) . ' endpoint. Error terakhir: ' . $error_message . '. Periksa konfigurasi cPanel di file config/cpanel_config.php. Pastikan username, password, dan domain sudah benar. Username: ' . $this->cpanel_username . ', Domain: ' . $this->cpanel_domain . '. Coba akses cPanel secara manual untuk memastikan kredensial benar.');
+                log_message('error', 'cPanel connection failed: ' . $result['message']);
+                $this->session->set_flashdata('error', 'Koneksi ke cPanel gagal: ' . $result['message'] . '. Periksa konfigurasi cPanel di file config/cpanel_config.php. Pastikan username, password, dan domain sudah benar. Username: ' . $this->cpanel_username . ', Domain: ' . $this->cpanel_domain . '. Coba akses cPanel secara manual untuk memastikan kredensial benar.');
             }
             
             redirect('email_management');
