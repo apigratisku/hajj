@@ -19,7 +19,7 @@ $config['cpanel'] = array(
     'password' => 'hrPG2nS6SZTk88',
     
     // Domain cPanel (tanpa https://)
-    'domain' => 'menfins.site',
+    'domain' => 'juwana.iixcp.rumahweb.net',
     
     // Port cPanel (biasanya 2083 untuk SSL)
     'port' => '2083',
