@@ -73,6 +73,7 @@ $route['email_middleware/debug'] = 'email_middleware/debug_middleware';
 // Test routes
 $route['test_mysqldump'] = 'test_mysqldump';
 $route['test_middleware'] = 'test_middleware_direct';
+$route['test_middleware_simple'] = 'test_middleware_simple';
 
 // Upload routes
 $route['upload/upload_barcode'] = 'upload/upload_barcode';

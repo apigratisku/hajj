@@ -244,6 +244,7 @@ class Email_middleware extends CI_Controller {
             curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
             curl_setopt($ch, CURLOPT_MAXREDIRS, 3);
             curl_setopt($ch, CURLOPT_HEADER, false);
+            curl_setopt($ch, CURLOPT_ENCODING, ''); // Accept any encoding
             
             $response = curl_exec($ch);
             $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -270,6 +271,12 @@ class Email_middleware extends CI_Controller {
             if ($response === false || empty($response)) {
                 log_message('error', 'Empty response from middleware: ' . $url);
                 return ['success' => false, 'message' => 'Empty response from middleware'];
+            }
+            
+            // Check if response starts with PHP tags or HTML (indicating PHP error)
+            if (strpos($response, '<?php') !== false || strpos($response, '<!DOCTYPE') !== false || strpos($response, '<html') !== false) {
+                log_message('error', 'Response contains PHP/HTML instead of JSON: ' . substr($response, 0, 200));
+                return ['success' => false, 'message' => 'Server returned PHP/HTML instead of JSON. Check middleware file.'];
             }
             
             // Check if response is valid JSON

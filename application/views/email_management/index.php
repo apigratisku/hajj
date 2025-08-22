@@ -8,15 +8,18 @@
                         <i class="fas fa-envelope me-2"></i>Manajemen Email
                     </h5>
                     <div class="btn-group">
-                        <a href="<?= base_url('email_middleware/create') ?>" class="btn btn-success btn-sm">
-                            <i class="fas fa-plus"></i> Tambah Email
-                        </a>
-                        <button type="button" class="btn btn-info btn-sm" onclick="checkAccounts()">
-                            <i class="fas fa-sync-alt"></i> Refresh
-                        </button>
-                        <a href="<?= base_url('email_middleware/test_connection') ?>" class="btn btn-warning btn-sm">
-                            <i class="fas fa-plug"></i> Test Koneksi
-                        </a>
+                                                 <a href="<?= base_url('email_middleware/create') ?>" class="btn btn-success btn-sm">
+                             <i class="fas fa-plus"></i> Tambah Email
+                         </a>
+                         <button type="button" class="btn btn-info btn-sm" onclick="checkAccounts()">
+                             <i class="fas fa-sync-alt"></i> Refresh
+                         </button>
+                         <a href="<?= base_url('email_middleware/test_connection') ?>" class="btn btn-warning btn-sm">
+                             <i class="fas fa-plug"></i> Test Koneksi
+                         </a>
+                         <a href="<?= base_url('test_middleware_simple') ?>" class="btn btn-secondary btn-sm" target="_blank">
+                             <i class="fas fa-bug"></i> Test Middleware
+                         </a>
                     </div>
                 </div>
                 <div class="card-body">
