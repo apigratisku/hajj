@@ -25,7 +25,7 @@ $config['cpanel'] = array(
     'port' => 2083,
     
     // Auth Token (jika menggunakan token authentication)
-    'auth_token' => 'cpsess2060935779', // Masukkan token Anda di sini jika ada
+    'auth_token' => '', // Kosongkan karena API Token dinonaktifkan
     
     // Protocol (http atau https)
     'protocol' => 'https',
