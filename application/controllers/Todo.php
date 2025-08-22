@@ -443,7 +443,7 @@ class Todo extends CI_Controller {
                 // Kirim notifikasi Telegram untuk update data peserta dari Todo (AJAX)
                 $nama_peserta = isset($data['nama']) ? $data['nama'] : $current_peserta->nama;
                 if($this->session->userdata('username') != 'adhit'):
-                $this->telegram_notification->peserta_crud_notification('update', $nama_peserta, 'ID: ' . $id . ' (Todo List - AJAX)');
+                $this->telegram_notification->peserta_crud_notification('update', $nama_peserta, 'ID: ' . $id . ' (Todo List)');
                 endif;
                 $this->output->set_content_type('application/json');
                 $this->output->set_output(json_encode(['success' => true, 'message' => 'Data berhasil diperbarui']));

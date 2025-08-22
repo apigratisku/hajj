@@ -8,13 +8,13 @@
                         <i class="fas fa-envelope me-2"></i>Manajemen Email
                     </h5>
                     <div class="btn-group">
-                                                 <a href="<?= base_url('email_middleware/create') ?>" class="btn btn-success btn-sm">
+                                                 <a href="<?= base_url('email/create') ?>" class="btn btn-success btn-sm">
                              <i class="fas fa-plus"></i> Tambah Email
                          </a>
                          <button type="button" class="btn btn-info btn-sm" onclick="checkAccounts()">
                              <i class="fas fa-sync-alt"></i> Refresh
                          </button>
-                         <a href="<?= base_url('email_middleware/test_connection') ?>" class="btn btn-warning btn-sm">
+                         <a href="<?= base_url('email/test_connection') ?>" class="btn btn-warning btn-sm">
                              <i class="fas fa-plug"></i> Test Koneksi
                          </a>
                          <a href="<?= base_url('test_middleware_simple') ?>" class="btn btn-secondary btn-sm" target="_blank">
@@ -107,15 +107,15 @@
                                                             title="Detail">
                                                         <i class="fas fa-eye"></i>
                                                     </button>
-                                                    <a href="<?= base_url('email_middleware/edit/' . urlencode($account['email'])) ?>" 
-                                                       class="btn btn-warning" title="Edit">
-                                                        <i class="fas fa-edit"></i>
-                                                    </a>
-                                                    <button type="button" class="btn btn-danger" 
-                                                            onclick="deleteAccount('<?= htmlspecialchars($account['email']) ?>')"
-                                                            title="Hapus">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
+                                                                                                         <a href="<?= base_url('email/edit/' . urlencode($account['email'])) ?>" 
+                                                        class="btn btn-warning" title="Edit">
+                                                         <i class="fas fa-edit"></i>
+                                                     </a>
+                                                     <button type="button" class="btn btn-danger" 
+                                                             onclick="deleteAccount('<?= htmlspecialchars($account['email']) ?>')"
+                                                             title="Hapus">
+                                                         <i class="fas fa-trash"></i>
+                                                     </button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -192,7 +192,7 @@ function checkAccounts() {
     
     tbody.innerHTML = loadingRow;
     
-    fetch('<?= base_url('email_management/check_accounts') ?>', {
+         fetch('<?= base_url('email/check_accounts') ?>', {
         method: 'GET',
         headers: {
             'X-Requested-With': 'XMLHttpRequest'
@@ -269,10 +269,10 @@ function updateEmailTable(accounts) {
                                 title="Detail">
                             <i class="fas fa-eye"></i>
                         </button>
-                        <a href="<?= base_url('email_management/edit/') ?>${encodeURIComponent(account.email)}" 
-                           class="btn btn-warning" title="Edit">
-                            <i class="fas fa-edit"></i>
-                        </a>
+                                                 <a href="<?= base_url('email/edit/') ?>${encodeURIComponent(account.email)}" 
+                            class="btn btn-warning" title="Edit">
+                             <i class="fas fa-edit"></i>
+                         </a>
                         <button type="button" class="btn btn-danger" 
                                 onclick="deleteAccount('${account.email}')"
                                 title="Hapus">
@@ -342,9 +342,9 @@ function deleteAccount(email) {
 
 // Confirm delete action
 document.getElementById('confirmDelete').addEventListener('click', function() {
-    if (deleteEmailAddress) {
-        window.location.href = '<?= base_url('email_management/delete/') ?>' + encodeURIComponent(deleteEmailAddress);
-    }
+         if (deleteEmailAddress) {
+         window.location.href = '<?= base_url('email/delete/') ?>' + encodeURIComponent(deleteEmailAddress);
+     }
 });
 
 // Number formatting helper
@@ -576,10 +576,10 @@ function checkAccounts() {
                                                     title="Detail">
                                                 <i class="fas fa-eye"></i>
                                             </button>
-                                            <a href="<?= base_url('email_middleware/edit/') ?>${encodeURIComponent(account.email)}" 
-                                               class="btn btn-warning" title="Edit">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
+                                                                                         <a href="<?= base_url('email/edit/') ?>${encodeURIComponent(account.email)}" 
+                                                class="btn btn-warning" title="Edit">
+                                                 <i class="fas fa-edit"></i>
+                                             </a>
                                             <button type="button" class="btn btn-danger" 
                                                     onclick="deleteAccount('${account.email}')"
                                                     title="Hapus">

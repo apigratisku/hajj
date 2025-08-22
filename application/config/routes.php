@@ -77,6 +77,23 @@ $route['test_middleware_simple'] = 'test_middleware_simple';
 $route['email_middleware/test_simple'] = 'email_middleware/test_simple';
 $route['email_middleware/test_middleware'] = 'email_middleware/test_middleware';
 
+// Email management routes (new cPanel implementation)
+$route['email'] = 'email/index';
+$route['email/create'] = 'email/create';
+$route['email/edit/(:any)'] = 'email/edit/$1';
+$route['email/delete/(:any)'] = 'email/delete/$1';
+$route['email/check_accounts'] = 'email/check_accounts';
+$route['email/test_connection'] = 'email/test_connection';
+
+// Test routes
+$route['test_cpanel'] = 'test_cpanel/index';
+$route['test_routing'] = 'test_routing/index';
+$route['email_simple'] = 'email_simple/index';
+$route['email_simple/test'] = 'email_simple/test';
+$route['email_test'] = 'email_test/index';
+$route['email_test/config'] = 'email_test/config';
+$route['email_test/library'] = 'email_test/library';
+
 // Upload routes
 $route['upload/upload_barcode'] = 'upload/upload_barcode';
 $route['upload/delete_barcode'] = 'upload/delete_barcode';
