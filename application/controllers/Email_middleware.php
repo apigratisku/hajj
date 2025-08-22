@@ -147,13 +147,36 @@ class Email_middleware extends CI_Controller {
                 ob_end_clean();
             }
             
+            // Log start of function
+            log_message('info', '=== CHECK_ACCOUNTS START ===');
+            log_message('info', 'Timestamp: ' . date('Y-m-d H:i:s'));
+            log_message('info', 'Middleware URL: ' . $this->middleware_url);
+            
+            // Test basic functionality first
+            if (!function_exists('curl_init')) {
+                log_message('error', 'cURL not available');
+                $this->output->set_status_header(500);
+                $this->output->set_content_type('application/json');
+                $this->output->set_output(json_encode([
+                    'success' => false, 
+                    'message' => 'cURL not available on server',
+                    'debug_info' => [
+                        'error' => 'cURL function not found',
+                        'timestamp' => date('Y-m-d H:i:s')
+                    ]
+                ]));
+                return;
+            }
+            
             // Remove AJAX check to allow direct access for debugging
+            log_message('info', 'Calling middleware with action: list');
             $result = $this->call_middleware('list');
             
             // Log the result for debugging
             log_message('info', 'Check accounts result: ' . json_encode($result));
             
             if (!$result['success']) {
+                log_message('error', 'Middleware call failed: ' . $result['message']);
                 $this->output->set_status_header(500);
                 $this->output->set_content_type('application/json');
                 $this->output->set_output(json_encode([
@@ -168,8 +191,11 @@ class Email_middleware extends CI_Controller {
                 return;
             }
             
+            log_message('info', 'Middleware call successful, processing data');
+            
             $accounts = [];
             if (isset($result['data']['data'])) {
+                log_message('info', 'Found ' . count($result['data']['data']) . ' accounts in response');
                 foreach ($result['data']['data'] as $account) {
                     $accounts[] = [
                         'email' => isset($account['email']) ? $account['email'] : '',
@@ -179,7 +205,11 @@ class Email_middleware extends CI_Controller {
                         'created' => isset($account['created']) ? $account['created'] : ''
                     ];
                 }
+            } else {
+                log_message('info', 'No data found in middleware response');
             }
+            
+            log_message('info', 'Processed ' . count($accounts) . ' accounts');
             
             $this->output->set_content_type('application/json');
             $this->output->set_output(json_encode([
@@ -191,7 +221,10 @@ class Email_middleware extends CI_Controller {
                     'timestamp' => date('Y-m-d H:i:s')
                 ]
             ]));
+            
+            log_message('info', '=== CHECK_ACCOUNTS END ===');
         } catch (Exception $e) {
+            log_message('error', '=== CHECK_ACCOUNTS EXCEPTION ===');
             log_message('error', 'Error in Email_middleware check_accounts: ' . $e->getMessage());
             log_message('error', 'Error file: ' . $e->getFile() . ' line: ' . $e->getLine());
             log_message('error', 'Error trace: ' . $e->getTraceAsString());
@@ -236,6 +269,10 @@ class Email_middleware extends CI_Controller {
 
     private function call_middleware($action, $params = []) {
         try {
+            log_message('info', '=== CALL_MIDDLEWARE START ===');
+            log_message('info', 'Action: ' . $action);
+            log_message('info', 'Params: ' . json_encode($params));
+            
             $url = $this->middleware_url . '?action=' . $action;
             
             // Add parameters to URL
@@ -258,6 +295,8 @@ class Email_middleware extends CI_Controller {
                 return ['success' => false, 'message' => 'Failed to initialize cURL'];
             }
             
+            log_message('info', 'cURL initialized successfully');
+            
             curl_setopt($ch, CURLOPT_URL, $url);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
@@ -269,11 +308,15 @@ class Email_middleware extends CI_Controller {
             curl_setopt($ch, CURLOPT_HEADER, false);
             curl_setopt($ch, CURLOPT_ENCODING, ''); // Accept any encoding
             
+            log_message('info', 'cURL options set, executing request...');
+            
             $response = curl_exec($ch);
             $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $error = curl_error($ch);
             $content_type = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
             curl_close($ch);
+            
+            log_message('info', 'cURL request completed');
             
             // Log detailed response for debugging
             log_message('info', 'Middleware Response HTTP Code: ' . $http_code);
@@ -302,6 +345,8 @@ class Email_middleware extends CI_Controller {
                 return ['success' => false, 'message' => 'Server returned PHP/HTML instead of JSON. Check middleware file.'];
             }
             
+            log_message('info', 'Response appears to be valid, attempting JSON decode...');
+            
             // Check if response is valid JSON
             $data = json_decode($response, true);
             $json_error = json_last_error();
@@ -314,23 +359,30 @@ class Email_middleware extends CI_Controller {
                 $clean_response = trim($response);
                 $clean_response = preg_replace('/[\x00-\x1F\x7F]/', '', $clean_response);
                 
+                log_message('info', 'Attempting to clean response and decode again...');
                 $data = json_decode($clean_response, true);
                 $json_error = json_last_error();
                 
                 if ($json_error !== JSON_ERROR_NONE) {
+                    log_message('error', 'JSON decode still failed after cleaning: ' . json_last_error_msg());
                     return ['success' => false, 'message' => 'Invalid JSON response: ' . json_last_error_msg() . ' - Response: ' . substr($response, 0, 200)];
                 }
             }
+            
+            log_message('info', 'JSON decode successful');
             
             if (isset($data['error'])) {
                 log_message('error', 'Middleware error: ' . $data['error']);
                 return ['success' => false, 'message' => $data['error']];
             }
             
+            log_message('info', '=== CALL_MIDDLEWARE END SUCCESS ===');
             return ['success' => true, 'data' => $data];
         } catch (Exception $e) {
+            log_message('error', '=== CALL_MIDDLEWARE EXCEPTION ===');
             log_message('error', 'Error calling middleware: ' . $e->getMessage());
             log_message('error', 'Error file: ' . $e->getFile() . ' line: ' . $e->getLine());
+            log_message('error', 'Error trace: ' . $e->getTraceAsString());
             return ['success' => false, 'message' => 'Error calling middleware: ' . $e->getMessage()];
         }
     }
@@ -543,6 +595,58 @@ class Email_middleware extends CI_Controller {
             $error_data = [
                 'success' => false,
                 'message' => 'Test function error: ' . $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'timestamp' => date('Y-m-d H:i:s')
+            ];
+            
+            $this->output->set_output(json_encode($error_data));
+        }
+    }
+    
+    // Test middleware directly
+    public function test_middleware() {
+        if (!$this->session->userdata('logged_in')) {
+            redirect('auth');
+        }
+        
+        // Set error reporting to prevent any output
+        error_reporting(0);
+        ini_set('display_errors', 0);
+        
+        // Clear any output buffer
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+        
+        $this->output->set_content_type('application/json');
+        
+        try {
+            log_message('info', '=== TEST_MIDDLEWARE START ===');
+            
+            // Test middleware call
+            $result = $this->call_middleware('list');
+            
+            $test_data = [
+                'success' => true,
+                'message' => 'Middleware test completed',
+                'timestamp' => date('Y-m-d H:i:s'),
+                'middleware_url' => $this->middleware_url,
+                'curl_available' => function_exists('curl_init'),
+                'php_version' => PHP_VERSION,
+                'middleware_result' => $result
+            ];
+            
+            log_message('info', '=== TEST_MIDDLEWARE END ===');
+            
+            $this->output->set_output(json_encode($test_data));
+        } catch (Exception $e) {
+            log_message('error', '=== TEST_MIDDLEWARE EXCEPTION ===');
+            log_message('error', 'Error: ' . $e->getMessage());
+            
+            $error_data = [
+                'success' => false,
+                'message' => 'Middleware test error: ' . $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
                 'timestamp' => date('Y-m-d H:i:s')

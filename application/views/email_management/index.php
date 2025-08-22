@@ -23,6 +23,9 @@
                          <a href="<?= base_url('email_middleware/test_simple') ?>" class="btn btn-dark btn-sm" target="_blank">
                              <i class="fas fa-cog"></i> Test Simple
                          </a>
+                         <a href="<?= base_url('email_middleware/test_middleware') ?>" class="btn btn-primary btn-sm" target="_blank">
+                             <i class="fas fa-network-wired"></i> Test Middleware
+                         </a>
                     </div>
                 </div>
                 <div class="card-body">
@@ -390,6 +393,7 @@ function showDebugInfo() {
     console.log('Check accounts URL:', '<?= base_url('email_middleware/check_accounts') ?>');
     console.log('Debug URL:', '<?= base_url('email_middleware/debug') ?>');
     console.log('Test simple URL:', '<?= base_url('email_middleware/test_simple') ?>');
+    console.log('Test middleware URL:', '<?= base_url('email_middleware/test_middleware') ?>');
     
     // Test simple function first
     fetch('<?= base_url('email_middleware/test_simple') ?>')
@@ -408,6 +412,25 @@ function showDebugInfo() {
         })
         .catch(error => {
             console.error('Test simple error:', error);
+        });
+    
+    // Test middleware function
+    fetch('<?= base_url('email_middleware/test_middleware') ?>')
+        .then(response => {
+            console.log('Test middleware response status:', response.status);
+            return response.text();
+        })
+        .then(data => {
+            console.log('Test middleware response:', data);
+            try {
+                const jsonData = JSON.parse(data);
+                console.log('Test middleware parsed:', jsonData);
+            } catch (e) {
+                console.error('Test middleware JSON error:', e);
+            }
+        })
+        .catch(error => {
+            console.error('Test middleware error:', error);
         });
     
     // Test check accounts directly
