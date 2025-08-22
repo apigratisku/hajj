@@ -205,7 +205,7 @@ class Cpanel_new {
             
             // Jika mendapat HTTP 403, coba force login ulang
             if (isset($result['error']) && strpos($result['error'], '403') !== false) {
-                log_message('warning', 'CPanel request - HTTP 403 detected, forcing login and retry');
+                log_message('info', 'CPanel request - HTTP 403 detected, forcing login and retry');
                 if ($this->forceLogin()) {
                     log_message('info', 'CPanel request - Force login successful, retrying request');
                     return $this->requestWithSession($url, $method, $data);
@@ -475,7 +475,7 @@ class Cpanel_new {
                     
                     // Jika mendapat HTTP 403, coba force login ulang
                     if (isset($result['error']) && strpos($result['error'], '403') !== false) {
-                        log_message('warning', 'CPanel createEmailAccount - HTTP 403 detected, forcing login');
+                        log_message('info', 'CPanel createEmailAccount - HTTP 403 detected, forcing login');
                         $force_login = true;
                         break;
                     }

@@ -1043,7 +1043,7 @@ class Todo extends CI_Controller {
                 return false;
             }
         } else {
-            log_message('warning', 'Barcode file not found for deletion: ' . $filename);
+            log_message('info', 'Barcode file not found for deletion: ' . $filename);
             return false;
         }
     }

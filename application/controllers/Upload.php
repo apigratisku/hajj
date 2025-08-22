@@ -97,7 +97,7 @@ class Upload extends CI_Controller {
                         log_message('info', 'Upload barcode - Successfully deleted existing barcode file: ' . $existing_barcode);
                     }
                 } else {
-                    log_message('warning', 'Upload barcode - Existing file not found: ' . $existing_file_path);
+                    log_message('info', 'Upload barcode - Existing file not found: ' . $existing_file_path);
                 }
             } else {
                 log_message('info', 'Upload barcode - No existing barcode to replace');

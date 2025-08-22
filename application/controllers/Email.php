@@ -330,7 +330,7 @@ class Email extends CI_Controller {
                     ];
                 }
             } else {
-                log_message('warning', 'Email get_email_accounts - Unknown response format: ' . gettype($result));
+                log_message('info', 'Email get_email_accounts - Unknown response format: ' . gettype($result));
             }
             
             log_message('info', 'Email get_email_accounts - Processed accounts: ' . count($accounts));

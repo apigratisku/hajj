@@ -905,7 +905,7 @@ class Settings extends CI_Controller {
                 fwrite($handle, $create_row[1] . ";\n\n");
                 log_message('info', 'Table structure written for: ' . $table);
             } else {
-                log_message('warning', 'Failed to get structure for table: ' . $table . ' - Error: ' . $mysqli->error);
+                log_message('info', 'Failed to get structure for table: ' . $table . ' - Error: ' . $mysqli->error);
                 continue;
             }
             
@@ -1005,7 +1005,7 @@ class Settings extends CI_Controller {
                                 $deleted_count++;
                                 log_message('info', 'Deleted old backup file: ' . $filename);
                             } else {
-                                log_message('warning', 'Failed to delete old backup file: ' . $filename);
+                                log_message('info', 'Failed to delete old backup file: ' . $filename);
                             }
                         }
                     }
@@ -1029,12 +1029,12 @@ class Settings extends CI_Controller {
         try {
             $ftp_connection = ftp_connect($ftp_host, 21);
             if (!$ftp_connection) {
-                log_message('warning', 'Failed to connect to FTP for cleanup: ' . $ftp_host);
+                log_message('info', 'Failed to connect to FTP for cleanup: ' . $ftp_host);
                 return 0;
             }
             
             if (!ftp_login($ftp_connection, $ftp_username, $ftp_password)) {
-                log_message('warning', 'Failed to login to FTP for cleanup');
+                log_message('info', 'Failed to login to FTP for cleanup');
                 ftp_close($ftp_connection);
                 return 0;
             }
@@ -1059,7 +1059,7 @@ class Settings extends CI_Controller {
                                     $deleted_count++;
                                     log_message('info', 'Deleted old FTP backup file: ' . $filename);
                                 } else {
-                                    log_message('warning', 'Failed to delete old FTP backup file: ' . $filename);
+                                    log_message('info', 'Failed to delete old FTP backup file: ' . $filename);
                                 }
                             }
                         }
