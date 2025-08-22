@@ -35,8 +35,8 @@
                                     </label>
                                     <select class="form-select" id="domain" name="domain" required>
                                         <option value="">Pilih Domain</option>
-                                        <option value="localhost">localhost</option>
-                                        <option value="example.com">example.com</option>
+                                        <option value="menfins.site">menfins.site</option>
+                                        
                                     </select>
                                     <div class="form-text">
                                         Domain untuk akun email
@@ -142,7 +142,7 @@
 <script>
 // Generate random email
 function generateEmail() {
-    const domains = ['localhost', 'example.com'];
+    const domains = ['menfins.site'];
     const randomDomain = domains[Math.floor(Math.random() * domains.length)];
     const randomUser = 'user' + Math.floor(Math.random() * 1000);
     const email = randomUser + '@' + randomDomain;
