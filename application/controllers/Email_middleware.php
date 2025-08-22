@@ -138,6 +138,15 @@ class Email_middleware extends CI_Controller {
 
     public function check_accounts() {
         try {
+            // Set error reporting to prevent any output
+            error_reporting(0);
+            ini_set('display_errors', 0);
+            
+            // Clear any output buffer
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
+            
             // Remove AJAX check to allow direct access for debugging
             $result = $this->call_middleware('list');
             
@@ -184,6 +193,9 @@ class Email_middleware extends CI_Controller {
             ]));
         } catch (Exception $e) {
             log_message('error', 'Error in Email_middleware check_accounts: ' . $e->getMessage());
+            log_message('error', 'Error file: ' . $e->getFile() . ' line: ' . $e->getLine());
+            log_message('error', 'Error trace: ' . $e->getTraceAsString());
+            
             $this->output->set_status_header(500);
             $this->output->set_content_type('application/json');
             $this->output->set_output(json_encode([
@@ -233,8 +245,19 @@ class Email_middleware extends CI_Controller {
             
             log_message('info', 'Calling middleware URL: ' . $url);
             
+            // Check if cURL is available
+            if (!function_exists('curl_init')) {
+                log_message('error', 'cURL is not available');
+                return ['success' => false, 'message' => 'cURL is not available on this server'];
+            }
+            
             // Use cURL instead of file_get_contents for better SSL handling
             $ch = curl_init();
+            if ($ch === false) {
+                log_message('error', 'Failed to initialize cURL');
+                return ['success' => false, 'message' => 'Failed to initialize cURL'];
+            }
+            
             curl_setopt($ch, CURLOPT_URL, $url);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
@@ -307,6 +330,7 @@ class Email_middleware extends CI_Controller {
             return ['success' => true, 'data' => $data];
         } catch (Exception $e) {
             log_message('error', 'Error calling middleware: ' . $e->getMessage());
+            log_message('error', 'Error file: ' . $e->getFile() . ' line: ' . $e->getLine());
             return ['success' => false, 'message' => 'Error calling middleware: ' . $e->getMessage()];
         }
     }
@@ -422,18 +446,38 @@ class Email_middleware extends CI_Controller {
             redirect('auth');
         }
         
+        // Set error reporting to prevent any output
+        error_reporting(0);
+        ini_set('display_errors', 0);
+        
         $action = $this->input->get('action') ?: 'test';
-        $result = $this->call_middleware($action);
         
         echo "<h2>Middleware Debug</h2>";
         echo "<p><strong>Action:</strong> " . $action . "</p>";
         echo "<p><strong>URL:</strong> " . $this->middleware_url . "?action=" . $action . "</p>";
-        echo "<p><strong>Result:</strong></p>";
-        echo "<pre>" . json_encode($result, JSON_PRETTY_PRINT) . "</pre>";
         
-        if (isset($result['data'])) {
-            echo "<p><strong>Data:</strong></p>";
-            echo "<pre>" . json_encode($result['data'], JSON_PRETTY_PRINT) . "</pre>";
+        // Test cURL availability
+        echo "<h3>cURL Availability Test</h3>";
+        if (function_exists('curl_init')) {
+            echo "<p><strong>cURL:</strong> Available</p>";
+        } else {
+            echo "<p><strong>cURL:</strong> Not Available</p>";
+        }
+        
+        // Test middleware call
+        echo "<h3>Middleware Call Test</h3>";
+        try {
+            $result = $this->call_middleware($action);
+            echo "<p><strong>Result:</strong></p>";
+            echo "<pre>" . json_encode($result, JSON_PRETTY_PRINT) . "</pre>";
+            
+            if (isset($result['data'])) {
+                echo "<p><strong>Data:</strong></p>";
+                echo "<pre>" . json_encode($result['data'], JSON_PRETTY_PRINT) . "</pre>";
+            }
+        } catch (Exception $e) {
+            echo "<p><strong>Exception:</strong> " . $e->getMessage() . "</p>";
+            echo "<p><strong>File:</strong> " . $e->getFile() . ":" . $e->getLine() . "</p>";
         }
         
         // Add direct middleware test
@@ -443,22 +487,68 @@ class Email_middleware extends CI_Controller {
         
         // Add cURL test
         echo "<h3>cURL Test</h3>";
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $this->middleware_url . "?action=" . $action);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-        curl_setopt($ch, CURLOPT_USERAGENT, 'Debug-Test/1.0');
+        if (function_exists('curl_init')) {
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $this->middleware_url . "?action=" . $action);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+            curl_setopt($ch, CURLOPT_USERAGENT, 'Debug-Test/1.0');
+            
+            $response = curl_exec($ch);
+            $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $error = curl_error($ch);
+            curl_close($ch);
+            
+            echo "<p><strong>HTTP Code:</strong> " . $http_code . "</p>";
+            echo "<p><strong>cURL Error:</strong> " . ($error ?: 'None') . "</p>";
+            echo "<p><strong>Response:</strong></p>";
+            echo "<pre>" . htmlspecialchars($response) . "</pre>";
+        } else {
+            echo "<p><strong>cURL:</strong> Not available for testing</p>";
+        }
+    }
+    
+    // Simple test function for debugging
+    public function test_simple() {
+        if (!$this->session->userdata('logged_in')) {
+            redirect('auth');
+        }
         
-        $response = curl_exec($ch);
-        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $error = curl_error($ch);
-        curl_close($ch);
+        // Set error reporting to prevent any output
+        error_reporting(0);
+        ini_set('display_errors', 0);
         
-        echo "<p><strong>HTTP Code:</strong> " . $http_code . "</p>";
-        echo "<p><strong>cURL Error:</strong> " . ($error ?: 'None') . "</p>";
-        echo "<p><strong>Response:</strong></p>";
-        echo "<pre>" . htmlspecialchars($response) . "</pre>";
+        // Clear any output buffer
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+        
+        $this->output->set_content_type('application/json');
+        
+        try {
+            // Test basic functionality
+            $test_data = [
+                'success' => true,
+                'message' => 'Test function working',
+                'timestamp' => date('Y-m-d H:i:s'),
+                'middleware_url' => $this->middleware_url,
+                'curl_available' => function_exists('curl_init'),
+                'php_version' => PHP_VERSION
+            ];
+            
+            $this->output->set_output(json_encode($test_data));
+        } catch (Exception $e) {
+            $error_data = [
+                'success' => false,
+                'message' => 'Test function error: ' . $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'timestamp' => date('Y-m-d H:i:s')
+            ];
+            
+            $this->output->set_output(json_encode($error_data));
+        }
     }
 }

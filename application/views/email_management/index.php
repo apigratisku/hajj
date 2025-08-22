@@ -20,6 +20,9 @@
                          <a href="<?= base_url('test_middleware_simple') ?>" class="btn btn-secondary btn-sm" target="_blank">
                              <i class="fas fa-bug"></i> Test Middleware
                          </a>
+                         <a href="<?= base_url('email_middleware/test_simple') ?>" class="btn btn-dark btn-sm" target="_blank">
+                             <i class="fas fa-cog"></i> Test Simple
+                         </a>
                     </div>
                 </div>
                 <div class="card-body">
@@ -386,6 +389,26 @@ function showDebugInfo() {
     console.log('Base URL:', '<?= base_url() ?>');
     console.log('Check accounts URL:', '<?= base_url('email_middleware/check_accounts') ?>');
     console.log('Debug URL:', '<?= base_url('email_middleware/debug') ?>');
+    console.log('Test simple URL:', '<?= base_url('email_middleware/test_simple') ?>');
+    
+    // Test simple function first
+    fetch('<?= base_url('email_middleware/test_simple') ?>')
+        .then(response => {
+            console.log('Test simple response status:', response.status);
+            return response.text();
+        })
+        .then(data => {
+            console.log('Test simple response:', data);
+            try {
+                const jsonData = JSON.parse(data);
+                console.log('Test simple parsed:', jsonData);
+            } catch (e) {
+                console.error('Test simple JSON error:', e);
+            }
+        })
+        .catch(error => {
+            console.error('Test simple error:', error);
+        });
     
     // Test check accounts directly
     fetch('<?= base_url('email_middleware/check_accounts') ?>')
