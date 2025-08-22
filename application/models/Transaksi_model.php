@@ -249,6 +249,35 @@ class Transaksi_model extends CI_Model {
         return $this->db->count_all_results();
     }
 
+    public function count_filtered_todo($filters = []) {
+        $this->db->from($this->table);
+        if (!empty($filters['nama'])) {
+            $this->db->like('peserta.nama', $filters['nama']);
+        }
+        if (!empty($filters['nomor_paspor'])) {
+            $this->db->like('peserta.nomor_paspor', $filters['nomor_paspor']);
+        }
+        if (!empty($filters['no_visa'])) {
+            $this->db->like('peserta.no_visa', $filters['no_visa']);
+        }
+       
+        if (isset($filters['flag_doc'])) {
+            // Handle flag_doc filter more precisely
+            if ($filters['flag_doc'] === null || $filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
+                $this->db->where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
+                $this->db->where('peserta.status', 0);
+            } else {
+                $this->db->where('peserta.flag_doc', $filters['flag_doc']);
+                $this->db->where('peserta.status', 0);
+            }
+        }
+        if (!empty($filters['tanggaljam'])) {
+            $this->db->like("CONCAT(tanggal, ' ', jam)", $filters['tanggaljam']);
+        }
+        
+        return $this->db->count_all_results();
+    }
+
     public function get_by_passport($nomor_paspor) {
         $this->db->where('nomor_paspor', $nomor_paspor);
         return $this->db->get($this->table)->row();

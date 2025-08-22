@@ -24,6 +24,9 @@ $config['cpanel'] = array(
     // Port cPanel (biasanya 2083 untuk SSL)
     'port' => 2083,
     
+    // Auth Token (jika menggunakan token authentication)
+    'auth_token' => 'cpsess2060935779', // Masukkan token Anda di sini jika ada
+    
     // Protocol (http atau https)
     'protocol' => 'https',
     

@@ -89,7 +89,7 @@ class Todo extends CI_Controller {
         $data['tanggaljam_list'] = $this->transaksi_model->get_unique_tanggaljam();
         
         // Get total count for pagination
-        $total_rows = $this->transaksi_model->count_filtered($filters);
+        $total_rows = $this->transaksi_model->count_filtered_todo($filters);
         
         // Load pagination library
         $this->load->library('pagination');

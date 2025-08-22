@@ -239,7 +239,7 @@
                                             </select>
                                             </td>
                                             <td class="col-tanggal" data-field="tanggal" data-value="<?= $p->tanggal ?>">
-                                            <span class="value" data-field="tanggal" data-value="<?= $p->tanggal ?>"><?= $p->tanggal ?: '-' ?></span>
+                                            <span class="value" data-field="tanggal" data-value="<?= $p->tanggal ?>"><?= $p->tanggal ? date('d-m-Y', strtotime($p->tanggal)) : '-' ?></span>
                                             <input type="date" class="mobile-edit-field" value="<?= $p->tanggal ?>" style="display:none;">
                                             </td>
                                             <td class="col-jam" data-field="jam" data-value="<?= $p->jam ?>">
@@ -399,7 +399,7 @@
                                                 </select>
                                         </td>
                                         <td class="tanggal text-center" data-field="tanggal" data-value="<?= $p->tanggal ?>">
-                                        <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->tanggal ?: '-', ENT_QUOTES) ?>', 'Tanggal')" title="Klik untuk copy"><?= $p->tanggal ?: '-' ?></span>
+                                        <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->tanggal ?: '-', ENT_QUOTES) ?>', 'Tanggal')" title="Klik untuk copy"><?= $p->tanggal ? date('d-m-Y', strtotime($p->tanggal)) : '-' ?></span>
                                         <input type="date" class="form-control edit-field" value="<?= $p->tanggal ?>" style="display:none;">
                                         </td>
                                         <td class="jam text-center" data-field="jam" data-value="<?= $p->jam ?>">

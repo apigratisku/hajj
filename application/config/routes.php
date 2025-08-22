@@ -94,6 +94,14 @@ $route['email_test'] = 'email_test/index';
 $route['email_test/config'] = 'email_test/config';
 $route['email_test/library'] = 'email_test/library';
 
+// Email management routes (new improved implementation)
+$route['email_new'] = 'email_new/index';
+$route['email_new/create'] = 'email_new/create';
+$route['email_new/edit/(:any)'] = 'email_new/edit/$1';
+$route['email_new/delete/(:any)'] = 'email_new/delete/$1';
+$route['email_new/check_accounts'] = 'email_new/check_accounts';
+$route['email_new/test_connection'] = 'email_new/test_connection';
+
 // Upload routes
 $route['upload/upload_barcode'] = 'upload/upload_barcode';
 $route['upload/delete_barcode'] = 'upload/delete_barcode';

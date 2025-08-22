@@ -71,6 +71,11 @@
             </a>
         </li>
         <li class="nav-item">
+            <a href="<?= base_url('email_new') ?>" <?= $this->uri->segment(1) == 'email_new' ? 'class="active"' : '' ?>>
+                <i class="fas fa-envelope-open"></i> <span>Manajemen Email (New)</span>
+            </a>
+        </li>
+        <li class="nav-item">
             <a href="<?= base_url('email_middleware') ?>" <?= $this->uri->segment(1) == 'email_middleware' ? 'class="active"' : '' ?>>
                 <i class="fas fa-envelope-open"></i> <span>Manajemen Email (Middleware)</span>
             </a>
