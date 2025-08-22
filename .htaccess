@@ -1,5 +1,9 @@
 RewriteEngine On
-RewriteCond $1 !^(index\.php|images|rt09-assets|surat|css|js|robots\.txt|favicon\.ico)
+
+# Allow direct access to specific files
+RewriteRule ^(cpanel_email_middleware\.php|test_middleware\.php|htaccess_test\.php)$ - [L]
+
+# CodeIgniter routing
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ index.php/$1 [L]
@@ -7,6 +11,13 @@ RewriteRule ^(.*)$ index.php/$1 [L]
 <FilesMatch ".(eot|ttf|otf|woff)">
 	Header set Access-Control-Allow-Origin "*"
 </FilesMatch>
+
+# Allow direct access to middleware file
+<Files "cpanel_email_middleware.php">
+    Header set Access-Control-Allow-Origin "*"
+    Header set Access-Control-Allow-Methods "GET, POST, OPTIONS"
+    Header set Access-Control-Allow-Headers "Content-Type"
+</Files>
 
 <IfModule mod_php7.c>
     php_value extension=curl
