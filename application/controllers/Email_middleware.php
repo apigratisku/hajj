@@ -28,15 +28,8 @@ class Email_middleware extends CI_Controller {
         try {
             $data['title'] = 'Manajemen Email (Middleware)';
             
-            // Test connection first
-            $test_result = $this->call_middleware('test');
-            if (!$test_result['success']) {
-                $this->session->set_flashdata('error', 'Middleware tidak tersedia atau tidak dapat diakses. Error: ' . $test_result['message'] . '. Pastikan file cpanel_email_middleware.php sudah diupload ke root hosting.');
-                $data['email_accounts'] = [];
-            } else {
-                // Get list of email accounts
-                $data['email_accounts'] = $this->get_email_accounts();
-            }
+            // Get list of email accounts
+            $data['email_accounts'] = $this->get_email_accounts();
             
             $this->load->view('templates/sidebar');
             $this->load->view('templates/header', $data);
@@ -151,7 +144,27 @@ class Email_middleware extends CI_Controller {
                 return;
             }
             
-            $accounts = $this->get_email_accounts();
+            $result = $this->call_middleware('list');
+            
+            if (!$result['success']) {
+                $this->output->set_status_header(500);
+                $this->output->set_content_type('application/json');
+                $this->output->set_output(json_encode(['success' => false, 'message' => $result['message']]));
+                return;
+            }
+            
+            $accounts = [];
+            if (isset($result['data']['data'])) {
+                foreach ($result['data']['data'] as $account) {
+                    $accounts[] = [
+                        'email' => isset($account['email']) ? $account['email'] : '',
+                        'quota' => isset($account['quota']) ? $account['quota'] : 0,
+                        'usage' => isset($account['usage']) ? $account['usage'] : 0,
+                        'suspended' => isset($account['suspended']) ? $account['suspended'] : false,
+                        'created' => isset($account['created']) ? $account['created'] : ''
+                    ];
+                }
+            }
             
             $this->output->set_content_type('application/json');
             $this->output->set_output(json_encode([
@@ -162,7 +175,7 @@ class Email_middleware extends CI_Controller {
             log_message('error', 'Error in Email_middleware check_accounts: ' . $e->getMessage());
             $this->output->set_status_header(500);
             $this->output->set_content_type('application/json');
-            $this->output->set_output(json_encode(['success' => false, 'message' => 'Terjadi kesalahan server']));
+            $this->output->set_output(json_encode(['success' => false, 'message' => 'Terjadi kesalahan server: ' . $e->getMessage()]));
         }
     }
 
@@ -171,9 +184,11 @@ class Email_middleware extends CI_Controller {
             $result = $this->call_middleware('test');
             
             if ($result['success']) {
-                $this->session->set_flashdata('success', 'Koneksi ke cPanel berhasil melalui middleware!');
+                $user_info = isset($result['data']['data']) ? $result['data']['data'] : [];
+                $username = isset($user_info['user']) ? $user_info['user'] : 'Unknown';
+                $this->session->set_flashdata('success', 'Koneksi ke cPanel berhasil! User: ' . $username);
             } else {
-                $this->session->set_flashdata('error', 'Koneksi ke cPanel gagal: ' . $result['message']);
+                $this->session->set_flashdata('error', 'Koneksi ke cPanel gagal: ' . $result['message'] . '. Pastikan file cpanel_email_middleware.php sudah diupload ke root hosting.');
             }
             
             redirect('email_middleware');
@@ -251,6 +266,7 @@ class Email_middleware extends CI_Controller {
             
             if (!$result['success']) {
                 log_message('error', 'Failed to get email accounts: ' . $result['message']);
+                $this->session->set_flashdata('error', 'Gagal mengambil daftar email: ' . $result['message']);
                 return [];
             }
             
@@ -270,6 +286,7 @@ class Email_middleware extends CI_Controller {
             return $accounts;
         } catch (Exception $e) {
             log_message('error', 'Error in get_email_accounts: ' . $e->getMessage());
+            $this->session->set_flashdata('error', 'Terjadi kesalahan saat mengambil daftar email: ' . $e->getMessage());
             return [];
         }
     }
