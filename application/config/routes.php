@@ -68,9 +68,11 @@ $route['email_middleware/edit/(:any)'] = 'email_middleware/edit/$1';
 $route['email_middleware/delete/(:any)'] = 'email_middleware/delete/$1';
 $route['email_middleware/check_accounts'] = 'email_middleware/check_accounts';
 $route['email_middleware/test_connection'] = 'email_middleware/test_connection';
+$route['email_middleware/debug'] = 'email_middleware/debug_middleware';
 
-// Test route
+// Test routes
 $route['test_mysqldump'] = 'test_mysqldump';
+$route['test_middleware'] = 'test_middleware_direct';
 
 // Upload routes
 $route['upload/upload_barcode'] = 'upload/upload_barcode';

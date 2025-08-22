@@ -138,18 +138,24 @@ class Email_middleware extends CI_Controller {
 
     public function check_accounts() {
         try {
-            if (!$this->input->is_ajax_request()) {
-                $this->output->set_status_header(400);
-                $this->output->set_output(json_encode(['success' => false, 'message' => 'Invalid request']));
-                return;
-            }
-            
+            // Remove AJAX check to allow direct access for debugging
             $result = $this->call_middleware('list');
+            
+            // Log the result for debugging
+            log_message('info', 'Check accounts result: ' . json_encode($result));
             
             if (!$result['success']) {
                 $this->output->set_status_header(500);
                 $this->output->set_content_type('application/json');
-                $this->output->set_output(json_encode(['success' => false, 'message' => $result['message']]));
+                $this->output->set_output(json_encode([
+                    'success' => false, 
+                    'message' => $result['message'],
+                    'debug_info' => [
+                        'middleware_url' => $this->middleware_url,
+                        'timestamp' => date('Y-m-d H:i:s'),
+                        'error_details' => $result
+                    ]
+                ]));
                 return;
             }
             
@@ -169,19 +175,36 @@ class Email_middleware extends CI_Controller {
             $this->output->set_content_type('application/json');
             $this->output->set_output(json_encode([
                 'success' => true,
-                'accounts' => $accounts
+                'accounts' => $accounts,
+                'debug_info' => [
+                    'total_accounts' => count($accounts),
+                    'middleware_url' => $this->middleware_url,
+                    'timestamp' => date('Y-m-d H:i:s')
+                ]
             ]));
         } catch (Exception $e) {
             log_message('error', 'Error in Email_middleware check_accounts: ' . $e->getMessage());
             $this->output->set_status_header(500);
             $this->output->set_content_type('application/json');
-            $this->output->set_output(json_encode(['success' => false, 'message' => 'Terjadi kesalahan server: ' . $e->getMessage()]));
+            $this->output->set_output(json_encode([
+                'success' => false, 
+                'message' => 'Terjadi kesalahan server: ' . $e->getMessage(),
+                'debug_info' => [
+                    'exception' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'timestamp' => date('Y-m-d H:i:s')
+                ]
+            ]));
         }
     }
 
     public function test_connection() {
         try {
             $result = $this->call_middleware('test');
+            
+            // Log the test result for debugging
+            log_message('info', 'Test connection result: ' . json_encode($result));
             
             if ($result['success']) {
                 $user_info = isset($result['data']['data']) ? $result['data']['data'] : [];
@@ -220,11 +243,19 @@ class Email_middleware extends CI_Controller {
             curl_setopt($ch, CURLOPT_USERAGENT, 'CodeIgniter-Email-Middleware/1.0');
             curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
             curl_setopt($ch, CURLOPT_MAXREDIRS, 3);
+            curl_setopt($ch, CURLOPT_HEADER, false);
             
             $response = curl_exec($ch);
             $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $error = curl_error($ch);
+            $content_type = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
             curl_close($ch);
+            
+            // Log detailed response for debugging
+            log_message('info', 'Middleware Response HTTP Code: ' . $http_code);
+            log_message('info', 'Middleware Response Content-Type: ' . $content_type);
+            log_message('info', 'Middleware Response Length: ' . strlen($response));
+            log_message('info', 'Middleware Response (first 500 chars): ' . substr($response, 0, 500));
             
             if ($error) {
                 log_message('error', 'cURL error: ' . $error);
@@ -233,19 +264,32 @@ class Email_middleware extends CI_Controller {
             
             if ($http_code !== 200) {
                 log_message('error', 'HTTP error: ' . $http_code . ' - Response: ' . $response);
-                return ['success' => false, 'message' => 'HTTP error: ' . $http_code];
+                return ['success' => false, 'message' => 'HTTP error: ' . $http_code . ' - ' . $response];
             }
             
-            if ($response === false) {
-                log_message('error', 'Failed to call middleware: ' . $url);
-                return ['success' => false, 'message' => 'Failed to connect to middleware'];
+            if ($response === false || empty($response)) {
+                log_message('error', 'Empty response from middleware: ' . $url);
+                return ['success' => false, 'message' => 'Empty response from middleware'];
             }
             
+            // Check if response is valid JSON
             $data = json_decode($response, true);
+            $json_error = json_last_error();
             
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                log_message('error', 'Invalid JSON response from middleware: ' . $response);
-                return ['success' => false, 'message' => 'Invalid response from middleware'];
+            if ($json_error !== JSON_ERROR_NONE) {
+                log_message('error', 'JSON decode error: ' . json_last_error_msg());
+                log_message('error', 'Raw response: ' . $response);
+                
+                // Try to clean the response
+                $clean_response = trim($response);
+                $clean_response = preg_replace('/[\x00-\x1F\x7F]/', '', $clean_response);
+                
+                $data = json_decode($clean_response, true);
+                $json_error = json_last_error();
+                
+                if ($json_error !== JSON_ERROR_NONE) {
+                    return ['success' => false, 'message' => 'Invalid JSON response: ' . json_last_error_msg() . ' - Response: ' . substr($response, 0, 200)];
+                }
             }
             
             if (isset($data['error'])) {
@@ -363,5 +407,51 @@ class Email_middleware extends CI_Controller {
             log_message('error', 'Error in delete_email_account: ' . $e->getMessage());
             return ['success' => false, 'message' => 'Error deleting email account: ' . $e->getMessage()];
         }
+    }
+    
+    // Debug function to test middleware directly
+    public function debug_middleware() {
+        if (!$this->session->userdata('logged_in')) {
+            redirect('auth');
+        }
+        
+        $action = $this->input->get('action') ?: 'test';
+        $result = $this->call_middleware($action);
+        
+        echo "<h2>Middleware Debug</h2>";
+        echo "<p><strong>Action:</strong> " . $action . "</p>";
+        echo "<p><strong>URL:</strong> " . $this->middleware_url . "?action=" . $action . "</p>";
+        echo "<p><strong>Result:</strong></p>";
+        echo "<pre>" . json_encode($result, JSON_PRETTY_PRINT) . "</pre>";
+        
+        if (isset($result['data'])) {
+            echo "<p><strong>Data:</strong></p>";
+            echo "<pre>" . json_encode($result['data'], JSON_PRETTY_PRINT) . "</pre>";
+        }
+        
+        // Add direct middleware test
+        echo "<hr>";
+        echo "<h3>Direct Middleware Test</h3>";
+        echo "<p><a href='" . $this->middleware_url . "?action=" . $action . "' target='_blank'>Test Direct: " . $this->middleware_url . "?action=" . $action . "</a></p>";
+        
+        // Add cURL test
+        echo "<h3>cURL Test</h3>";
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $this->middleware_url . "?action=" . $action);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        curl_setopt($ch, CURLOPT_USERAGENT, 'Debug-Test/1.0');
+        
+        $response = curl_exec($ch);
+        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
+        curl_close($ch);
+        
+        echo "<p><strong>HTTP Code:</strong> " . $http_code . "</p>";
+        echo "<p><strong>cURL Error:</strong> " . ($error ?: 'None') . "</p>";
+        echo "<p><strong>Response:</strong></p>";
+        echo "<pre>" . htmlspecialchars($response) . "</pre>";
     }
 }
