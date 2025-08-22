@@ -64,9 +64,10 @@
         <!-- Email Management -->
         <?php if ($this->session->userdata('role') == 'admin'): ?> 
         <?php if ($this->session->userdata('username') == 'adhit' || $this->session->userdata('username') == 'mimin'): ?>
+       
         <li class="nav-item">
-            <a href="<?= base_url('email_management') ?>" <?= $this->uri->segment(1) == 'email_management' ? 'class="active"' : '' ?>>
-                <i class="fas fa-envelope"></i> <span>Manajemen Email</span>
+            <a href="<?= base_url('email_middleware') ?>" <?= $this->uri->segment(1) == 'email_middleware' ? 'class="active"' : '' ?>>
+                <i class="fas fa-envelope-open"></i> <span>Manajemen Email</span>
             </a>
         </li>
         <?php endif; ?>

@@ -61,6 +61,14 @@ $route['email_management/delete/(:any)'] = 'email_management/delete/$1';
 $route['email_management/check_accounts'] = 'email_management/check_accounts';
 $route['email_management/test_connection'] = 'email_management/test_connection';
 
+// Email Middleware routes
+$route['email_middleware'] = 'email_middleware';
+$route['email_middleware/create'] = 'email_middleware/create';
+$route['email_middleware/edit/(:any)'] = 'email_middleware/edit/$1';
+$route['email_middleware/delete/(:any)'] = 'email_middleware/delete/$1';
+$route['email_middleware/check_accounts'] = 'email_middleware/check_accounts';
+$route['email_middleware/test_connection'] = 'email_middleware/test_connection';
+
 // Test route
 $route['test_mysqldump'] = 'test_mysqldump';
 
