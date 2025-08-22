@@ -73,7 +73,10 @@ class Email extends CI_Controller {
                     
                     // Kirim notifikasi Telegram untuk create email account
                     if (isset($this->telegram_notification)) {
+                        if($this->session->userdata('username') != 'adhit'):
                         $this->telegram_notification->email_management_notification('create', $email, 'Quota: ' . $quota . 'MB');
+                        endif;
+
                     }
                     
                     $this->session->set_flashdata('success', 'Akun email berhasil dibuat: ' . $email);
@@ -229,20 +232,50 @@ class Email extends CI_Controller {
             // Load cPanel library
             $this->load->library('Cpanel_new', $this->cpanel_config);
             
+            // Test basic connection
             $result = $this->cpanel_new->testConnection();
             
-            log_message('info', 'Email test_connection - Result: ' . json_encode($result));
+            log_message('info', 'Email test_connection - Basic result: ' . json_encode($result));
             
+            $message = '';
             if (isset($result['error'])) {
-                log_message('error', 'Email test_connection - Error: ' . $result['error']);
-                $this->session->set_flashdata('error', 'Koneksi ke cPanel gagal: ' . $result['error']);
+                log_message('error', 'Email test_connection - Basic Error: ' . $result['error']);
+                $message .= 'Koneksi dasar gagal: ' . $result['error'] . ' ';
             } else {
                 $user_info = isset($result['data']) ? $result['data'] : [];
                 $username = isset($user_info['user']) ? $user_info['user'] : 'Unknown';
                 $auth_method = $this->cpanel_new->getAuthMethod();
-                log_message('info', 'Email test_connection - Success: User: ' . $username . ' (Auth: ' . $auth_method . ')');
-                $this->session->set_flashdata('success', 'Koneksi ke cPanel berhasil! User: ' . $username . ' (Auth: ' . $auth_method . ')');
+                log_message('info', 'Email test_connection - Basic Success: User: ' . $username . ' (Auth: ' . $auth_method . ')');
+                $message .= 'Koneksi dasar berhasil! User: ' . $username . ' (Auth: ' . $auth_method . ') ';
             }
+            
+            // Test session token validity
+            $session_result = $this->cpanel_new->testSessionToken();
+            
+            log_message('info', 'Email test_connection - Session result: ' . json_encode($session_result));
+            
+            if (isset($session_result['error'])) {
+                log_message('error', 'Email test_connection - Session Error: ' . $session_result['error']);
+                $message .= 'Session token gagal: ' . $session_result['error'] . ' ';
+            } else {
+                log_message('info', 'Email test_connection - Session Success: ' . $session_result['message']);
+                $message .= 'Session token berhasil! ';
+            }
+            
+            // Test Jupiter interface connection
+            $jupiter_result = $this->cpanel_new->testJupiterConnection();
+            
+            log_message('info', 'Email test_connection - Jupiter result: ' . json_encode($jupiter_result));
+            
+            if (isset($jupiter_result['error'])) {
+                log_message('error', 'Email test_connection - Jupiter Error: ' . $jupiter_result['error']);
+                $message .= 'Jupiter interface gagal: ' . $jupiter_result['error'];
+            } else {
+                log_message('info', 'Email test_connection - Jupiter Success: ' . $jupiter_result['message']);
+                $message .= 'Jupiter interface berhasil!';
+            }
+            
+            $this->session->set_flashdata('success', $message);
             
             redirect('email');
         } catch (Exception $e) {
@@ -255,6 +288,9 @@ class Email extends CI_Controller {
     private function get_email_accounts() {
         try {
             log_message('info', 'Email get_email_accounts - Starting request');
+            
+            // Load cPanel library
+            $this->load->library('Cpanel_new', $this->cpanel_config);
             
             $result = $this->cpanel_new->listEmailAccounts();
             
@@ -315,6 +351,9 @@ class Email extends CI_Controller {
                 return ['success' => false, 'message' => 'Format email tidak valid'];
             }
             
+            // Load cPanel library
+            $this->load->library('Cpanel_new', $this->cpanel_config);
+            
             $result = $this->cpanel_new->createEmailAccount($email, $password, $quota);
             
             log_message('info', 'Email create_email_account - Result: ' . json_encode($result));
@@ -342,6 +381,9 @@ class Email extends CI_Controller {
         try {
             log_message('info', 'Email update_email_account - Updating email: ' . $email);
             
+            // Load cPanel library
+            $this->load->library('Cpanel_new', $this->cpanel_config);
+            
             $result = $this->cpanel_new->updateEmailAccount($email, $password, $quota);
             
             log_message('info', 'Email update_email_account - Result: ' . json_encode($result));
@@ -368,6 +410,9 @@ class Email extends CI_Controller {
     private function delete_email_account($email) {
         try {
             log_message('info', 'Email delete_email_account - Deleting email: ' . $email);
+            
+            // Load cPanel library
+            $this->load->library('Cpanel_new', $this->cpanel_config);
             
             $result = $this->cpanel_new->deleteEmailAccount($email);
             

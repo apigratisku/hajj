@@ -68,3 +68,6 @@ $route['upload/view_barcode/(:any)'] = 'upload/view_barcode/$1';
 
 // Setup routes
 $route['setup'] = 'setup';
+
+// Test routes
+$route['email_test/jupiter'] = 'email_test/jupiter';

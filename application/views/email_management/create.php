@@ -9,7 +9,7 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <form method="post" action="<?= base_url('email_management/create') ?>" id="createEmailForm">
+                    <form method="post" action="<?= base_url('email/create') ?>" id="createEmailForm">
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
@@ -120,7 +120,7 @@
                         </div>
 
                         <div class="d-flex justify-content-between">
-                            <a href="<?= base_url('email_management') ?>" class="btn btn-secondary">
+                            <a href="<?= base_url('email') ?>" class="btn btn-secondary">
                                 <i class="fas fa-arrow-left me-1"></i>Kembali
                             </a>
                             <div>

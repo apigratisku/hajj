@@ -95,6 +95,7 @@ class Cpanel_new {
     private function loginWithSession()
     {
         try {
+            // Coba login dengan metode standar
             $loginUrl = "https://{$this->cpanel_host}:{$this->cpanel_port}/login/?login_only=1";
             $postFields = [
                 "user" => $this->cpanel_user,
@@ -136,13 +137,9 @@ class Cpanel_new {
                 return false;
             }
 
+            // Coba parse JSON response
             $json = json_decode($body, true);
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                log_message('error', 'CPanel Session Login - JSON decode error: ' . json_last_error_msg());
-                return false;
-            }
-
-            if (isset($json['status']) && $json['status'] == 1) {
+            if (json_last_error() === JSON_ERROR_NONE && isset($json['status']) && $json['status'] == 1) {
                 $this->session_token = $json['security_token'];
                 log_message('info', 'CPanel Session Login - Session Token: ' . $this->session_token);
 
@@ -154,7 +151,27 @@ class Cpanel_new {
                 return true;
             }
 
-            log_message('error', 'CPanel Session Login - Failed: ' . $body);
+            // Jika JSON parsing gagal, coba extract session token dari header atau response
+            if (preg_match('/cpsess(\d+)/', $header . $body, $matches)) {
+                $this->session_token = '/cpsess' . $matches[1];
+                log_message('info', 'CPanel Session Login - Extracted Session Token: ' . $this->session_token);
+
+                if (preg_match_all('/Set-Cookie:\s*([^;]*)/mi', $header, $matches)) {
+                    $this->cookies = implode("; ", $matches[1]);
+                    log_message('info', 'CPanel Session Login - Cookies: ' . $this->cookies);
+                }
+
+                return true;
+            }
+            
+            // Coba extract dari URL redirect atau response body
+            if (preg_match('/cpsess(\d+)/', $body, $matches)) {
+                $this->session_token = '/cpsess' . $matches[1];
+                log_message('info', 'CPanel Session Login - Extracted Session Token from body: ' . $this->session_token);
+                return true;
+            }
+
+            log_message('error', 'CPanel Session Login - Failed to extract session token');
             return false;
         } catch (Exception $e) {
             log_message('error', 'CPanel Session Login - Exception: ' . $e->getMessage());
@@ -184,7 +201,21 @@ class Cpanel_new {
 
             // Jika menggunakan session auth
             log_message('info', 'CPanel request - Using session authentication');
-            return $this->requestWithSession($url, $method, $data);
+            $result = $this->requestWithSession($url, $method, $data);
+            
+            // Jika mendapat HTTP 403, coba force login ulang
+            if (isset($result['error']) && strpos($result['error'], '403') !== false) {
+                log_message('warning', 'CPanel request - HTTP 403 detected, forcing login and retry');
+                if ($this->forceLogin()) {
+                    log_message('info', 'CPanel request - Force login successful, retrying request');
+                    return $this->requestWithSession($url, $method, $data);
+                } else {
+                    log_message('error', 'CPanel request - Force login failed');
+                    return ["error" => "Force login failed after HTTP 403"];
+                }
+            }
+            
+            return $result;
         } catch (Exception $e) {
             log_message('error', 'CPanel request - Exception: ' . $e->getMessage());
             return ["error" => "Request exception: " . $e->getMessage()];
@@ -267,7 +298,14 @@ class Cpanel_new {
                 return ["error" => "No session token available"];
             }
             
-            $endpoint = "https://{$this->cpanel_host}:{$this->cpanel_port}{$this->session_token}{$url}";
+            // Gunakan format URL yang sesuai dengan Jupiter interface
+            if (strpos($url, '/json-api/') === 0) {
+                // Untuk JSON API, gunakan format langsung
+                $endpoint = "https://{$this->cpanel_host}:{$this->cpanel_port}{$url}";
+            } else {
+                // Untuk execute/uapi, tambahkan session token
+                $endpoint = "https://{$this->cpanel_host}:{$this->cpanel_port}{$this->session_token}{$url}";
+            }
             
             log_message('info', 'CPanel Session Request - Making request to: ' . $endpoint);
             
@@ -279,6 +317,7 @@ class Cpanel_new {
             curl_setopt($ch, CURLOPT_TIMEOUT, 30);
             curl_setopt($ch, CURLOPT_USERAGENT, 'CodeIgniter-CPanel/1.0');
             curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+            curl_setopt($ch, CURLOPT_HEADER, false);
             
             if ($this->cookies) {
                 curl_setopt($ch, CURLOPT_COOKIE, $this->cookies);
@@ -295,14 +334,17 @@ class Cpanel_new {
             curl_close($ch);
 
             log_message('info', 'CPanel Session Request - HTTP Code: ' . $http_code);
-            log_message('info', 'CPanel Session Request - Response: ' . $result);
+            log_message('info', 'CPanel Session Request - Response: ' . substr($result, 0, 500));
 
             if ($error) {
                 log_message('error', 'CPanel Session Request - cURL Error: ' . $error);
                 return ["error" => "Request error: " . $error];
             }
 
-            if ($http_code !== 200) {
+            if ($http_code === 403) {
+                log_message('error', 'CPanel Session Request - HTTP 403 Forbidden (Session expired)');
+                return ["error" => "HTTP error: 403 (Session expired)"];
+            } elseif ($http_code !== 200) {
                 log_message('error', 'CPanel Session Request - HTTP Error: ' . $http_code);
                 return ["error" => "HTTP error: " . $http_code];
             }
@@ -310,6 +352,7 @@ class Cpanel_new {
             $decoded = json_decode($result, true);
             if (json_last_error() !== JSON_ERROR_NONE) {
                 log_message('error', 'CPanel Session Request - JSON decode error: ' . json_last_error_msg());
+                log_message('error', 'CPanel Session Request - Raw response: ' . $result);
                 return ["error" => "Invalid JSON response: " . json_last_error_msg()];
             }
 
@@ -359,8 +402,30 @@ class Cpanel_new {
             } else {
                 log_message('info', 'CPanel listEmailAccounts - Using session authentication');
                 $domain = $domain ?: $this->cpanel_host;
-                $url = "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=listpopswithdisk&domain={$domain}";
-                $result = $this->request($url);
+                
+                // Coba beberapa endpoint yang berbeda untuk Jupiter interface
+                $endpoints = [
+                    "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=listpopswithdisk&domain={$domain}",
+                    "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=list_pops&domain={$domain}",
+                    "/execute/Email/list_pops",
+                    "/uapi/Email/list_pops"
+                ];
+                
+                $result = null;
+                foreach ($endpoints as $endpoint) {
+                    log_message('info', 'CPanel listEmailAccounts - Trying endpoint: ' . $endpoint);
+                    $result = $this->request($endpoint);
+                    
+                    if (!isset($result['error']) && !empty($result)) {
+                        log_message('info', 'CPanel listEmailAccounts - Success with endpoint: ' . $endpoint);
+                        break;
+                    }
+                }
+                
+                if (!$result || isset($result['error'])) {
+                    log_message('error', 'CPanel listEmailAccounts - All endpoints failed');
+                    return ['error' => 'Failed to get email accounts from all endpoints'];
+                }
             }
             
             log_message('info', 'CPanel listEmailAccounts - Result: ' . json_encode($result));
@@ -393,8 +458,48 @@ class Cpanel_new {
                 $result = $this->requestWithToken('/Email/add_pop', 'POST', $data);
             } else {
                 log_message('info', 'CPanel createEmailAccount - Using session authentication');
-                $url = "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=add_pop&email={$user}&domain={$domain}&passwd={$password}&quota={$quota}";
-                $result = $this->request($url);
+                
+                // Coba beberapa endpoint yang berbeda untuk Jupiter interface
+                $endpoints = [
+                    "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=add_pop&email={$user}&domain={$domain}&passwd={$password}&quota={$quota}",
+                    "/execute/Email/add_pop",
+                    "/uapi/Email/add_pop"
+                ];
+                
+                $result = null;
+                $force_login = false;
+                
+                foreach ($endpoints as $endpoint) {
+                    log_message('info', 'CPanel createEmailAccount - Trying endpoint: ' . $endpoint);
+                    $result = $this->request($endpoint);
+                    
+                    // Jika mendapat HTTP 403, coba force login ulang
+                    if (isset($result['error']) && strpos($result['error'], '403') !== false) {
+                        log_message('warning', 'CPanel createEmailAccount - HTTP 403 detected, forcing login');
+                        $force_login = true;
+                        break;
+                    }
+                    
+                    if (!isset($result['error']) && !empty($result)) {
+                        log_message('info', 'CPanel createEmailAccount - Success with endpoint: ' . $endpoint);
+                        break;
+                    }
+                }
+                
+                // Jika force login diperlukan, lakukan login ulang dan coba lagi
+                if ($force_login) {
+                    log_message('info', 'CPanel createEmailAccount - Force login and retry');
+                    $this->forceLogin();
+                    
+                    // Coba lagi dengan endpoint pertama
+                    $url = "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=add_pop&email={$user}&domain={$domain}&passwd={$password}&quota={$quota}";
+                    $result = $this->request($url);
+                }
+                
+                if (!$result || isset($result['error'])) {
+                    log_message('error', 'CPanel createEmailAccount - All endpoints failed');
+                    return ['error' => 'Failed to create email account from all endpoints: ' . (isset($result['error']) ? $result['error'] : 'Unknown error')];
+                }
             }
             
             log_message('info', 'CPanel createEmailAccount - Result: ' . json_encode($result));
@@ -494,18 +599,7 @@ class Cpanel_new {
     }
 
     /**
-     * Get auth method
-     */
-    public function getAuthMethod()
-    {
-        if (!$this->session_token) {
-            return 'NOT_LOGGED_IN';
-        }
-        return $this->session_token === 'TOKEN_AUTH' ? 'TOKEN' : 'SESSION';
-    }
-
-    /**
-     * Force login ulang
+     * Force login dan dapatkan session token baru
      */
     public function forceLogin()
     {
@@ -521,4 +615,99 @@ class Cpanel_new {
             return false;
         }
     }
+
+    /**
+     * Test koneksi dengan Jupiter interface
+     */
+    public function testJupiterConnection()
+    {
+        try {
+            log_message('info', 'CPanel testJupiterConnection - Testing Jupiter interface connection');
+            
+            // Coba akses halaman email accounts Jupiter
+            $jupiterUrl = "https://{$this->cpanel_host}:{$this->cpanel_port}{$this->session_token}/frontend/jupiter/email_accounts/index.html";
+            
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $jupiterUrl);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+            curl_setopt($ch, CURLOPT_USERAGENT, 'CodeIgniter-CPanel/1.0');
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+            
+            if ($this->cookies) {
+                curl_setopt($ch, CURLOPT_COOKIE, $this->cookies);
+            }
+            
+            $result = curl_exec($ch);
+            $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $error = curl_error($ch);
+            curl_close($ch);
+            
+            log_message('info', 'CPanel testJupiterConnection - HTTP Code: ' . $http_code);
+            
+            if ($error) {
+                log_message('error', 'CPanel testJupiterConnection - cURL Error: ' . $error);
+                return ['error' => 'Connection error: ' . $error];
+            }
+            
+            if ($http_code === 200) {
+                log_message('info', 'CPanel testJupiterConnection - Success accessing Jupiter interface');
+                return ['success' => true, 'message' => 'Jupiter interface accessible'];
+            } elseif ($http_code === 403) {
+                log_message('error', 'CPanel testJupiterConnection - HTTP 403 (Session expired)');
+                return ['error' => 'HTTP 403 - Session expired, need to re-login'];
+            } else {
+                log_message('error', 'CPanel testJupiterConnection - HTTP Error: ' . $http_code);
+                return ['error' => 'HTTP error: ' . $http_code];
+            }
+        } catch (Exception $e) {
+            log_message('error', 'CPanel testJupiterConnection - Exception: ' . $e->getMessage());
+            return ['error' => 'Exception: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Test session token validity
+     */
+    public function testSessionToken()
+    {
+        try {
+            log_message('info', 'CPanel testSessionToken - Testing session token validity');
+            
+            if (!$this->session_token) {
+                log_message('error', 'CPanel testSessionToken - No session token available');
+                return ['error' => 'No session token available'];
+            }
+            
+            // Test dengan endpoint sederhana
+            $testUrl = "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=UAPI&cpanel_jsonapi_func=get_user_information";
+            $result = $this->request($testUrl);
+            
+            if (isset($result['error'])) {
+                log_message('error', 'CPanel testSessionToken - Session token invalid: ' . $result['error']);
+                return ['error' => 'Session token invalid: ' . $result['error']];
+            }
+            
+            log_message('info', 'CPanel testSessionToken - Session token valid');
+            return ['success' => true, 'message' => 'Session token is valid'];
+        } catch (Exception $e) {
+            log_message('error', 'CPanel testSessionToken - Exception: ' . $e->getMessage());
+            return ['error' => 'Exception: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Get auth method
+     */
+    public function getAuthMethod()
+    {
+        if (!$this->session_token) {
+            return 'NOT_LOGGED_IN';
+        }
+        return $this->session_token === 'TOKEN_AUTH' ? 'TOKEN' : 'SESSION';
+    }
+
+
 }
