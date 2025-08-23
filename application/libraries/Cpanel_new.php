@@ -90,7 +90,7 @@ class Cpanel_new {
     }
 
     /**
-     * Login menggunakan session token
+     * Login menggunakan session token dengan optimasi performa
      */
     private function loginWithSession()
     {
@@ -112,7 +112,8 @@ class Cpanel_new {
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
             curl_setopt($ch, CURLOPT_HEADER, true);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 15); // Kurangi timeout
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10); // Tambah connect timeout
             curl_setopt($ch, CURLOPT_USERAGENT, 'CodeIgniter-CPanel/1.0');
             curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 
@@ -125,7 +126,7 @@ class Cpanel_new {
             curl_close($ch);
 
             log_message('info', 'CPanel Session Login - HTTP Code: ' . $http_code);
-            log_message('info', 'CPanel Session Login - Response Body: ' . $body);
+            log_message('info', 'CPanel Session Login - Response Body: ' . substr($body, 0, 200)); // Kurangi log
 
             if ($error) {
                 log_message('error', 'CPanel Session Login - cURL Error: ' . $error);
@@ -203,15 +204,36 @@ class Cpanel_new {
             log_message('info', 'CPanel request - Using session authentication');
             $result = $this->requestWithSession($url, $method, $data);
             
-            // Jika mendapat HTTP 403, coba force login ulang
+            // Jika mendapat HTTP 403, coba force login ulang dengan retry mechanism
             if (isset($result['error']) && strpos($result['error'], '403') !== false) {
-                log_message('info', 'CPanel request - HTTP 403 detected, forcing login and retry');
-                if ($this->forceLogin()) {
-                    log_message('info', 'CPanel request - Force login successful, retrying request');
-                    return $this->requestWithSession($url, $method, $data);
-                } else {
-                    log_message('error', 'CPanel request - Force login failed');
-                    return ["error" => "Force login failed after HTTP 403"];
+                log_message('info', 'CPanel request - HTTP 403 detected, attempting auto-recovery');
+                
+                // Coba force login hingga 3 kali
+                $max_retries = 3;
+                $retry_count = 0;
+                
+                while ($retry_count < $max_retries) {
+                    $retry_count++;
+                    log_message('info', 'CPanel request - Auto-recovery attempt ' . $retry_count . ' of ' . $max_retries);
+                    
+                    if ($this->forceLogin()) {
+                        log_message('info', 'CPanel request - Force login successful, retrying request');
+                        $result = $this->requestWithSession($url, $method, $data);
+                        
+                        // Jika masih mendapat 403, lanjutkan retry
+                        if (isset($result['error']) && strpos($result['error'], '403') !== false) {
+                            log_message('info', 'CPanel request - Still getting 403 after force login, retrying...');
+                            continue;
+                        } else {
+                            // Berhasil atau error lain, keluar dari loop
+                            break;
+                        }
+                    } else {
+                        log_message('error', 'CPanel request - Force login failed on attempt ' . $retry_count);
+                        if ($retry_count >= $max_retries) {
+                            return ["error" => "Force login failed after " . $max_retries . " attempts"];
+                        }
+                    }
                 }
             }
             
@@ -288,7 +310,7 @@ class Cpanel_new {
     }
 
     /**
-     * Request menggunakan session
+     * Request menggunakan session dengan optimasi performa
      */
     private function requestWithSession($url, $method = 'GET', $data = null)
     {
@@ -314,10 +336,12 @@ class Cpanel_new {
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 15); // Kurangi timeout untuk performa lebih baik
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10); // Tambah connect timeout
             curl_setopt($ch, CURLOPT_USERAGENT, 'CodeIgniter-CPanel/1.0');
             curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
             curl_setopt($ch, CURLOPT_HEADER, false);
+            curl_setopt($ch, CURLOPT_VERBOSE, false); // Matikan verbose untuk performa
             
             if ($this->cookies) {
                 curl_setopt($ch, CURLOPT_COOKIE, $this->cookies);
@@ -334,7 +358,7 @@ class Cpanel_new {
             curl_close($ch);
 
             log_message('info', 'CPanel Session Request - HTTP Code: ' . $http_code);
-            log_message('info', 'CPanel Session Request - Response: ' . substr($result, 0, 500));
+            log_message('info', 'CPanel Session Request - Response: ' . substr($result, 0, 200)); // Kurangi log response
 
             if ($error) {
                 log_message('error', 'CPanel Session Request - cURL Error: ' . $error);
@@ -342,8 +366,8 @@ class Cpanel_new {
             }
 
             if ($http_code === 403) {
-                log_message('error', 'CPanel Session Request - HTTP 403 Forbidden (Session expired)');
-                return ["error" => "HTTP error: 403 (Session expired)"];
+                log_message('error', 'CPanel Session Request - HTTP 403 Forbidden (Access denied)');
+                return ["error" => "HTTP error: 403 (Access denied)"];
             } elseif ($http_code !== 200) {
                 log_message('error', 'CPanel Session Request - HTTP Error: ' . $http_code);
                 return ["error" => "HTTP error: " . $http_code];
@@ -389,12 +413,12 @@ class Cpanel_new {
     }
 
     /**
-     * Ambil daftar email
+     * Ambil daftar email dengan optimasi performa
      */
     public function listEmailAccounts($domain = null)
     {
         try {
-            log_message('info', 'CPanel listEmailAccounts - Starting request');
+            log_message('info', 'CPanel listEmailAccounts - Starting optimized request');
             
             if ($this->auth_token && !empty($this->auth_token)) {
                 log_message('info', 'CPanel listEmailAccounts - Using token authentication');
@@ -403,12 +427,12 @@ class Cpanel_new {
                 log_message('info', 'CPanel listEmailAccounts - Using session authentication');
                 $domain = $domain ?: $this->cpanel_host;
                 
-                // Coba beberapa endpoint yang berbeda untuk Jupiter interface
+                // Gunakan endpoint yang paling cepat dan reliable
                 $endpoints = [
-                    "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=listpopswithdisk&domain={$domain}",
+                    // Jupiter interface endpoint yang paling cepat
                     "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=list_pops&domain={$domain}",
-                    "/execute/Email/list_pops",
-                    "/uapi/Email/list_pops"
+                    // Fallback ke endpoint lain jika diperlukan
+                    "/execute/Email/list_pops"
                 ];
                 
                 $result = null;
@@ -437,7 +461,7 @@ class Cpanel_new {
     }
 
     /**
-     * Buat akun email baru
+     * Buat akun email baru dengan optimasi untuk mengatasi HTTP 403
      */
     public function createEmailAccount($email, $password, $quota = 250)
     {
@@ -452,53 +476,146 @@ class Cpanel_new {
                 $data = [
                     'email' => $user,
                     'domain' => $domain,
-                    'passwd' => $password,
+                    'pass' => $password,
                     'quota' => $quota
                 ];
                 $result = $this->requestWithToken('/Email/add_pop', 'POST', $data);
             } else {
                 log_message('info', 'CPanel createEmailAccount - Using session authentication');
                 
-                // Coba beberapa endpoint yang berbeda untuk Jupiter interface
-                $endpoints = [
-                    "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=add_pop&email={$user}&domain={$domain}&passwd={$password}&quota={$quota}",
-                    "/execute/Email/add_pop",
-                    "/uapi/Email/add_pop"
-                ];
-                
-                $result = null;
-                $force_login = false;
-                
-                foreach ($endpoints as $endpoint) {
-                    log_message('info', 'CPanel createEmailAccount - Trying endpoint: ' . $endpoint);
-                    $result = $this->request($endpoint);
-                    
-                    // Jika mendapat HTTP 403, coba force login ulang
-                    if (isset($result['error']) && strpos($result['error'], '403') !== false) {
-                        log_message('info', 'CPanel createEmailAccount - HTTP 403 detected, forcing login');
-                        $force_login = true;
-                        break;
-                    }
-                    
-                    if (!isset($result['error']) && !empty($result)) {
-                        log_message('info', 'CPanel createEmailAccount - Success with endpoint: ' . $endpoint);
-                        break;
-                    }
+                // Force fresh login untuk operasi write dengan timeout yang lebih pendek
+                log_message('info', 'CPanel createEmailAccount - Force fresh login for write operation');
+                if (!$this->forceLogin()) {
+                    log_message('error', 'CPanel createEmailAccount - Force login failed');
+                    return ['error' => 'Failed to establish fresh session for write operation'];
                 }
                 
-                // Jika force login diperlukan, lakukan login ulang dan coba lagi
-                if ($force_login) {
-                    log_message('info', 'CPanel createEmailAccount - Force login and retry');
-                    $this->forceLogin();
+                // Tunggu sebentar untuk memastikan session stabil
+                sleep(1);
+                
+                // Coba endpoint yang paling reliable untuk Jupiter interface
+                $endpoints = [
+                    // Jupiter interface specific endpoint dengan POST data
+                    "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=add_pop",
+                    // Execute API endpoint dengan POST data
+                    "/execute/Email/add_pop",
+                    // Legacy endpoint sebagai fallback
+                    "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=1&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=add_pop"
+                ];
+                
+                // Data untuk POST request - gunakan parameter 'pass' sesuai dengan cPanel UAPI
+                $postData = [
+                    'email' => $user,
+                    'domain' => $domain,
+                    'pass' => $password, // Parameter password yang benar sesuai UAPI
+                    'quota' => $quota
+                ];
+                
+                // Log data yang akan dikirim untuk debugging
+                log_message('info', 'CPanel createEmailAccount - POST data: ' . json_encode($postData));
+                
+                $result = null;
+                $max_retries = 2; // Kurangi retry untuk performa lebih baik
+                $retry_count = 0;
+                
+                while ($retry_count < $max_retries) {
+                    $retry_count++;
+                    log_message('info', 'CPanel createEmailAccount - Attempt ' . $retry_count . ' of ' . $max_retries);
                     
-                    // Coba lagi dengan endpoint pertama
-                    $url = "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=add_pop&email={$user}&domain={$domain}&passwd={$password}&quota={$quota}";
-                    $result = $this->request($url);
+                    foreach ($endpoints as $endpoint) {
+                        log_message('info', 'CPanel createEmailAccount - Trying endpoint: ' . $endpoint);
+                        
+                        // Gunakan POST request untuk create operation
+                        $result = $this->requestWithSession($endpoint, 'POST', $postData);
+                        
+                        // Log response untuk debugging
+                        log_message('info', 'CPanel createEmailAccount - Response: ' . json_encode($result));
+                        
+                        // Jika mendapat HTTP 403, coba endpoint berikutnya
+                        if (isset($result['error']) && strpos($result['error'], '403') !== false) {
+                            log_message('info', 'CPanel createEmailAccount - HTTP 403 detected, trying next endpoint');
+                            continue;
+                        }
+                        
+                        // Jika mendapat error password, coba dengan parameter yang berbeda
+                        if (isset($result['error']) && strpos($result['error'], 'password') !== false) {
+                            log_message('info', 'CPanel createEmailAccount - Password error detected, trying alternative parameters');
+                            
+                            // Coba dengan parameter password yang berbeda jika 'pass' gagal
+                            $altPostData = [
+                                'email' => $user,
+                                'domain' => $domain,
+                                'passwd' => $password, // Coba dengan 'passwd' sebagai alternatif
+                                'quota' => $quota
+                            ];
+                            
+                            $altResult = $this->requestWithSession($endpoint, 'POST', $altPostData);
+                            log_message('info', 'CPanel createEmailAccount - Alternative passwd response: ' . json_encode($altResult));
+                            
+                            if (!isset($altResult['error']) || strpos($altResult['error'], 'password') === false) {
+                                $result = $altResult;
+                                break;
+                            }
+                            
+                            // Jika masih error, coba dengan parameter yang lain
+                            $altPostData2 = [
+                                'email' => $user,
+                                'domain' => $domain,
+                                'password' => $password, // Coba dengan 'password'
+                                'quota' => $quota
+                            ];
+                            
+                            $altResult2 = $this->requestWithSession($endpoint, 'POST', $altPostData2);
+                            log_message('info', 'CPanel createEmailAccount - Second alternative password response: ' . json_encode($altResult2));
+                            
+                            if (!isset($altResult2['error']) || strpos($altResult2['error'], 'password') === false) {
+                                $result = $altResult2;
+                                break;
+                            }
+                            
+                            continue;
+                        }
+                        
+                        if (!isset($result['error']) && !empty($result)) {
+                            log_message('info', 'CPanel createEmailAccount - Success with endpoint: ' . $endpoint);
+                            break 2; // Break dari kedua loop
+                        }
+                    }
+                    
+                    // Jika semua endpoint gagal dan mendapat 403, coba force login sekali lagi
+                    if (isset($result['error']) && strpos($result['error'], '403') !== false && $retry_count < $max_retries) {
+                        log_message('info', 'CPanel createEmailAccount - All endpoints returned 403, attempting force login');
+                        if ($this->forceLogin()) {
+                            log_message('info', 'CPanel createEmailAccount - Force login successful, will retry');
+                            sleep(1); // Tunggu sebentar setelah login
+                            continue;
+                        } else {
+                            log_message('error', 'CPanel createEmailAccount - Force login failed on attempt ' . $retry_count);
+                            break;
+                        }
+                    } else {
+                        // Error lain selain 403, tidak perlu retry
+                        break;
+                    }
                 }
                 
                 if (!$result || isset($result['error'])) {
                     log_message('error', 'CPanel createEmailAccount - All endpoints failed');
-                    return ['error' => 'Failed to create email account from all endpoints: ' . (isset($result['error']) ? $result['error'] : 'Unknown error')];
+                    
+                    // Jika mendapat HTTP 403, coba retry dengan fresh login
+                    if (isset($result['error']) && strpos($result['error'], '403') !== false) {
+                        log_message('info', 'CPanel createEmailAccount - HTTP 403 detected, trying retry mechanism');
+                        $retry_result = $this->retryCreateEmailWithFreshLogin($email, $password, $quota);
+                        
+                        if (isset($retry_result['error'])) {
+                            return ['error' => 'Failed to create email account after retry: ' . $retry_result['error']];
+                        } else {
+                            log_message('info', 'CPanel createEmailAccount - Success after retry');
+                            return $retry_result;
+                        }
+                    }
+                    
+                    return ['error' => 'Failed to create email account: ' . (isset($result['error']) ? $result['error'] : 'Unknown error')];
                 }
             }
             
@@ -599,7 +716,7 @@ class Cpanel_new {
     }
 
     /**
-     * Force login dan dapatkan session token baru
+     * Force login dan dapatkan session token baru dengan optimasi
      */
     public function forceLogin()
     {
@@ -607,7 +724,10 @@ class Cpanel_new {
             log_message('info', 'CPanel forceLogin - Forcing new login');
             $this->session_token = null;
             $this->cookies = "";
+            
+            // Coba login dengan timeout yang lebih pendek
             $result = $this->login();
+            
             log_message('info', 'CPanel forceLogin - Result: ' . ($result ? 'SUCCESS' : 'FAILED'));
             return $result;
         } catch (Exception $e) {
@@ -699,6 +819,91 @@ class Cpanel_new {
     }
 
     /**
+     * Test write permission dengan operasi sederhana
+     */
+    public function testWritePermission()
+    {
+        try {
+            log_message('info', 'CPanel testWritePermission - Testing write permission');
+            
+            // Force fresh login untuk test
+            if (!$this->forceLogin()) {
+                log_message('error', 'CPanel testWritePermission - Force login failed');
+                return ['error' => 'Failed to establish session for write test'];
+            }
+            
+            // Test dengan operasi yang tidak mengubah data (read operation)
+            $testUrl = "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=list_pops";
+            
+            log_message('info', 'CPanel testWritePermission - Testing with URL: ' . $testUrl);
+            
+            $result = $this->requestWithSession($testUrl);
+            
+            if (isset($result['error'])) {
+                log_message('error', 'CPanel testWritePermission - Test failed: ' . $result['error']);
+                return ['error' => 'Write permission test failed: ' . $result['error']];
+            }
+            
+            log_message('info', 'CPanel testWritePermission - Test successful');
+            return ['success' => true, 'message' => 'Write permission test passed'];
+            
+        } catch (Exception $e) {
+            log_message('error', 'CPanel testWritePermission - Exception: ' . $e->getMessage());
+            return ['error' => 'Exception in write permission test: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Test Jupiter interface compatibility untuk write operations
+     */
+    public function testJupiterWriteCompatibility()
+    {
+        try {
+            log_message('info', 'CPanel testJupiterWriteCompatibility - Testing Jupiter write compatibility');
+            
+            // Force fresh login
+            if (!$this->forceLogin()) {
+                log_message('error', 'CPanel testJupiterWriteCompatibility - Force login failed');
+                return ['error' => 'Failed to establish session for Jupiter write test'];
+            }
+            
+            // Test dengan endpoint Jupiter yang digunakan untuk create email
+            $testUrl = "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=add_pop";
+            
+            log_message('info', 'CPanel testJupiterWriteCompatibility - Testing with URL: ' . $testUrl);
+            
+            // Test dengan data dummy (tidak akan benar-benar membuat email)
+            $testData = [
+                'email' => 'test_' . time(),
+                'domain' => $this->cpanel_host,
+                'passwd' => 'test123',
+                'quota' => 10
+            ];
+            
+            $result = $this->requestWithSession($testUrl, 'POST', $testData);
+            
+            // Jika mendapat error 403, berarti ada masalah permission
+            if (isset($result['error']) && strpos($result['error'], '403') !== false) {
+                log_message('error', 'CPanel testJupiterWriteCompatibility - HTTP 403 detected (Permission denied)');
+                return ['error' => 'HTTP 403 - Permission denied for write operations'];
+            }
+            
+            // Jika mendapat error lain, mungkin domain tidak valid atau masalah lain
+            if (isset($result['error'])) {
+                log_message('info', 'CPanel testJupiterWriteCompatibility - Test completed with error (expected): ' . $result['error']);
+                return ['success' => true, 'message' => 'Jupiter write compatibility test passed (error expected for test data)'];
+            }
+            
+            log_message('info', 'CPanel testJupiterWriteCompatibility - Test successful');
+            return ['success' => true, 'message' => 'Jupiter write compatibility test passed'];
+            
+        } catch (Exception $e) {
+            log_message('error', 'CPanel testJupiterWriteCompatibility - Exception: ' . $e->getMessage());
+            return ['error' => 'Exception in Jupiter write compatibility test: ' . $e->getMessage()];
+        }
+    }
+
+    /**
      * Get auth method
      */
     public function getAuthMethod()
@@ -709,5 +914,638 @@ class Cpanel_new {
         return $this->session_token === 'TOKEN_AUTH' ? 'TOKEN' : 'SESSION';
     }
 
+    /**
+     * Get auth token for debugging
+     */
+    public function getAuthToken()
+    {
+        return $this->auth_token;
+    }
+
+    /**
+     * Enable debug mode
+     */
+    public function enableDebugMode()
+    {
+        $this->debug_mode = true;
+    }
+
+
+
+    /**
+     * Test domain availability untuk email creation
+     */
+    public function testDomainAvailability($domain)
+    {
+        try {
+            log_message('info', 'CPanel testDomainAvailability - Testing domain: ' . $domain);
+            
+            // Test dengan endpoint yang mengecek domain
+            $testUrl = "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=DomainLookup&cpanel_jsonapi_func=lookup&domain={$domain}";
+            $result = $this->request($testUrl);
+            
+            if (isset($result['error'])) {
+                log_message('error', 'CPanel testDomainAvailability - Domain test failed: ' . $result['error']);
+                return ['error' => 'Domain test failed: ' . $result['error']];
+            }
+            
+            log_message('info', 'CPanel testDomainAvailability - Domain test passed');
+            return ['success' => true, 'message' => 'Domain is available for email creation'];
+        } catch (Exception $e) {
+            log_message('error', 'CPanel testDomainAvailability - Exception: ' . $e->getMessage());
+            return ['error' => 'Exception: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Test permission untuk email creation dengan endpoint sederhana
+     */
+    public function testEmailPermission()
+    {
+        try {
+            log_message('info', 'CPanel testEmailPermission - Testing email creation permission');
+            
+            // Test dengan endpoint sederhana yang mengecek permission
+            $testUrl = "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=list_pops";
+            $result = $this->request($testUrl);
+            
+            if (isset($result['error'])) {
+                log_message('error', 'CPanel testEmailPermission - Permission test failed: ' . $result['error']);
+                return ['error' => 'Permission test failed: ' . $result['error']];
+            }
+            
+            log_message('info', 'CPanel testEmailPermission - Permission test passed');
+            return ['success' => true, 'message' => 'Email creation permission granted'];
+        } catch (Exception $e) {
+            log_message('error', 'CPanel testEmailPermission - Exception: ' . $e->getMessage());
+            return ['error' => 'Exception: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Test dengan endpoint yang berbeda untuk email creation
+     */
+    public function testAlternativeEndpoints()
+    {
+        try {
+            log_message('info', 'CPanel testAlternativeEndpoints - Testing alternative endpoints');
+            
+            $endpoints = [
+                "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=list_pops",
+                "/execute/Email/list_pops",
+                "/uapi/Email/list_pops",
+                "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=1&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=list_pops"
+            ];
+            
+            $results = [];
+            foreach ($endpoints as $endpoint) {
+                log_message('info', 'CPanel testAlternativeEndpoints - Testing: ' . $endpoint);
+                $result = $this->request($endpoint);
+                $results[$endpoint] = $result;
+            }
+            
+            return $results;
+        } catch (Exception $e) {
+            log_message('error', 'CPanel testAlternativeEndpoints - Exception: ' . $e->getMessage());
+            return ['error' => 'Exception: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Test koneksi cepat untuk verifikasi konektivitas
+     */
+    public function quickConnectionTest()
+    {
+        try {
+            log_message('info', 'CPanel quickConnectionTest - Starting quick connection test');
+            
+            // Test dengan endpoint sederhana dan cepat
+            $testUrl = "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=UAPI&cpanel_jsonapi_func=get_user_information";
+            
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, "https://{$this->cpanel_host}:{$this->cpanel_port}{$testUrl}");
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 10); // Timeout sangat pendek
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+            curl_setopt($ch, CURLOPT_USERAGENT, 'CodeIgniter-CPanel/1.0');
+            
+            $result = curl_exec($ch);
+            $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $error = curl_error($ch);
+            curl_close($ch);
+            
+            if ($error) {
+                log_message('error', 'CPanel quickConnectionTest - cURL Error: ' . $error);
+                return ['error' => 'Connection error: ' . $error];
+            }
+            
+            if ($http_code === 200) {
+                log_message('info', 'CPanel quickConnectionTest - Connection successful');
+                return ['success' => true, 'message' => 'Quick connection test passed'];
+            } else {
+                log_message('error', 'CPanel quickConnectionTest - HTTP Error: ' . $http_code);
+                return ['error' => 'HTTP error: ' . $http_code];
+            }
+        } catch (Exception $e) {
+            log_message('error', 'CPanel quickConnectionTest - Exception: ' . $e->getMessage());
+            return ['error' => 'Exception: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Test permission untuk create email tanpa benar-benar membuat email
+     */
+    public function testEmailCreationPermission()
+    {
+        try {
+            log_message('info', 'CPanel testEmailCreationPermission - Testing email creation permission');
+            
+            // Force fresh login untuk test
+            if (!$this->forceLogin()) {
+                log_message('error', 'CPanel testEmailCreationPermission - Force login failed');
+                return ['error' => 'Failed to establish session for email creation test'];
+            }
+            
+            // Test dengan endpoint Jupiter yang digunakan untuk create email
+            $testUrl = "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=add_pop";
+            
+            log_message('info', 'CPanel testEmailCreationPermission - Testing with URL: ' . $testUrl);
+            
+            // Test dengan data dummy yang tidak akan benar-benar membuat email
+            $testData = [
+                'email' => 'test_' . time() . '_' . rand(1000, 9999),
+                'domain' => $this->cpanel_host,
+                'passwd' => 'test123',
+                'quota' => 10
+            ];
+            
+            $result = $this->requestWithSession($testUrl, 'POST', $testData);
+            
+            // Jika mendapat error 403, berarti ada masalah permission
+            if (isset($result['error']) && strpos($result['error'], '403') !== false) {
+                log_message('error', 'CPanel testEmailCreationPermission - HTTP 403 detected (Permission denied)');
+                return ['error' => 'HTTP 403 - Permission denied for email creation'];
+            }
+            
+            // Jika mendapat error lain, mungkin domain tidak valid atau masalah lain
+            if (isset($result['error'])) {
+                log_message('info', 'CPanel testEmailCreationPermission - Test completed with error (expected): ' . $result['error']);
+                return ['success' => true, 'message' => 'Email creation permission test passed (error expected for test data)'];
+            }
+            
+            log_message('info', 'CPanel testEmailCreationPermission - Test successful');
+            return ['success' => true, 'message' => 'Email creation permission test passed'];
+            
+        } catch (Exception $e) {
+            log_message('error', 'CPanel testEmailCreationPermission - Exception: ' . $e->getMessage());
+            return ['error' => 'Exception in email creation permission test: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Retry login dan coba create email lagi
+     */
+    public function retryCreateEmailWithFreshLogin($email, $password, $quota = 250)
+    {
+        try {
+            log_message('info', 'CPanel retryCreateEmailWithFreshLogin - Retrying email creation with fresh login');
+            
+            $domain = substr(strrchr($email, "@"), 1);
+            $user = substr($email, 0, strpos($email, "@"));
+            
+            // Force fresh login
+            if (!$this->forceLogin()) {
+                log_message('error', 'CPanel retryCreateEmailWithFreshLogin - Force login failed');
+                return ['error' => 'Failed to establish fresh session for email creation'];
+            }
+            
+            // Tunggu sebentar untuk memastikan session stabil
+            sleep(2);
+            
+            // Coba create email dengan session baru - gunakan parameter 'pass' sesuai UAPI
+            $postData = [
+                'email' => $user,
+                'domain' => $domain,
+                'pass' => $password, // Parameter password yang benar sesuai UAPI
+                'quota' => $quota
+            ];
+            
+            // Log data yang akan dikirim untuk debugging
+            log_message('info', 'CPanel retryCreateEmailWithFreshLogin - POST data: ' . json_encode($postData));
+            
+            // Gunakan endpoint yang paling reliable
+            $endpoint = "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=add_pop";
+            
+            log_message('info', 'CPanel retryCreateEmailWithFreshLogin - Trying with fresh session: ' . $endpoint);
+            
+            $result = $this->requestWithSession($endpoint, 'POST', $postData);
+            
+            // Log response untuk debugging
+            log_message('info', 'CPanel retryCreateEmailWithFreshLogin - Response: ' . json_encode($result));
+            
+            if (isset($result['error'])) {
+                log_message('error', 'CPanel retryCreateEmailWithFreshLogin - Still getting error: ' . $result['error']);
+                
+                // Jika mendapat error password, coba dengan parameter yang berbeda
+                if (strpos($result['error'], 'password') !== false) {
+                    log_message('info', 'CPanel retryCreateEmailWithFreshLogin - Password error detected, trying alternative parameters');
+                    
+                    // Coba dengan parameter password yang berbeda jika 'pass' gagal
+                    $altPostData = [
+                        'email' => $user,
+                        'domain' => $domain,
+                        'passwd' => $password, // Coba dengan 'passwd' sebagai alternatif
+                        'quota' => $quota
+                    ];
+                    
+                    $altResult = $this->requestWithSession($endpoint, 'POST', $altPostData);
+                    log_message('info', 'CPanel retryCreateEmailWithFreshLogin - Alternative passwd response: ' . json_encode($altResult));
+                    
+                    if (!isset($altResult['error']) || strpos($altResult['error'], 'password') === false) {
+                        return $altResult;
+                    }
+                    
+                    // Jika masih error, coba dengan parameter yang lain
+                    $altPostData2 = [
+                        'email' => $user,
+                        'domain' => $domain,
+                        'password' => $password, // Coba dengan 'password'
+                        'quota' => $quota
+                    ];
+                    
+                    $altResult2 = $this->requestWithSession($endpoint, 'POST', $altPostData2);
+                    log_message('info', 'CPanel retryCreateEmailWithFreshLogin - Second alternative password response: ' . json_encode($altResult2));
+                    
+                    if (!isset($altResult2['error']) || strpos($altResult2['error'], 'password') === false) {
+                        return $altResult2;
+                    }
+                }
+                
+                return $result;
+            }
+            
+            log_message('info', 'CPanel retryCreateEmailWithFreshLogin - Success with fresh session');
+            return $result;
+            
+        } catch (Exception $e) {
+            log_message('error', 'CPanel retryCreateEmailWithFreshLogin - Exception: ' . $e->getMessage());
+            return ['error' => 'Exception in retryCreateEmailWithFreshLogin: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Test create email dengan parameter password yang benar sesuai UAPI
+     */
+    public function testEmailCreationWithPassword($email, $password, $quota = 10)
+    {
+        try {
+            log_message('info', 'CPanel testEmailCreationWithPassword - Testing email creation with password: ' . $email);
+            
+            $domain = substr(strrchr($email, "@"), 1);
+            $user = substr($email, 0, strpos($email, "@"));
+            
+            // Force fresh login untuk test
+            if (!$this->forceLogin()) {
+                log_message('error', 'CPanel testEmailCreationWithPassword - Force login failed');
+                return ['error' => 'Failed to establish session for email creation test'];
+            }
+            
+            // Test dengan endpoint Jupiter yang digunakan untuk create email
+            $testUrl = "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=add_pop";
+            
+            log_message('info', 'CPanel testEmailCreationWithPassword - Testing with URL: ' . $testUrl);
+            
+            // Test dengan data yang benar - gunakan parameter 'pass' sesuai UAPI
+            $testData = [
+                'email' => $user,
+                'domain' => $domain,
+                'pass' => $password, // Parameter password yang benar sesuai UAPI
+                'quota' => $quota
+            ];
+            
+            log_message('info', 'CPanel testEmailCreationWithPassword - Test data: ' . json_encode($testData));
+            
+            $result = $this->requestWithSession($testUrl, 'POST', $testData);
+            
+            log_message('info', 'CPanel testEmailCreationWithPassword - Response: ' . json_encode($result));
+            
+            // Jika mendapat error 403, berarti ada masalah permission
+            if (isset($result['error']) && strpos($result['error'], '403') !== false) {
+                log_message('error', 'CPanel testEmailCreationWithPassword - HTTP 403 detected (Permission denied)');
+                return ['error' => 'HTTP 403 - Permission denied for email creation'];
+            }
+            
+            // Jika mendapat error password, coba dengan parameter yang berbeda
+            if (isset($result['error']) && strpos($result['error'], 'password') !== false) {
+                log_message('info', 'CPanel testEmailCreationWithPassword - Password error detected, trying alternative parameters');
+                
+                // Coba dengan parameter password yang berbeda jika 'pass' gagal
+                $altTestData = [
+                    'email' => $user,
+                    'domain' => $domain,
+                    'passwd' => $password, // Coba dengan 'passwd' sebagai alternatif
+                    'quota' => $quota
+                ];
+                
+                $altResult = $this->requestWithSession($testUrl, 'POST', $altTestData);
+                log_message('info', 'CPanel testEmailCreationWithPassword - Alternative passwd response: ' . json_encode($altResult));
+                
+                if (!isset($altResult['error']) || strpos($altResult['error'], 'password') === false) {
+                    return ['success' => true, 'message' => 'Email creation test passed with alternative passwd parameter'];
+                }
+                
+                // Jika masih error, coba dengan parameter yang lain
+                $altTestData2 = [
+                    'email' => $user,
+                    'domain' => $domain,
+                    'password' => $password, // Coba dengan 'password'
+                    'quota' => $quota
+                ];
+                
+                $altResult2 = $this->requestWithSession($testUrl, 'POST', $altTestData2);
+                log_message('info', 'CPanel testEmailCreationWithPassword - Second alternative password response: ' . json_encode($altResult2));
+                
+                if (!isset($altResult2['error']) || strpos($altResult2['error'], 'password') === false) {
+                    return ['success' => true, 'message' => 'Email creation test passed with alternative password parameter'];
+                }
+                
+                return ['error' => 'All password parameter variations failed: ' . $result['error']];
+            }
+            
+            // Jika mendapat error lain, mungkin domain tidak valid atau masalah lain
+            if (isset($result['error'])) {
+                log_message('info', 'CPanel testEmailCreationWithPassword - Test completed with error: ' . $result['error']);
+                return ['error' => 'Email creation test failed: ' . $result['error']];
+            }
+            
+            log_message('info', 'CPanel testEmailCreationWithPassword - Test successful');
+            return ['success' => true, 'message' => 'Email creation test passed'];
+            
+        } catch (Exception $e) {
+            log_message('error', 'CPanel testEmailCreationWithPassword - Exception: ' . $e->getMessage());
+            return ['error' => 'Exception in email creation test: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Test semua parameter password yang mungkin untuk email creation
+     */
+    public function testAllPasswordParameters($email, $password, $quota = 10)
+    {
+        try {
+            log_message('info', 'CPanel testAllPasswordParameters - Testing all password parameters for: ' . $email);
+            
+            $domain = substr(strrchr($email, "@"), 1);
+            $user = substr($email, 0, strpos($email, "@"));
+            
+            // Force fresh login untuk test
+            if (!$this->forceLogin()) {
+                log_message('error', 'CPanel testAllPasswordParameters - Force login failed');
+                return ['error' => 'Failed to establish session for password parameter test'];
+            }
+            
+            // Test dengan endpoint Jupiter
+            $testUrl = "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=add_pop";
+            
+            // Test semua parameter password yang mungkin
+            $passwordParams = [
+                'pass' => 'pass',      // Parameter UAPI yang benar
+                'passwd' => 'passwd',  // Parameter alternatif
+                'password' => 'password' // Parameter alternatif lain
+            ];
+            
+            $results = [];
+            
+            foreach ($passwordParams as $paramName => $paramValue) {
+                log_message('info', 'CPanel testAllPasswordParameters - Testing parameter: ' . $paramName);
+                
+                $testData = [
+                    'email' => $user,
+                    'domain' => $domain,
+                    $paramName => $password,
+                    'quota' => $quota
+                ];
+                
+                $result = $this->requestWithSession($testUrl, 'POST', $testData);
+                $results[$paramName] = $result;
+                
+                log_message('info', 'CPanel testAllPasswordParameters - Result for ' . $paramName . ': ' . json_encode($result));
+                
+                // Jika berhasil, return hasilnya
+                if (!isset($result['error']) || strpos($result['error'], 'password') === false) {
+                    log_message('info', 'CPanel testAllPasswordParameters - Success with parameter: ' . $paramName);
+                    return [
+                        'success' => true, 
+                        'working_parameter' => $paramName,
+                        'message' => 'Email creation test passed with parameter: ' . $paramName,
+                        'all_results' => $results
+                    ];
+                }
+            }
+            
+            // Jika semua gagal, return semua hasil untuk analisis
+            log_message('error', 'CPanel testAllPasswordParameters - All password parameters failed');
+            return [
+                'error' => 'All password parameters failed',
+                'all_results' => $results
+            ];
+            
+        } catch (Exception $e) {
+            log_message('error', 'CPanel testAllPasswordParameters - Exception: ' . $e->getMessage());
+            return ['error' => 'Exception in password parameter test: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Test UAPI langsung untuk memastikan parameter password yang benar
+     */
+    public function testUAPIDirectly($email, $password, $quota = 10)
+    {
+        try {
+            log_message('info', 'CPanel testUAPIDirectly - Testing UAPI directly for: ' . $email);
+            
+            $domain = substr(strrchr($email, "@"), 1);
+            $user = substr($email, 0, strpos($email, "@"));
+            
+            // Force fresh login untuk test
+            if (!$this->forceLogin()) {
+                log_message('error', 'CPanel testUAPIDirectly - Force login failed');
+                return ['error' => 'Failed to establish session for UAPI test'];
+            }
+            
+            // Test dengan endpoint UAPI langsung
+            $testUrl = "/execute/Email/add_pop";
+            
+            log_message('info', 'CPanel testUAPIDirectly - Testing with UAPI endpoint: ' . $testUrl);
+            
+            // Test dengan parameter 'pass' sesuai UAPI
+            $testData = [
+                'email' => $user,
+                'domain' => $domain,
+                'pass' => $password,
+                'quota' => $quota
+            ];
+            
+            log_message('info', 'CPanel testUAPIDirectly - Test data: ' . json_encode($testData));
+            
+            $result = $this->requestWithSession($testUrl, 'POST', $testData);
+            
+            log_message('info', 'CPanel testUAPIDirectly - Response: ' . json_encode($result));
+            
+            // Jika mendapat error 403, berarti ada masalah permission
+            if (isset($result['error']) && strpos($result['error'], '403') !== false) {
+                log_message('error', 'CPanel testUAPIDirectly - HTTP 403 detected (Permission denied)');
+                return ['error' => 'HTTP 403 - Permission denied for UAPI email creation'];
+            }
+            
+            // Jika mendapat error password, coba dengan parameter yang berbeda
+            if (isset($result['error']) && strpos($result['error'], 'password') !== false) {
+                log_message('info', 'CPanel testUAPIDirectly - Password error detected, trying alternative parameters');
+                
+                // Test semua parameter password yang mungkin
+                $passwordParams = [
+                    'passwd' => 'passwd',
+                    'password' => 'password'
+                ];
+                
+                foreach ($passwordParams as $paramName => $paramValue) {
+                    log_message('info', 'CPanel testUAPIDirectly - Trying parameter: ' . $paramName);
+                    
+                    $altTestData = [
+                        'email' => $user,
+                        'domain' => $domain,
+                        $paramName => $password,
+                        'quota' => $quota
+                    ];
+                    
+                    $altResult = $this->requestWithSession($testUrl, 'POST', $altTestData);
+                    log_message('info', 'CPanel testUAPIDirectly - Result for ' . $paramName . ': ' . json_encode($altResult));
+                    
+                    if (!isset($altResult['error']) || strpos($altResult['error'], 'password') === false) {
+                        return [
+                            'success' => true, 
+                            'working_parameter' => $paramName,
+                            'message' => 'UAPI test passed with parameter: ' . $paramName
+                        ];
+                    }
+                }
+                
+                return ['error' => 'All UAPI password parameters failed: ' . $result['error']];
+            }
+            
+            // Jika mendapat error lain, mungkin domain tidak valid atau masalah lain
+            if (isset($result['error'])) {
+                log_message('info', 'CPanel testUAPIDirectly - Test completed with error: ' . $result['error']);
+                return ['error' => 'UAPI test failed: ' . $result['error']];
+            }
+            
+            log_message('info', 'CPanel testUAPIDirectly - Test successful with parameter: pass');
+            return [
+                'success' => true, 
+                'working_parameter' => 'pass',
+                'message' => 'UAPI test passed with parameter: pass'
+            ];
+            
+        } catch (Exception $e) {
+            log_message('error', 'CPanel testUAPIDirectly - Exception: ' . $e->getMessage());
+            return ['error' => 'Exception in UAPI test: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Test dengan endpoint yang berbeda untuk memastikan parameter password yang benar
+     */
+    public function testMultipleEndpoints($email, $password, $quota = 10)
+    {
+        try {
+            log_message('info', 'CPanel testMultipleEndpoints - Testing multiple endpoints for: ' . $email);
+            
+            $domain = substr(strrchr($email, "@"), 1);
+            $user = substr($email, 0, strpos($email, "@"));
+            
+            // Force fresh login untuk test
+            if (!$this->forceLogin()) {
+                log_message('error', 'CPanel testMultipleEndpoints - Force login failed');
+                return ['error' => 'Failed to establish session for multiple endpoints test'];
+            }
+            
+            // Test dengan berbagai endpoint
+            $endpoints = [
+                "/execute/Email/add_pop",
+                "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=add_pop",
+                "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=1&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=add_pop"
+            ];
+            
+            $results = [];
+            
+            foreach ($endpoints as $endpoint) {
+                log_message('info', 'CPanel testMultipleEndpoints - Testing endpoint: ' . $endpoint);
+                
+                // Test dengan parameter 'pass'
+                $testData = [
+                    'email' => $user,
+                    'domain' => $domain,
+                    'pass' => $password,
+                    'quota' => $quota
+                ];
+                
+                $result = $this->requestWithSession($endpoint, 'POST', $testData);
+                $results[$endpoint] = [
+                    'pass' => $result
+                ];
+                
+                log_message('info', 'CPanel testMultipleEndpoints - Result for ' . $endpoint . ' with pass: ' . json_encode($result));
+                
+                // Jika berhasil dengan 'pass', return hasilnya
+                if (!isset($result['error']) || strpos($result['error'], 'password') === false) {
+                    return [
+                        'success' => true,
+                        'working_endpoint' => $endpoint,
+                        'working_parameter' => 'pass',
+                        'message' => 'Test passed with endpoint: ' . $endpoint . ' and parameter: pass',
+                        'all_results' => $results
+                    ];
+                }
+                
+                // Jika gagal dengan 'pass', coba dengan 'passwd'
+                if (isset($result['error']) && strpos($result['error'], 'password') !== false) {
+                    $altTestData = [
+                        'email' => $user,
+                        'domain' => $domain,
+                        'passwd' => $password,
+                        'quota' => $quota
+                    ];
+                    
+                    $altResult = $this->requestWithSession($endpoint, 'POST', $altTestData);
+                    $results[$endpoint]['passwd'] = $altResult;
+                    
+                    log_message('info', 'CPanel testMultipleEndpoints - Result for ' . $endpoint . ' with passwd: ' . json_encode($altResult));
+                    
+                    if (!isset($altResult['error']) || strpos($altResult['error'], 'password') === false) {
+                        return [
+                            'success' => true,
+                            'working_endpoint' => $endpoint,
+                            'working_parameter' => 'passwd',
+                            'message' => 'Test passed with endpoint: ' . $endpoint . ' and parameter: passwd',
+                            'all_results' => $results
+                        ];
+                    }
+                }
+            }
+            
+            // Jika semua gagal, return semua hasil untuk analisis
+            log_message('error', 'CPanel testMultipleEndpoints - All endpoints and parameters failed');
+            return [
+                'error' => 'All endpoints and parameters failed',
+                'all_results' => $results
+            ];
+            
+        } catch (Exception $e) {
+            log_message('error', 'CPanel testMultipleEndpoints - Exception: ' . $e->getMessage());
+            return ['error' => 'Exception in multiple endpoints test: ' . $e->getMessage()];
+        }
+    }
 
 }

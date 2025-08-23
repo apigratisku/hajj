@@ -11,8 +11,11 @@
                         <a href="<?= base_url('email/create') ?>" class="btn btn-success btn-sm">
                             <i class="fas fa-plus"></i> Tambah Email
                         </a>
-                        <button type="button" class="btn btn-info btn-sm" onclick="checkAccounts()">
+                        <button type="button" class="btn btn-info btn-sm" onclick="checkAccounts()" id="refreshBtn">
                             <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                        <button type="button" class="btn btn-warning btn-sm" onclick="forceRefresh()" id="forceRefreshBtn">
+                            <i class="fas fa-redo"></i> Force Refresh
                         </button>
                         <a href="<?= base_url('email/test_connection') ?>" class="btn btn-warning btn-sm">
                             <i class="fas fa-plug"></i> Test Koneksi
@@ -47,6 +50,25 @@
                     <div class="alert alert-info" id="debug-panel" style="display: none;">
                         <h6><i class="fas fa-bug me-2"></i>Debug Information</h6>
                         <div id="debug-content"></div>
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Connection Tips:</strong>
+                                <ul class="mb-0">
+                                    <li>Pastikan cPanel credentials benar</li>
+                                    <li>Periksa apakah port 2083 terbuka</li>
+                                    <li>Coba test koneksi terlebih dahulu</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>HTTP 403 Solutions:</strong>
+                                <ul class="mb-0">
+                                    <li>Session token mungkin expired</li>
+                                    <li>Coba force login ulang</li>
+                                    <li>Periksa permission di cPanel</li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Email Accounts Table -->
@@ -123,6 +145,81 @@
                             </tbody>
                         </table>
                     </div>
+                    
+                    <!-- Pagination -->
+                    <?php if (isset($total_pages) && $total_pages > 1): ?>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <div class="text-muted">
+                                Menampilkan <?= $offset + 1 ?> - <?= min($offset + $per_page, $total_accounts) ?> dari <?= $total_accounts ?> akun email
+                            </div>
+                            <nav aria-label="Email pagination">
+                                <ul class="pagination pagination-sm mb-0">
+                                    <!-- Previous Page -->
+                                    <?php if ($current_page > 1): ?>
+                                        <li class="page-item">
+                                            <a class="page-link" href="<?= base_url('email?page=' . ($current_page - 1)) ?>">
+                                                <i class="fas fa-chevron-left"></i> Sebelumnya
+                                            </a>
+                                        </li>
+                                    <?php else: ?>
+                                        <li class="page-item disabled">
+                                            <span class="page-link">
+                                                <i class="fas fa-chevron-left"></i> Sebelumnya
+                                            </span>
+                                        </li>
+                                    <?php endif; ?>
+                                    
+                                    <!-- Page Numbers -->
+                                    <?php
+                                    $start_page = max(1, $current_page - 2);
+                                    $end_page = min($total_pages, $current_page + 2);
+                                    
+                                    if ($start_page > 1): ?>
+                                        <li class="page-item">
+                                            <a class="page-link" href="<?= base_url('email?page=1') ?>">1</a>
+                                        </li>
+                                        <?php if ($start_page > 2): ?>
+                                            <li class="page-item disabled">
+                                                <span class="page-link">...</span>
+                                            </li>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
+                                    
+                                    <?php for ($i = $start_page; $i <= $end_page; $i++): ?>
+                                        <li class="page-item <?= $i == $current_page ? 'active' : '' ?>">
+                                            <a class="page-link" href="<?= base_url('email?page=' . $i) ?>"><?= $i ?></a>
+                                        </li>
+                                    <?php endfor; ?>
+                                    
+                                    <?php if ($end_page < $total_pages): ?>
+                                        <?php if ($end_page < $total_pages - 1): ?>
+                                            <li class="page-item disabled">
+                                                <span class="page-link">...</span>
+                                            </li>
+                                        <?php endif; ?>
+                                        <li class="page-item">
+                                            <a class="page-link" href="<?= base_url('email?page=' . $total_pages) ?>"><?= $total_pages ?></a>
+                                        </li>
+                                    <?php endif; ?>
+                                    
+                                    <!-- Next Page -->
+                                    <?php if ($current_page < $total_pages): ?>
+                                        <li class="page-item">
+                                            <a class="page-link" href="<?= base_url('email?page=' . ($current_page + 1)) ?>">
+                                                Selanjutnya <i class="fas fa-chevron-right"></i>
+                                            </a>
+                                        </li>
+                                    <?php else: ?>
+                                        <li class="page-item disabled">
+                                            <span class="page-link">
+                                                Selanjutnya <i class="fas fa-chevron-right"></i>
+                                            </span>
+                                        </li>
+                                    <?php endif; ?>
+                                </ul>
+                            </nav>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -179,11 +276,19 @@
 window.deleteEmailAddress = '';
 
 // Check email accounts via AJAX
-function checkAccounts() {
+function checkAccounts(page = 1) {
     const tbody = document.getElementById('email-tbody');
+    const refreshBtn = document.getElementById('refreshBtn');
+    
     if (!tbody) {
         console.error('Email tbody element not found');
         return;
+    }
+    
+    // Disable refresh button and show loading state
+    if (refreshBtn) {
+        refreshBtn.disabled = true;
+        refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
     }
     
     const loadingRow = `
@@ -198,9 +303,9 @@ function checkAccounts() {
     tbody.innerHTML = loadingRow;
     
     console.log('=== EMAIL CHECK ACCOUNTS ===');
-    console.log('Requesting URL:', '<?= base_url('email/check_accounts') ?>');
+    console.log('Requesting URL:', '<?= base_url('email/check_accounts') ?>?page=' + page);
     
-    fetch('<?= base_url('email/check_accounts') ?>', {
+    fetch('<?= base_url('email/check_accounts') ?>?page=' + page, {
         method: 'GET',
         headers: {
             'X-Requested-With': 'XMLHttpRequest'
@@ -224,8 +329,9 @@ function checkAccounts() {
             console.log('Parsed JSON:', jsonData);
             
             if (jsonData.success) {
-                updateEmailTable(jsonData.accounts);
+                updateEmailTable(jsonData.accounts, jsonData.pagination);
                 console.log('Debug info:', jsonData.debug_info);
+                console.log('Pagination info:', jsonData.pagination);
             } else {
                 console.error('API Error:', jsonData.message);
                 showAlert('error', 'Gagal memuat data: ' + jsonData.message);
@@ -265,11 +371,68 @@ function checkAccounts() {
                 </td>
             </tr>
         `;
+    })
+    .finally(() => {
+        // Re-enable refresh button
+        if (refreshBtn) {
+            refreshBtn.disabled = false;
+            refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
+        }
+    });
+}
+
+// Force refresh dengan fresh login
+function forceRefresh() {
+    const forceRefreshBtn = document.getElementById('forceRefreshBtn');
+    
+    if (forceRefreshBtn) {
+        forceRefreshBtn.disabled = true;
+        forceRefreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Force Login...';
+    }
+    
+    console.log('=== EMAIL FORCE REFRESH ===');
+    console.log('Performing force refresh with fresh login');
+    
+    // Lakukan force refresh dengan parameter khusus
+    fetch('<?= base_url('email/check_accounts') ?>?force_refresh=1', {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.text();
+    })
+    .then(data => {
+        try {
+            const jsonData = JSON.parse(data);
+            if (jsonData.success) {
+                updateEmailTable(jsonData.accounts, jsonData.pagination);
+                showAlert('success', 'Force refresh berhasil! Data diperbarui dengan fresh login.');
+            } else {
+                showAlert('error', 'Force refresh gagal: ' + jsonData.message);
+            }
+        } catch (e) {
+            showAlert('error', 'Response tidak valid JSON');
+        }
+    })
+    .catch(error => {
+        console.error('Force refresh error:', error);
+        showAlert('error', 'Terjadi kesalahan saat force refresh: ' + error.message);
+    })
+    .finally(() => {
+        if (forceRefreshBtn) {
+            forceRefreshBtn.disabled = false;
+            forceRefreshBtn.innerHTML = '<i class="fas fa-redo"></i> Force Refresh';
+        }
     });
 }
 
 // Update email table with new data
-function updateEmailTable(accounts) {
+function updateEmailTable(accounts, pagination = null) {
     const tbody = document.getElementById('email-tbody');
     if (!tbody) {
         console.error('Email tbody element not found');
@@ -278,6 +441,7 @@ function updateEmailTable(accounts) {
     
     console.log('=== EMAIL UPDATE TABLE ===');
     console.log('Updating table with accounts:', accounts);
+    console.log('Pagination data:', pagination);
     
     if (!Array.isArray(accounts)) {
         console.error('Accounts is not an array:', accounts);
@@ -350,6 +514,143 @@ function updateEmailTable(accounts) {
     
     tbody.innerHTML = html;
     console.log('Table updated successfully with', accounts.length, 'accounts');
+    
+    // Update pagination if provided
+    if (pagination) {
+        updatePagination(pagination);
+    }
+}
+
+// Update pagination controls
+function updatePagination(pagination) {
+    console.log('=== EMAIL UPDATE PAGINATION ===');
+    console.log('Updating pagination with:', pagination);
+    
+    // Find existing pagination container
+    let paginationContainer = document.querySelector('.pagination-container');
+    
+    // If no pagination container exists, create one
+    if (!paginationContainer) {
+        const tableContainer = document.querySelector('.table-responsive');
+        if (tableContainer) {
+            const paginationDiv = document.createElement('div');
+            paginationDiv.className = 'd-flex justify-content-between align-items-center mt-3 pagination-container';
+            tableContainer.parentNode.insertBefore(paginationDiv, tableContainer.nextSibling);
+            paginationContainer = paginationDiv;
+        }
+    }
+    
+    if (!paginationContainer) {
+        console.error('Could not find or create pagination container');
+        return;
+    }
+    
+    if (pagination.total_pages <= 1) {
+        paginationContainer.style.display = 'none';
+        return;
+    }
+    
+    paginationContainer.style.display = 'flex';
+    
+    const startItem = (pagination.current_page - 1) * pagination.per_page + 1;
+    const endItem = Math.min(pagination.current_page * pagination.per_page, pagination.total_accounts);
+    
+    let html = `
+        <div class="text-muted">
+            Menampilkan ${startItem} - ${endItem} dari ${pagination.total_accounts} akun email
+        </div>
+        <nav aria-label="Email pagination">
+            <ul class="pagination pagination-sm mb-0">
+    `;
+    
+    // Previous button
+    if (pagination.has_prev) {
+        html += `
+            <li class="page-item">
+                <a class="page-link" href="javascript:void(0)" onclick="checkAccounts(${pagination.current_page - 1})">
+                    <i class="fas fa-chevron-left"></i> Sebelumnya
+                </a>
+            </li>
+        `;
+    } else {
+        html += `
+            <li class="page-item disabled">
+                <span class="page-link">
+                    <i class="fas fa-chevron-left"></i> Sebelumnya
+                </span>
+            </li>
+        `;
+    }
+    
+    // Page numbers
+    const startPage = Math.max(1, pagination.current_page - 2);
+    const endPage = Math.min(pagination.total_pages, pagination.current_page + 2);
+    
+    if (startPage > 1) {
+        html += `
+            <li class="page-item">
+                <a class="page-link" href="javascript:void(0)" onclick="checkAccounts(1)">1</a>
+            </li>
+        `;
+        if (startPage > 2) {
+            html += `
+                <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                </li>
+            `;
+        }
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        const activeClass = i === pagination.current_page ? 'active' : '';
+        html += `
+            <li class="page-item ${activeClass}">
+                <a class="page-link" href="javascript:void(0)" onclick="checkAccounts(${i})">${i}</a>
+            </li>
+        `;
+    }
+    
+    if (endPage < pagination.total_pages) {
+        if (endPage < pagination.total_pages - 1) {
+            html += `
+                <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                </li>
+            `;
+        }
+        html += `
+            <li class="page-item">
+                <a class="page-link" href="javascript:void(0)" onclick="checkAccounts(${pagination.total_pages})">${pagination.total_pages}</a>
+            </li>
+        `;
+    }
+    
+    // Next button
+    if (pagination.has_next) {
+        html += `
+            <li class="page-item">
+                <a class="page-link" href="javascript:void(0)" onclick="checkAccounts(${pagination.current_page + 1})">
+                    Selanjutnya <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+        `;
+    } else {
+        html += `
+            <li class="page-item disabled">
+                <span class="page-link">
+                    Selanjutnya <i class="fas fa-chevron-right"></i>
+                </span>
+            </li>
+        `;
+    }
+    
+    html += `
+            </ul>
+        </nav>
+    `;
+    
+    paginationContainer.innerHTML = html;
+    console.log('Pagination updated successfully');
 }
 
 // Show account details in modal
@@ -609,7 +910,7 @@ function showDebugInfo() {
 }
 
 // Auto refresh every 30 seconds
-setInterval(checkAccounts, 30000);
+// setInterval(checkAccounts, 30000);
 
 // Initialize debug info on page load
 document.addEventListener('DOMContentLoaded', function() {

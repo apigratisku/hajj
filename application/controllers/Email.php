@@ -34,12 +34,35 @@ class Email extends CI_Controller {
             // Load cPanel library
             $this->load->library('Cpanel_new', $this->cpanel_config);
             
-            // Get list of email accounts
-            $data['email_accounts'] = $this->get_email_accounts();
+            // Pagination settings
+            $per_page = 25;
+            $page = $this->input->get('page') ? $this->input->get('page') : 1;
+            $offset = ($page - 1) * $per_page;
+            
+            // Get list of email accounts with pagination
+            $email_result = $this->get_email_accounts();
+            
+            if (isset($email_result['error'])) {
+                $data['email_accounts'] = [];
+                $data['total_accounts'] = 0;
+                $data['error_message'] = $email_result['error'];
+            } else {
+                $all_accounts = $email_result;
+                $data['total_accounts'] = count($all_accounts);
+                $data['email_accounts'] = array_slice($all_accounts, $offset, $per_page);
+                
+                // Pagination data
+                $data['current_page'] = $page;
+                $data['per_page'] = $per_page;
+                $data['total_pages'] = ceil($data['total_accounts'] / $per_page);
+                $data['offset'] = $offset;
+            }
+            
             $data['auth_method'] = $this->cpanel_new->getAuthMethod();
             
             log_message('info', 'Email index - Auth method: ' . $data['auth_method']);
-            log_message('info', 'Email index - Email accounts count: ' . count($data['email_accounts']));
+            log_message('info', 'Email index - Email accounts count: ' . $data['total_accounts']);
+            log_message('info', 'Email index - Current page: ' . $page . ' of ' . $data['total_pages']);
             
             $this->load->view('templates/sidebar');
             $this->load->view('templates/header', $data);
@@ -188,11 +211,68 @@ class Email extends CI_Controller {
             // Load cPanel library
             $this->load->library('Cpanel_new', $this->cpanel_config);
             
+            // Check if force refresh is requested
+            $force_refresh = $this->input->get('force_refresh') ? true : false;
+            
+            if ($force_refresh) {
+                log_message('info', 'Email check_accounts - Force refresh requested, performing fresh login');
+                if (!$this->cpanel_new->forceLogin()) {
+                    log_message('error', 'Email check_accounts - Force login failed');
+                    $this->output->set_content_type('application/json');
+                    $this->output->set_output(json_encode([
+                        'success' => false,
+                        'message' => 'Force login gagal',
+                        'accounts' => [],
+                        'pagination' => [
+                            'current_page' => 1,
+                            'per_page' => 25,
+                            'total_pages' => 0,
+                            'total_accounts' => 0,
+                            'has_prev' => false,
+                            'has_next' => false
+                        ]
+                    ]));
+                    return;
+                }
+                log_message('info', 'Email check_accounts - Force login successful');
+            }
+            
+            // Pagination parameters
+            $per_page = 25;
+            $page = $this->input->get('page') ? intval($this->input->get('page')) : 1;
+            $offset = ($page - 1) * $per_page;
+            
             // Get email accounts
-            $accounts = $this->get_email_accounts();
+            $all_accounts = $this->get_email_accounts();
+            
+            if (isset($all_accounts['error'])) {
+                $this->output->set_content_type('application/json');
+                $this->output->set_output(json_encode([
+                    'success' => false,
+                    'message' => 'Gagal mengambil daftar email: ' . $all_accounts['error'],
+                    'accounts' => [],
+                    'pagination' => [
+                        'current_page' => $page,
+                        'per_page' => $per_page,
+                        'total_pages' => 0,
+                        'total_accounts' => 0,
+                        'has_prev' => false,
+                        'has_next' => false
+                    ]
+                ]));
+                return;
+            }
+            
+            $total_accounts = count($all_accounts);
+            $total_pages = ceil($total_accounts / $per_page);
+            $accounts = array_slice($all_accounts, $offset, $per_page);
             
             $debug_info = [
-                'total_accounts' => count($accounts),
+                'total_accounts' => $total_accounts,
+                'current_page' => $page,
+                'per_page' => $per_page,
+                'total_pages' => $total_pages,
+                'force_refresh' => $force_refresh,
                 'cpanel_host' => $this->cpanel_config['host'],
                 'auth_method' => $this->cpanel_new->getAuthMethod(),
                 'session_token' => $this->cpanel_new->getSessionToken(),
@@ -205,6 +285,14 @@ class Email extends CI_Controller {
             $this->output->set_output(json_encode([
                 'success' => true,
                 'accounts' => $accounts,
+                'pagination' => [
+                    'current_page' => $page,
+                    'per_page' => $per_page,
+                    'total_pages' => $total_pages,
+                    'total_accounts' => $total_accounts,
+                    'has_prev' => $page > 1,
+                    'has_next' => $page < $total_pages
+                ],
                 'debug_info' => $debug_info
             ]));
         } catch (Exception $e) {
@@ -215,6 +303,14 @@ class Email extends CI_Controller {
             $this->output->set_output(json_encode([
                 'success' => false, 
                 'message' => 'Terjadi kesalahan server: ' . $e->getMessage(),
+                'pagination' => [
+                    'current_page' => 1,
+                    'per_page' => 25,
+                    'total_pages' => 0,
+                    'total_accounts' => 0,
+                    'has_prev' => false,
+                    'has_next' => false
+                ],
                 'debug_info' => [
                     'exception' => $e->getMessage(),
                     'file' => $e->getFile(),
@@ -227,17 +323,30 @@ class Email extends CI_Controller {
 
     public function test_connection() {
         try {
-            log_message('info', 'Email test_connection - Starting connection test');
+            log_message('info', 'Email test_connection - Starting optimized connection test');
             
             // Load cPanel library
             $this->load->library('Cpanel_new', $this->cpanel_config);
+            
+            // Test quick connection first
+            $quick_result = $this->cpanel_new->quickConnectionTest();
+            
+            log_message('info', 'Email test_connection - Quick test result: ' . json_encode($quick_result));
+            
+            $message = '';
+            if (isset($quick_result['error'])) {
+                log_message('error', 'Email test_connection - Quick test failed: ' . $quick_result['error']);
+                $message .= 'Koneksi cepat gagal: ' . $quick_result['error'] . ' ';
+            } else {
+                log_message('info', 'Email test_connection - Quick test passed');
+                $message .= 'Koneksi cepat berhasil! ';
+            }
             
             // Test basic connection
             $result = $this->cpanel_new->testConnection();
             
             log_message('info', 'Email test_connection - Basic result: ' . json_encode($result));
             
-            $message = '';
             if (isset($result['error'])) {
                 log_message('error', 'Email test_connection - Basic Error: ' . $result['error']);
                 $message .= 'Koneksi dasar gagal: ' . $result['error'] . ' ';
@@ -269,10 +378,110 @@ class Email extends CI_Controller {
             
             if (isset($jupiter_result['error'])) {
                 log_message('error', 'Email test_connection - Jupiter Error: ' . $jupiter_result['error']);
-                $message .= 'Jupiter interface gagal: ' . $jupiter_result['error'];
+                $message .= 'Jupiter interface gagal: ' . $jupiter_result['error'] . ' ';
             } else {
                 log_message('info', 'Email test_connection - Jupiter Success: ' . $jupiter_result['message']);
-                $message .= 'Jupiter interface berhasil!';
+                $message .= 'Jupiter interface berhasil! ';
+            }
+            
+            // Test write permission (hanya jika koneksi dasar berhasil)
+            if (!isset($result['error'])) {
+                $write_result = $this->cpanel_new->testWritePermission();
+                
+                log_message('info', 'Email test_connection - Write permission result: ' . json_encode($write_result));
+                
+                if (isset($write_result['error'])) {
+                    log_message('error', 'Email test_connection - Write permission Error: ' . $write_result['error']);
+                    $message .= 'Write permission gagal: ' . $write_result['error'] . ' ';
+                } else {
+                    log_message('info', 'Email test_connection - Write permission Success: ' . $write_result['message']);
+                    $message .= 'Write permission berhasil! ';
+                }
+                
+                // Test Jupiter write compatibility (hanya jika write permission berhasil)
+                if (!isset($write_result['error'])) {
+                    $jupiter_write_result = $this->cpanel_new->testJupiterWriteCompatibility();
+                    
+                    log_message('info', 'Email test_connection - Jupiter write compatibility result: ' . json_encode($jupiter_write_result));
+                    
+                    if (isset($jupiter_write_result['error'])) {
+                        log_message('error', 'Email test_connection - Jupiter write compatibility Error: ' . $jupiter_write_result['error']);
+                        $message .= 'Jupiter write compatibility gagal: ' . $jupiter_write_result['error'] . ' ';
+                    } else {
+                        log_message('info', 'Email test_connection - Jupiter write compatibility Success: ' . $jupiter_write_result['message']);
+                        $message .= 'Jupiter write compatibility berhasil! ';
+                    }
+                    
+                    // Test email creation permission (hanya jika Jupiter write compatibility berhasil)
+                    if (!isset($jupiter_write_result['error'])) {
+                        $email_creation_result = $this->cpanel_new->testEmailCreationPermission();
+                        
+                        log_message('info', 'Email test_connection - Email creation permission result: ' . json_encode($email_creation_result));
+                        
+                        if (isset($email_creation_result['error'])) {
+                            log_message('error', 'Email test_connection - Email creation permission Error: ' . $email_creation_result['error']);
+                            $message .= 'Email creation permission gagal: ' . $email_creation_result['error'];
+                        } else {
+                            log_message('info', 'Email test_connection - Email creation permission Success: ' . $email_creation_result['message']);
+                            $message .= 'Email creation permission berhasil!';
+                        }
+                    }
+                    
+                    // Test email creation dengan password yang benar
+                    $test_email = 'test_' . time() . '@' . $this->cpanel_config['host'];
+                    $test_password = 'Test123!@#';
+                    
+                    $email_password_result = $this->cpanel_new->testEmailCreationWithPassword($test_email, $test_password, 10);
+                    
+                    log_message('info', 'Email test_connection - Email creation with password result: ' . json_encode($email_password_result));
+                    
+                    if (isset($email_password_result['error'])) {
+                        log_message('error', 'Email test_connection - Email creation with password Error: ' . $email_password_result['error']);
+                        $message .= 'Email creation with password gagal: ' . $email_password_result['error'];
+                    } else {
+                        log_message('info', 'Email test_connection - Email creation with password Success: ' . $email_password_result['message']);
+                        $message .= 'Email creation with password berhasil!';
+                    }
+                    
+                    // Test semua parameter password yang mungkin
+                    $all_password_params_result = $this->cpanel_new->testAllPasswordParameters($test_email, $test_password, 10);
+                    
+                    log_message('info', 'Email test_connection - All password parameters test result: ' . json_encode($all_password_params_result));
+                    
+                    if (isset($all_password_params_result['error'])) {
+                        log_message('error', 'Email test_connection - All password parameters test Error: ' . $all_password_params_result['error']);
+                        $message .= ' All password parameters test gagal: ' . $all_password_params_result['error'];
+                    } else {
+                        log_message('info', 'Email test_connection - All password parameters test Success: ' . $all_password_params_result['message']);
+                        $message .= ' All password parameters test berhasil! Working parameter: ' . $all_password_params_result['working_parameter'];
+                    }
+                    
+                    // Test UAPI langsung
+                    $uapi_direct_result = $this->cpanel_new->testUAPIDirectly($test_email, $test_password, 10);
+                    
+                    log_message('info', 'Email test_connection - UAPI direct test result: ' . json_encode($uapi_direct_result));
+                    
+                    if (isset($uapi_direct_result['error'])) {
+                        log_message('error', 'Email test_connection - UAPI direct test Error: ' . $uapi_direct_result['error']);
+                        $message .= ' UAPI direct test gagal: ' . $uapi_direct_result['error'];
+                    } else {
+                        log_message('info', 'Email test_connection - UAPI direct test Success: ' . $uapi_direct_result['message']);
+                        $message .= ' UAPI direct test berhasil! Working parameter: ' . $uapi_direct_result['working_parameter'];
+                    }
+                    
+                    // Test multiple endpoints
+                    $multiple_endpoints_result = $this->cpanel_new->testMultipleEndpoints($test_email, $test_password, 10);
+                    
+                    log_message('info', 'Email test_connection - Multiple endpoints test result: ' . json_encode($multiple_endpoints_result));
+                    
+                    if (isset($multiple_endpoints_result['error'])) {
+                        log_message('error', 'Email test_connection - Multiple endpoints test Error: ' . $multiple_endpoints_result['error']);
+                        $message .= ' Multiple endpoints test gagal: ' . $multiple_endpoints_result['error'];
+                    } else {
+                        log_message('info', 'Email test_connection - Multiple endpoints test Success: ' . $multiple_endpoints_result['message']);
+                        $message .= ' Multiple endpoints test berhasil! Working endpoint: ' . $multiple_endpoints_result['working_endpoint'] . ', parameter: ' . $multiple_endpoints_result['working_parameter'];
+                    }
+                }
             }
             
             $this->session->set_flashdata('success', $message);

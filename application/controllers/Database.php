@@ -642,7 +642,7 @@ class Database extends CI_Controller {
             
             // Add summary headers
             $excel->setActiveSheetIndex(0)
-                ->setCellValue('A' . $summary_row, 'RINGKASAN STATUS PESERTA')
+                ->setCellValue('A' . $summary_row, $p->flag_doc)
                 ->setCellValue('B' . $summary_row, '');
             
             $summary_row++;
@@ -731,7 +731,7 @@ class Database extends CI_Controller {
             $excel->getActiveSheet()->getStyle('A' . ($row + 5) . ':B' . ($row + 8))->applyFromArray($summaryDataStyle);
             
             // Set filename
-            $filename = 'Database_Peserta_' . date('Y-m-d_H-i-s') . '.xlsx';
+            $filename = $p->flag_doc . '_Data_Peserta_' . date('Y-m-d_H-i-s') . '.xlsx';
             
             // Set headers for download
             header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
