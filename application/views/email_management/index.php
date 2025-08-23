@@ -20,6 +20,9 @@
                         <a href="<?= base_url('email/test_connection') ?>" class="btn btn-warning btn-sm">
                             <i class="fas fa-plug"></i> Test Koneksi
                         </a>
+                        <button type="button" class="btn btn-danger btn-sm" onclick="bulkDelete()" id="bulkDeleteBtn" style="display: none;">
+                            <i class="fas fa-trash"></i> Hapus Terpilih
+                        </button>
                     </div>
                 </div>
                 <div class="card-body">
@@ -45,6 +48,8 @@
                             <strong>Authentication Method:</strong> <?= $auth_method ?>
                         </div>
                     <?php endif; ?>
+
+                  
 
                     <!-- Debug Panel -->
                     <div class="alert alert-info" id="debug-panel" style="display: none;">
@@ -76,6 +81,9 @@
                         <table class="table table-bordered table-striped table-hover" id="email-table">
                             <thead class="table-dark">
                                 <tr>
+                                                                        <th class="text-center" style="width: 50px;">
+                                        <input type="checkbox" id="selectAll" onchange="toggleSelectAll()" title="Pilih Semua">
+                                    </th>
                                     <th class="text-center">No</th>
                                     <th>Email Address</th>
                                     <th class="text-center">Quota</th>
@@ -87,7 +95,7 @@
                             <tbody id="email-tbody">
                                 <?php if (empty($email_accounts)): ?>
                                     <tr>
-                                        <td colspan="6" class="text-center text-muted">
+                                        <td colspan="7" class="text-center text-muted">
                                             <i class="fas fa-inbox fa-2x mb-2"></i>
                                             <br>Tidak ada akun email yang ditemukan
                                             <br><small>Silakan konfigurasi cPanel credentials di file config/cpanel_config.php</small>
@@ -97,10 +105,14 @@
                                 <?php else: ?>
                                     <?php $no = 1; foreach ($email_accounts as $account): ?>
                                         <tr>
+                                                                                        <td class="text-center">
+                                                <?php $emailValue = htmlspecialchars($account['email']); $isEmailValid = !empty($emailValue); ?>
+                                                <input type="checkbox" class="email-checkbox" value="<?= $emailValue ?>" onchange="updateBulkDeleteButton()" <?= !$isEmailValid ? 'disabled' : '' ?>>
+                                            </td>
                                             <td class="text-center"><?= $no++ ?></td>
                                             <td>
                                                 <i class="fas fa-envelope me-2 text-primary"></i>
-                                                <strong><?= htmlspecialchars($account['email']) ?></strong>
+                                                <strong><?= $isEmailValid ? $emailValue : 'N/A' ?></strong>
                                             </td>
                                             <td class="text-center">
                                                 <span class="badge bg-info">
@@ -124,17 +136,17 @@
                                             <td class="text-center">
                                                 <div class="btn-group btn-group-sm" role="group">
                                                     <button type="button" class="btn btn-info" 
-                                                            onclick="showAccountDetails('<?= htmlspecialchars($account['email']) ?>')"
-                                                            title="Detail">
+                                                            onclick="showAccountDetails('<?= $emailValue ?>')"
+                                                            title="Detail" <?= !$isEmailValid ? 'disabled' : '' ?>>
                                                         <i class="fas fa-eye"></i>
                                                     </button>
                                                     <a href="<?= base_url('email/edit/' . urlencode($account['email'])) ?>" 
-                                                        class="btn btn-warning" title="Edit">
+                                                        class="btn btn-warning" title="Edit" <?= !$isEmailValid ? 'style="pointer-events: none; opacity: 0.6;"' : '' ?>>
                                                         <i class="fas fa-edit"></i>
                                                     </a>
                                                     <button type="button" class="btn btn-danger" 
-                                                            onclick="deleteAccount('<?= htmlspecialchars($account['email']) ?>')"
-                                                            title="Hapus">
+                                                            onclick="deleteAccount('<?= $emailValue ?>')"
+                                                            title="Hapus" <?= !$isEmailValid ? 'disabled' : '' ?>>
                                                         <i class="fas fa-trash"></i>
                                                     </button>
                                                 </div>
@@ -270,10 +282,297 @@
     </div>
 </div>
 
+<!-- Bulk Delete Confirmation Modal -->
+<div class="modal fade" id="bulkDeleteModal" tabindex="-1" aria-labelledby="bulkDeleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bulkDeleteModalLabel">
+                    <i class="fas fa-exclamation-triangle text-danger me-2"></i>Konfirmasi Hapus Massal
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Perhatian!</strong> Anda akan menghapus <span id="selectedCount" class="badge bg-danger">0</span> akun email yang dipilih.
+                </div>
+                <p>Apakah Anda yakin ingin menghapus akun email berikut?</p>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>No</th>
+                                <th>Email Address</th>
+                            </tr>
+                        </thead>
+                        <tbody id="selectedEmailsList">
+                            <!-- Selected emails will be listed here -->
+                        </tbody>
+                    </table>
+                </div>
+                <p class="text-danger"><small><strong>Peringatan:</strong> Tindakan ini tidak dapat dibatalkan dan akan menghapus semua akun email yang dipilih secara permanen!</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-danger" id="confirmBulkDelete">
+                    <i class="fas fa-trash me-1"></i>Hapus Semua
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 // Global variables
 // Global variable for delete email address
 window.deleteEmailAddress = '';
+
+// Helper functions
+function isValidEmail(email) {
+    if (!email || typeof email !== 'string') {
+        return false;
+    }
+    email = email.trim();
+    return email !== '' && email !== 'N/A' && email.includes('@');
+}
+
+function getValidEmails(checkboxes) {
+    return Array.from(checkboxes)
+        .map(checkbox => checkbox.value)
+        .filter(email => isValidEmail(email));
+}
+
+// Checkbox management functions
+function toggleSelectAll() {
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const emailCheckboxes = document.querySelectorAll('.email-checkbox:not(:disabled)');
+    
+    if (selectAllCheckbox) {
+        emailCheckboxes.forEach(checkbox => {
+            checkbox.checked = selectAllCheckbox.checked;
+        });
+        updateBulkDeleteButton();
+    }
+}
+
+function updateBulkDeleteButton() {
+    const emailCheckboxes = document.querySelectorAll('.email-checkbox:checked');
+    const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+    const selectAllCheckbox = document.getElementById('selectAll');
+    
+    // Filter only valid emails using helper function
+    const validEmails = getValidEmails(emailCheckboxes);
+    
+    if (bulkDeleteBtn) {
+        if (validEmails.length > 0) {
+            bulkDeleteBtn.style.display = 'inline-block';
+            bulkDeleteBtn.innerHTML = `<i class="fas fa-trash"></i> Hapus Terpilih (${validEmails.length})`;
+            bulkDeleteBtn.disabled = false;
+        } else {
+            bulkDeleteBtn.style.display = 'none';
+            bulkDeleteBtn.disabled = true;
+        }
+    }
+    
+    // Update select all checkbox state
+    if (selectAllCheckbox) {
+        const allValidCheckboxes = document.querySelectorAll('.email-checkbox:not(:disabled)');
+        const checkedValidCheckboxes = document.querySelectorAll('.email-checkbox:not(:disabled):checked');
+        selectAllCheckbox.checked = allValidCheckboxes.length > 0 && allValidCheckboxes.length === checkedValidCheckboxes.length;
+        selectAllCheckbox.indeterminate = checkedValidCheckboxes.length > 0 && checkedValidCheckboxes.length < allValidCheckboxes.length;
+    }
+    
+    console.log('Bulk delete button updated - Selected:', emailCheckboxes.length, 'Valid:', validEmails.length);
+}
+
+function bulkDelete() {
+    const emailCheckboxes = document.querySelectorAll('.email-checkbox:checked');
+    
+    if (emailCheckboxes.length === 0) {
+        showAlert('error', 'Tidak ada akun email yang dipilih untuk dihapus');
+        return;
+    }
+    
+    // Check if bulk delete button is disabled
+    const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+    if (bulkDeleteBtn && bulkDeleteBtn.disabled) {
+        showAlert('error', 'Tidak ada email yang valid untuk dihapus');
+        return;
+    }
+    
+    const selectedEmails = getValidEmails(emailCheckboxes);
+    const selectedCount = selectedEmails.length;
+    
+    if (selectedCount === 0) {
+        showAlert('error', 'Tidak ada email yang valid untuk dihapus');
+        return;
+    }
+    
+    console.log('Bulk delete - Valid emails to delete:', selectedEmails);
+    
+    // Update modal content
+    const selectedCountElement = document.getElementById('selectedCount');
+    const selectedEmailsList = document.getElementById('selectedEmailsList');
+    
+    if (selectedCountElement) {
+        selectedCountElement.textContent = selectedCount;
+    }
+    
+    if (selectedEmailsList) {
+        let html = '';
+        selectedEmails.forEach((email, index) => {
+            if (isValidEmail(email)) {
+                html += `
+                    <tr>
+                        <td class="text-center">${index + 1}</td>
+                        <td><i class="fas fa-envelope me-2 text-primary"></i>${email}</td>
+                    </tr>
+                `;
+            }
+        });
+        selectedEmailsList.innerHTML = html;
+    }
+    
+    // Show bulk delete modal
+    const bulkDeleteModal = document.getElementById('bulkDeleteModal');
+    if (bulkDeleteModal) {
+        const modal = new bootstrap.Modal(bulkDeleteModal);
+        modal.show();
+    } else {
+        console.error('Bulk delete modal not found');
+        showAlert('error', 'Modal konfirmasi bulk delete tidak ditemukan');
+    }
+    
+    console.log('Bulk delete modal shown for', selectedCount, 'emails');
+}
+
+function confirmBulkDelete() {
+    const emailCheckboxes = document.querySelectorAll('.email-checkbox:checked');
+    const selectedEmails = getValidEmails(emailCheckboxes);
+    
+    if (selectedEmails.length === 0) {
+        showAlert('error', 'Tidak ada akun email yang valid untuk dihapus');
+        return;
+    }
+    
+    console.log('=== EMAIL BULK DELETE ===');
+    console.log('Deleting emails:', selectedEmails);
+    
+    // Show loading state
+    const confirmBulkDeleteBtn = document.getElementById('confirmBulkDelete');
+    if (confirmBulkDeleteBtn) {
+        confirmBulkDeleteBtn.disabled = true;
+        confirmBulkDeleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menghapus...';
+    }
+    
+    // Disable all checkboxes during deletion
+    const allCheckboxes = document.querySelectorAll('.email-checkbox');
+    allCheckboxes.forEach(checkbox => {
+        checkbox.disabled = true;
+    });
+    
+    // Send bulk delete request
+    fetch('<?= base_url('email/bulk_delete') ?>', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            emails: selectedEmails
+        })
+    })
+    .then(response => {
+        console.log('Bulk delete response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.text();
+    })
+    .then(data => {
+        console.log('Bulk delete raw response:', data);
+        try {
+            const jsonData = JSON.parse(data);
+            console.log('Bulk delete parsed response:', jsonData);
+            
+            if (jsonData.success) {
+                const message = `Berhasil menghapus ${jsonData.deleted_count} dari ${jsonData.total_count} akun email`;
+                if (jsonData.failed_count > 0) {
+                    showAlert('warning', message + `. Gagal menghapus ${jsonData.failed_count} akun email.`);
+                } else {
+                    showAlert('success', message);
+                }
+                
+                // Reset checkboxes and select all checkbox
+                const selectAllCheckbox = document.getElementById('selectAll');
+                if (selectAllCheckbox) {
+                    selectAllCheckbox.checked = false;
+                    selectAllCheckbox.indeterminate = false;
+                }
+                
+                // Clear all checkboxes
+                const allCheckboxes = document.querySelectorAll('.email-checkbox');
+                allCheckboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                
+                updateBulkDeleteButton();
+                
+                // Refresh the table
+                checkAccounts();
+                
+                // Close modal
+                const bulkDeleteModal = document.getElementById('bulkDeleteModal');
+                if (bulkDeleteModal) {
+                    const modal = bootstrap.Modal.getInstance(bulkDeleteModal);
+                    if (modal) {
+                        modal.hide();
+                    }
+                }
+            } else {
+                showAlert('error', 'Gagal menghapus akun email: ' + jsonData.message);
+            }
+        } catch (e) {
+            console.error('JSON parse error:', e);
+            showAlert('error', 'Response tidak valid JSON: ' + e.message);
+            
+            // Close modal on error
+            const bulkDeleteModal = document.getElementById('bulkDeleteModal');
+            if (bulkDeleteModal) {
+                const modal = bootstrap.Modal.getInstance(bulkDeleteModal);
+                if (modal) {
+                    modal.hide();
+                }
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Bulk delete error:', error);
+        showAlert('error', 'Terjadi kesalahan saat menghapus: ' + error.message);
+        
+        // Close modal on error
+        const bulkDeleteModal = document.getElementById('bulkDeleteModal');
+        if (bulkDeleteModal) {
+            const modal = bootstrap.Modal.getInstance(bulkDeleteModal);
+            if (modal) {
+                modal.hide();
+            }
+        }
+    })
+    .finally(() => {
+        // Reset button state
+        if (confirmBulkDeleteBtn) {
+            confirmBulkDeleteBtn.disabled = false;
+            confirmBulkDeleteBtn.innerHTML = '<i class="fas fa-trash me-1"></i>Hapus Semua';
+        }
+        
+        // Re-enable all checkboxes
+        allCheckboxes.forEach(checkbox => {
+            checkbox.disabled = false;
+        });
+    });
+}
 
 // Check email accounts via AJAX
 function checkAccounts(page = 1) {
@@ -293,7 +592,7 @@ function checkAccounts(page = 1) {
     
     const loadingRow = `
         <tr>
-            <td colspan="6" class="text-center">
+            <td colspan="7" class="text-center">
                 <div class="spinner-border spinner-border-sm me-2" role="status"></div>
                 Memuat data akun email...
             </td>
@@ -337,7 +636,7 @@ function checkAccounts(page = 1) {
                 showAlert('error', 'Gagal memuat data: ' + jsonData.message);
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="6" class="text-center text-danger">
+                        <td colspan="7" class="text-center text-danger">
                             <i class="fas fa-exclamation-triangle me-2"></i>
                             Gagal memuat data akun email: ${jsonData.message}
                         </td>
@@ -350,7 +649,7 @@ function checkAccounts(page = 1) {
             showAlert('error', 'Response tidak valid JSON');
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="6" class="text-center text-danger">
+                    <td colspan="7" class="text-center text-danger">
                         <i class="fas fa-exclamation-triangle me-2"></i>
                         Response tidak valid JSON
                         <br><small>Silakan cek console untuk detail</small>
@@ -364,7 +663,7 @@ function checkAccounts(page = 1) {
         showAlert('error', 'Terjadi kesalahan saat memuat data: ' + error.message);
         tbody.innerHTML = `
             <tr>
-                <td colspan="6" class="text-center text-danger">
+                <td colspan="7" class="text-center text-danger">
                     <i class="fas fa-exclamation-triangle me-2"></i>
                     Terjadi kesalahan saat memuat data
                     <br><small>Error: ${error.message}</small>
@@ -447,7 +746,7 @@ function updateEmailTable(accounts, pagination = null) {
         console.error('Accounts is not an array:', accounts);
         tbody.innerHTML = `
             <tr>
-                <td colspan="6" class="text-center text-danger">
+                <td colspan="7" class="text-center text-danger">
                     <i class="fas fa-exclamation-triangle me-2"></i>
                     Error: Invalid data format
                 </td>
@@ -460,7 +759,7 @@ function updateEmailTable(accounts, pagination = null) {
         console.log('No accounts found');
         tbody.innerHTML = `
             <tr>
-                <td colspan="6" class="text-center text-muted">
+                <td colspan="7" class="text-center text-muted">
                     <i class="fas fa-inbox fa-2x mb-2"></i>
                     <br>Tidak ada akun email yang ditemukan
                     <br><button class="btn btn-sm btn-info mt-2" onclick="showDebugInfo()">Show Debug Info</button>
@@ -478,12 +777,18 @@ function updateEmailTable(accounts, pagination = null) {
             '<span class="badge bg-danger"><i class="fas fa-ban"></i> Suspended</span>' :
             '<span class="badge bg-success"><i class="fas fa-check"></i> Active</span>';
         
+        const emailValue = account.email || '';
+        const emailIsValid = isValidEmail(emailValue);
+        
         html += `
             <tr>
+                <td class="text-center">
+                    <input type="checkbox" class="email-checkbox" value="${emailValue}" onchange="updateBulkDeleteButton()" ${!emailIsValid ? 'disabled' : ''}>
+                </td>
                 <td class="text-center">${index + 1}</td>
                 <td>
                     <i class="fas fa-envelope me-2 text-primary"></i>
-                    <strong>${account.email || 'N/A'}</strong>
+                    <strong>${emailIsValid ? emailValue : 'N/A'}</strong>
                 </td>
                 <td class="text-center">
                     <span class="badge bg-info">${numberFormat(account.quota || 0)} MB</span>
@@ -493,17 +798,17 @@ function updateEmailTable(accounts, pagination = null) {
                 <td class="text-center">
                     <div class="btn-group btn-group-sm" role="group">
                         <button type="button" class="btn btn-info" 
-                                onclick="showAccountDetails('${account.email || ''}')"
-                                title="Detail">
+                                onclick="showAccountDetails('${emailValue}')"
+                                title="Detail" ${!emailIsValid ? 'disabled' : ''}>
                             <i class="fas fa-eye"></i>
                         </button>
-                        <a href="<?= base_url('email/edit/') ?>${encodeURIComponent(account.email || '')}" 
-                            class="btn btn-warning" title="Edit">
+                        <a href="<?= base_url('email/edit/') ?>${encodeURIComponent(emailValue)}" 
+                            class="btn btn-warning" title="Edit" ${!emailIsValid ? 'style="pointer-events: none; opacity: 0.6;"' : ''}>
                             <i class="fas fa-edit"></i>
                         </a>
                         <button type="button" class="btn btn-danger" 
-                                onclick="deleteAccount('${account.email || ''}')"
-                                title="Hapus">
+                                onclick="deleteAccount('${emailValue}')"
+                                title="Hapus" ${!emailIsValid ? 'disabled' : ''}>
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -514,6 +819,9 @@ function updateEmailTable(accounts, pagination = null) {
     
     tbody.innerHTML = html;
     console.log('Table updated successfully with', accounts.length, 'accounts');
+    
+    // Update checkbox states after table update
+    updateBulkDeleteButton();
     
     // Update pagination if provided
     if (pagination) {
@@ -658,6 +966,12 @@ function showAccountDetails(email) {
     console.log('=== EMAIL SHOW ACCOUNT DETAILS ===');
     console.log('Showing details for email:', email);
     
+    if (!isValidEmail(email)) {
+        console.error('No valid email provided for details');
+        showAlert('error', 'Email tidak valid untuk ditampilkan detailnya');
+        return;
+    }
+    
     const accountDetailsModal = document.getElementById('accountDetailsModal');
     const content = document.getElementById('accountDetailsContent');
     
@@ -721,8 +1035,8 @@ function deleteAccount(email) {
     console.log('=== EMAIL DELETE ACCOUNT ===');
     console.log('Deleting email:', email);
     
-    if (!email) {
-        console.error('No email provided for deletion');
+    if (!isValidEmail(email)) {
+        console.error('No valid email provided for deletion');
         showAlert('error', 'Email tidak valid untuk dihapus');
         return;
     }
@@ -750,17 +1064,27 @@ if (confirmDeleteElement) {
         console.log('=== EMAIL CONFIRM DELETE ===');
         console.log('Confirming deletion of email:', window.deleteEmailAddress);
         
-        if (window.deleteEmailAddress) {
+        if (isValidEmail(window.deleteEmailAddress)) {
             const deleteUrl = '<?= base_url('email/delete/') ?>' + encodeURIComponent(window.deleteEmailAddress);
             console.log('Redirecting to:', deleteUrl);
             window.location.href = deleteUrl;
         } else {
-            console.error('No email address to delete');
-            showAlert('error', 'Tidak ada email yang dipilih untuk dihapus');
+            console.error('No valid email address to delete');
+            showAlert('error', 'Tidak ada email yang valid untuk dihapus');
         }
     });
 } else {
     console.error('Confirm delete button not found');
+}
+
+// Confirm bulk delete action
+const confirmBulkDeleteElement = document.getElementById('confirmBulkDelete');
+if (confirmBulkDeleteElement) {
+    confirmBulkDeleteElement.addEventListener('click', function() {
+        confirmBulkDelete();
+    });
+} else {
+    console.error('Confirm bulk delete button not found');
 }
 
 // Number formatting helper
@@ -777,8 +1101,23 @@ function showAlert(type, message) {
     console.log('Alert type:', type);
     console.log('Alert message:', message);
     
-    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
-    const iconClass = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
+    let alertClass, iconClass;
+    
+    switch(type) {
+        case 'success':
+            alertClass = 'alert-success';
+            iconClass = 'fas fa-check-circle';
+            break;
+        case 'warning':
+            alertClass = 'alert-warning';
+            iconClass = 'fas fa-exclamation-triangle';
+            break;
+        case 'error':
+        default:
+            alertClass = 'alert-danger';
+            iconClass = 'fas fa-exclamation-circle';
+            break;
+    }
     
     const alertHtml = `
         <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
@@ -928,7 +1267,10 @@ document.addEventListener('DOMContentLoaded', function() {
         'deleteEmail',
         'confirmDelete',
         'accountDetailsModal',
-        'accountDetailsContent'
+        'accountDetailsContent',
+        'bulkDeleteModal',
+        'confirmBulkDelete',
+        'selectAll'
     ];
     
     const missingElements = requiredElements.filter(id => !document.getElementById(id));
@@ -940,6 +1282,16 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize global variables
     window.deleteEmailAddress = '';
+    
+    // Initialize checkbox states
+    updateBulkDeleteButton();
+    
+    // Add event listeners for checkbox changes
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('email-checkbox') || e.target.id === 'selectAll') {
+            updateBulkDeleteButton();
+        }
+    });
     
     console.log('Email page initialization complete');
 });

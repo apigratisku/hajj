@@ -503,11 +503,11 @@ class Cpanel_new {
                     "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=1&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=add_pop"
                 ];
                 
-                // Data untuk POST request - gunakan parameter 'pass' sesuai dengan cPanel UAPI
+                // Data untuk POST request - coba berbagai parameter password untuk kompatibilitas rumahweb.com
                 $postData = [
                     'email' => $user,
                     'domain' => $domain,
-                    'pass' => $password, // Parameter password yang benar sesuai UAPI
+                    'passwd' => $password, // Parameter utama untuk rumahweb.com
                     'quota' => $quota
                 ];
                 
@@ -541,36 +541,31 @@ class Cpanel_new {
                         if (isset($result['error']) && strpos($result['error'], 'password') !== false) {
                             log_message('info', 'CPanel createEmailAccount - Password error detected, trying alternative parameters');
                             
-                            // Coba dengan parameter password yang berbeda jika 'pass' gagal
-                            $altPostData = [
-                                'email' => $user,
-                                'domain' => $domain,
-                                'passwd' => $password, // Coba dengan 'passwd' sebagai alternatif
-                                'quota' => $quota
+                            // Coba berbagai parameter password yang umum digunakan di cPanel
+                            $passwordParams = [
+                                'pass' => 'pass',           // UAPI standard
+                                'password' => 'password',   // Alternative
+                                'passwd_hash' => $this->generatePasswordHash($password), // Hashed password
+                                'passwd_enc' => $this->encryptPassword($password)        // Encrypted password
                             ];
                             
-                            $altResult = $this->requestWithSession($endpoint, 'POST', $altPostData);
-                            log_message('info', 'CPanel createEmailAccount - Alternative passwd response: ' . json_encode($altResult));
-                            
-                            if (!isset($altResult['error']) || strpos($altResult['error'], 'password') === false) {
-                                $result = $altResult;
-                                break;
-                            }
-                            
-                            // Jika masih error, coba dengan parameter yang lain
-                            $altPostData2 = [
-                                'email' => $user,
-                                'domain' => $domain,
-                                'password' => $password, // Coba dengan 'password'
-                                'quota' => $quota
-                            ];
-                            
-                            $altResult2 = $this->requestWithSession($endpoint, 'POST', $altPostData2);
-                            log_message('info', 'CPanel createEmailAccount - Second alternative password response: ' . json_encode($altResult2));
-                            
-                            if (!isset($altResult2['error']) || strpos($altResult2['error'], 'password') === false) {
-                                $result = $altResult2;
-                                break;
+                            foreach ($passwordParams as $paramName => $paramValue) {
+                                log_message('info', 'CPanel createEmailAccount - Trying parameter: ' . $paramName);
+                                
+                                $altPostData = [
+                                    'email' => $user,
+                                    'domain' => $domain,
+                                    $paramName => $paramValue,
+                                    'quota' => $quota
+                                ];
+                                
+                                $altResult = $this->requestWithSession($endpoint, 'POST', $altPostData);
+                                log_message('info', 'CPanel createEmailAccount - Alternative ' . $paramName . ' response: ' . json_encode($altResult));
+                                
+                                if (!isset($altResult['error']) || strpos($altResult['error'], 'password') === false) {
+                                    $result = $altResult;
+                                    break 2; // Break dari kedua loop
+                                }
                             }
                             
                             continue;
@@ -1306,11 +1301,11 @@ class Cpanel_new {
             // Tunggu sebentar untuk memastikan session stabil
             sleep(2);
             
-            // Coba create email dengan session baru - gunakan parameter 'pass' sesuai UAPI
+            // Coba create email dengan session baru - gunakan parameter 'passwd' untuk rumahweb.com
             $postData = [
                 'email' => $user,
                 'domain' => $domain,
-                'pass' => $password, // Parameter password yang benar sesuai UAPI
+                'passwd' => $password, // Parameter password utama untuk rumahweb.com
                 'quota' => $quota
             ];
             
@@ -1334,34 +1329,30 @@ class Cpanel_new {
                 if (strpos($result['error'], 'password') !== false) {
                     log_message('info', 'CPanel retryCreateEmailWithFreshLogin - Password error detected, trying alternative parameters');
                     
-                    // Coba dengan parameter password yang berbeda jika 'pass' gagal
-                    $altPostData = [
-                        'email' => $user,
-                        'domain' => $domain,
-                        'passwd' => $password, // Coba dengan 'passwd' sebagai alternatif
-                        'quota' => $quota
+                    // Coba berbagai parameter password yang umum digunakan di cPanel
+                    $passwordParams = [
+                        'pass' => 'pass',           // UAPI standard
+                        'password' => 'password',   // Alternative
+                        'passwd_hash' => $this->generatePasswordHash($password), // Hashed password
+                        'passwd_enc' => $this->encryptPassword($password)        // Encrypted password
                     ];
                     
-                    $altResult = $this->requestWithSession($endpoint, 'POST', $altPostData);
-                    log_message('info', 'CPanel retryCreateEmailWithFreshLogin - Alternative passwd response: ' . json_encode($altResult));
-                    
-                    if (!isset($altResult['error']) || strpos($altResult['error'], 'password') === false) {
-                        return $altResult;
-                    }
-                    
-                    // Jika masih error, coba dengan parameter yang lain
-                    $altPostData2 = [
-                        'email' => $user,
-                        'domain' => $domain,
-                        'password' => $password, // Coba dengan 'password'
-                        'quota' => $quota
-                    ];
-                    
-                    $altResult2 = $this->requestWithSession($endpoint, 'POST', $altPostData2);
-                    log_message('info', 'CPanel retryCreateEmailWithFreshLogin - Second alternative password response: ' . json_encode($altResult2));
-                    
-                    if (!isset($altResult2['error']) || strpos($altResult2['error'], 'password') === false) {
-                        return $altResult2;
+                    foreach ($passwordParams as $paramName => $paramValue) {
+                        log_message('info', 'CPanel retryCreateEmailWithFreshLogin - Trying parameter: ' . $paramName);
+                        
+                        $altPostData = [
+                            'email' => $user,
+                            'domain' => $domain,
+                            $paramName => $paramValue,
+                            'quota' => $quota
+                        ];
+                        
+                        $altResult = $this->requestWithSession($endpoint, 'POST', $altPostData);
+                        log_message('info', 'CPanel retryCreateEmailWithFreshLogin - Alternative ' . $paramName . ' response: ' . json_encode($altResult));
+                        
+                        if (!isset($altResult['error']) || strpos($altResult['error'], 'password') === false) {
+                            return $altResult;
+                        }
                     }
                 }
                 
@@ -1452,11 +1443,11 @@ class Cpanel_new {
             
             log_message('info', 'CPanel testEmailCreationWithPassword - Testing with URL: ' . $testUrl);
             
-            // Test dengan data yang benar - gunakan parameter 'pass' sesuai UAPI
+            // Test dengan data yang benar - gunakan parameter 'passwd' untuk rumahweb.com
             $testData = [
                 'email' => $user,
                 'domain' => $domain,
-                'pass' => $password, // Parameter password yang benar sesuai UAPI
+                'passwd' => $password, // Parameter password utama untuk rumahweb.com
                 'quota' => $quota
             ];
             
@@ -1476,34 +1467,30 @@ class Cpanel_new {
             if (isset($result['error']) && strpos($result['error'], 'password') !== false) {
                 log_message('info', 'CPanel testEmailCreationWithPassword - Password error detected, trying alternative parameters');
                 
-                // Coba dengan parameter password yang berbeda jika 'pass' gagal
-                $altTestData = [
-                    'email' => $user,
-                    'domain' => $domain,
-                    'passwd' => $password, // Coba dengan 'passwd' sebagai alternatif
-                    'quota' => $quota
+                // Coba berbagai parameter password yang umum digunakan di cPanel
+                $passwordParams = [
+                    'pass' => 'pass',           // UAPI standard
+                    'password' => 'password',   // Alternative
+                    'passwd_hash' => $this->generatePasswordHash($password), // Hashed password
+                    'passwd_enc' => $this->encryptPassword($password)        // Encrypted password
                 ];
                 
-                $altResult = $this->requestWithSession($testUrl, 'POST', $altTestData);
-                log_message('info', 'CPanel testEmailCreationWithPassword - Alternative passwd response: ' . json_encode($altResult));
-                
-                if (!isset($altResult['error']) || strpos($altResult['error'], 'password') === false) {
-                    return ['success' => true, 'message' => 'Email creation test passed with alternative passwd parameter'];
-                }
-                
-                // Jika masih error, coba dengan parameter yang lain
-                $altTestData2 = [
-                    'email' => $user,
-                    'domain' => $domain,
-                    'password' => $password, // Coba dengan 'password'
-                    'quota' => $quota
-                ];
-                
-                $altResult2 = $this->requestWithSession($testUrl, 'POST', $altTestData2);
-                log_message('info', 'CPanel testEmailCreationWithPassword - Second alternative password response: ' . json_encode($altResult2));
-                
-                if (!isset($altResult2['error']) || strpos($altResult2['error'], 'password') === false) {
-                    return ['success' => true, 'message' => 'Email creation test passed with alternative password parameter'];
+                foreach ($passwordParams as $paramName => $paramValue) {
+                    log_message('info', 'CPanel testEmailCreationWithPassword - Trying parameter: ' . $paramName);
+                    
+                    $altTestData = [
+                        'email' => $user,
+                        'domain' => $domain,
+                        $paramName => $paramValue,
+                        'quota' => $quota
+                    ];
+                    
+                    $altResult = $this->requestWithSession($testUrl, 'POST', $altTestData);
+                    log_message('info', 'CPanel testEmailCreationWithPassword - Alternative ' . $paramName . ' response: ' . json_encode($altResult));
+                    
+                    if (!isset($altResult['error']) || strpos($altResult['error'], 'password') === false) {
+                        return ['success' => true, 'message' => 'Email creation test passed with parameter: ' . $paramName];
+                    }
                 }
                 
                 return ['error' => 'All password parameter variations failed: ' . $result['error']];
@@ -1544,11 +1531,13 @@ class Cpanel_new {
             // Test dengan endpoint Jupiter
             $testUrl = "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=add_pop";
             
-            // Test semua parameter password yang mungkin
+            // Test semua parameter password yang mungkin untuk rumahweb.com
             $passwordParams = [
-                'pass' => 'pass',      // Parameter UAPI yang benar
-                'passwd' => 'passwd',  // Parameter alternatif
-                'password' => 'password' // Parameter alternatif lain
+                'passwd' => 'passwd',           // Parameter utama untuk rumahweb.com
+                'pass' => 'pass',               // UAPI standard
+                'password' => 'password',       // Alternative
+                'passwd_hash' => $this->generatePasswordHash($password), // Hashed password
+                'passwd_enc' => $this->encryptPassword($password)        // Encrypted password
             ];
             
             $results = [];
@@ -1615,11 +1604,11 @@ class Cpanel_new {
             
             log_message('info', 'CPanel testUAPIDirectly - Testing with UAPI endpoint: ' . $testUrl);
             
-            // Test dengan parameter 'pass' sesuai UAPI
+            // Test dengan parameter 'passwd' untuk rumahweb.com
             $testData = [
                 'email' => $user,
                 'domain' => $domain,
-                'pass' => $password,
+                'passwd' => $password,
                 'quota' => $quota
             ];
             
@@ -1836,6 +1825,123 @@ class Cpanel_new {
             log_message('error', 'CPanel testMultipleEndpoints - Exception: ' . $e->getMessage());
             return ['error' => 'Exception in multiple endpoints test: ' . $e->getMessage()];
         }
-    }
+         }
 
-}
+     /**
+      * Generate password hash untuk cPanel
+      */
+     private function generatePasswordHash($password)
+     {
+         try {
+             // Coba berbagai metode hash yang umum digunakan di cPanel
+             $hashMethods = [
+                 'md5' => md5($password),
+                 'sha1' => sha1($password),
+                 'sha256' => hash('sha256', $password),
+                 'sha512' => hash('sha512', $password),
+                 'bcrypt' => password_hash($password, PASSWORD_BCRYPT),
+                 'crypt' => crypt($password, '$2y$10$' . substr(md5(uniqid()), 0, 22))
+             ];
+             
+             // Return MD5 hash sebagai default (paling umum di cPanel)
+             return $hashMethods['md5'];
+         } catch (Exception $e) {
+             log_message('error', 'CPanel generatePasswordHash - Exception: ' . $e->getMessage());
+             return md5($password); // Fallback ke MD5
+         }
+     }
+
+     /**
+      * Encrypt password untuk cPanel
+      */
+     private function encryptPassword($password)
+     {
+         try {
+             // Coba berbagai metode enkripsi yang umum digunakan di cPanel
+             $encryptedMethods = [
+                 'base64' => base64_encode($password),
+                 'urlsafe' => urlencode($password),
+                 'htmlentities' => htmlentities($password, ENT_QUOTES, 'UTF-8'),
+                 'rawurlencode' => rawurlencode($password)
+             ];
+             
+             // Return base64 encoded sebagai default
+             return $encryptedMethods['base64'];
+         } catch (Exception $e) {
+             log_message('error', 'CPanel encryptPassword - Exception: ' . $e->getMessage());
+             return base64_encode($password); // Fallback ke base64
+         }
+     }
+
+     /**
+      * Test password parameter untuk rumahweb.com
+      */
+     public function testRumahwebPasswordParameters($email, $password, $quota = 10)
+     {
+         try {
+             log_message('info', 'CPanel testRumahwebPasswordParameters - Testing password parameters for rumahweb.com: ' . $email);
+             
+             $domain = substr(strrchr($email, "@"), 1);
+             $user = substr($email, 0, strpos($email, "@"));
+             
+             // Force fresh login untuk test
+             if (!$this->forceLogin()) {
+                 log_message('error', 'CPanel testRumahwebPasswordParameters - Force login failed');
+                 return ['error' => 'Failed to establish session for password parameter test'];
+             }
+             
+             // Test dengan endpoint Jupiter
+             $testUrl = "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=add_pop";
+             
+             // Test semua parameter password yang mungkin untuk rumahweb.com
+             $passwordParams = [
+                 'passwd' => $password,           // Parameter utama untuk rumahweb.com
+                 'pass' => $password,             // UAPI standard
+                 'password' => $password,         // Alternative
+                 'passwd_hash' => $this->generatePasswordHash($password), // Hashed password
+                 'passwd_enc' => $this->encryptPassword($password)        // Encrypted password
+             ];
+             
+             $results = [];
+             
+             foreach ($passwordParams as $paramName => $paramValue) {
+                 log_message('info', 'CPanel testRumahwebPasswordParameters - Testing parameter: ' . $paramName);
+                 
+                 $testData = [
+                     'email' => $user,
+                     'domain' => $domain,
+                     $paramName => $paramValue,
+                     'quota' => $quota
+                 ];
+                 
+                 $result = $this->requestWithSession($testUrl, 'POST', $testData);
+                 $results[$paramName] = $result;
+                 
+                 log_message('info', 'CPanel testRumahwebPasswordParameters - Result for ' . $paramName . ': ' . json_encode($result));
+                 
+                 // Jika berhasil, return hasilnya
+                 if (!isset($result['error']) || strpos($result['error'], 'password') === false) {
+                     log_message('info', 'CPanel testRumahwebPasswordParameters - Success with parameter: ' . $paramName);
+                     return [
+                         'success' => true, 
+                         'working_parameter' => $paramName,
+                         'message' => 'Rumahweb.com password test passed with parameter: ' . $paramName,
+                         'all_results' => $results
+                     ];
+                 }
+             }
+             
+             // Jika semua gagal, return semua hasil untuk analisis
+             log_message('error', 'CPanel testRumahwebPasswordParameters - All password parameters failed');
+             return [
+                 'error' => 'All password parameters failed for rumahweb.com',
+                 'all_results' => $results
+             ];
+             
+         } catch (Exception $e) {
+             log_message('error', 'CPanel testRumahwebPasswordParameters - Exception: ' . $e->getMessage());
+             return ['error' => 'Exception in rumahweb.com password parameter test: ' . $e->getMessage()];
+         }
+     }
+
+ }

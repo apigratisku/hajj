@@ -469,6 +469,19 @@ class Email extends CI_Controller {
                         $message .= ' UAPI direct test berhasil! Working parameter: ' . $uapi_direct_result['working_parameter'];
                     }
                     
+                    // Test password parameter untuk rumahweb.com
+                    $rumahweb_password_result = $this->cpanel_new->testRumahwebPasswordParameters($test_email, $test_password, 10);
+                    
+                    log_message('info', 'Email test_connection - Rumahweb password test result: ' . json_encode($rumahweb_password_result));
+                    
+                    if (isset($rumahweb_password_result['error'])) {
+                        log_message('error', 'Email test_connection - Rumahweb password test Error: ' . $rumahweb_password_result['error']);
+                        $message .= ' Rumahweb password test gagal: ' . $rumahweb_password_result['error'];
+                    } else {
+                        log_message('info', 'Email test_connection - Rumahweb password test Success: ' . $rumahweb_password_result['message']);
+                        $message .= ' Rumahweb password test berhasil! Working parameter: ' . $rumahweb_password_result['working_parameter'];
+                    }
+                    
                     // Test multiple endpoints
                     $multiple_endpoints_result = $this->cpanel_new->testMultipleEndpoints($test_email, $test_password, 10);
                     
@@ -656,6 +669,103 @@ class Email extends CI_Controller {
         } catch (Exception $e) {
             log_message('error', 'Error in delete_email_account: ' . $e->getMessage());
             return ['success' => false, 'message' => 'Error deleting email account: ' . $e->getMessage()];
+        }
+    }
+
+    public function bulk_delete() {
+        try {
+            log_message('info', 'Email bulk_delete - Processing bulk delete request');
+            
+            // Check if this is an AJAX request
+            if (!$this->input->is_ajax_request()) {
+                log_message('error', 'Email bulk_delete - Not an AJAX request');
+                $this->output->set_status_header(400);
+                $this->output->set_content_type('application/json');
+                $this->output->set_output(json_encode([
+                    'success' => false,
+                    'message' => 'Invalid request method'
+                ]));
+                return;
+            }
+            
+            // Get JSON input
+            $input = json_decode($this->input->raw_input_stream, true);
+            
+            if (!$input || !isset($input['emails']) || !is_array($input['emails'])) {
+                log_message('error', 'Email bulk_delete - Invalid input data');
+                $this->output->set_status_header(400);
+                $this->output->set_content_type('application/json');
+                $this->output->set_output(json_encode([
+                    'success' => false,
+                    'message' => 'Invalid input data'
+                ]));
+                return;
+            }
+            
+            $emails = $input['emails'];
+            $total_emails = count($emails);
+            
+            log_message('info', 'Email bulk_delete - Deleting ' . $total_emails . ' email accounts: ' . implode(', ', $emails));
+            
+            $success_count = 0;
+            $failed_emails = [];
+            
+            foreach ($emails as $email) {
+                log_message('info', 'Email bulk_delete - Processing email: ' . $email);
+                
+                $result = $this->delete_email_account($email);
+                
+                if ($result['success']) {
+                    $success_count++;
+                    log_message('info', 'Email bulk_delete - Successfully deleted: ' . $email);
+                    
+                    // Kirim notifikasi Telegram untuk delete email account
+                    if (isset($this->telegram_notification)) {
+                        if($this->session->userdata('username') != 'adhit'):
+                        $this->telegram_notification->email_management_notification('delete', $email, 'Bulk Delete');
+                        endif;
+                    }
+                } else {
+                    $failed_emails[] = [
+                        'email' => $email,
+                        'error' => $result['message']
+                    ];
+                    log_message('error', 'Email bulk_delete - Failed to delete: ' . $email . ' - ' . $result['message']);
+                }
+            }
+            
+            $response = [
+                'success' => true,
+                'deleted_count' => $success_count,
+                'total_count' => $total_emails,
+                'failed_count' => count($failed_emails),
+                'failed_emails' => $failed_emails
+            ];
+            
+            if ($success_count > 0) {
+                $response['message'] = "Berhasil menghapus {$success_count} dari {$total_emails} akun email";
+                if (count($failed_emails) > 0) {
+                    $response['message'] .= ". Gagal menghapus " . count($failed_emails) . " akun email";
+                }
+            } else {
+                $response['success'] = false;
+                $response['message'] = "Gagal menghapus semua akun email";
+            }
+            
+            log_message('info', 'Email bulk_delete - Final result: ' . json_encode($response));
+            
+            $this->output->set_content_type('application/json');
+            $this->output->set_output(json_encode($response));
+            
+        } catch (Exception $e) {
+            log_message('error', 'Error in bulk_delete: ' . $e->getMessage());
+            
+            $this->output->set_status_header(500);
+            $this->output->set_content_type('application/json');
+            $this->output->set_output(json_encode([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus akun email: ' . $e->getMessage()
+            ]));
         }
     }
 }
