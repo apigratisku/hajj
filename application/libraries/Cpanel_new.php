@@ -628,7 +628,7 @@ class Cpanel_new {
     }
 
     /**
-     * Update akun email
+     * Update akun email dengan optimasi untuk mengatasi HTTP 403
      */
     public function updateEmailAccount($email, $password = null, $quota = null)
     {
@@ -644,24 +644,114 @@ class Cpanel_new {
                     'email' => $user,
                     'domain' => $domain
                 ];
-                if ($password) $data['passwd'] = $password;
+                if ($password) $data['pass'] = $password; // Gunakan 'pass' untuk konsistensi dengan UAPI
                 if ($quota) $data['quota'] = $quota;
                 
-                $result = $this->requestWithToken('/Email/passwd_pop', 'POST', $data);
+                $result = $this->requestWithToken('/Email/edit_pop', 'POST', $data);
             } else {
                 log_message('info', 'CPanel updateEmailAccount - Using session authentication');
-                $params = [];
-                if ($password) {
-                    $params[] = "passwd={$password}";
-                }
-                if ($quota) {
-                    $params[] = "quota={$quota}";
+                
+                // Force fresh login untuk operasi update
+                log_message('info', 'CPanel updateEmailAccount - Force fresh login for update operation');
+                if (!$this->forceLogin()) {
+                    log_message('error', 'CPanel updateEmailAccount - Force login failed');
+                    return ['error' => 'Failed to establish fresh session for update operation'];
                 }
                 
-                $paramString = !empty($params) ? "&" . implode("&", $params) : "";
+                // Tunggu sebentar untuk memastikan session stabil
+                sleep(1);
                 
-                $url = "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=passwd_pop&email={$user}&domain={$domain}{$paramString}";
-                $result = $this->request($url);
+                // Coba endpoint yang paling reliable untuk Jupiter interface
+                $endpoints = [
+                    // Jupiter interface specific endpoint dengan POST data
+                    "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=edit_pop",
+                    // Execute API endpoint dengan POST data
+                    "/execute/Email/edit_pop",
+                    // Legacy endpoint sebagai fallback
+                    "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=1&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=edit_pop"
+                ];
+                
+                // Data untuk POST request - gunakan parameter 'pass' sesuai dengan UAPI
+                $postData = [
+                    'email' => $user,
+                    'domain' => $domain
+                ];
+                if ($password) $postData['pass'] = $password; // Parameter password yang benar sesuai UAPI
+                if ($quota) $postData['quota'] = $quota;
+                
+                // Log data yang akan dikirim untuk debugging
+                log_message('info', 'CPanel updateEmailAccount - POST data: ' . json_encode($postData));
+                
+                $result = null;
+                $max_retries = 2;
+                $retry_count = 0;
+                
+                while ($retry_count < $max_retries) {
+                    $retry_count++;
+                    log_message('info', 'CPanel updateEmailAccount - Attempt ' . $retry_count . ' of ' . $max_retries);
+                    
+                    foreach ($endpoints as $endpoint) {
+                        log_message('info', 'CPanel updateEmailAccount - Trying endpoint: ' . $endpoint);
+                        
+                        // Gunakan POST request untuk update operation
+                        $result = $this->requestWithSession($endpoint, 'POST', $postData);
+                        
+                        // Log response untuk debugging
+                        log_message('info', 'CPanel updateEmailAccount - Response: ' . json_encode($result));
+                        
+                        // Jika mendapat HTTP 403, coba endpoint berikutnya
+                        if (isset($result['error']) && strpos($result['error'], '403') !== false) {
+                            log_message('info', 'CPanel updateEmailAccount - HTTP 403 detected, trying next endpoint');
+                            continue;
+                        }
+                        
+                        // Jika mendapat error password, coba dengan parameter yang berbeda
+                        if (isset($result['error']) && strpos($result['error'], 'password') !== false && $password) {
+                            log_message('info', 'CPanel updateEmailAccount - Password error detected, trying alternative parameters');
+                            
+                            // Coba dengan parameter password yang berbeda jika 'pass' gagal
+                            $altPostData = $postData;
+                            unset($altPostData['pass']);
+                            $altPostData['passwd'] = $password; // Coba dengan 'passwd' sebagai alternatif
+                            
+                            $altResult = $this->requestWithSession($endpoint, 'POST', $altPostData);
+                            log_message('info', 'CPanel updateEmailAccount - Alternative passwd response: ' . json_encode($altResult));
+                            
+                            if (!isset($altResult['error']) || strpos($altResult['error'], 'password') === false) {
+                                $result = $altResult;
+                                break;
+                            }
+                            
+                            continue;
+                        }
+                        
+                        if (!isset($result['error']) && !empty($result)) {
+                            log_message('info', 'CPanel updateEmailAccount - Success with endpoint: ' . $endpoint);
+                            break 2; // Break dari kedua loop
+                        }
+                    }
+                    
+                    // Jika semua endpoint gagal dan mendapat 403, coba force login sekali lagi
+                    if (isset($result['error']) && strpos($result['error'], '403') !== false && $retry_count < $max_retries) {
+                        log_message('info', 'CPanel updateEmailAccount - All endpoints returned 403, attempting force login');
+                        if ($this->forceLogin()) {
+                            log_message('info', 'CPanel updateEmailAccount - Force login successful, will retry');
+                            sleep(1); // Tunggu sebentar setelah login
+                            continue;
+                        } else {
+                            log_message('error', 'CPanel updateEmailAccount - Force login failed on attempt ' . $retry_count);
+                            break;
+                        }
+                    } else {
+                        // Error lain selain 403, tidak perlu retry
+                        break;
+                    }
+                }
+                
+                if (!$result || isset($result['error'])) {
+                    log_message('error', 'CPanel updateEmailAccount - All endpoints failed');
+                    return ['error' => 'Failed to update email account: ' . (isset($result['error']) ? $result['error'] : 'Unknown error')];
+                }
             }
             
             log_message('info', 'CPanel updateEmailAccount - Result: ' . json_encode($result));
@@ -673,7 +763,7 @@ class Cpanel_new {
     }
 
     /**
-     * Hapus akun email
+     * Hapus akun email dengan optimasi untuk mengatasi HTTP 403
      */
     public function deleteEmailAccount($email)
     {
@@ -689,11 +779,103 @@ class Cpanel_new {
                     'email' => $user,
                     'domain' => $domain
                 ];
-                $result = $this->requestWithToken('/Email/del_pop', 'POST', $data);
+                $result = $this->requestWithToken('/Email/delete_pop', 'POST', $data);
             } else {
                 log_message('info', 'CPanel deleteEmailAccount - Using session authentication');
-                $url = "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=del_pop&email={$user}&domain={$domain}";
-                $result = $this->request($url);
+                
+                // Force fresh login untuk operasi delete dengan timeout yang lebih pendek
+                log_message('info', 'CPanel deleteEmailAccount - Force fresh login for delete operation');
+                if (!$this->forceLogin()) {
+                    log_message('error', 'CPanel deleteEmailAccount - Force login failed');
+                    return ['error' => 'Failed to establish fresh session for delete operation'];
+                }
+                
+                // Tunggu sebentar untuk memastikan session stabil
+                sleep(1);
+                
+                // Coba endpoint yang paling reliable untuk Jupiter interface
+                $endpoints = [
+                    // Jupiter interface specific endpoint dengan POST data
+                    "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=delete_pop",
+                    // Execute API endpoint dengan POST data
+                    "/execute/Email/delete_pop",
+                    // Legacy endpoint sebagai fallback
+                    "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=1&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=delete_pop"
+                ];
+                
+                // Data untuk POST request
+                $postData = [
+                    'email' => $user,
+                    'domain' => $domain
+                ];
+                
+                // Log data yang akan dikirim untuk debugging
+                log_message('info', 'CPanel deleteEmailAccount - POST data: ' . json_encode($postData));
+                
+                $result = null;
+                $max_retries = 2; // Kurangi retry untuk performa lebih baik
+                $retry_count = 0;
+                
+                while ($retry_count < $max_retries) {
+                    $retry_count++;
+                    log_message('info', 'CPanel deleteEmailAccount - Attempt ' . $retry_count . ' of ' . $max_retries);
+                    
+                    foreach ($endpoints as $endpoint) {
+                        log_message('info', 'CPanel deleteEmailAccount - Trying endpoint: ' . $endpoint);
+                        
+                        // Gunakan POST request untuk delete operation
+                        $result = $this->requestWithSession($endpoint, 'POST', $postData);
+                        
+                        // Log response untuk debugging
+                        log_message('info', 'CPanel deleteEmailAccount - Response: ' . json_encode($result));
+                        
+                        // Jika mendapat HTTP 403, coba endpoint berikutnya
+                        if (isset($result['error']) && strpos($result['error'], '403') !== false) {
+                            log_message('info', 'CPanel deleteEmailAccount - HTTP 403 detected, trying next endpoint');
+                            continue;
+                        }
+                        
+                        if (!isset($result['error']) && !empty($result)) {
+                            log_message('info', 'CPanel deleteEmailAccount - Success with endpoint: ' . $endpoint);
+                            break 2; // Break dari kedua loop
+                        }
+                    }
+                    
+                    // Jika semua endpoint gagal dan mendapat 403, coba force login sekali lagi
+                    if (isset($result['error']) && strpos($result['error'], '403') !== false && $retry_count < $max_retries) {
+                        log_message('info', 'CPanel deleteEmailAccount - All endpoints returned 403, attempting force login');
+                        if ($this->forceLogin()) {
+                            log_message('info', 'CPanel deleteEmailAccount - Force login successful, will retry');
+                            sleep(1); // Tunggu sebentar setelah login
+                            continue;
+                        } else {
+                            log_message('error', 'CPanel deleteEmailAccount - Force login failed on attempt ' . $retry_count);
+                            break;
+                        }
+                    } else {
+                        // Error lain selain 403, tidak perlu retry
+                        break;
+                    }
+                }
+                
+                if (!$result || isset($result['error'])) {
+                    log_message('error', 'CPanel deleteEmailAccount - All endpoints failed');
+                    
+                    // Jika mendapat HTTP 403, coba retry dengan fresh login
+                    if (isset($result['error']) && strpos($result['error'], '403') !== false) {
+                        log_message('info', 'CPanel deleteEmailAccount - HTTP 403 detected, trying retry mechanism');
+                        $retry_result = $this->retryDeleteEmailWithFreshLogin($email);
+                        
+                        if (isset($retry_result['error'])) {
+                            return ['error' => 'Failed to delete email account after retry: ' . $retry_result['error']];
+                        } else {
+                            log_message('info', 'CPanel deleteEmailAccount - Success after retry');
+                            return $retry_result;
+                        }
+                    }
+                    
+                    return ['error' => 'Failed to delete email account: ' . (isset($result['error']) ? $result['error'] : 'Unknown error')];
+                }
             }
             
             log_message('info', 'CPanel deleteEmailAccount - Result: ' . json_encode($result));
@@ -1196,6 +1378,59 @@ class Cpanel_new {
     }
 
     /**
+     * Retry delete email dengan fresh login
+     */
+    public function retryDeleteEmailWithFreshLogin($email)
+    {
+        try {
+            log_message('info', 'CPanel retryDeleteEmailWithFreshLogin - Retrying email deletion with fresh login');
+            
+            $domain = substr(strrchr($email, "@"), 1);
+            $user = substr($email, 0, strpos($email, "@"));
+            
+            // Force fresh login
+            if (!$this->forceLogin()) {
+                log_message('error', 'CPanel retryDeleteEmailWithFreshLogin - Force login failed');
+                return ['error' => 'Failed to establish fresh session for email deletion'];
+            }
+            
+            // Tunggu sebentar untuk memastikan session stabil
+            sleep(2);
+            
+            // Coba delete email dengan session baru
+            $postData = [
+                'email' => $user,
+                'domain' => $domain
+            ];
+            
+            // Log data yang akan dikirim untuk debugging
+            log_message('info', 'CPanel retryDeleteEmailWithFreshLogin - POST data: ' . json_encode($postData));
+            
+            // Gunakan endpoint yang paling reliable
+            $endpoint = "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=delete_pop";
+            
+            log_message('info', 'CPanel retryDeleteEmailWithFreshLogin - Trying with fresh session: ' . $endpoint);
+            
+            $result = $this->requestWithSession($endpoint, 'POST', $postData);
+            
+            // Log response untuk debugging
+            log_message('info', 'CPanel retryDeleteEmailWithFreshLogin - Response: ' . json_encode($result));
+            
+            if (isset($result['error'])) {
+                log_message('error', 'CPanel retryDeleteEmailWithFreshLogin - Still getting error: ' . $result['error']);
+                return $result;
+            }
+            
+            log_message('info', 'CPanel retryDeleteEmailWithFreshLogin - Success with fresh session');
+            return $result;
+            
+        } catch (Exception $e) {
+            log_message('error', 'CPanel retryDeleteEmailWithFreshLogin - Exception: ' . $e->getMessage());
+            return ['error' => 'Exception in retryDeleteEmailWithFreshLogin: ' . $e->getMessage()];
+        }
+    }
+
+    /**
      * Test create email dengan parameter password yang benar sesuai UAPI
      */
     public function testEmailCreationWithPassword($email, $password, $quota = 10)
@@ -1451,6 +1686,61 @@ class Cpanel_new {
         } catch (Exception $e) {
             log_message('error', 'CPanel testUAPIDirectly - Exception: ' . $e->getMessage());
             return ['error' => 'Exception in UAPI test: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Test delete email account untuk memastikan permission dan endpoint yang benar
+     */
+    public function testEmailDeletionPermission($email)
+    {
+        try {
+            log_message('info', 'CPanel testEmailDeletionPermission - Testing email deletion permission for: ' . $email);
+            
+            $domain = substr(strrchr($email, "@"), 1);
+            $user = substr($email, 0, strpos($email, "@"));
+            
+            // Force fresh login untuk test
+            if (!$this->forceLogin()) {
+                log_message('error', 'CPanel testEmailDeletionPermission - Force login failed');
+                return ['error' => 'Failed to establish session for email deletion test'];
+            }
+            
+            // Test dengan endpoint Jupiter yang digunakan untuk delete email
+            $testUrl = "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=delete_pop";
+            
+            log_message('info', 'CPanel testEmailDeletionPermission - Testing with URL: ' . $testUrl);
+            
+            // Test dengan data yang benar
+            $testData = [
+                'email' => $user,
+                'domain' => $domain
+            ];
+            
+            log_message('info', 'CPanel testEmailDeletionPermission - Test data: ' . json_encode($testData));
+            
+            $result = $this->requestWithSession($testUrl, 'POST', $testData);
+            
+            log_message('info', 'CPanel testEmailDeletionPermission - Response: ' . json_encode($result));
+            
+            // Jika mendapat error 403, berarti ada masalah permission
+            if (isset($result['error']) && strpos($result['error'], '403') !== false) {
+                log_message('error', 'CPanel testEmailDeletionPermission - HTTP 403 detected (Permission denied)');
+                return ['error' => 'HTTP 403 - Permission denied for email deletion'];
+            }
+            
+            // Jika mendapat error lain, mungkin email tidak ada atau masalah lain
+            if (isset($result['error'])) {
+                log_message('info', 'CPanel testEmailDeletionPermission - Test completed with error: ' . $result['error']);
+                return ['error' => 'Email deletion test failed: ' . $result['error']];
+            }
+            
+            log_message('info', 'CPanel testEmailDeletionPermission - Test successful');
+            return ['success' => true, 'message' => 'Email deletion test passed'];
+            
+        } catch (Exception $e) {
+            log_message('error', 'CPanel testEmailDeletionPermission - Exception: ' . $e->getMessage());
+            return ['error' => 'Exception in email deletion test: ' . $e->getMessage()];
         }
     }
 

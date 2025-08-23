@@ -481,6 +481,19 @@ class Email extends CI_Controller {
                         log_message('info', 'Email test_connection - Multiple endpoints test Success: ' . $multiple_endpoints_result['message']);
                         $message .= ' Multiple endpoints test berhasil! Working endpoint: ' . $multiple_endpoints_result['working_endpoint'] . ', parameter: ' . $multiple_endpoints_result['working_parameter'];
                     }
+                    
+                    // Test email deletion permission
+                    $deletion_test_result = $this->cpanel_new->testEmailDeletionPermission($test_email);
+                    
+                    log_message('info', 'Email test_connection - Email deletion test result: ' . json_encode($deletion_test_result));
+                    
+                    if (isset($deletion_test_result['error'])) {
+                        log_message('error', 'Email test_connection - Email deletion test Error: ' . $deletion_test_result['error']);
+                        $message .= ' Email deletion test gagal: ' . $deletion_test_result['error'];
+                    } else {
+                        log_message('info', 'Email test_connection - Email deletion test Success: ' . $deletion_test_result['message']);
+                        $message .= ' Email deletion test berhasil!';
+                    }
                 }
             }
             
