@@ -17,9 +17,7 @@
                         <button type="button" class="btn btn-warning btn-sm" onclick="forceRefresh()" id="forceRefreshBtn">
                             <i class="fas fa-redo"></i> Force Refresh
                         </button>
-                        <a href="<?= base_url('email/test_connection') ?>" class="btn btn-warning btn-sm">
-                            <i class="fas fa-plug"></i> Test Koneksi
-                        </a>
+                      
                         <button type="button" class="btn btn-danger btn-sm" onclick="bulkDelete()" id="bulkDeleteBtn" style="display: none;">
                             <i class="fas fa-trash"></i> Hapus Terpilih
                         </button>
@@ -84,7 +82,7 @@
                                                                         <th class="text-center" style="width: 50px;">
                                         <input type="checkbox" id="selectAll" onchange="toggleSelectAll()" title="Pilih Semua">
                                     </th>
-                                    <th class="text-center">No</th>
+                                   
                                     <th>Email Address</th>
                                     <th class="text-center">Quota</th>
                                     <th class="text-center">Usage</th>
@@ -109,7 +107,7 @@
                                                 <?php $emailValue = htmlspecialchars($account['email']); $isEmailValid = !empty($emailValue); ?>
                                                 <input type="checkbox" class="email-checkbox" value="<?= $emailValue ?>" onchange="updateBulkDeleteButton()" <?= !$isEmailValid ? 'disabled' : '' ?>>
                                             </td>
-                                            <td class="text-center"><?= $no++ ?></td>
+                                            
                                             <td>
                                                 <i class="fas fa-envelope me-2 text-primary"></i>
                                                 <strong><?= $isEmailValid ? $emailValue : 'N/A' ?></strong>
