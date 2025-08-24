@@ -752,8 +752,7 @@ class Transaksi_model extends CI_Model {
         }
         
         $data = [
-            'selesai' => 2,
-            'updated_at' => date('Y-m-d H:i:s')
+            'selesai' => 2
         ];
         
         $result = $this->db->update($this->table, $data);
