@@ -107,39 +107,7 @@
                                 </div>
                             </form>
                         </div>
-                        <!-- Update Statistics Info -->
-                    <?php if (isset($update_stats) && isset($update_stats_detail)): ?>
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <div class="alert alert-info">
-                                <h6 class="alert-heading">
-                                    <i class="fas fa-chart-bar"></i> Statistik Update Data
-                                </h6>
-                                <p class="mb-2">
-                                    <strong>Tanggal Pengerjaan:</strong> 
-                                    <?= date('d-m-Y', strtotime($_GET['tanggal_pengerjaan'])) ?>
-                                </p>
-                                <p class="mb-2">
-                                    <strong>Total Data Diupdate:</strong> 
-                                    <span class="badge bg-primary"><?= $update_stats ?> data</span>
-                                </p>
-                                <?php if (!empty($update_stats_detail)): ?>
-                                <div class="mt-2">
-                                    <strong>Breakdown Status:</strong>
-                                    <div class="d-flex flex-wrap gap-2 mt-1">
-                                        <?php foreach ($update_stats_detail as $stat): ?>
-                                            <span class="badge bg-secondary">
-                                                <?= $stat->status == 0 ? 'On Target' : ($stat->status == 1 ? 'Already' : 'Done') ?>: 
-                                                <?= $stat->count ?> data
-                                            </span>
-                                        <?php endforeach; ?>
-                                    </div>
-                                </div>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-                    <?php endif; ?>
+                      
                     </div>
 
                     <!-- Desktop Search Form -->
