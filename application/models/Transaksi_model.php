@@ -187,6 +187,16 @@ class Transaksi_model extends CI_Model {
         if (!empty($filters['tanggaljam'])) {
             $this->db->like("CONCAT(tanggal, ' ', jam)", $filters['tanggaljam']);
         }
+        if (!empty($filters['tanggal_pengerjaan'])) {
+            // Convert dd-mm-yyyy format to yyyy-mm-dd for database comparison
+            $tanggal_pengerjaan = $filters['tanggal_pengerjaan'];
+            if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $tanggal_pengerjaan)) {
+                // Convert from dd-mm-yyyy to yyyy-mm-dd
+                $date_parts = explode('-', $tanggal_pengerjaan);
+                $tanggal_pengerjaan = $date_parts[2] . '-' . $date_parts[1] . '-' . $date_parts[0];
+            }
+            $this->db->where('DATE(updated_at)', $tanggal_pengerjaan);
+        }
     
         // Urut berdasarkan abjad nama
         $this->db->order_by('peserta.flag_doc', 'DESC');
