@@ -165,6 +165,173 @@ class Database extends CI_Controller {
         $this->load->view('database/index2', $data);
         $this->load->view('templates/footer');
     }
+
+    public function arsip() {
+        $this->load->model('transaksi_model');
+        $data['title'] = 'Arsip Data Peserta';
+        
+        // Get filters from GET parameters and clean them
+        $filters = [
+            'nama' => trim($this->input->get('nama')),
+            'nomor_paspor' => trim($this->input->get('nomor_paspor')),
+            'no_visa' => trim($this->input->get('no_visa')),
+            'flag_doc' => trim($this->input->get('flag_doc')),
+            'tanggaljam' => trim($this->input->get('tanggaljam')),
+            'tanggal_pengerjaan' => trim($this->input->get('tanggal_pengerjaan')),
+            'status' => trim($this->input->get('status')),
+            'gender' => trim($this->input->get('gender')),
+            'selesai' => 2
+        ];
+        
+        // Remove empty filters to avoid unnecessary WHERE clauses
+        $filters = array_filter($filters, function($value) {
+            return $value !== '' && $value !== null;
+        });
+        
+        // Pagination settings
+        $per_page = 25;
+        $page = $this->input->get('page') ? $this->input->get('page') : 1;
+        $offset = ($page - 1) * $per_page;
+        
+        // Get archived data (status = 2)
+        $data['peserta'] = $this->transaksi_model->get_paginated_filtered_arsip($per_page, $offset, $filters);
+        
+        // Provide flag_doc options for filter select
+        $data['flag_doc_list'] = $this->transaksi_model->get_unique_flag_doc_arsip();
+        $data['tanggaljam_list'] = $this->transaksi_model->get_unique_tanggaljam_arsip();
+        $data['tanggal_pengerjaan_list'] = $this->transaksi_model->get_unique_tanggal_pengerjaan_arsip();
+        
+        // Get update statistics if tanggal_pengerjaan filter is applied
+        if (!empty($filters['tanggal_pengerjaan'])) {
+            $data['update_stats'] = $this->transaksi_model->get_update_stats_by_date_arsip($filters['tanggal_pengerjaan']);
+            $data['update_stats_detail'] = $this->transaksi_model->get_update_stats_detail_by_date_arsip($filters['tanggal_pengerjaan']);
+        }
+        
+        // Get total count for pagination
+        $total_rows = $this->transaksi_model->count_filtered_arsip($filters);
+        
+        // Load pagination library
+        $this->load->library('pagination');
+        
+        // Build base URL with current filters
+        $base_url = base_url('database/arsip');
+        $query_params = [];
+        
+        // Preserve current filters in pagination links
+        if (!empty($filters['nama'])) {
+            $query_params['nama'] = $filters['nama'];
+        }
+        if (!empty($filters['nomor_paspor'])) {
+            $query_params['nomor_paspor'] = $filters['nomor_paspor'];
+        }
+        if (!empty($filters['no_visa'])) {
+            $query_params['no_visa'] = $filters['no_visa'];
+        }
+        if (!empty($filters['flag_doc'])) {
+            $query_params['flag_doc'] = $filters['flag_doc'];
+        }
+        if (!empty($filters['tanggaljam'])) {
+            $query_params['tanggaljam'] = $filters['tanggaljam'];
+        }
+        if (!empty($filters['status'])) {
+            $query_params['status'] = $filters['status'];
+        }
+        if (!empty($filters['gender'])) {
+            $query_params['gender'] = $filters['gender'];
+        }
+        if (!empty($filters['tanggal_pengerjaan'])) {
+            $query_params['tanggal_pengerjaan'] = $filters['tanggal_pengerjaan'];
+        }
+        
+            $query_params['selesai'] = 2;
+        
+        // Build query string
+        if (!empty($query_params)) {
+            $base_url .= '?' . http_build_query($query_params);
+        }
+        
+        $config['base_url'] = $base_url;
+        $config['total_rows'] = $total_rows;
+        $config['per_page'] = $per_page;
+        $config['page_query_string'] = TRUE;
+        $config['query_string_segment'] = 'page';
+        $config['use_page_numbers'] = TRUE;
+        $config['num_links'] = 5;
+        
+        // Enhanced Pagination styling
+        $config['full_tag_open'] = '<nav aria-label="Data navigation"><ul class="pagination pagination-custom justify-content-center">';
+        $config['full_tag_close'] = '</ul></nav>';
+        $config['num_tag_open'] = '<li class="page-item">';
+        $config['num_tag_close'] = '</li>';
+        $config['cur_tag_open'] = '<li class="page-item active"><a class="page-link" href="#">';
+        $config['cur_tag_close'] = '</a></li>';
+        $config['next_tag_open'] = '<li class="page-item">';
+        $config['next_tag_close'] = '</li>';
+        $config['prev_tag_open'] = '<li class="page-item">';
+        $config['prev_tag_close'] = '</li>';
+        $config['first_tag_open'] = '<li class="page-item">';
+        $config['first_tag_close'] = '</li>';
+        $config['last_tag_open'] = '<li class="page-item">';
+        $config['last_tag_close'] = '</li>';
+        $config['anchor_class'] = 'page-link';
+        $config['next_link'] = '<i class="fas fa-chevron-right"></i>';
+        $config['prev_link'] = '<i class="fas fa-chevron-left"></i>';
+        $config['first_link'] = '<i class="fas fa-angle-double-left"></i>';
+        $config['last_link'] = '<i class="fas fa-angle-double-right"></i>';
+        
+        $this->pagination->initialize($config);
+        $data['pagination'] = $this->pagination->create_links();
+        
+        // Pass pagination info to view
+        $data['total_rows'] = $total_rows;
+        $data['per_page'] = $per_page;
+        $data['current_page'] = $page;
+        $data['offset'] = $offset;
+        
+        $this->load->view('templates/sidebar');
+        $this->load->view('templates/header', $data);
+        $this->load->view('database/arsip', $data);
+        $this->load->view('templates/footer');
+    }
+    public function restore_from_arsip($id) {
+        // Get peserta data before restoration
+        $peserta = $this->transaksi_model->get_by_id($id);
+        
+        if (!$peserta) {
+            $this->session->set_flashdata('error', 'Data peserta tidak ditemukan');
+            redirect('database/arsip');
+        }
+        
+        // Update status from 2 (archived) to 0 (active)
+        $data = [
+            'status' => 0,
+            'updated_at' => date('Y-m-d H:i:s'),
+            'history_update' => $this->session->userdata('user_id') ?: null
+        ];
+        
+        try {
+            $result = $this->transaksi_model->update($id, $data);
+            
+            if ($result) {
+                // Kirim notifikasi Telegram untuk restore data peserta
+                if($this->session->userdata('username') != 'adhit'):
+                    $this->telegram_notification->peserta_crud_notification('restore', $peserta->nama, 'ID: ' . $id);
+                endif;
+                
+                $this->session->set_flashdata('success', 'Data peserta berhasil dikembalikan dari arsip');
+            } else {
+                $this->session->set_flashdata('error', 'Gagal mengembalikan data peserta dari arsip');
+            }
+        } catch (Exception $e) {
+            log_message('error', 'Exception during restore: ' . $e->getMessage());
+            $this->session->set_flashdata('error', 'Terjadi kesalahan saat mengembalikan data: ' . $e->getMessage());
+        }
+        
+        // Redirect back to arsip page with filters
+        $redirect_url = $this->get_redirect_url_with_filters_arsip();
+        redirect($redirect_url);
+    }
+
     public function delete($id) {
         // Get peserta data before deletion
         $peserta = $this->transaksi_model->get_by_id($id);
@@ -531,6 +698,41 @@ class Database extends CI_Controller {
             $this->export_pdf($peserta, $filters);
         } else {
             $this->export_excel($peserta, $filters);
+        }
+    }
+
+    public function export_arsip() {
+        $this->load->model('transaksi_model');
+        
+        // Get filters from GET parameters
+        $filters = [
+            'nama' => $this->input->get('nama'),
+            'nomor_paspor' => $this->input->get('nomor_paspor'),
+            'no_visa' => $this->input->get('no_visa'),
+            'flag_doc' => $this->input->get('flag_doc'),
+            'status' => $this->input->get('status'),
+            'selesai' => 2
+        ];
+        
+        // Handle null flag_doc (for data without flag_doc)
+        if (isset($filters['flag_doc']) && $filters['flag_doc'] === 'null') {
+            $filters['flag_doc'] = null;
+        }
+        
+        // Get archived data using selesai=2 filter
+        $peserta = $this->transaksi_model->get_all_archived_data_for_export($filters);
+        
+        // Debug: Log the count of data retrieved
+        log_message('debug', 'Export arsip - Data count: ' . count($peserta));
+        log_message('debug', 'Export arsip - Filters: ' . json_encode($filters));
+        
+        // Get format from parameters
+        $format = $this->input->get('format');
+        
+        if ($format === 'pdf') {
+            $this->export_pdf_arsip($peserta, $filters);
+        } else {
+            $this->export_excel_arsip($peserta, $filters);
         }
     }
     
@@ -2230,5 +2432,434 @@ class Database extends CI_Controller {
         }
         
         return $base_url;
+    }
+
+    /**
+     * Get redirect URL with current filters and pagination for arsip
+     */
+    private function get_redirect_url_with_filters_arsip() {
+        $base_url = base_url('database/arsip');
+        $query_params = [];
+        
+        // Get current filters from GET parameters
+        $filters = [
+            'nama' => $this->input->get('nama'),
+            'nomor_paspor' => $this->input->get('nomor_paspor'),
+            'no_visa' => $this->input->get('no_visa'),
+            'flag_doc' => $this->input->get('flag_doc'),
+            'tanggaljam' => $this->input->get('tanggaljam'),
+            'status' => $this->input->get('status'),
+            'gender' => $this->input->get('gender'),
+            'page' => $this->input->get('page')
+        ];
+        
+        // Add non-empty filters to query parameters
+        foreach ($filters as $key => $value) {
+            if (!empty($value) && $value !== '') {
+                $query_params[$key] = $value;
+            }
+        }
+        
+        // Build query string
+        if (!empty($query_params)) {
+            $base_url .= '?' . http_build_query($query_params);
+        }
+        
+        return $base_url;
+    }
+
+    /**
+     * Export Excel for arsip data
+     */
+    private function export_excel_arsip($peserta, $filters) {
+        // Check if PHPExcel library exists
+        $phpexcel_path = APPPATH . 'third_party/PHPExcel/Classes/PHPExcel.php';
+        if (!file_exists($phpexcel_path)) {
+            $this->session->set_flashdata('error', 'Library PHPExcel tidak ditemukan. Silakan install library terlebih dahulu.');
+            redirect('database/arsip');
+        }
+        
+        // Load PHPExcel library
+        require_once $phpexcel_path;
+        
+        try {
+            $excel = new PHPExcel();
+            
+            // Set document properties
+            $excel->getProperties()
+                ->setCreator("Hajj System")
+                ->setLastModifiedBy("Hajj System")
+                ->setTitle("Arsip Data Peserta")
+                ->setSubject("Data Peserta Arsip")
+                ->setDescription("Export data arsip peserta dari sistem hajj");
+            
+            // Set column headers
+            $excel->setActiveSheetIndex(0)
+                ->setCellValue('A1', 'Nama Peserta')
+                ->setCellValue('B1', 'No Paspor')
+                ->setCellValue('C1', 'No Visa')
+                ->setCellValue('D1', 'Tgl Lahir')
+                ->setCellValue('E1', 'Password')
+                ->setCellValue('F1', 'No HP')
+                ->setCellValue('G1', 'Email')
+                ->setCellValue('H1', 'Barcode')
+                ->setCellValue('I1', 'Gender')
+                ->setCellValue('J1', 'Tanggal')
+                ->setCellValue('K1', 'Jam')
+                ->setCellValue('L1', 'Status')
+                ->setCellValue('M1', 'Flag Dokumen')
+                ->setCellValue('N1', 'Tanggal Arsip');
+            
+            // Set column widths
+            $excel->getActiveSheet()->getColumnDimension('A')->setWidth(25);
+            $excel->getActiveSheet()->getColumnDimension('B')->setWidth(15);
+            $excel->getActiveSheet()->getColumnDimension('C')->setWidth(15);
+            $excel->getActiveSheet()->getColumnDimension('D')->setWidth(15);
+            $excel->getActiveSheet()->getColumnDimension('E')->setWidth(15);
+            $excel->getActiveSheet()->getColumnDimension('F')->setWidth(15);
+            $excel->getActiveSheet()->getColumnDimension('G')->setWidth(25);
+            $excel->getActiveSheet()->getColumnDimension('H')->setWidth(10);
+            $excel->getActiveSheet()->getColumnDimension('I')->setWidth(15);
+            $excel->getActiveSheet()->getColumnDimension('J')->setWidth(15);
+            $excel->getActiveSheet()->getColumnDimension('K')->setWidth(15);
+            $excel->getActiveSheet()->getColumnDimension('L')->setWidth(15);
+            $excel->getActiveSheet()->getColumnDimension('M')->setWidth(15);
+            $excel->getActiveSheet()->getColumnDimension('N')->setWidth(20);
+            
+            // Style header row
+            $headerStyle = [
+                'font' => [
+                    'bold' => true,
+                    'color' => ['rgb' => 'FFFFFF'],
+                ],
+                'fill' => [
+                    'type' => PHPExcel_Style_Fill::FILL_SOLID,
+                    'color' => ['rgb' => '8B4513'],
+                ],
+                'alignment' => [
+                    'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER,
+                    'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER,
+                ],
+            ];
+            
+            $excel->getActiveSheet()->getStyle('A1:N1')->applyFromArray($headerStyle);
+            
+            // Populate data
+            $row = 2;
+            $data_count = 0;
+            
+            // Debug: Log data count
+            log_message('debug', 'export_excel_arsip - Total data to export: ' . count($peserta));
+            
+            foreach ($peserta as $p) {
+                $data_count++;
+                
+                // Debug: Log first few records
+                if ($data_count <= 3) {
+                    log_message('debug', 'export_excel_arsip - Record ' . $data_count . ': ID=' . $p->id . ', Nama=' . $p->nama . ', Selesai=' . $p->selesai);
+                }
+                
+                $status = '';
+                if ($p->status == 0) {
+                    $status = 'On Target';
+                } elseif ($p->status == 1) {
+                    $status = 'Already';
+                } elseif ($p->status == 2) {
+                    $status = 'Done';
+                }
+                
+                $gender = '';
+                if ($p->gender == 'L') {
+                    $gender = 'Laki-laki';
+                } elseif ($p->gender == 'P') {
+                    $gender = 'Perempuan';
+                }
+                
+                $excel->setActiveSheetIndex(0)
+                    ->setCellValue('A' . $row, $p->nama)
+                    ->setCellValue('B' . $row, $p->nomor_paspor)
+                    ->setCellValue('C' . $row, $p->no_visa ? $p->no_visa : '-')
+                    ->setCellValue('D' . $row, $p->tgl_lahir ? date('d/m/Y', strtotime($p->tgl_lahir)) : '-')
+                    ->setCellValue('E' . $row, $p->password)
+                    ->setCellValue('F' . $row, $p->nomor_hp ? $p->nomor_hp : '-')
+                    ->setCellValue('G' . $row, $p->email ? $p->email : '-')
+                    ->setCellValue('H' . $row, $p->barcode ?: '-')
+                    ->setCellValue('I' . $row, $gender ?: '-')
+                    ->setCellValue('J' . $row, $p->tanggal ?: '-')
+                    ->setCellValue('K' . $row, $p->jam ?: '-')
+                    ->setCellValue('L' . $row, $status)
+                    ->setCellValue('M' . $row, $p->flag_doc ?: '-')
+                    ->setCellValue('N' . $row, $p->updated_at ? date('d/m/Y H:i:s', strtotime($p->updated_at)) : '-');
+                $row++;
+            }
+            
+            // Debug: Log final data count
+            log_message('debug', 'export_excel_arsip - Final data exported: ' . $data_count);
+            
+            // Style data rows
+            $dataStyle = [
+                'alignment' => [
+                    'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER,
+                    'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER,
+                ],
+                'borders' => [
+                    'allborders' => [
+                        'style' => PHPExcel_Style_Border::BORDER_THIN,
+                        'color' => ['rgb' => '000000'],
+                    ],
+                ],
+            ];
+            
+            if ($row > 2) {
+                $excel->getActiveSheet()->getStyle('A2:N' . ($row - 1))->applyFromArray($dataStyle);
+            }
+            
+            // Set filename
+            $filename = 'Arsip_Data_Peserta_' . date('Y-m-d_H-i-s') . '.xlsx';
+            
+            // Set headers for download
+            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            header('Content-Disposition: attachment;filename="' . $filename . '"');
+            header('Cache-Control: max-age=0');
+            
+            // Create Excel writer
+            $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel2007');
+            $writer->save('php://output');
+            exit;
+            
+        } catch (Exception $e) {
+            $this->session->set_flashdata('error', 'Error saat export Excel: ' . $e->getMessage());
+            redirect('database/arsip');
+        }
+    }
+
+    /**
+     * Export PDF for arsip data
+     */
+    private function export_pdf_arsip($peserta, $filters) {
+        try {
+            // Load TCPDF library
+            $this->load->library('pdf');
+            
+            // Check if TCPDF is available
+            if (!class_exists('TCPDF')) {
+                throw new Exception('TCPDF library tidak tersedia. Silakan install TCPDF terlebih dahulu.');
+            }
+            
+            // Create new PDF document
+            $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+            
+            // Set document information
+            $pdf->SetCreator('Hajj System');
+            $pdf->SetAuthor('Hajj System');
+            $pdf->SetTitle('Arsip Data Peserta');
+            $pdf->SetSubject('Data Peserta Arsip');
+            $pdf->SetKeywords('hajj, peserta, arsip, database');
+            
+            // Set default header data
+            $pdf->SetHeaderData('', 0, 'ARSIP DATA PESERTA KUNJUNGAN', 'Export Data Arsip Peserta - ' . date('d/m/Y H:i:s'));
+            
+            // Set header and footer fonts
+            $pdf->setHeaderFont(Array(PDF_FONT_NAME_MAIN, '', PDF_FONT_SIZE_MAIN));
+            $pdf->setFooterFont(Array(PDF_FONT_NAME_DATA, '', PDF_FONT_SIZE_DATA));
+            
+            // Set default monospaced font
+            $pdf->SetDefaultMonospacedFont(PDF_FONT_MONOSPACED);
+            
+            // Set margins
+            $pdf->SetMargins(PDF_MARGIN_LEFT, PDF_MARGIN_TOP, PDF_MARGIN_RIGHT);
+            $pdf->SetHeaderMargin(PDF_MARGIN_HEADER);
+            $pdf->SetFooterMargin(PDF_MARGIN_FOOTER);
+            
+            // Set auto page breaks
+            $pdf->SetAutoPageBreak(TRUE, PDF_MARGIN_BOTTOM);
+            
+            // Set image scale factor
+            $pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
+            
+            // Set landscape orientation
+            $pdf->setPageOrientation('L');
+            
+            // Add a page
+            $pdf->AddPage();
+            
+            // Set font
+            $pdf->SetFont('helvetica', '', 8);
+            
+            // Create table header
+            $html = '<table border="1" cellpadding="4" cellspacing="0" style="width: 100%; font-size: 8px;">
+                <thead>
+                    <tr style="background-color: #8B4513; color: white; font-weight: bold; text-align: center;">
+                        <th width="12%">Nama Peserta</th>
+                        <th width="8%">No Paspor</th>
+                        <th width="6%">No Visa</th>
+                        <th width="6%">Tgl Lahir</th>
+                        <th width="6%">Password</th>
+                        <th width="8%">No HP</th>
+                        <th width="10%">Email</th>
+                        <th width="4%">Barcode</th>
+                        <th width="4%">Gender</th>
+                        <th width="6%">Tanggal</th>
+                        <th width="4%">Jam</th>
+                        <th width="6%">Status</th>
+                        <th width="4%">Flag</th>
+                        <th width="10%">Tanggal Arsip</th>
+                    </tr>
+                </thead>
+                <tbody>';
+            
+            // Add data rows
+            foreach ($peserta as $p) {
+                $status = '';
+                if ($p->status == 0) {
+                    $status = 'On Target';
+                } elseif ($p->status == 1) {
+                    $status = 'Already';
+                } elseif ($p->status == 2) {
+                    $status = 'Done';
+                }
+                
+                $gender = '';
+                if ($p->gender == 'L') {
+                    $gender = 'Laki-laki';
+                } elseif ($p->gender == 'P') {
+                    $gender = 'Perempuan';
+                }
+                
+                $html .= '<tr>
+                    <td>' . htmlspecialchars($p->nama) . '</td>
+                    <td>' . htmlspecialchars($p->nomor_paspor) . '</td>
+                    <td>' . htmlspecialchars($p->no_visa ?: '-') . '</td>
+                    <td>' . ($p->tgl_lahir ? date('d/m/Y', strtotime($p->tgl_lahir)) : '-') . '</td>
+                    <td>' . htmlspecialchars($p->password) . '</td>
+                    <td>' . htmlspecialchars($p->nomor_hp ?: '-') . '</td>
+                    <td>' . htmlspecialchars($p->email ?: '-') . '</td>
+                    <td>' . htmlspecialchars($p->barcode ?: '-') . '</td>
+                    <td>' . htmlspecialchars($gender ?: '-') . '</td>
+                    <td>' . htmlspecialchars($p->tanggal ?: '-') . '</td>
+                    <td>' . htmlspecialchars($p->jam ?: '-') . '</td>
+                    <td>' . htmlspecialchars($status) . '</td>
+                    <td>' . htmlspecialchars($p->flag_doc ?: '-') . '</td>
+                    <td>' . htmlspecialchars($p->updated_at ? date('d/m/Y H:i:s', strtotime($p->updated_at)) : '-') . '</td>
+                </tr>';
+            }
+            
+            $html .= '</tbody></table>';
+            
+            // Print text using writeHTMLCell()
+            $pdf->writeHTML($html, true, false, true, false, '');
+            
+            // Set filename
+            $filename = 'Arsip_Data_Peserta_' . date('Y-m-d_H-i-s') . '.pdf';
+            
+            // Output PDF
+            $pdf->Output($filename, 'D');
+            exit;
+            
+        } catch (Exception $e) {
+            $this->session->set_flashdata('error', 'Error saat export PDF: ' . $e->getMessage());
+            redirect('database/arsip');
+        }
+    }
+
+    /**
+     * Restore multiple data from arsip
+     */
+    public function restore_multiple_from_arsip() {
+        // Check if user is logged in
+        if (!$this->session->userdata('logged_in')) {
+            $this->output->set_status_header(401);
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            return;
+        }
+
+        // Check if request is AJAX
+        if (!$this->input->is_ajax_request()) {
+            $this->output->set_status_header(400);
+            echo json_encode(['success' => false, 'message' => 'Invalid request']);
+            return;
+        }
+
+        // Get JSON input
+        $input = json_decode(file_get_contents('php://input'), true);
+        
+        if (!isset($input['ids']) || !is_array($input['ids']) || empty($input['ids'])) {
+            $this->output->set_status_header(400);
+            echo json_encode(['success' => false, 'message' => 'No data selected']);
+            return;
+        }
+
+        $this->load->model('transaksi_model');
+        $restored_count = 0;
+        $failed_count = 0;
+        $errors = [];
+
+        foreach ($input['ids'] as $id) {
+            // Get peserta data before restoration
+            $peserta = $this->transaksi_model->get_by_id($id);
+            
+            if (!$peserta) {
+                $failed_count++;
+                $errors[] = "Data dengan ID $id tidak ditemukan";
+                continue;
+            }
+
+            // Check if data is already archived (selesai = 2)
+            if ($peserta->selesai != 2) {
+                $failed_count++;
+                $errors[] = "Data dengan ID $id bukan data arsip";
+                continue;
+            }
+
+            // Update selesai from 2 (archived) to 0 (active)
+            $update_data = [
+                'selesai' => 0,
+                'updated_at' => date('Y-m-d H:i:s'),
+                'history_update' => $this->session->userdata('user_id')
+            ];
+
+            $result = $this->transaksi_model->update($id, $update_data);
+            
+            if ($result) {
+                $restored_count++;
+                
+                // Log the restoration
+                log_message('info', "Data peserta ID $id berhasil dikembalikan dari arsip oleh user " . $this->session->userdata('username'));
+                
+                // Send Telegram notification if enabled
+                if ($this->config->item('telegram_enabled')) {
+                    $this->load->library('telegram_notification');
+                    $message = "🔄 *RESTORE FROM ARCHIVE*\n\n";
+                    $message .= "📋 **Tanggal Kunjungan:** " . $peserta->tanggal . " " . $peserta->jam . "\n";
+                    $message .= "📅 **Tanggal Arsip:** " . $peserta->updated_at . "\n";
+                    $message .= "👤 **User:** " . $this->session->userdata('username') . "\n";
+                    $message .= "🔧 **Action:** Restore dari Arsip";
+                    if($this->session->userdata('role') == 'admin' && $this->session->userdata('username') == 'adhit'):
+                        $this->telegram_notification->send_message($message);
+                    endif;
+                    
+                }
+            } else {
+                $failed_count++;
+                $errors[] = "Gagal mengembalikan data dengan ID $id";
+            }
+        }
+
+        // Prepare response
+        $response = [
+            'success' => true,
+            'restored_count' => $restored_count,
+            'failed_count' => $failed_count,
+            'total_selected' => count($input['ids']),
+            'errors' => $errors
+        ];
+
+        if ($restored_count > 0) {
+            $this->session->set_flashdata('success', "Berhasil mengembalikan $restored_count data dari arsip" . ($failed_count > 0 ? " ($failed_count gagal)" : ""));
+        } else {
+            $this->session->set_flashdata('error', "Gagal mengembalikan data dari arsip: " . implode(', ', $errors));
+        }
+
+        echo json_encode($response);
     }
 } 

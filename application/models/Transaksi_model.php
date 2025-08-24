@@ -405,6 +405,252 @@ class Transaksi_model extends CI_Model {
         $this->db->order_by('status', 'ASC');
         return $this->db->get()->result();
     }
+
+    // ==================== ARSIP METHODS ====================
+    
+    /**
+     * Get paginated filtered data for arsip (status = 2)
+     */
+    public function get_paginated_filtered_arsip($limit, $offset, $filters = []) {
+        $this->db->select('peserta.*');
+        $this->db->from($this->table);
+        $this->db->where('peserta.selesai', 2); // Only archived data (selesai=2)
+    
+        if (!empty($filters['nama'])) {
+            $this->db->like('peserta.nama', $filters['nama']);
+        }
+        if (!empty($filters['nomor_paspor'])) {
+            $this->db->like('peserta.nomor_paspor', $filters['nomor_paspor']);
+        }
+        if (!empty($filters['no_visa'])) {
+            $this->db->like('peserta.no_visa', $filters['no_visa']);
+        }
+        if (isset($filters['status']) && $filters['status'] !== '') {
+            $this->db->where('peserta.status', $filters['status']);
+        }
+        if (!empty($filters['gender'])) {
+            $this->db->where('peserta.gender', $filters['gender']);
+        }
+        if (isset($filters['flag_doc'])) {
+            // Handle flag_doc filter more precisely
+            if ($filters['flag_doc'] === null || $filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
+                $this->db->where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
+            } else {
+                $this->db->where('peserta.flag_doc', $filters['flag_doc']);
+            }
+        }
+        if (!empty($filters['tanggaljam'])) {
+            $this->db->like("CONCAT(tanggal, ' ', jam)", $filters['tanggaljam']);
+        }
+        if (!empty($filters['tanggal_pengerjaan'])) {
+            // Convert dd-mm-yyyy format to yyyy-mm-dd for database comparison
+            $tanggal_pengerjaan = $filters['tanggal_pengerjaan'];
+            if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $tanggal_pengerjaan)) {
+                // Convert from dd-mm-yyyy to yyyy-mm-dd
+                $date_parts = explode('-', $tanggal_pengerjaan);
+                $tanggal_pengerjaan = $date_parts[2] . '-' . $date_parts[1] . '-' . $date_parts[0];
+            }
+            $this->db->where('DATE(updated_at)', $tanggal_pengerjaan);
+        }
+    
+        // Debug: Log the query
+        $this->db->order_by('peserta.flag_doc', 'DESC');
+        $this->db->order_by('peserta.id', 'DESC');
+        $this->db->limit($limit, $offset);
+        
+        $query = $this->db->get();
+        $result = $query->result();
+        
+        // Debug: Log the query and result count
+        log_message('debug', 'get_paginated_filtered_arsip - Query: ' . $this->db->last_query());
+        log_message('debug', 'get_paginated_filtered_arsip - Result count: ' . count($result));
+        
+        return $result;
+    }
+
+    /**
+     * Count filtered data for arsip
+     */
+    public function count_filtered_arsip($filters = []) {
+        $this->db->from($this->table);
+        $this->db->where('peserta.selesai', 2); // Only archived data (selesai=2)
+        
+        if (!empty($filters['nama'])) {
+            $this->db->like('peserta.nama', $filters['nama']);
+        }
+        if (!empty($filters['nomor_paspor'])) {
+            $this->db->like('peserta.nomor_paspor', $filters['nomor_paspor']);
+        }
+        if (!empty($filters['no_visa'])) {
+            $this->db->like('peserta.no_visa', $filters['no_visa']);
+        }
+        if (isset($filters['status']) && $filters['status'] !== '') {
+            $this->db->where('peserta.status', $filters['status']);
+        }
+        if (isset($filters['flag_doc'])) {
+            // Handle flag_doc filter more precisely
+            if ($filters['flag_doc'] === null || $filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
+                $this->db->where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
+            } else {
+                $this->db->where('peserta.flag_doc', $filters['flag_doc']);
+            }
+        }
+        if (!empty($filters['tanggaljam'])) {
+            $this->db->like("CONCAT(tanggal, ' ', jam)", $filters['tanggaljam']);
+        }
+        if (!empty($filters['tanggal_pengerjaan'])) {
+            // Convert dd-mm-yyyy format to yyyy-mm-dd for database comparison
+            $tanggal_pengerjaan = $filters['tanggal_pengerjaan'];
+            if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $tanggal_pengerjaan)) {
+                // Convert from dd-mm-yyyy to yyyy-mm-dd
+                $date_parts = explode('-', $tanggal_pengerjaan);
+                $tanggal_pengerjaan = $date_parts[2] . '-' . $date_parts[1] . '-' . $date_parts[0];
+            }
+            $this->db->where('DATE(updated_at)', $tanggal_pengerjaan);
+        }
+        
+        $count = $this->db->count_all_results();
+        
+        // Debug: Log the count
+        log_message('debug', 'count_filtered_arsip - Count: ' . $count);
+        
+        return $count;
+    }
+
+    /**
+     * Get unique flag_doc for arsip
+     */
+    public function get_unique_flag_doc_arsip() {
+        $this->db->select('flag_doc, MAX(created_at) as created_at');
+        $this->db->from($this->table);
+        $this->db->where('flag_doc IS NOT NULL');
+        $this->db->where('flag_doc !=', '');
+        $this->db->where('selesai', 2); // Only archived data (selesai=2)
+        $this->db->group_by('flag_doc');
+        $this->db->order_by('created_at', 'DESC');
+        return $this->db->get()->result();
+    }
+    
+    /**
+     * Get unique tanggaljam for arsip
+     */
+    public function get_unique_tanggaljam_arsip() {
+        $this->db->select("nama, CONCAT(tanggal, ' ', jam) AS tanggaljam");
+        $this->db->from($this->table);
+        $this->db->where("tanggal IS NOT NULL");
+        $this->db->where("jam IS NOT NULL");
+        $this->db->where("tanggal != ''");
+        $this->db->where("jam != ''");
+        $this->db->where('selesai', 2); // Only archived data
+        $this->db->group_by("tanggaljam");
+        $this->db->order_by('tanggaljam', 'ASC');
+        return $this->db->get()->result();
+    }
+
+    /**
+     * Get unique tanggal pengerjaan for arsip
+     */
+    public function get_unique_tanggal_pengerjaan_arsip() {
+        $this->db->select("DATE(updated_at) as tanggal_pengerjaan, COUNT(*) as jumlah_update");
+        $this->db->from($this->table);
+        $this->db->where("updated_at IS NOT NULL");
+        $this->db->where('selesai', 2); // Only archived data
+        $this->db->group_by("DATE(updated_at)");
+        $this->db->order_by("tanggal_pengerjaan", "DESC");
+        return $this->db->get()->result();
+    }
+
+    /**
+     * Get update statistics by date for arsip
+     */
+    public function get_update_stats_by_date_arsip($tanggal_pengerjaan) {
+        // Convert dd-mm-yyyy format to yyyy-mm-dd for database comparison
+        if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $tanggal_pengerjaan)) {
+            $date_parts = explode('-', $tanggal_pengerjaan);
+            $tanggal_pengerjaan = $date_parts[2] . '-' . $date_parts[1] . '-' . $date_parts[0];
+        }
+        
+        $this->db->select('COUNT(*) as total_updated');
+        $this->db->from($this->table);
+        $this->db->where('DATE(updated_at)', $tanggal_pengerjaan);
+        $this->db->where('selesai', 2); // Only archived data
+        $result = $this->db->get()->row();
+        return $result ? $result->total_updated : 0;
+    }
+    
+    /**
+     * Get detailed update statistics by date with status breakdown for arsip
+     */
+    public function get_update_stats_detail_by_date_arsip($tanggal_pengerjaan) {
+        // Convert dd-mm-yyyy format to yyyy-mm-dd for database comparison
+        if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $tanggal_pengerjaan)) {
+            $date_parts = explode('-', $tanggal_pengerjaan);
+            $tanggal_pengerjaan = $date_parts[2] . '-' . $date_parts[1] . '-' . $date_parts[0];
+        }
+        
+        $this->db->select('selesai, COUNT(*) as count');
+        $this->db->from($this->table);
+        $this->db->where('DATE(updated_at)', $tanggal_pengerjaan);
+        $this->db->where('selesai', 2); // Only archived data (selesai=2)
+        $this->db->group_by('selesai');
+        $this->db->order_by('selesai', 'ASC');
+        return $this->db->get()->result();
+    }
+
+    /**
+     * Get all archived data for export (selesai=2)
+     */
+    public function get_all_archived_data_for_export($filters = []) {
+        $this->db->select('peserta.*');
+        $this->db->from($this->table);
+        $this->db->where('peserta.selesai', 2); // Strict filter for archived data
+        
+        if (!empty($filters['nama'])) {
+            $this->db->like('peserta.nama', $filters['nama']);
+        }
+        if (!empty($filters['nomor_paspor'])) {
+            $this->db->like('peserta.nomor_paspor', $filters['nomor_paspor']);
+        }
+        if (!empty($filters['no_visa'])) {
+            $this->db->like('peserta.no_visa', $filters['no_visa']);
+        }
+        if (isset($filters['status']) && $filters['status'] !== '') {
+            $this->db->where('peserta.status', $filters['status']);
+        }
+        if (isset($filters['flag_doc'])) {
+            // Handle flag_doc filter more precisely
+            if ($filters['flag_doc'] === null || $filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
+                $this->db->where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
+            } else {
+                $this->db->where('peserta.flag_doc', $filters['flag_doc']);
+            }
+        }
+        if (!empty($filters['tanggaljam'])) {
+            $this->db->like("CONCAT(tanggal, ' ', jam)", $filters['tanggaljam']);
+        }
+        if (!empty($filters['tanggal_pengerjaan'])) {
+            // Convert dd-mm-yyyy format to yyyy-mm-dd for database comparison
+            $tanggal_pengerjaan = $filters['tanggal_pengerjaan'];
+            if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $tanggal_pengerjaan)) {
+                // Convert from dd-mm-yyyy to yyyy-mm-dd
+                $date_parts = explode('-', $tanggal_pengerjaan);
+                $tanggal_pengerjaan = $date_parts[2] . '-' . $date_parts[1] . '-' . $date_parts[0];
+            }
+            $this->db->where('DATE(updated_at)', $tanggal_pengerjaan);
+        }
+        
+        $this->db->order_by('peserta.flag_doc', 'DESC');
+        $this->db->order_by('peserta.id', 'DESC');
+        
+        $query = $this->db->get();
+        $result = $query->result();
+        
+        // Debug: Log the query and result count
+        log_message('debug', 'get_all_archived_data_for_export - Query: ' . $this->db->last_query());
+        log_message('debug', 'get_all_archived_data_for_export - Result count: ' . count($result));
+        
+        return $result;
+    }
     
     public function get_gender_stats($flag_doc = null) {
         $this->db->select('gender, COUNT(*) as count');

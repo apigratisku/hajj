@@ -29,10 +29,11 @@
        
         
         <li class="nav-item">
-            <a href="<?= base_url('database') ?>" <?= $this->uri->segment(1) == 'database' && $this->uri->segment(2) != 'rejected_data' ? 'class="active"' : '' ?>>
+            <a href="<?= base_url('database') ?>" <?= $this->uri->segment(1) == 'database' && $this->uri->segment(2) != 'rejected_data' && $this->uri->segment(2) != 'arsip' ? 'class="active"' : '' ?>>
                 <i class="fas fa-user-friends"></i> <span>Data Peserta</span>
             </a>
         </li>
+       
         <!-- <li class="nav-item">
             <a href="<?= base_url('database/rejected_data') ?>" <?= $this->uri->segment(1) == 'database' && $this->uri->segment(2) == 'rejected_data' ? 'class="active"' : '' ?>>
                 <i class="fas fa-times-circle"></i> <span>Data Ditolak</span>
@@ -43,7 +44,13 @@
                 <i class="fas fa-list-ul"></i> <span>To Do List</span>
             </a>
         </li>
-       
+        <?php if ($this->session->userdata('role') == 'admin'): ?>
+        <li class="nav-item">
+            <a href="<?= base_url('database/arsip') ?>" <?= $this->uri->segment(1) == 'database' && $this->uri->segment(2) == 'arsip' ? 'class="active"' : '' ?>>
+                <i class="fas fa-archive"></i> <span>Arsip Data</span>
+            </a>
+        </li>
+        <?php endif; ?>
         <div class="nav-section-divider"></div>
         
         <!-- User Management -->
