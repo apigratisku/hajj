@@ -4,6 +4,18 @@
         <div class="col-12">
             <div class="card mobile-card">
                 <div class="card-header bg-brown text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div class="d-flex align-items-center">
+                        <h5 class="mb-0 me-3">Data Peserta</h5>
+                        <?php if (isset($update_stats) && isset($_GET['tanggal_pengerjaan'])): ?>
+                        <div class="update-stats-info">
+                            <span class="badge bg-light text-dark">
+                                <i class="fas fa-calendar-check"></i>
+                                Update <?= date('d-m-Y', strtotime($_GET['tanggal_pengerjaan'])) ?>: 
+                                <strong><?= $update_stats ?> data</strong>
+                            </span>
+                        </div>
+                        <?php endif; ?>
+                    </div>
                    
                     <div class="d-flex flex-wrap gap-2">
                         <a href="<?= base_url('database/tambah') ?>" class="btn btn-sm btn-tambah">
@@ -69,6 +81,22 @@
                                        
                                     </select>
                                 </div>
+                                <?php if($this->session->userdata('role') == 'admin'): ?>
+                                <div class="form-group">
+                                    <select name="tanggal_pengerjaan" class="form-select mobile-input">
+                                        <option value="">Tanggal Pengerjaan</option>
+                                        <?php if (!empty($tanggal_pengerjaan_list)): foreach ($tanggal_pengerjaan_list as $tanggal_pengerjaan): ?>
+                                            <?php 
+                                                $display_date = date('d-m-Y', strtotime($tanggal_pengerjaan->tanggal_pengerjaan));
+                                                $value_date = date('d-m-Y', strtotime($tanggal_pengerjaan->tanggal_pengerjaan));
+                                            ?>
+                                            <option value="<?= htmlspecialchars($value_date) ?>" <?= (isset($_GET['tanggal_pengerjaan']) && $_GET['tanggal_pengerjaan'] === $value_date) ? 'selected' : '' ?>>
+                                                <?= $display_date ?> (<?= $tanggal_pengerjaan->jumlah_update ?> data)
+                                            </option>
+                                        <?php endforeach; endif; ?>
+                                    </select>
+                                </div>
+                                <?php endif; ?>
                                 <div class="form-actions">
                                     <button type="submit" class="btn btn-search">
                                         <i class="fas fa-search"></i> Cari
@@ -79,6 +107,39 @@
                                 </div>
                             </form>
                         </div>
+                        <!-- Update Statistics Info -->
+                    <?php if (isset($update_stats) && isset($update_stats_detail)): ?>
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <h6 class="alert-heading">
+                                    <i class="fas fa-chart-bar"></i> Statistik Update Data
+                                </h6>
+                                <p class="mb-2">
+                                    <strong>Tanggal Pengerjaan:</strong> 
+                                    <?= date('d-m-Y', strtotime($_GET['tanggal_pengerjaan'])) ?>
+                                </p>
+                                <p class="mb-2">
+                                    <strong>Total Data Diupdate:</strong> 
+                                    <span class="badge bg-primary"><?= $update_stats ?> data</span>
+                                </p>
+                                <?php if (!empty($update_stats_detail)): ?>
+                                <div class="mt-2">
+                                    <strong>Breakdown Status:</strong>
+                                    <div class="d-flex flex-wrap gap-2 mt-1">
+                                        <?php foreach ($update_stats_detail as $stat): ?>
+                                            <span class="badge bg-secondary">
+                                                <?= $stat->status == 0 ? 'On Target' : ($stat->status == 1 ? 'Already' : 'Done') ?>: 
+                                                <?= $stat->count ?> data
+                                            </span>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
                     </div>
 
                     <!-- Desktop Search Form -->
@@ -130,6 +191,22 @@
                                         <option value="2" <?= (isset($_GET['status']) && $_GET['status'] === '2') ? 'selected' : '' ?>>Done</option>
                                     </select>
                                 </div>
+                                <?php if($this->session->userdata('role') == 'admin'): ?>
+                                <div class="col-md-1">
+                                    <select name="tanggal_pengerjaan" class="form-select form-control-sm">
+                                        <option value="">Tanggal Pengerjaan</option>
+                                        <?php if (!empty($tanggal_pengerjaan_list)): foreach ($tanggal_pengerjaan_list as $tanggal_pengerjaan): ?>
+                                            <?php 
+                                                $display_date = date('d-m-Y', strtotime($tanggal_pengerjaan->tanggal_pengerjaan));
+                                                $value_date = date('d-m-Y', strtotime($tanggal_pengerjaan->tanggal_pengerjaan));
+                                            ?>
+                                            <option value="<?= htmlspecialchars($value_date) ?>" <?= (isset($_GET['tanggal_pengerjaan']) && $_GET['tanggal_pengerjaan'] === $value_date) ? 'selected' : '' ?>>
+                                                <?= $display_date ?> (<?= $tanggal_pengerjaan->jumlah_update ?> data)
+                                            </option>
+                                        <?php endforeach; endif; ?>
+                                    </select>
+                                </div>
+                                <?php endif; ?>
                                 <div class="col-md-2">
                                     <button type="submit" class="btn btn-brown btn-sm me-2">
                                         <i class="fas fa-search"></i> Cari
@@ -141,6 +218,40 @@
                             </div>
                         </form>
                     </div>
+
+                    <!-- Update Statistics Info -->
+                    <?php if (isset($update_stats) && isset($update_stats_detail)): ?>
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <h6 class="alert-heading">
+                                    <i class="fas fa-chart-bar"></i> Statistik Update Data
+                                </h6>
+                                <p class="mb-2">
+                                    <strong>Tanggal Pengerjaan:</strong> 
+                                    <?= date('d-m-Y', strtotime($_GET['tanggal_pengerjaan'])) ?>
+                                </p>
+                                <p class="mb-2">
+                                    <strong>Total Data Diupdate:</strong> 
+                                    <span class="badge bg-primary"><?= $update_stats ?> data</span>
+                                </p>
+                                <?php if (!empty($update_stats_detail)): ?>
+                                <div class="mt-2">
+                                    <strong>Breakdown Status:</strong>
+                                    <div class="d-flex flex-wrap gap-2 mt-1">
+                                        <?php foreach ($update_stats_detail as $stat): ?>
+                                            <span class="badge bg-secondary">
+                                                <?= $stat->status == 0 ? 'On Target' : ($stat->status == 1 ? 'Already' : 'Done') ?>: 
+                                                <?= $stat->count ?> data
+                                            </span>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
 
                     <!-- Mobile Excel-like Table -->
                     <div class="mobile-table-container d-block d-lg-none">
@@ -603,6 +714,30 @@
     border-color: var(--secondary-color) !important;
     color: white !important;
     border-radius: var(--border-radius);
+}
+
+/* Update Statistics Badge Styles */
+.update-stats-info .badge {
+    font-size: 0.85rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+}
+
+.update-stats-info .badge:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-hover);
+}
+
+.update-stats-info .badge i {
+    margin-right: 0.25rem;
+}
+
+.update-stats-info .badge strong {
+    color: var(--primary-color);
+}
     transition: var(--transition);
 }
 

@@ -245,6 +245,16 @@ class Transaksi_model extends CI_Model {
         if (!empty($filters['tanggaljam'])) {
             $this->db->like("CONCAT(tanggal, ' ', jam)", $filters['tanggaljam']);
         }
+        if (!empty($filters['tanggal_pengerjaan'])) {
+            // Convert dd-mm-yyyy format to yyyy-mm-dd for database comparison
+            $tanggal_pengerjaan = $filters['tanggal_pengerjaan'];
+            if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $tanggal_pengerjaan)) {
+                // Convert from dd-mm-yyyy to yyyy-mm-dd
+                $date_parts = explode('-', $tanggal_pengerjaan);
+                $tanggal_pengerjaan = $date_parts[2] . '-' . $date_parts[1] . '-' . $date_parts[0];
+            }
+            $this->db->where('DATE(updated_at)', $tanggal_pengerjaan);
+        }
         
         return $this->db->count_all_results();
     }
@@ -304,6 +314,16 @@ class Transaksi_model extends CI_Model {
         $this->db->order_by('tanggaljam', 'ASC');
         return $this->db->get()->result();
     }
+
+    public function get_unique_tanggal_pengerjaan() {
+        $this->db->select("DATE(updated_at) as tanggal_pengerjaan, COUNT(*) as jumlah_update");
+        $this->db->from($this->table);
+        $this->db->where("updated_at IS NOT NULL");
+        $this->db->group_by("DATE(updated_at)");
+        $this->db->order_by("tanggal_pengerjaan", "ASC");
+        return $this->db->get()->result();
+    }
+    
     
     
     public function get_dashboard_stats($flag_doc = null) {
@@ -339,6 +359,41 @@ class Transaksi_model extends CI_Model {
         }
         $result = $this->db->get()->row();
         return $result ? $result->total_already : 0;
+    }
+    
+    /**
+     * Get statistics for data updated on specific date
+     */
+    public function get_update_stats_by_date($tanggal_pengerjaan) {
+        // Convert dd-mm-yyyy format to yyyy-mm-dd for database comparison
+        if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $tanggal_pengerjaan)) {
+            $date_parts = explode('-', $tanggal_pengerjaan);
+            $tanggal_pengerjaan = $date_parts[2] . '-' . $date_parts[1] . '-' . $date_parts[0];
+        }
+        
+        $this->db->select('COUNT(*) as total_updated');
+        $this->db->from($this->table);
+        $this->db->where('DATE(updated_at)', $tanggal_pengerjaan);
+        $result = $this->db->get()->row();
+        return $result ? $result->total_updated : 0;
+    }
+    
+    /**
+     * Get detailed update statistics by date with status breakdown
+     */
+    public function get_update_stats_detail_by_date($tanggal_pengerjaan) {
+        // Convert dd-mm-yyyy format to yyyy-mm-dd for database comparison
+        if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $tanggal_pengerjaan)) {
+            $date_parts = explode('-', $tanggal_pengerjaan);
+            $tanggal_pengerjaan = $date_parts[2] . '-' . $date_parts[1] . '-' . $date_parts[0];
+        }
+        
+        $this->db->select('status, COUNT(*) as count');
+        $this->db->from($this->table);
+        $this->db->where('DATE(updated_at)', $tanggal_pengerjaan);
+        $this->db->group_by('status');
+        $this->db->order_by('status', 'ASC');
+        return $this->db->get()->result();
     }
     
     public function get_gender_stats($flag_doc = null) {

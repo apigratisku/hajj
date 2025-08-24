@@ -41,6 +41,7 @@ class Database extends CI_Controller {
             'no_visa' => trim($this->input->get('no_visa')),
             'flag_doc' => trim($this->input->get('flag_doc')),
             'tanggaljam' => trim($this->input->get('tanggaljam')),
+            'tanggal_pengerjaan' => trim($this->input->get('tanggal_pengerjaan')),
             'status' => trim($this->input->get('status')),
             'gender' => trim($this->input->get('gender'))
         ];
@@ -60,6 +61,13 @@ class Database extends CI_Controller {
         // Provide flag_doc options for filter select
         $data['flag_doc_list'] = $this->transaksi_model->get_unique_flag_doc();
         $data['tanggaljam_list'] = $this->transaksi_model->get_unique_tanggaljam();
+        $data['tanggal_pengerjaan_list'] = $this->transaksi_model->get_unique_tanggal_pengerjaan();
+        
+        // Get update statistics if tanggal_pengerjaan filter is applied
+        if (!empty($filters['tanggal_pengerjaan'])) {
+            $data['update_stats'] = $this->transaksi_model->get_update_stats_by_date($filters['tanggal_pengerjaan']);
+            $data['update_stats_detail'] = $this->transaksi_model->get_update_stats_detail_by_date($filters['tanggal_pengerjaan']);
+        }
    
         
         // Get total count for pagination
@@ -93,6 +101,9 @@ class Database extends CI_Controller {
         }
         if (!empty($filters['gender'])) {
             $query_params['gender'] = $filters['gender'];
+        }
+        if (!empty($filters['tanggal_pengerjaan'])) {
+            $query_params['tanggal_pengerjaan'] = $filters['tanggal_pengerjaan'];
         }
         
         // Build query string
