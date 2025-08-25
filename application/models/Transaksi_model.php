@@ -799,4 +799,86 @@ class Transaksi_model extends CI_Model {
         
         return $result;
     }
+
+    /**
+     * Get statistics by flag_doc for export
+     * Logic: Only export flags that have NO status 0 (On Target) data
+     * Only include status 1 (Already) and 2 (Done) data
+     */
+    public function get_statistik_by_flag_doc($filters = []) {
+        // First, get all flag_doc that have status 0 (On Target) data
+        $this->db->select('flag_doc');
+        $this->db->from($this->table);
+        $this->db->where('status', 0); // Status On Target
+        
+        // Apply filters for the exclusion query
+        if (!empty($filters['nama'])) {
+            $this->db->like('nama', $filters['nama']);
+        }
+        if (!empty($filters['nomor_paspor'])) {
+            $this->db->like('nomor_paspor', $filters['nomor_paspor']);
+        }
+        if (!empty($filters['no_visa'])) {
+            $this->db->like('no_visa', $filters['no_visa']);
+        }
+        if (isset($filters['flag_doc'])) {
+            if ($filters['flag_doc'] === null || $filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
+                $this->db->where('(flag_doc IS NULL OR flag_doc = "")');
+            } else {
+                $this->db->where('flag_doc', $filters['flag_doc']);
+            }
+        }
+        
+        $this->db->group_by('flag_doc');
+        $excluded_flags = $this->db->get()->result();
+        
+        // Get flag_doc values to exclude
+        $excluded_flag_docs = [];
+        foreach ($excluded_flags as $flag) {
+            $excluded_flag_docs[] = $flag->flag_doc;
+        }
+        
+        // Reset query builder
+        $this->db->reset_query();
+        
+        // Main query: Get statistics for flags that don't have status 0 data
+        $this->db->select("
+            flag_doc,
+            COUNT(*) as total,
+            SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) as done,
+            SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as already
+        ");
+        $this->db->from($this->table);
+        
+        // Only include status 1 (Already) and 2 (Done)
+        $this->db->where_in('status', [1, 2]);
+        
+        // Exclude flags that have status 0 data
+        if (!empty($excluded_flag_docs)) {
+            $this->db->where_not_in('flag_doc', $excluded_flag_docs);
+        }
+        
+        // Apply filters
+        if (!empty($filters['nama'])) {
+            $this->db->like('nama', $filters['nama']);
+        }
+        if (!empty($filters['nomor_paspor'])) {
+            $this->db->like('nomor_paspor', $filters['nomor_paspor']);
+        }
+        if (!empty($filters['no_visa'])) {
+            $this->db->like('no_visa', $filters['no_visa']);
+        }
+        if (isset($filters['flag_doc'])) {
+            if ($filters['flag_doc'] === null || $filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
+                $this->db->where('(flag_doc IS NULL OR flag_doc = "")');
+            } else {
+                $this->db->where('flag_doc', $filters['flag_doc']);
+            }
+        }
+        
+        $this->db->group_by('flag_doc');
+        $this->db->order_by('flag_doc', 'ASC');
+        
+        return $this->db->get()->result();
+    }
 } 

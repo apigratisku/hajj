@@ -11,6 +11,18 @@
             <div class="modal-body">
                 <form id="exportForm" action="<?= base_url('database/export') ?>" method="GET">
                     <div class="mb-3">
+                        <label for="export_data" class="form-label">
+                            <i class="fas fa-file"></i> Pilih Data Export
+                        </label>
+                        <select class="form-select" id="export_data" name="export_data" required>
+                            <option value="">Pilih Data</option>
+                            <option value="statistik">Export Data Statistik</option>
+                            <option value="peserta">Export Data Peserta</option>
+                        </select>
+                        <div class="form-text">Pilih jenis data yang akan di-export</div>
+                    </div>
+                    
+                    <div class="mb-3">
                         <label for="export_format" class="form-label">
                             <i class="fas fa-file"></i> Format Export
                         </label>
@@ -51,29 +63,7 @@
                         <div class="form-text">Pilih status untuk memfilter data yang akan di-export</div>
                     </div>
                     
-                    <div class="mb-3">
-                        <label for="export_nama" class="form-label">
-                            <i class="fas fa-user"></i> Filter Nama
-                        </label>
-                        <input type="text" class="form-control" id="export_nama" name="nama" placeholder="Masukkan nama peserta">
-                        <div class="form-text">Kosongkan untuk semua nama</div>
-                    </div>
                     
-                    <div class="mb-3">
-                        <label for="export_nomor_paspor" class="form-label">
-                            <i class="fas fa-passport"></i> Filter Nomor Paspor
-                        </label>
-                        <input type="text" class="form-control" id="export_nomor_paspor" name="nomor_paspor" placeholder="Masukkan nomor paspor">
-                        <div class="form-text">Kosongkan untuk semua nomor paspor</div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="export_no_visa" class="form-label">
-                            <i class="fas fa-stamp"></i> Filter Nomor Visa
-                        </label>
-                        <input type="text" class="form-control" id="export_no_visa" name="no_visa" placeholder="Masukkan nomor visa">
-                        <div class="form-text">Kosongkan untuk semua nomor visa</div>
-                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -83,13 +73,7 @@
                 <button type="button" class="btn btn-success" onclick="submitExport()">
                     <i class="fas fa-download"></i> Export Data
                 </button>
-                <div class="mt-2">
-                    <small class="text-muted">
-                        <i class="fas fa-info-circle"></i> 
-                        <strong>Excel:</strong> Format spreadsheet dengan ringkasan status<br>
-                        <strong>PDF:</strong> Format HTML yang dapat dicetak sebagai PDF
-                    </small>
-                </div>
+                
             </div>
         </div>
     </div>
@@ -162,6 +146,13 @@ function submitExport() {
         if (value.trim() !== '') {
             params.append(key, value);
         }
+    }
+    
+    // Check if export data type is selected
+    const exportData = formData.get('export_data');
+    if (!exportData) {
+        showAlert('Silakan pilih jenis data export terlebih dahulu!', 'error');
+        return;
     }
     
     // Check if format is selected

@@ -144,6 +144,9 @@
                             </div>
                         </div>
                         
+                        <!-- Hidden input untuk redirect back -->
+                        <input type="hidden" name="redirect_back" value="<?= current_url() . ($_SERVER['QUERY_STRING'] ? '?' . $_SERVER['QUERY_STRING'] : '') ?>">
+                        
                         <div class="form-actions">
                             <a href="<?= base_url('database') ?>" class="btn btn-secondary btn-cancel">
                                 <i class="fas fa-times"></i> Batal

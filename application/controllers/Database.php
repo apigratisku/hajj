@@ -533,7 +533,7 @@ class Database extends CI_Controller {
                     $this->session->set_flashdata('success', 'Data peserta berhasil diperbarui');
                     
                     // Redirect back to previous page with filters
-                    $redirect_url = $this->get_redirect_url_with_filters();
+                    $redirect_url = $this->get_redirect_url_from_edit();
                     redirect($redirect_url);
                 } else {
                     $this->session->set_flashdata('error', 'Gagal memperbarui data peserta. Silakan coba lagi.');
@@ -544,8 +544,6 @@ class Database extends CI_Controller {
                 $this->session->set_flashdata('error', 'Terjadi kesalahan saat memperbarui data: ' . $e->getMessage());
                 $this->edit($id);
             }
-
-            redirect('database');
 
         }
     }
@@ -561,6 +559,10 @@ class Database extends CI_Controller {
         // Get JSON input
         $input = json_decode(file_get_contents('php://input'), true);
         
+        // Debug: Log the input data
+        log_message('debug', 'AJAX Update - Input data: ' . json_encode($input));
+        log_message('debug', 'AJAX Update - GET params: ' . json_encode($_GET));
+        log_message('debug', 'AJAX Update - POST params: ' . json_encode($_POST));
         
         if (!$input) {
             $this->output->set_status_header(400);
@@ -588,7 +590,7 @@ class Database extends CI_Controller {
         }
         
         // Prepare data for update only for fields provided
-        $allowedFields = ['nama','flag_doc','nomor_paspor','no_visa','tgl_lahir','password','nomor_hp','email','barcode','gender','status','tanggal','jam'];
+        $allowedFields = ['nama','flag_doc','nomor_paspor','no_visa','tgl_lahir','password','nomor_hp','email','barcode','gender','status','tanggal','jam','status_jadwal','tanggal_pengerjaan'];
         $data = [];
         foreach ($allowedFields as $field) {
             if (array_key_exists($field, $input)) {
@@ -642,8 +644,19 @@ class Database extends CI_Controller {
                     $this->telegram_notification->peserta_crud_notification('update', $peserta_name, 'ID: ' . $id);
                     endif;
                 
+                // Get current URL with filters for redirect
+                $redirect_url = $this->get_redirect_url_with_filters();
+                
+                // Debug: Log the redirect URL
+                log_message('debug', 'AJAX Update - Redirect URL: ' . $redirect_url);
+                log_message('debug', 'AJAX Update - Current GET params: ' . json_encode($_GET));
+                
                 $this->output->set_content_type('application/json');
-                $this->output->set_output(json_encode(['success' => true, 'message' => 'Data berhasil diperbarui']));
+                $this->output->set_output(json_encode([
+                    'success' => true, 
+                    'message' => 'Data berhasil diperbarui',
+                    'redirect_url' => $redirect_url
+                ]));
             } else {
                 $this->output->set_status_header(500);
                 $this->output->set_content_type('application/json');
@@ -688,6 +701,9 @@ class Database extends CI_Controller {
     public function export() {
         $this->load->model('transaksi_model');
         
+        // Get export data type from parameters
+        $export_data = $this->input->get('export_data');
+        
         // Get filters from GET parameters
         $filters = [
             'nama' => $this->input->get('nama'),
@@ -702,16 +718,26 @@ class Database extends CI_Controller {
             $filters['flag_doc'] = null;
         }
         
-        // Get data
-        $peserta = $this->transaksi_model->get_paginated_filtered(1000, 0, $filters);
-        
         // Get format from parameters
         $format = $this->input->get('format');
         
-        if ($format === 'pdf') {
-            $this->export_pdf($peserta, $filters);
+        // Check export data type
+        if ($export_data === 'statistik') {
+            // Export statistics data
+            if ($format === 'pdf') {
+                $this->export_statistik_pdf($filters);
+            } else {
+                $this->export_statistik_excel($filters);
+            }
         } else {
-            $this->export_excel($peserta, $filters);
+            // Export regular peserta data
+            $peserta = $this->transaksi_model->get_paginated_filtered(1000, 0, $filters);
+            
+            if ($format === 'pdf') {
+                $this->export_pdf($peserta, $filters);
+            } else {
+                $this->export_excel($peserta, $filters);
+            }
         }
     }
 
@@ -2430,20 +2456,30 @@ class Database extends CI_Controller {
             'tanggaljam' => $this->input->get('tanggaljam'),
             'status' => $this->input->get('status'),
             'gender' => $this->input->get('gender'),
-            'page' => $this->input->get('page')
+            'page' => $this->input->get('page'),
+            'status_jadwal' => $this->input->get('status_jadwal'),
+            'tanggal_pengerjaan' => $this->input->get('tanggal_pengerjaan'),
         ];
         
-        // Add non-empty filters to query parameters
+        // Debug: Log the filters
+        log_message('debug', 'get_redirect_url_with_filters - Filters: ' . json_encode($filters));
+        
+        // Add all filters to query parameters (including empty ones)
         foreach ($filters as $key => $value) {
-            if (!empty($value) && $value !== '') {
-                $query_params[$key] = $value;
-            }
+            // Include all parameters, even if empty, to preserve the exact URL structure
+            $query_params[$key] = $value;
         }
+        
+        // Debug: Log the query params
+        log_message('debug', 'get_redirect_url_with_filters - Query params: ' . json_encode($query_params));
         
         // Build query string
         if (!empty($query_params)) {
             $base_url .= '?' . http_build_query($query_params);
         }
+        
+        // Debug: Log the final URL
+        log_message('debug', 'get_redirect_url_with_filters - Final URL: ' . $base_url);
         
         return $base_url;
     }
@@ -2472,6 +2508,52 @@ class Database extends CI_Controller {
             if (!empty($value) && $value !== '') {
                 $query_params[$key] = $value;
             }
+        }
+        
+        // Build query string
+        if (!empty($query_params)) {
+            $base_url .= '?' . http_build_query($query_params);
+        }
+        
+        return $base_url;
+    }
+
+    /**
+     * Get redirect URL from form edit with preserved filters
+     */
+    private function get_redirect_url_from_edit() {
+        // Check if there's a redirect_back parameter from form
+        $redirect_back = $this->input->post('redirect_back');
+        
+        if (!empty($redirect_back)) {
+            // Validate that the redirect URL is safe
+            if (strpos($redirect_back, base_url()) === 0 || strpos($redirect_back, '/database/') === 0) {
+                return $redirect_back;
+            }
+        }
+        
+        // If no redirect_back or invalid, build URL with current GET parameters
+        $base_url = base_url('database/index');
+        $query_params = [];
+        
+        // Get current filters from GET parameters
+        $filters = [
+            'nama' => $this->input->get('nama'),
+            'nomor_paspor' => $this->input->get('nomor_paspor'),
+            'no_visa' => $this->input->get('no_visa'),
+            'flag_doc' => $this->input->get('flag_doc'),
+            'tanggaljam' => $this->input->get('tanggaljam'),
+            'status' => $this->input->get('status'),
+            'gender' => $this->input->get('gender'),
+            'page' => $this->input->get('page'),
+            'status_jadwal' => $this->input->get('status_jadwal'),
+            'tanggal_pengerjaan' => $this->input->get('tanggal_pengerjaan'),
+        ];
+        
+        // Add all filters to query parameters (including empty ones)
+        foreach ($filters as $key => $value) {
+            // Include all parameters, even if empty, to preserve the exact URL structure
+            $query_params[$key] = $value;
         }
         
         // Build query string
@@ -2644,6 +2726,206 @@ class Database extends CI_Controller {
         } catch (Exception $e) {
             $this->session->set_flashdata('error', 'Error saat export Excel: ' . $e->getMessage());
             redirect('database/arsip');
+        }
+    }
+
+    /**
+     * Export Excel for statistics data
+     */
+    private function export_statistik_excel($filters) {
+        // Check if PHPExcel library exists
+        $phpexcel_path = APPPATH . 'third_party/PHPExcel/Classes/PHPExcel.php';
+        if (!file_exists($phpexcel_path)) {
+            $this->session->set_flashdata('error', 'Library PHPExcel tidak ditemukan. Silakan install library terlebih dahulu.');
+            redirect('database');
+        }
+        
+        // Load PHPExcel library
+        require_once $phpexcel_path;
+        
+        try {
+            $excel = new PHPExcel();
+            
+            // Set document properties
+            $excel->getProperties()
+                ->setCreator("Hajj System")
+                ->setLastModifiedBy("Hajj System")
+                ->setTitle("Statistik Data Peserta")
+                ->setSubject("Statistik Data Peserta")
+                ->setDescription("Export statistik data peserta dari sistem hajj");
+            
+            // Set column headers
+            $excel->setActiveSheetIndex(0)
+                ->setCellValue('A1', 'Nama PDF')
+                ->setCellValue('B1', 'Total')
+                ->setCellValue('C1', 'Done')
+                ->setCellValue('D1', 'Already');
+            
+            // Set column widths
+            $excel->getActiveSheet()->getColumnDimension('A')->setWidth(50);
+            $excel->getActiveSheet()->getColumnDimension('B')->setWidth(15);
+            $excel->getActiveSheet()->getColumnDimension('C')->setWidth(15);
+            $excel->getActiveSheet()->getColumnDimension('D')->setWidth(15);
+            
+            // Style header row
+            $headerStyle = [
+                'font' => [
+                    'bold' => true,
+                    'color' => ['rgb' => 'FFFFFF'],
+                ],
+                'fill' => [
+                    'type' => PHPExcel_Style_Fill::FILL_SOLID,
+                    'color' => ['rgb' => '8B4513'],
+                ],
+                'alignment' => [
+                    'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER,
+                    'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER,
+                ],
+            ];
+            
+            $excel->getActiveSheet()->getStyle('A1:D1')->applyFromArray($headerStyle);
+            
+            // Get statistics data
+            $statistik_data = $this->transaksi_model->get_statistik_by_flag_doc($filters);
+            
+            // Populate data
+            $row = 2;
+            foreach ($statistik_data as $stat) {
+                $excel->setActiveSheetIndex(0)
+                    ->setCellValue('A' . $row, $stat->flag_doc ?: 'Tanpa Flag Dokumen')
+                    ->setCellValue('B' . $row, $stat->total)
+                    ->setCellValue('C' . $row, $stat->done)
+                    ->setCellValue('D' . $row, $stat->already);
+                $row++;
+            }
+            
+            // Style data rows
+            $dataStyle = [
+                'alignment' => [
+                    'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER,
+                    'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER,
+                ],
+                'borders' => [
+                    'allborders' => [
+                        'style' => PHPExcel_Style_Border::BORDER_THIN,
+                        'color' => ['rgb' => '000000'],
+                    ],
+                ],
+            ];
+            
+            if ($row > 2) {
+                $excel->getActiveSheet()->getStyle('A2:D' . ($row - 1))->applyFromArray($dataStyle);
+            }
+            
+            // Set filename
+            $filename = 'Statistik_Data_Peserta_' . date('Y-m-d_H-i-s') . '.xlsx';
+            
+            // Set headers for download
+            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            header('Content-Disposition: attachment;filename="' . $filename . '"');
+            header('Cache-Control: max-age=0');
+            
+            // Create Excel writer
+            $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel2007');
+            $writer->save('php://output');
+            exit;
+            
+        } catch (Exception $e) {
+            $this->session->set_flashdata('error', 'Error saat export Excel: ' . $e->getMessage());
+            redirect('database');
+        }
+    }
+
+    /**
+     * Export PDF for statistics data
+     */
+    private function export_statistik_pdf($filters) {
+        try {
+            // Load TCPDF library
+            $this->load->library('pdf');
+            
+            // Check if TCPDF is available
+            if (!class_exists('TCPDF')) {
+                throw new Exception('TCPDF library tidak tersedia. Silakan install TCPDF terlebih dahulu.');
+            }
+            
+            // Create new PDF document
+            $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+            
+            // Set document information
+            $pdf->SetCreator('Hajj System');
+            $pdf->SetAuthor('Hajj System');
+            $pdf->SetTitle('Statistik Data Peserta');
+            $pdf->SetSubject('Statistik Data Peserta');
+            $pdf->SetKeywords('hajj, peserta, statistik, database');
+            
+            // Set default header data
+            $pdf->SetHeaderData('', 0, 'STATISTIK DATA PESERTA', 'Export Statistik Data Peserta - ' . date('d/m/Y H:i:s'));
+            
+            // Set header and footer fonts
+            $pdf->setHeaderFont(Array(PDF_FONT_NAME_MAIN, '', PDF_FONT_SIZE_MAIN));
+            $pdf->setFooterFont(Array(PDF_FONT_NAME_DATA, '', PDF_FONT_SIZE_DATA));
+            
+            // Set default monospaced font
+            $pdf->SetDefaultMonospacedFont(PDF_FONT_MONOSPACED);
+            
+            // Set margins
+            $pdf->SetMargins(PDF_MARGIN_LEFT, PDF_MARGIN_TOP, PDF_MARGIN_RIGHT);
+            $pdf->SetHeaderMargin(PDF_MARGIN_HEADER);
+            $pdf->SetFooterMargin(PDF_MARGIN_FOOTER);
+            
+            // Set auto page breaks
+            $pdf->SetAutoPageBreak(TRUE, PDF_MARGIN_BOTTOM);
+            
+            // Set image scale factor
+            $pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
+            
+            // Add a page
+            $pdf->AddPage();
+            
+            // Set font
+            $pdf->SetFont('helvetica', '', 10);
+            
+            // Get statistics data
+            $statistik_data = $this->transaksi_model->get_statistik_by_flag_doc($filters);
+            
+            // Create table header
+            $html = '<table border="1" cellpadding="6" cellspacing="0" style="width: 100%; font-size: 10px;">
+                <thead>
+                    <tr style="background-color: #8B4513; color: white; font-weight: bold; text-align: center;">
+                        <th width="50%">Nama PDF</th>
+                        <th width="16%">Total</th>
+                        <th width="17%">Done</th>
+                        <th width="17%">Already</th>
+                    </tr>
+                </thead>
+                <tbody>';
+            
+            // Add data rows
+            foreach ($statistik_data as $stat) {
+                $html .= '<tr>
+                    <td>' . htmlspecialchars($stat->flag_doc ?: 'Tanpa Flag Dokumen') . '</td>
+                    <td style="text-align: center;">' . $stat->total . '</td>
+                    <td style="text-align: center; background-color: #d4edda;">' . $stat->done . '</td>
+                    <td style="text-align: center; background-color: #f8d7da;">' . $stat->already . '</td>
+                </tr>';
+            }
+            
+            $html .= '</tbody></table>';
+            
+            // Print text using writeHTMLCell()
+            $pdf->writeHTML($html, true, false, true, false, '');
+            
+            // Set filename
+            $filename = 'Statistik_Data_Peserta_' . date('Y-m-d_H-i-s') . '.pdf';
+            
+            // Output PDF
+            $pdf->Output($filename, 'D');
+            exit;
+            
+        } catch (Exception $e) {
+            $this->session->set_flashdata('error', 'Error saat export PDF: ' . $e->getMessage());
+            redirect('database');
         }
     }
 

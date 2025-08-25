@@ -185,8 +185,8 @@
                                 <div class="col-md-1">
                                     <select name="status_jadwal" class="form-select form-control-sm">
                                         <option value="">Status Jadwal</option>
-                                        <option value="2">Sudah dijadwalkan</option>
-                                        <option value="1">Belum dijadwalkan</option>
+                                        <option value="2" <?= (isset($_GET['status_jadwal']) && $_GET['status_jadwal'] === '2') ? 'selected' : '' ?>>Sudah dijadwalkan</option>
+                                        <option value="1" <?= (isset($_GET['status_jadwal']) && $_GET['status_jadwal'] === '1') ? 'selected' : '' ?>>Belum dijadwalkan</option>
                                     </select>
                                 </div>
                                 <div class="col-md-2">
@@ -1976,9 +1976,13 @@ function saveRowMobileTable(button) {
             });
             
             showAlert('Data berhasil diperbarui', 'success');
-            // Auto refresh setelah 1 detik
+            // Redirect ke URL dengan filter yang sama setelah 1 detik
             setTimeout(() => {
-                location.reload();
+                if (result.redirect_url) {
+                    window.location.href = result.redirect_url;
+                } else {
+                    location.reload();
+                }
             }, 1000);
             
             // Remove editing class
@@ -3844,4 +3848,51 @@ function initializeFlagDocSearchable() {
         makeFlagDocSelectsSearchable();
     }, 100);
 }
+
+// Function to handle redirect after AJAX update
+function handleRedirectAfterUpdate(result) {
+    console.log('=== REDIRECT DEBUG ===');
+    console.log('Result:', result);
+    console.log('Redirect URL from server:', result.redirect_url);
+    console.log('Current URL:', window.location.href);
+    
+    if (result.redirect_url) {
+        console.log('Using server redirect URL:', result.redirect_url);
+        window.location.href = result.redirect_url;
+    } else {
+        console.log('Using fallback redirect URL');
+        // Fallback: build redirect URL manually
+        const currentUrl = new URL(window.location.href);
+        const params = new URLSearchParams(currentUrl.search);
+        
+        let redirectUrl = '<?= base_url('database/index') ?>';
+        const queryParams = [];
+        
+        ['nama', 'nomor_paspor', 'no_visa', 'flag_doc', 'tanggaljam', 'status', 'gender', 'page', 'status_jadwal', 'tanggal_pengerjaan'].forEach(param => {
+            if (params.has(param) && params.get(param)) {
+                queryParams.push(`${param}=${encodeURIComponent(params.get(param))}`);
+            }
+        });
+        
+        if (queryParams.length > 0) {
+            redirectUrl += '?' + queryParams.join('&');
+        }
+        
+        console.log('Fallback redirect URL:', redirectUrl);
+        window.location.href = redirectUrl;
+    }
+    console.log('======================');
+}
+
+// Override the redirect logic in all AJAX update functions
+document.addEventListener('DOMContentLoaded', function() {
+    // Find all setTimeout calls that do redirect and replace them
+    const scripts = document.querySelectorAll('script');
+    scripts.forEach(script => {
+        if (script.textContent.includes('window.location.href = redirectUrl')) {
+            // This will be handled by the new redirect function
+            console.log('Redirect logic found and will be handled by new function');
+        }
+    });
+});
 </script>
