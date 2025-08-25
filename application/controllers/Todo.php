@@ -85,7 +85,7 @@ class Todo extends CI_Controller {
         }
         
         // Provide flag_doc options for filter select
-        $data['flag_doc_list'] = $this->transaksi_model->get_unique_flag_doc();
+        $data['flag_doc_list'] = $this->transaksi_model->get_unique_flag_doc_todo();
         $data['tanggaljam_list'] = $this->transaksi_model->get_unique_tanggaljam();
         
         // Get total count for pagination
