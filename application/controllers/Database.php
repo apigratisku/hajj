@@ -889,6 +889,9 @@ class Database extends CI_Controller {
                 $row++;
             }
             
+            // Freeze panes starting from row 2
+            $excel->getActiveSheet()->freezePane('A2');
+            
             // Add summary statistics 3 rows below the last data
             $summary_row = $row + 3;
             $total_count = count($peserta);
@@ -940,6 +943,54 @@ class Database extends CI_Controller {
             
             if ($row > 2) {
                 $excel->getActiveSheet()->getStyle('A2:M' . ($row - 1))->applyFromArray($dataStyle);
+            }
+            
+            // Style status column based on status value
+            if ($row > 2) {
+                $row_num = 2;
+                foreach ($peserta as $p) {
+                    $status_style = [];
+                    
+                    if ($p->status == 2) { // Done - Green
+                        $status_style = [
+                            'fill' => [
+                                'type' => PHPExcel_Style_Fill::FILL_SOLID,
+                                'color' => ['rgb' => '90EE90'], // Light green
+                            ],
+                            'font' => [
+                                'bold' => true,
+                                'color' => ['rgb' => '006400'], // Dark green text
+                            ],
+                        ];
+                    } elseif ($p->status == 1) { // Already - Red
+                        $status_style = [
+                            'fill' => [
+                                'type' => PHPExcel_Style_Fill::FILL_SOLID,
+                                'color' => ['rgb' => 'FFB6C1'], // Light red
+                            ],
+                            'font' => [
+                                'bold' => true,
+                                'color' => ['rgb' => '8B0000'], // Dark red text
+                            ],
+                        ];
+                    } elseif ($p->status == 0) { // On Target - Blue
+                        $status_style = [
+                            'fill' => [
+                                'type' => PHPExcel_Style_Fill::FILL_SOLID,
+                                'color' => ['rgb' => '87CEEB'], // Light blue
+                            ],
+                            'font' => [
+                                'bold' => true,
+                                'color' => ['rgb' => '000080'], // Dark blue text
+                            ],
+                        ];
+                    }
+                    
+                    if (!empty($status_style)) {
+                        $excel->getActiveSheet()->getStyle('L' . $row_num)->applyFromArray($status_style);
+                    }
+                    $row_num++;
+                }
             }
             
             // Style summary section
@@ -2799,6 +2850,9 @@ class Database extends CI_Controller {
                 $row++;
             }
             
+            // Freeze panes starting from row 2
+            $excel->getActiveSheet()->freezePane('A2');
+            
             // Style data rows
             $dataStyle = [
                 'alignment' => [
@@ -2815,6 +2869,36 @@ class Database extends CI_Controller {
             
             if ($row > 2) {
                 $excel->getActiveSheet()->getStyle('A2:D' . ($row - 1))->applyFromArray($dataStyle);
+            }
+            
+            // Style Done column (green background)
+            if ($row > 2) {
+                $doneStyle = [
+                    'fill' => [
+                        'type' => PHPExcel_Style_Fill::FILL_SOLID,
+                        'color' => ['rgb' => '90EE90'], // Light green
+                    ],
+                    'font' => [
+                        'bold' => true,
+                        'color' => ['rgb' => '006400'], // Dark green text
+                    ],
+                ];
+                $excel->getActiveSheet()->getStyle('C2:C' . ($row - 1))->applyFromArray($doneStyle);
+            }
+            
+            // Style Already column (red background)
+            if ($row > 2) {
+                $alreadyStyle = [
+                    'fill' => [
+                        'type' => PHPExcel_Style_Fill::FILL_SOLID,
+                        'color' => ['rgb' => 'FFB6C1'], // Light red
+                    ],
+                    'font' => [
+                        'bold' => true,
+                        'color' => ['rgb' => '8B0000'], // Dark red text
+                    ],
+                ];
+                $excel->getActiveSheet()->getStyle('D2:D' . ($row - 1))->applyFromArray($alreadyStyle);
             }
             
             // Set filename
