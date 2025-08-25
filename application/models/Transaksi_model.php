@@ -97,7 +97,10 @@ class Transaksi_model extends CI_Model {
             log_message('debug', 'Transaksi_model update - Barcode in filtered data: ' . (isset($filtered_data['barcode']) ? $filtered_data['barcode'] : 'NOT FOUND'));
             
             // Add updated_at timestamp
-            $filtered_data['updated_at'] = date('Y-m-d H:i:s');
+            if (isset($filtered_data['status']) && in_array((string)$filtered_data['status'], ['1','2'], true)) {
+                $filtered_data['updated_at'] = date('Y-m-d H:i:s');
+            }
+            
             
             $this->db->where('id', $id);
             $result = $this->db->update($this->table, $filtered_data);
@@ -138,6 +141,7 @@ class Transaksi_model extends CI_Model {
         $this->db->where('flag_doc', $flag_doc);
         return $this->db->count_all_results();
     }
+    
     
 
     public function get_all_active() {
@@ -196,6 +200,17 @@ class Transaksi_model extends CI_Model {
                 $tanggal_pengerjaan = $date_parts[2] . '-' . $date_parts[1] . '-' . $date_parts[0];
             }
             $this->db->where('DATE(updated_at)', $tanggal_pengerjaan);
+        }
+        if (!empty($filters['status_jadwal'])) {
+            if ($filters['status_jadwal'] === '2') {
+                $this->db->where('peserta.status', 2);
+                $this->db->where('peserta.tanggal IS NOT NULL');
+                $this->db->where('peserta.jam IS NOT NULL');
+            } else {
+                $this->db->where('peserta.status', 2);
+                $this->db->where('peserta.tanggal IS NULL');
+                $this->db->where('peserta.jam IS NULL');
+            }
         }
     
         // Urut berdasarkan abjad nama
@@ -265,12 +280,24 @@ class Transaksi_model extends CI_Model {
             }
             $this->db->where('DATE(updated_at)', $tanggal_pengerjaan);
         }
+        if (!empty($filters['status_jadwal'])) {
+            if ($filters['status_jadwal'] === '2') {
+                $this->db->where('peserta.status', 2);
+                $this->db->where('peserta.tanggal IS NOT NULL');
+                $this->db->where('peserta.jam IS NOT NULL');
+            } else {
+                $this->db->where('peserta.status', 2);
+                $this->db->where('peserta.tanggal IS NULL');
+                $this->db->where('peserta.jam IS NULL');
+            }
+        }
         
         return $this->db->count_all_results();
     }
 
     public function count_filtered_todo($filters = []) {
         $this->db->from($this->table);
+        $this->db->where('peserta.status', 0);
         if (!empty($filters['nama'])) {
             $this->db->like('peserta.nama', $filters['nama']);
         }
@@ -295,8 +322,8 @@ class Transaksi_model extends CI_Model {
             $this->db->like("CONCAT(tanggal, ' ', jam)", $filters['tanggaljam']);
         }
         
-        return $this->db->count_all_results();
-    }
+            return $this->db->count_all_results();
+        }
 
     public function get_by_passport($nomor_paspor) {
         $this->db->where('nomor_paspor', $nomor_paspor);

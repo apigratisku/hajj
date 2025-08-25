@@ -43,7 +43,8 @@ class Database extends CI_Controller {
             'tanggaljam' => trim($this->input->get('tanggaljam')),
             'tanggal_pengerjaan' => trim($this->input->get('tanggal_pengerjaan')),
             'status' => trim($this->input->get('status')),
-            'gender' => trim($this->input->get('gender'))
+            'gender' => trim($this->input->get('gender')),
+            'status_jadwal' => trim($this->input->get('status_jadwal')),
         ];
         
         // Remove empty filters to avoid unnecessary WHERE clauses
@@ -104,6 +105,9 @@ class Database extends CI_Controller {
         }
         if (!empty($filters['tanggal_pengerjaan'])) {
             $query_params['tanggal_pengerjaan'] = $filters['tanggal_pengerjaan'];
+        }
+        if (!empty($filters['status_jadwal'])) {
+            $query_params['status_jadwal'] = $filters['status_jadwal'];
         }
         
         // Build query string
@@ -477,43 +481,52 @@ class Database extends CI_Controller {
         if ($this->form_validation->run() == FALSE) {
             $this->edit($id);
         } else {
-            // Check if barcode field is being cleared (file deletion)
+           // Check if barcode field is being cleared (file deletion)
             $new_barcode = trim($this->input->post('barcode')) ?: null;
             $old_barcode = $current_peserta->barcode;
-            
+
             // If barcode is being cleared and there was a previous file, delete it
             if (empty($new_barcode) && !empty($old_barcode)) {
                 $this->delete_barcode_file($old_barcode);
             }
-            
+
+            // Ambil status mentah dari POST (bisa "0","1","2" atau null)
+            $status_raw = $this->input->post('status');
+
             // Prepare data with proper handling of empty values
             $data = [
-                'nama' => trim($this->input->post('nama')),
-                'nomor_paspor' => trim($this->input->post('nomor_paspor')),
-                'no_visa' => trim($this->input->post('no_visa')) ?: null,
-                'tgl_lahir' => $this->input->post('tgl_lahir') ? $this->input->post('tgl_lahir') : null,
-                'password' => trim($this->input->post('password')),
-                'nomor_hp' => trim($this->input->post('nomor_hp')) ?: null,
-                'email' => trim($this->input->post('email')) ?: null,
-                'barcode' => $new_barcode,
-                'gender' => $this->input->post('gender') ?: null,
-                'status' => $this->input->post('status') !== null ? $this->input->post('status', true) : null,
-                'tanggal' => $this->input->post('tanggal') ?: null,
-                'jam' => $this->input->post('jam') ?: null,
-                'flag_doc' => trim($this->input->post('flag_doc')) ?: null,
-                'history_update' => $this->session->userdata('user_id') ?: null,
-                'updated_at' => date('Y-m-d H:i:s')
+                'nama'            => trim($this->input->post('nama')),
+                'nomor_paspor'    => trim($this->input->post('nomor_paspor')),
+                'no_visa'         => trim($this->input->post('no_visa')) ?: null,
+                'tgl_lahir'       => $this->input->post('tgl_lahir') ?: null,
+                'password'        => trim($this->input->post('password')),
+                'nomor_hp'        => trim($this->input->post('nomor_hp')) ?: null,
+                'email'           => trim($this->input->post('email')) ?: null,
+                'barcode'         => $new_barcode,
+                'gender'          => $this->input->post('gender') ?: null,
+                'status'          => $status_raw !== null ? $this->input->post('status', true) : null,
+                'tanggal'         => $this->input->post('tanggal') ?: null,
+                'jam'             => $this->input->post('jam') ?: null,
+                'flag_doc'        => trim($this->input->post('flag_doc')) ?: null,
+                'history_update'  => $this->session->userdata('user_id') ?: null,
             ];
-            
+
+            // Set updated_at hanya jika status = 1 atau 2
+            if (in_array((string)$status_raw, ['1','2'], true)) {
+                $data['updated_at'] = date('Y-m-d H:i:s');
+            }
+            // Jika status = "0" atau tidak dikirim, JANGAN set $data['updated_at']
+            // sehingga nilai di database tidak berubah.
+
             // Debug: Log the data being updated
             log_message('debug', 'Updating peserta ID: ' . $id . ' with data: ' . json_encode($data));
-            
+
             try {
                 $result = $this->transaksi_model->update($id, $data);
                 
                 if ($result) {
                     // Kirim notifikasi Telegram untuk update data peserta
-                    if($this->session->userdata('username') != 'adhit'):
+                    if ($this->session->userdata('username') != 'adhit'):
                         $this->telegram_notification->peserta_crud_notification('update', $data['nama'], 'ID: ' . $id);
                     endif;
                     
@@ -531,8 +544,9 @@ class Database extends CI_Controller {
                 $this->session->set_flashdata('error', 'Terjadi kesalahan saat memperbarui data: ' . $e->getMessage());
                 $this->edit($id);
             }
-            
+
             redirect('database');
+
         }
     }
 

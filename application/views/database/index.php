@@ -74,7 +74,7 @@
                                 </div>
                                 <div class="form-group">
                                     <select name="status" class="form-select mobile-input">
-                                        <option value="">Status</option>
+                                        <option value="">Status Data</option>
                                             <option value="0">On Target</option>
                                             <option value="1">Already</option>
                                             <option value="2">Done</option>
@@ -94,6 +94,13 @@
                                                 <?= $display_date ?> (<?= $tanggal_pengerjaan->jumlah_update ?> data)
                                             </option>
                                         <?php endforeach; endif; ?>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <select name="status_jadwal" class="form-select mobile-input">
+                                        <option value="">Status Jadwal</option>
+                                        <option value="2">Sudah dijadwalkan</option>
+                                        <option value="1">Belum dijadwalkan</option>
                                     </select>
                                 </div>
                                 <?php endif; ?>
@@ -153,7 +160,7 @@
                                 </div>
                                 <div class="col-md-1">
                                     <select name="status" class="form-select form-control-sm">
-                                        <option value="">Status</option>
+                                        <option value="">Status Data</option>
                                         <option value="0" <?= (isset($_GET['status']) && $_GET['status'] === '0') ? 'selected' : '' ?>>On Target</option>
                                         <option value="1" <?= (isset($_GET['status']) && $_GET['status'] === '1') ? 'selected' : '' ?>>Already</option>
                                         <option value="2" <?= (isset($_GET['status']) && $_GET['status'] === '2') ? 'selected' : '' ?>>Done</option>
@@ -175,6 +182,13 @@
                                     </select>
                                 </div>
                                 <?php endif; ?>
+                                <div class="col-md-1">
+                                    <select name="status_jadwal" class="form-select form-control-sm">
+                                        <option value="">Status Jadwal</option>
+                                        <option value="2">Sudah dijadwalkan</option>
+                                        <option value="1">Belum dijadwalkan</option>
+                                    </select>
+                                </div>
                                 <div class="col-md-2">
                                     <button type="submit" class="btn btn-brown btn-sm me-2">
                                         <i class="fas fa-search"></i> Cari
