@@ -335,6 +335,7 @@ class Transaksi_model extends CI_Model {
         $this->db->from($this->table);
         $this->db->where('flag_doc IS NOT NULL');
         $this->db->where('flag_doc !=', '');
+        $this->db->where('status', 0);
         $this->db->group_by('flag_doc');
         $this->db->order_by('created_at', 'DESC');
         return $this->db->get()->result();
