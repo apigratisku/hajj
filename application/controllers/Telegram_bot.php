@@ -130,8 +130,8 @@ class Telegram_bot extends CI_Controller {
      * Send welcome message
      */
     private function send_welcome_message($chat_id) {
-        $message = "🎉 <b>Selamat Datang di Hajj System Bot!</b>\n\n";
-        $message .= "Bot ini menyediakan akses cepat ke data dan statistik sistem Hajj.\n\n";
+        $message = "🎉 <b>Selamat Datang di Nusuk System Bot!</b>\n\n";
+        $message .= "Bot ini menyediakan akses cepat ke data dan statistik sistem Nusuk.\n\n";
         $message .= "📋 <b>Perintah yang tersedia:</b>\n";
         $message .= "• /statistik_dashboard - Lihat statistik dashboard\n";
         $message .= "• /statistik_download_excel - Download data Excel\n";
@@ -185,7 +185,7 @@ class Telegram_bot extends CI_Controller {
             $already_percent = $total_peserta > 0 ? round(($total_already / $total_peserta) * 100, 1) : 0;
             $on_target_percent = $total_peserta > 0 ? round(($total_on_target / $total_peserta) * 100, 1) : 0;
             
-            $message = "📊 <b>STATISTIK DASHBOARD HAJJ</b>\n";
+            $message = "📊 <b>STATISTIK DASHBOARD NUSUK</b>\n";
             $message .= "📅 <b>Update:</b> " . date('d/m/Y H:i:s') . "\n\n";
             
             $message .= "👥 <b>Total Peserta:</b> {$total_peserta}\n\n";
@@ -223,25 +223,37 @@ class Telegram_bot extends CI_Controller {
      */
     private function send_excel_download_link($chat_id) {
         try {
-            // Generate download URL
-            $download_url = base_url('database/export?format=xlsx&export_data=peserta');
+            // Send loading message
+            $loading_message = $this->send_message($chat_id, "📊 <b>Mempersiapkan file Excel...</b>\n\n⏳ Mohon tunggu sebentar...");
             
-            $message = "📊 <b>DOWNLOAD DATA EXCEL</b>\n\n";
-            $message .= "🔗 <b>Link Download:</b>\n";
-            $message .= "{$download_url}\n\n";
-            $message .= "📋 <b>Fitur Excel:</b>\n";
-            $message .= "• Freeze row header\n";
-            $message .= "• Warna kolom Done (hijau)\n";
-            $message .= "• Warna kolom Already (merah)\n";
-            $message .= "• Warna kolom On Target (biru)\n";
-            $message .= "• Statistik summary\n\n";
-            $message .= "💡 <b>Tips:</b> Klik link di atas untuk download file Excel.";
+            // Generate Excel file
+            $filename = 'data_peserta_' . date('Y-m-d_H-i-s') . '.xlsx';
+            $filepath = FCPATH . 'uploads/temp/' . $filename;
             
-            $this->send_message($chat_id, $message);
+            // Create temp directory if not exists
+            if (!is_dir(FCPATH . 'uploads/temp/')) {
+                mkdir(FCPATH . 'uploads/temp/', 0777, true);
+            }
+            
+            // Get data and generate Excel
+            $peserta_data = $this->transaksi_model->get_all_for_export();
+            $this->generate_excel_file($peserta_data, $filepath);
+            
+            // Send file to Telegram
+            $result = $this->send_document($chat_id, $filepath, $filename, "📊 <b>DATA PESERTA EXCEL</b>\n\n📋 <b>Fitur Excel:</b>\n• Freeze row header\n• Warna kolom Done (hijau)\n• Warna kolom Already (merah)\n• Warna kolom On Target (biru)\n• Statistik summary\n\n📅 <b>Generated:</b> " . date('d/m/Y H:i:s'));
+            
+            // Delete temp file
+            if (file_exists($filepath)) {
+                unlink($filepath);
+            }
+            
+            if (!$result) {
+                $this->send_message($chat_id, "❌ Terjadi kesalahan saat mengirim file Excel.");
+            }
             
         } catch (Exception $e) {
-            log_message('error', 'Error generating Excel download link: ' . $e->getMessage());
-            $this->send_message($chat_id, "❌ Terjadi kesalahan saat membuat link download Excel.");
+            log_message('error', 'Error generating Excel file: ' . $e->getMessage());
+            $this->send_message($chat_id, "❌ Terjadi kesalahan saat membuat file Excel.");
         }
     }
 
@@ -250,24 +262,37 @@ class Telegram_bot extends CI_Controller {
      */
     private function send_pdf_download_link($chat_id) {
         try {
-            // Generate download URL
-            $download_url = base_url('database/export?format=pdf&export_data=peserta');
+            // Send loading message
+            $loading_message = $this->send_message($chat_id, "📄 <b>Mempersiapkan file PDF...</b>\n\n⏳ Mohon tunggu sebentar...");
             
-            $message = "📄 <b>DOWNLOAD DATA PDF</b>\n\n";
-            $message .= "🔗 <b>Link Download:</b>\n";
-            $message .= "{$download_url}\n\n";
-            $message .= "📋 <b>Fitur PDF:</b>\n";
-            $message .= "• Format landscape\n";
-            $message .= "• Header dan footer\n";
-            $message .= "• Statistik summary\n";
-            $message .= "• Warna status\n\n";
-            $message .= "💡 <b>Tips:</b> Klik link di atas untuk download file PDF.";
+            // Generate PDF file
+            $filename = 'data_peserta_' . date('Y-m-d_H-i-s') . '.pdf';
+            $filepath = FCPATH . 'uploads/temp/' . $filename;
             
-            $this->send_message($chat_id, $message);
+            // Create temp directory if not exists
+            if (!is_dir(FCPATH . 'uploads/temp/')) {
+                mkdir(FCPATH . 'uploads/temp/', 0777, true);
+            }
+            
+            // Get data and generate PDF
+            $peserta_data = $this->transaksi_model->get_all_for_export();
+            $this->generate_pdf_file($peserta_data, $filepath);
+            
+            // Send file to Telegram
+            $result = $this->send_document($chat_id, $filepath, $filename, "📄 <b>DATA PESERTA PDF</b>\n\n📋 <b>Fitur PDF:</b>\n• Format landscape\n• Header dan footer\n• Statistik summary\n• Warna status\n\n📅 <b>Generated:</b> " . date('d/m/Y H:i:s'));
+            
+            // Delete temp file
+            if (file_exists($filepath)) {
+                unlink($filepath);
+            }
+            
+            if (!$result) {
+                $this->send_message($chat_id, "❌ Terjadi kesalahan saat mengirim file PDF.");
+            }
             
         } catch (Exception $e) {
-            log_message('error', 'Error generating PDF download link: ' . $e->getMessage());
-            $this->send_message($chat_id, "❌ Terjadi kesalahan saat membuat link download PDF.");
+            log_message('error', 'Error generating PDF file: ' . $e->getMessage());
+            $this->send_message($chat_id, "❌ Terjadi kesalahan saat membuat file PDF.");
         }
     }
 
@@ -276,28 +301,43 @@ class Telegram_bot extends CI_Controller {
      */
     private function send_daily_history($chat_id) {
         try {
-            // Get daily update history (last 7 days)
-            $history_data = $this->get_daily_update_history();
+            // Get daily Done and Already comparison (last 7 days)
+            $history_data = $this->get_daily_done_already_comparison();
             
-            $message = "📅 <b>HISTORY UPDATE DATA HARIAN</b>\n";
+            $message = "📅 <b>HISTORY DATA HARIAN (DONE vs ALREADY)</b>\n";
             $message .= "📅 <b>Update:</b> " . date('d/m/Y H:i:s') . "\n\n";
             
             if (empty($history_data)) {
-                $message .= "📝 Tidak ada data update dalam 7 hari terakhir.\n";
+                $message .= "📝 Tidak ada data dalam 7 hari terakhir.\n";
             } else {
-                $message .= "📊 <b>Update 7 Hari Terakhir:</b>\n\n";
+                $message .= "📊 <b>Perbandingan 7 Hari Terakhir:</b>\n\n";
+                
+                $total_done = 0;
+                $total_already = 0;
                 
                 foreach ($history_data as $history) {
                     $date = date('d/m/Y', strtotime($history->tanggal_pengerjaan));
-                    $count = $history->jumlah_update;
+                    $done_count = $history->done_count;
+                    $already_count = $history->already_count;
+                    $total_per_day = $done_count + $already_count;
                     
-                    $message .= "📅 <b>{$date}:</b> {$count} update\n";
+                    $total_done += $done_count;
+                    $total_already += $already_count;
+                    
+                    $message .= "📅 <b>{$date}:</b>\n";
+                    $message .= "   ✅ Done: {$done_count}\n";
+                    $message .= "   🔄 Already: {$already_count}\n";
+                    $message .= "   📊 Total: {$total_per_day}\n\n";
                 }
                 
-                $message .= "\n📈 <b>Total Update:</b> " . array_sum(array_column($history_data, 'jumlah_update')) . "\n";
+                $grand_total = $total_done + $total_already;
+                $message .= "📈 <b>GRAND TOTAL 7 HARI:</b>\n";
+                $message .= "✅ Done: {$total_done}\n";
+                $message .= "🔄 Already: {$total_already}\n";
+                $message .= "📊 Total: {$grand_total}\n";
             }
             
-            $message .= "\n💡 <b>Info:</b> Data menunjukkan jumlah update data peserta per hari.";
+            $message .= "\n💡 <b>Info:</b> Data menunjukkan perbandingan status Done vs Already per hari.";
             
             $this->send_message($chat_id, $message);
             
@@ -308,7 +348,27 @@ class Telegram_bot extends CI_Controller {
     }
 
     /**
-     * Get daily update history
+     * Get daily Done and Already comparison
+     */
+    private function get_daily_done_already_comparison() {
+        $this->db->select("
+            DATE(updated_at) as tanggal_pengerjaan,
+            SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) as done_count,
+            SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as already_count
+        ");
+        $this->db->from('peserta');
+        $this->db->where('updated_at >=', date('Y-m-d', strtotime('-7 days')));
+        $this->db->where('updated_at IS NOT NULL');
+        $this->db->where_in('status', [1, 2]); // Only Done and Already
+        $this->db->group_by('DATE(updated_at)');
+        $this->db->order_by('tanggal_pengerjaan', 'DESC');
+        $this->db->limit(7);
+        
+        return $this->db->get()->result();
+    }
+    
+    /**
+     * Get daily update history (for backup)
      */
     private function get_daily_update_history() {
         $this->db->select("DATE(updated_at) as tanggal_pengerjaan, COUNT(*) as jumlah_update");
@@ -435,6 +495,405 @@ class Telegram_bot extends CI_Controller {
             return false;
         }
     }
+    
+    /**
+     * Send document to Telegram
+     */
+    private function send_document($chat_id, $filepath, $filename, $caption = '') {
+        try {
+            if (!file_exists($filepath)) {
+                log_message('error', 'File not found: ' . $filepath);
+                return false;
+            }
+            
+            $url = $this->api_url . $this->bot_token . '/sendDocument';
+            
+            // Prepare file data
+            $file_data = [
+                'chat_id' => $chat_id,
+                'document' => new CURLFile($filepath, 'application/octet-stream', $filename)
+            ];
+            
+            if (!empty($caption)) {
+                $file_data['caption'] = $caption;
+                $file_data['parse_mode'] = 'HTML';
+            }
+            
+            // Make cURL request
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $file_data);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            
+            $result = curl_exec($ch);
+            $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            
+            if ($result === FALSE) {
+                log_message('error', 'Failed to send document to Telegram');
+                return false;
+            }
+            
+            $response = json_decode($result, true);
+            
+            if ($response && isset($response['ok']) && $response['ok']) {
+                log_message('debug', 'Document sent successfully to Telegram');
+                return true;
+            } else {
+                log_message('error', 'Failed to send document: ' . json_encode($response));
+                return false;
+            }
+            
+        } catch (Exception $e) {
+            log_message('error', 'Error sending document: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Generate Excel file
+     */
+    private function generate_excel_file($data, $filepath) {
+        try {
+            // Create new PHPExcel object
+            $excel = new PHPExcel();
+            
+            // Set document properties
+            $excel->getProperties()->setCreator("Nusuk System")
+                                 ->setLastModifiedBy("Nusuk System")
+                                 ->setTitle("Data Peserta")
+                                 ->setSubject("Data Peserta Export")
+                                 ->setDescription("Data Peserta dari Nusuk System");
+            
+            // Set active sheet
+            $excel->setActiveSheetIndex(0);
+            $sheet = $excel->getActiveSheet();
+            
+            // Set title
+            $sheet->setTitle('Data Peserta');
+            
+            // Set headers
+            $headers = [
+                'A1' => 'Nama',
+                'B1' => 'Nomor Paspor',
+                'C1' => 'No Visa',
+                'D1' => 'Tanggal Lahir',
+                'E1' => 'Password',
+                'F1' => 'Nomor HP',
+                'G1' => 'Email',
+                'H1' => 'Barcode',
+                'I1' => 'Gender',
+                'J1' => 'Tanggal',
+                'K1' => 'Jam',
+                'L1' => 'Status',
+                'M1' => 'Flag Doc',
+                'N1' => 'Tanggal Jam',
+                'O1' => 'Tanggal Pengerjaan',
+                'P1' => 'Selesai'
+            ];
+            
+            foreach ($headers as $cell => $value) {
+                $sheet->setCellValue($cell, $value);
+            }
+            
+            // Style headers
+            $headerStyle = [
+                'font' => [
+                    'bold' => true,
+                    'color' => ['rgb' => 'FFFFFF'],
+                ],
+                'fill' => [
+                    'type' => PHPExcel_Style_Fill::FILL_SOLID,
+                    'color' => ['rgb' => '4472C4'],
+                ],
+                'alignment' => [
+                    'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER,
+                    'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER,
+                ],
+                'borders' => [
+                    'allborders' => [
+                        'style' => PHPExcel_Style_Border::BORDER_THIN,
+                        'color' => ['rgb' => '000000'],
+                    ],
+                ],
+            ];
+            
+            $sheet->getStyle('A1:P1')->applyFromArray($headerStyle);
+            
+            // Freeze pane
+            $sheet->freezePane('A2');
+            
+            // Populate data
+            $row = 2;
+            foreach ($data as $item) {
+                $status = '';
+                switch ($item->status) {
+                    case 0: $status = 'On Target'; break;
+                    case 1: $status = 'Already'; break;
+                    case 2: $status = 'Done'; break;
+                    default: $status = 'Unknown'; break;
+                }
+                
+                $gender = '';
+                switch ($item->gender) {
+                    case 1: $gender = 'Laki-laki'; break;
+                    case 2: $gender = 'Perempuan'; break;
+                    default: $gender = '-'; break;
+                }
+                
+                $selesai = '';
+                switch ($item->selesai) {
+                    case 0: $selesai = 'Aktif'; break;
+                    case 1: $selesai = 'Rejected'; break;
+                    case 2: $selesai = 'Done'; break;
+                    default: $selesai = '-'; break;
+                }
+                
+                $sheet->setCellValue('A' . $row, $item->nama)
+                      ->setCellValue('B' . $row, $item->nomor_paspor)
+                      ->setCellValue('C' . $row, $item->no_visa ?: '-')
+                      ->setCellValue('D' . $row, $item->tgl_lahir ? date('d/m/Y', strtotime($item->tgl_lahir)) : '-')
+                      ->setCellValue('E' . $row, $item->password)
+                      ->setCellValue('F' . $row, $item->nomor_hp ?: '-')
+                      ->setCellValue('G' . $row, $item->email ?: '-')
+                      ->setCellValue('H' . $row, $item->barcode ?: '-')
+                      ->setCellValue('I' . $row, $gender)
+                      ->setCellValue('J' . $row, $item->tanggal ?: '-')
+                      ->setCellValue('K' . $row, $item->jam ?: '-')
+                      ->setCellValue('L' . $row, $status)
+                      ->setCellValue('M' . $row, $item->flag_doc ?: '-')
+                      ->setCellValue('N' . $row, $item->tanggaljam ?: '-')
+                      ->setCellValue('O' . $row, $item->tanggal_pengerjaan ?: '-')
+                      ->setCellValue('P' . $row, $selesai);
+                $row++;
+            }
+            
+            // Style data rows
+            $dataStyle = [
+                'alignment' => [
+                    'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER,
+                    'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER,
+                ],
+                'borders' => [
+                    'allborders' => [
+                        'style' => PHPExcel_Style_Border::BORDER_THIN,
+                        'color' => ['rgb' => '000000'],
+                    ],
+                ],
+            ];
+            
+            if ($row > 2) {
+                $sheet->getStyle('A2:P' . ($row - 1))->applyFromArray($dataStyle);
+            }
+            
+            // Style status column based on status value
+            if ($row > 2) {
+                $row_num = 2;
+                foreach ($data as $item) {
+                    $status_style = [];
+                    
+                    if ($item->status == 2) { // Done - Green
+                        $status_style = [
+                            'fill' => [
+                                'type' => PHPExcel_Style_Fill::FILL_SOLID,
+                                'color' => ['rgb' => '90EE90'], // Light green
+                            ],
+                            'font' => [
+                                'bold' => true,
+                                'color' => ['rgb' => '006400'], // Dark green
+                            ],
+                        ];
+                    } elseif ($item->status == 1) { // Already - Red
+                        $status_style = [
+                            'fill' => [
+                                'type' => PHPExcel_Style_Fill::FILL_SOLID,
+                                'color' => ['rgb' => 'FFB6C1'], // Light red
+                            ],
+                            'font' => [
+                                'bold' => true,
+                                'color' => ['rgb' => '8B0000'], // Dark red
+                            ],
+                        ];
+                    } elseif ($item->status == 0) { // On Target - Blue
+                        $status_style = [
+                            'fill' => [
+                                'type' => PHPExcel_Style_Fill::FILL_SOLID,
+                                'color' => ['rgb' => 'ADD8E6'], // Light blue
+                            ],
+                            'font' => [
+                                'bold' => true,
+                                'color' => ['rgb' => '000080'], // Dark blue
+                            ],
+                        ];
+                    }
+                    
+                    if (!empty($status_style)) {
+                        $sheet->getStyle('L' . $row_num)->applyFromArray($status_style);
+                    }
+                    $row_num++;
+                }
+            }
+            
+            // Auto size columns
+            foreach (range('A', 'P') as $col) {
+                $sheet->getColumnDimension($col)->setAutoSize(true);
+            }
+            
+            // Create Excel writer
+            $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel2007');
+            $writer->save($filepath);
+            
+            return true;
+            
+        } catch (Exception $e) {
+            log_message('error', 'Error generating Excel file: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Generate PDF file
+     */
+    private function generate_pdf_file($data, $filepath) {
+        try {
+            // Create new PDF document
+            $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+            
+            // Set document information
+            $pdf->SetCreator('Nusuk System');
+            $pdf->SetAuthor('Nusuk System');
+            $pdf->SetTitle('Data Peserta');
+            $pdf->SetSubject('Data Peserta Export');
+            
+            // Set default header data
+            $pdf->SetHeaderData('', 0, 'DATA PESERTA NUSUK SYSTEM', 'Export tanggal: ' . date('d/m/Y H:i:s'));
+            
+            // Set header and footer fonts
+            $pdf->setHeaderFont(Array(PDF_FONT_NAME_MAIN, '', PDF_FONT_SIZE_MAIN));
+            $pdf->setFooterFont(Array(PDF_FONT_NAME_DATA, '', PDF_FONT_SIZE_DATA));
+            
+            // Set default monospaced font
+            $pdf->SetDefaultMonospacedFont(PDF_FONT_MONOSPACED);
+            
+            // Set margins
+            $pdf->SetMargins(PDF_MARGIN_LEFT, PDF_MARGIN_TOP, PDF_MARGIN_RIGHT);
+            $pdf->SetHeaderMargin(PDF_MARGIN_HEADER);
+            $pdf->SetFooterMargin(PDF_MARGIN_FOOTER);
+            
+            // Set auto page breaks
+            $pdf->SetAutoPageBreak(TRUE, PDF_MARGIN_BOTTOM);
+            
+            // Set image scale factor
+            $pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
+            
+            // Set font
+            $pdf->SetFont('helvetica', '', 8);
+            
+            // Add a page
+            $pdf->AddPage('L', 'A4');
+            
+            // Create table
+            $html = '<table border="1" cellpadding="3" cellspacing="0">';
+            
+            // Table header
+            $html .= '<tr style="background-color: #4472C4; color: white; font-weight: bold;">';
+            $html .= '<th>No</th>';
+            $html .= '<th>Nama</th>';
+            $html .= '<th>Nomor Paspor</th>';
+            $html .= '<th>No Visa</th>';
+            $html .= '<th>Tanggal Lahir</th>';
+            $html .= '<th>Password</th>';
+            $html .= '<th>Nomor HP</th>';
+            $html .= '<th>Email</th>';
+            $html .= '<th>Barcode</th>';
+            $html .= '<th>Gender</th>';
+            $html .= '<th>Tanggal</th>';
+            $html .= '<th>Jam</th>';
+            $html .= '<th>Status</th>';
+            $html .= '<th>Flag Doc</th>';
+            $html .= '<th>Tanggal Jam</th>';
+            $html .= '<th>Tanggal Pengerjaan</th>';
+            $html .= '<th>Selesai</th>';
+            $html .= '</tr>';
+            
+            // Table data
+            $no = 1;
+            foreach ($data as $item) {
+                $status = '';
+                $status_color = '';
+                switch ($item->status) {
+                    case 0: 
+                        $status = 'On Target'; 
+                        $status_color = 'background-color: #ADD8E6; color: #000080;';
+                        break;
+                    case 1: 
+                        $status = 'Already'; 
+                        $status_color = 'background-color: #FFB6C1; color: #8B0000;';
+                        break;
+                    case 2: 
+                        $status = 'Done'; 
+                        $status_color = 'background-color: #90EE90; color: #006400;';
+                        break;
+                    default: 
+                        $status = 'Unknown'; 
+                        break;
+                }
+                
+                $gender = '';
+                switch ($item->gender) {
+                    case 1: $gender = 'Laki-laki'; break;
+                    case 2: $gender = 'Perempuan'; break;
+                    default: $gender = '-'; break;
+                }
+                
+                $selesai = '';
+                switch ($item->selesai) {
+                    case 0: $selesai = 'Aktif'; break;
+                    case 1: $selesai = 'Rejected'; break;
+                    case 2: $selesai = 'Done'; break;
+                    default: $selesai = '-'; break;
+                }
+                
+                $html .= '<tr>';
+                $html .= '<td>' . $no . '</td>';
+                $html .= '<td>' . htmlspecialchars($item->nama) . '</td>';
+                $html .= '<td>' . htmlspecialchars($item->nomor_paspor) . '</td>';
+                $html .= '<td>' . htmlspecialchars($item->no_visa ?: '-') . '</td>';
+                $html .= '<td>' . ($item->tgl_lahir ? date('d/m/Y', strtotime($item->tgl_lahir)) : '-') . '</td>';
+                $html .= '<td>' . htmlspecialchars($item->password) . '</td>';
+                $html .= '<td>' . htmlspecialchars($item->nomor_hp ?: '-') . '</td>';
+                $html .= '<td>' . htmlspecialchars($item->email ?: '-') . '</td>';
+                $html .= '<td>' . htmlspecialchars($item->barcode ?: '-') . '</td>';
+                $html .= '<td>' . htmlspecialchars($gender) . '</td>';
+                $html .= '<td>' . htmlspecialchars($item->tanggal ?: '-') . '</td>';
+                $html .= '<td>' . htmlspecialchars($item->jam ?: '-') . '</td>';
+                $html .= '<td style="' . $status_color . ' font-weight: bold;">' . htmlspecialchars($status) . '</td>';
+                $html .= '<td>' . htmlspecialchars($item->flag_doc ?: '-') . '</td>';
+                $html .= '<td>' . htmlspecialchars($item->tanggaljam ?: '-') . '</td>';
+                $html .= '<td>' . htmlspecialchars($item->tanggal_pengerjaan ?: '-') . '</td>';
+                $html .= '<td>' . htmlspecialchars($selesai) . '</td>';
+                $html .= '</tr>';
+                
+                $no++;
+            }
+            
+            $html .= '</table>';
+            
+            // Print text using writeHTMLCell()
+            $pdf->writeHTML($html, true, false, true, false, '');
+            
+            // Save PDF
+            $pdf->Output($filepath, 'F');
+            
+            return true;
+            
+        } catch (Exception $e) {
+            log_message('error', 'Error generating PDF file: ' . $e->getMessage());
+            return false;
+        }
+    }
 
     /**
      * Set webhook URL
@@ -507,7 +966,7 @@ class Telegram_bot extends CI_Controller {
         
         // Test send message
         echo "<h3>Test Send Message:</h3>";
-        $test_message = "🧪 Test message dari Hajj System Bot\n";
+        $test_message = "🧪 Test message dari Nusukbot\n";
         $test_message .= "📅 Waktu: " . date('d/m/Y H:i:s') . "\n";
         $test_message .= "✅ Bot berfungsi dengan baik!";
         

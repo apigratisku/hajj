@@ -881,4 +881,15 @@ class Transaksi_model extends CI_Model {
         
         return $this->db->get()->result();
     }
+    
+    /**
+     * Get all data for export (for Telegram bot)
+     */
+    public function get_all_for_export() {
+        $this->db->select('*');
+        $this->db->from($this->table);
+        $this->db->order_by('nama', 'ASC');
+        
+        return $this->db->get()->result();
+    }
 } 

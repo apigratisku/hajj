@@ -82,14 +82,18 @@ https://yourdomain.com/telegram_bot/test
 
 ### **2. `/statistik_download_excel`**
 
-**Fungsi:** Mendapatkan link download data Excel
+**Fungsi:** Download langsung file Excel ke chat Telegram
 
 **Output:**
 ```
-📊 DOWNLOAD DATA EXCEL
+📊 Mempersiapkan file Excel...
 
-🔗 Link Download:
-https://yourdomain.com/database/export?format=xlsx&export_data=peserta
+⏳ Mohon tunggu sebentar...
+```
+
+**Setelah selesai:**
+```
+📊 DATA PESERTA EXCEL
 
 📋 Fitur Excel:
 • Freeze row header
@@ -98,19 +102,29 @@ https://yourdomain.com/database/export?format=xlsx&export_data=peserta
 • Warna kolom On Target (biru)
 • Statistik summary
 
-💡 Tips: Klik link di atas untuk download file Excel.
+📅 Generated: 15/01/2025 14:30:25
 ```
+
+**Fitur:**
+- ✅ File langsung terdownload ke chat
+- ✅ Loading message saat proses
+- ✅ Auto-delete file temporary
+- ✅ Styling Excel dengan warna status
 
 ### **3. `/statistik_download_pdf`**
 
-**Fungsi:** Mendapatkan link download data PDF
+**Fungsi:** Download langsung file PDF ke chat Telegram
 
 **Output:**
 ```
-📄 DOWNLOAD DATA PDF
+📄 Mempersiapkan file PDF...
 
-🔗 Link Download:
-https://yourdomain.com/database/export?format=pdf&export_data=peserta
+⏳ Mohon tunggu sebentar...
+```
+
+**Setelah selesai:**
+```
+📄 DATA PESERTA PDF
 
 📋 Fitur PDF:
 • Format landscape
@@ -118,32 +132,55 @@ https://yourdomain.com/database/export?format=pdf&export_data=peserta
 • Statistik summary
 • Warna status
 
-💡 Tips: Klik link di atas untuk download file PDF.
+📅 Generated: 15/01/2025 14:30:25
 ```
+
+**Fitur:**
+- ✅ File langsung terdownload ke chat
+- ✅ Loading message saat proses
+- ✅ Auto-delete file temporary
+- ✅ Format landscape A4
+- ✅ Styling PDF dengan warna status
 
 ### **4. `/history_data_harian`**
 
-**Fungsi:** Menampilkan history update data harian
+**Fungsi:** Menampilkan perbandingan data Done vs Already harian
 
 **Output:**
 ```
-📅 HISTORY UPDATE DATA HARIAN
+📅 HISTORY DATA HARIAN (DONE vs ALREADY)
 📅 Update: 15/01/2025 14:30:25
 
-📊 Update 7 Hari Terakhir:
+📊 Perbandingan 7 Hari Terakhir:
 
-📅 15/01/2025: 25 update
-📅 14/01/2025: 18 update
-📅 13/01/2025: 32 update
-📅 12/01/2025: 15 update
-📅 11/01/2025: 28 update
-📅 10/01/2025: 22 update
-📅 09/01/2025: 19 update
+📅 15/01/2025:
+   ✅ Done: 25
+   🔄 Already: 18
+   📊 Total: 43
 
-📈 Total Update: 159
+📅 14/01/2025:
+   ✅ Done: 32
+   🔄 Already: 15
+   📊 Total: 47
 
-💡 Info: Data menunjukkan jumlah update data peserta per hari.
+📅 13/01/2025:
+   ✅ Done: 28
+   🔄 Already: 22
+   📊 Total: 50
+
+📈 GRAND TOTAL 7 HARI:
+✅ Done: 85
+🔄 Already: 55
+📊 Total: 140
+
+💡 Info: Data menunjukkan perbandingan status Done vs Already per hari.
 ```
+
+**Fitur:**
+- ✅ Perbandingan Done vs Already per hari
+- ✅ Total per hari (Done + Already)
+- ✅ Grand total 7 hari terakhir
+- ✅ Hanya data dengan status 1 dan 2
 
 ---
 
@@ -153,9 +190,9 @@ https://yourdomain.com/database/export?format=pdf&export_data=peserta
 
 Bot menyediakan tombol inline untuk aksi cepat:
 - 🔄 Refresh - Refresh statistik
-- 📊 Download Excel - Download data Excel
-- 📄 Download PDF - Download data PDF
-- 📅 History Harian - Lihat history
+- 📊 Download Excel - Download file Excel langsung ke chat
+- 📄 Download PDF - Download file PDF langsung ke chat
+- 📅 History Harian - Lihat perbandingan Done vs Already
 
 ### **2. Progress Bar Visual**
 
@@ -172,7 +209,15 @@ Bot menangani error dengan baik:
 - 📝 Log error untuk debugging
 - 🔄 Retry mechanism
 
-### **4. Security**
+### **4. File Management**
+
+- ✅ Auto-generate Excel/PDF files
+- ✅ Temporary file storage (`uploads/temp/`)
+- ✅ Auto-cleanup temporary files
+- ✅ Direct file upload to Telegram
+- ✅ Loading messages during processing
+
+### **5. Security**
 
 - ✅ Authorization check (bisa dikustomisasi)
 - ✅ Input validation
@@ -188,6 +233,8 @@ Bot menangani error dengan baik:
 
 ### **2. File Dimodifikasi:**
 - `application/libraries/Telegram_notification.php` - Ditambah method baru
+- `application/models/Transaksi_model.php` - Ditambah method `get_all_for_export()`
+- `application/controllers/Telegram_bot.php` - Modifikasi fungsi download dan history
 
 ---
 
@@ -223,6 +270,23 @@ Bot menangani error dengan baik:
 1. Cek koneksi database
 2. Pastikan model `transaksi_model` berfungsi
 3. Cek log error di `application/logs/`
+
+### **5. File Download Error**
+
+**Penyebab:** File tidak bisa di-generate atau upload
+**Solusi:**
+1. Pastikan direktori `uploads/temp/` ada dan writable
+2. Cek library PHPExcel dan TCPDF terinstall
+3. Cek permission file system
+4. Cek log error untuk detail masalah
+
+### **6. History Data Error**
+
+**Penyebab:** Data history tidak muncul
+**Solusi:**
+1. Pastikan ada data dengan `updated_at` dalam 7 hari terakhir
+2. Cek query di method `get_daily_done_already_comparison()`
+3. Pastikan data memiliki status 1 atau 2
 
 ---
 
