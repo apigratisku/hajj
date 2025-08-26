@@ -16,7 +16,6 @@ class Database extends CI_Controller {
         $this->load->library('form_validation');
         $this->load->library('session');
         $this->load->library('telegram_notification');
-        $this->load->library('redis_cache');
         $this->load->helper('url');
         $this->load->library('excel');
         
@@ -58,54 +57,12 @@ class Database extends CI_Controller {
         $page = $this->input->get('page') ? $this->input->get('page') : 1;
         $offset = ($page - 1) * $per_page;
         
-        // Try to get data from cache first
-        $cache_key = 'peserta_data_' . md5(serialize($filters) . $per_page . $offset);
-        $cached_data = $this->redis_cache->get($cache_key);
-        
-        if ($cached_data !== false) {
-            $data['peserta'] = $cached_data;
-            log_message('debug', 'Data loaded from cache - Key: ' . $cache_key);
-        } else {
-            // Get data from database
-            $data['peserta'] = $this->transaksi_model->get_paginated_filtered($per_page, $offset, $filters);
-            
-            // Cache the data for 5 minutes
-            $this->redis_cache->set($cache_key, $data['peserta'], 300);
-            log_message('debug', 'Data cached - Key: ' . $cache_key);
-        }
-        
-        // Cache flag_doc options (cache for 1 hour)
-        $flag_doc_cache_key = 'flag_doc_list';
-        $cached_flag_doc = $this->redis_cache->get($flag_doc_cache_key);
-        
-        if ($cached_flag_doc !== false) {
-            $data['flag_doc_list'] = $cached_flag_doc;
-        } else {
-            $data['flag_doc_list'] = $this->transaksi_model->get_unique_flag_doc();
-            $this->redis_cache->set($flag_doc_cache_key, $data['flag_doc_list'], 3600);
-        }
-        
-        // Cache tanggaljam options (cache for 1 hour)
-        $tanggaljam_cache_key = 'tanggaljam_list';
-        $cached_tanggaljam = $this->redis_cache->get($tanggaljam_cache_key);
-        
-        if ($cached_tanggaljam !== false) {
-            $data['tanggaljam_list'] = $cached_tanggaljam;
-        } else {
-            $data['tanggaljam_list'] = $this->transaksi_model->get_unique_tanggaljam();
-            $this->redis_cache->set($tanggaljam_cache_key, $data['tanggaljam_list'], 3600);
-        }
-        
-        // Cache tanggal_pengerjaan options (cache for 1 hour)
-        $tanggal_pengerjaan_cache_key = 'tanggal_pengerjaan_list';
-        $cached_tanggal_pengerjaan = $this->redis_cache->get($tanggal_pengerjaan_cache_key);
-        
-        if ($cached_tanggal_pengerjaan !== false) {
-            $data['tanggal_pengerjaan_list'] = $cached_tanggal_pengerjaan;
-        } else {
-            $data['tanggal_pengerjaan_list'] = $this->transaksi_model->get_unique_tanggal_pengerjaan();
-            $this->redis_cache->set($tanggal_pengerjaan_cache_key, $data['tanggal_pengerjaan_list'], 3600);
-        }
+        // Get data
+        $data['peserta'] = $this->transaksi_model->get_paginated_filtered($per_page, $offset, $filters);
+        // Provide flag_doc options for filter select
+        $data['flag_doc_list'] = $this->transaksi_model->get_unique_flag_doc();
+        $data['tanggaljam_list'] = $this->transaksi_model->get_unique_tanggaljam();
+        $data['tanggal_pengerjaan_list'] = $this->transaksi_model->get_unique_tanggal_pengerjaan();
         
         // Get update statistics if tanggal_pengerjaan filter is applied
         if (!empty($filters['tanggal_pengerjaan'])) {
@@ -680,14 +637,12 @@ class Database extends CI_Controller {
             $result = $this->transaksi_model->update($id, $data);
             
             if ($result) {
-                // Invalidate cache when data is updated
-                $this->invalidate_peserta_cache();
-                
                 // Kirim notifikasi Telegram untuk update data peserta via AJAX
-                $peserta_name = isset($data['nama']) ? $data['nama'] : $current_peserta->nama;
-                if($this->session->userdata('username') != 'adhit'):
+                
+                    $peserta_name = isset($data['nama']) ? $data['nama'] : $current_peserta->nama;
+                    if($this->session->userdata('username') != 'adhit'):
                     $this->telegram_notification->peserta_crud_notification('update', $peserta_name, 'ID: ' . $id);
-                endif;
+                    endif;
                 
                 // Get current URL with filters for redirect
                 $redirect_url = $this->get_redirect_url_with_filters();
@@ -2534,56 +2489,6 @@ class Database extends CI_Controller {
             log_message('info', 'Barcode file not found for deletion: ' . $filename);
             return false;
         }
-    }
-    
-    /**
-     * Cache management methods
-     */
-    public function cache_stats() {
-        // Check if user is logged in
-        if (!$this->session->userdata('logged_in')) {
-            redirect('auth');
-        }
-        
-        $stats = $this->redis_cache->get_stats();
-        $data['title'] = 'Cache Statistics';
-        $data['cache_stats'] = $stats;
-        
-        $this->load->view('templates/sidebar');
-        $this->load->view('templates/header', $data);
-        $this->load->view('database/cache_stats', $data);
-        $this->load->view('templates/footer');
-    }
-    
-    public function clear_cache() {
-        // Check if user is logged in
-        if (!$this->session->userdata('logged_in')) {
-            redirect('auth');
-        }
-        
-        $result = $this->redis_cache->clear_all();
-        
-        if ($result) {
-            $this->session->set_flashdata('success', 'Cache berhasil dibersihkan');
-        } else {
-            $this->session->set_flashdata('error', 'Gagal membersihkan cache');
-        }
-        
-        redirect('database/cache_stats');
-    }
-    
-    /**
-     * Invalidate peserta cache when data is modified
-     */
-    private function invalidate_peserta_cache() {
-        // Delete all peserta data cache
-        $this->redis_cache->delete('flag_doc_list');
-        $this->redis_cache->delete('tanggaljam_list');
-        $this->redis_cache->delete('tanggal_pengerjaan_list');
-        
-        // Note: We can't easily delete all peserta_data_* keys without knowing them
-        // In a production environment, you might want to use Redis patterns or maintain a list
-        log_message('debug', 'Peserta cache invalidated');
     }
     
     /**
