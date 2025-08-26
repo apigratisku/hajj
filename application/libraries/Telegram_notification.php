@@ -343,6 +343,78 @@ class Telegram_notification {
     }
     
     /**
+     * Kirim notifikasi statistik dashboard
+     * @param array $stats Data statistik
+     */
+    public function send_dashboard_stats($stats) {
+        $message = "📊 <b>STATISTIK DASHBOARD HAJJ</b>\n";
+        $message .= "📅 <b>Update:</b> " . date('d/m/Y H:i:s') . "\n\n";
+        
+        $message .= "👥 <b>Total Peserta:</b> " . $stats['total'] . "\n\n";
+        $message .= "✅ <b>Status Done:</b> " . $stats['done'] . " (" . $stats['done_percent'] . "%)\n";
+        $message .= "🔄 <b>Status Already:</b> " . $stats['already'] . " (" . $stats['already_percent'] . "%)\n";
+        $message .= "🎯 <b>Status On Target:</b> " . $stats['on_target'] . " (" . $stats['on_target_percent'] . "%)\n";
+        
+        $this->send_notification($message);
+    }
+    
+    /**
+     * Kirim notifikasi download link
+     * @param string $type Tipe download (Excel/PDF)
+     * @param string $url URL download
+     */
+    public function send_download_link($type, $url) {
+        $message = "📥 <b>DOWNLOAD DATA {$type}</b>\n\n";
+        $message .= "🔗 <b>Link Download:</b>\n";
+        $message .= "{$url}\n\n";
+        $message .= "💡 <b>Tips:</b> Klik link di atas untuk download file {$type}.";
+        
+        $this->send_notification($message);
+    }
+    
+    /**
+     * Kirim notifikasi history harian
+     * @param array $history_data Data history harian
+     */
+    public function send_daily_history($history_data) {
+        $message = "📅 <b>HISTORY UPDATE DATA HARIAN</b>\n";
+        $message .= "📅 <b>Update:</b> " . date('d/m/Y H:i:s') . "\n\n";
+        
+        if (empty($history_data)) {
+            $message .= "📝 Tidak ada data update dalam 7 hari terakhir.\n";
+        } else {
+            $message .= "📊 <b>Update 7 Hari Terakhir:</b>\n\n";
+            
+            foreach ($history_data as $history) {
+                $date = date('d/m/Y', strtotime($history->tanggal_pengerjaan));
+                $count = $history->jumlah_update;
+                
+                $message .= "📅 <b>{$date}:</b> {$count} update\n";
+            }
+            
+            $total_updates = array_sum(array_column($history_data, 'jumlah_update'));
+            $message .= "\n📈 <b>Total Update:</b> {$total_updates}\n";
+        }
+        
+        $message .= "\n💡 <b>Info:</b> Data menunjukkan jumlah update data peserta per hari.";
+        
+        $this->send_notification($message);
+    }
+    
+    /**
+     * Kirim notifikasi bot command
+     * @param string $command Perintah yang digunakan
+     * @param string $user Username pengguna
+     */
+    public function bot_command_notification($command, $user) {
+        $activity = "Bot Command: {$command}";
+        $details = "User: {$user}";
+        
+        $message = $this->format_message($activity, $details);
+        $this->send_notification($message);
+    }
+    
+    /**
      * Kirim notifikasi custom dengan format bebas
      * @param string $title Judul notifikasi
      * @param string $content Isi notifikasi

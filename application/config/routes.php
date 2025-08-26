@@ -7,6 +7,14 @@ $route['translate_uri_dashes'] = FALSE;
 // Auth routes
 $route['login'] = 'auth/login';
 $route['logout'] = 'auth/logout';
+$route['nusukbot'] = 'nusukbot';
+$route['telegram_bot'] = 'telegram_bot';
+$route['telegram_bot/webhook'] = 'telegram_bot/webhook';
+$route['telegram_bot/set_webhook'] = 'telegram_bot/set_webhook';
+$route['telegram_bot/delete_webhook'] = 'telegram_bot/delete_webhook';
+$route['telegram_bot/get_webhook_info'] = 'telegram_bot/get_webhook_info';
+
+
 
 // Installation routes
 $route['install'] = 'install/index';
