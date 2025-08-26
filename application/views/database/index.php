@@ -370,7 +370,9 @@
                                                     $user = $this->user_model->get_user_by_id($p->history_update);
                                                 }
                                                 ?>
-                                                <?= ($user && isset($user->nama_lengkap)) ? $user->nama_lengkap : '-' ?>
+                                                <?= ($user && isset($user->nama_lengkap))
+    ? '<a title="Updated at '.html_escape(!empty($p->updated_at)?date('d-m-Y H:i', strtotime($p->updated_at)):'-').'" onclick="return false;">'.html_escape($user->nama_lengkap).'</a>'
+    : '-' ?>
                                             </td>
                                             <?php endif; ?>
                                             <td class="col-aksi">
@@ -527,7 +529,9 @@
                                                     $user = $this->user_model->get_user_by_id($p->history_update);
                                                 }
                                                 ?>
-                                                <?= ($user && isset($user->nama_lengkap)) ? $user->nama_lengkap : '-' ?>
+                                                <?= ($user && isset($user->nama_lengkap))
+    ? '<a title="Updated at '.html_escape(!empty($p->updated_at)?date('d-m-Y H:i', strtotime($p->updated_at)):'-').'" onclick="return false;">'.html_escape($user->nama_lengkap).'</a>'
+    : '-' ?>
                                             </td>
                                         <?php endif; ?>
                                         <td class="text-center aksi"  style="white-space: nowrap;width: auto;">
