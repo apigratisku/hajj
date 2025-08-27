@@ -310,15 +310,36 @@ class Telegram_bot extends CI_Controller {
             
             // Create temp directory if not exists
             if (!is_dir(FCPATH . 'uploads/temp/')) {
-                mkdir(FCPATH . 'uploads/temp/', 0777, true);
+                if (!mkdir(FCPATH . 'uploads/temp/', 0777, true)) {
+                    throw new Exception('Gagal membuat direktori temp');
+                }
             }
             
             // Get statistics data using the same logic as Database.php
             $filters = []; // Empty filters for all data
             $statistik_data = $this->transaksi_model->get_statistik_by_flag_doc($filters);
             
+            // Log data count for debugging
+            log_message('debug', 'Statistics data count: ' . count($statistik_data));
+            
+            if (empty($statistik_data)) {
+                $this->send_message($chat_id, "⚠️ Tidak ada data statistik yang tersedia untuk di-export.");
+                return;
+            }
+            
             // Generate PDF file with statistics data
-            $this->generate_statistik_pdf_file($statistik_data, $filepath);
+            $pdf_result = $this->generate_statistik_pdf_file($statistik_data, $filepath);
+            
+            if (!$pdf_result) {
+                throw new Exception('Gagal generate file PDF');
+            }
+            
+            // Check if file exists and has size > 0
+            if (!file_exists($filepath) || filesize($filepath) == 0) {
+                throw new Exception('File PDF tidak valid atau kosong');
+            }
+            
+            log_message('debug', 'PDF file ready to send: ' . $filepath . ' (size: ' . filesize($filepath) . ' bytes)');
             
             // Send file to Telegram
             $result = $this->send_document($chat_id, $filepath, $filename, "📄 <b>STATISTIK DATA PESERTA PDF</b>\n\n📋 <b>Fitur PDF:</b>\n• Data statistik berdasarkan flag_doc\n• Format landscape\n• Header dan footer\n• Warna status\n• Total per flag dokumen\n\n📅 <b>Generated:</b> " . date('d/m/Y H:i:s'));
@@ -326,15 +347,17 @@ class Telegram_bot extends CI_Controller {
             // Delete temp file
             if (file_exists($filepath)) {
                 unlink($filepath);
+                log_message('debug', 'Temporary PDF file deleted: ' . $filepath);
             }
             
             if (!$result) {
-                $this->send_message($chat_id, "❌ Terjadi kesalahan saat mengirim file PDF.");
+                $this->send_message($chat_id, "❌ Terjadi kesalahan saat mengirim file PDF ke Telegram.");
             }
             
         } catch (Exception $e) {
-            log_message('error', 'Error generating PDF file: ' . $e->getMessage());
-            $this->send_message($chat_id, "❌ Terjadi kesalahan saat membuat file PDF.");
+            log_message('error', 'Error in send_pdf_download_link: ' . $e->getMessage());
+            log_message('error', 'Stack trace: ' . $e->getTraceAsString());
+            $this->send_message($chat_id, "❌ Terjadi kesalahan saat membuat file PDF: " . $e->getMessage());
         }
     }
 
@@ -1101,6 +1124,17 @@ class Telegram_bot extends CI_Controller {
      */
     private function generate_statistik_pdf_file($statistik_data, $filepath) {
         try {
+            // Check if TCPDF library exists
+            if (!class_exists('TCPDF')) {
+                // Try to load TCPDF manually
+                $tcpdf_path = APPPATH . 'third_party/tcpdf/tcpdf.php';
+                if (file_exists($tcpdf_path)) {
+                    require_once $tcpdf_path;
+                } else {
+                    throw new Exception('Library TCPDF tidak ditemukan. Path: ' . $tcpdf_path);
+                }
+            }
+            
             // Create new PDF document
             $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
             
@@ -1168,10 +1202,17 @@ class Telegram_bot extends CI_Controller {
             // Save PDF
             $pdf->Output($filepath, 'F');
             
+            // Verify file was created
+            if (!file_exists($filepath)) {
+                throw new Exception('File PDF tidak berhasil dibuat: ' . $filepath);
+            }
+            
+            log_message('debug', 'PDF file generated successfully: ' . $filepath);
             return true;
             
         } catch (Exception $e) {
             log_message('error', 'Error generating statistics PDF file: ' . $e->getMessage());
+            log_message('error', 'Stack trace: ' . $e->getTraceAsString());
             return false;
         }
     }
@@ -1266,6 +1307,34 @@ class Telegram_bot extends CI_Controller {
         echo "<pre>";
         print_r($response);
         echo "</pre>";
+        
+        // Test TCPDF library
+        echo "<h3>TCPDF Library Test:</h3>";
+        try {
+            if (!class_exists('TCPDF')) {
+                echo "❌ TCPDF class tidak ditemukan<br>";
+                
+                // Try to load manually
+                $tcpdf_path = APPPATH . 'third_party/tcpdf/tcpdf.php';
+                if (file_exists($tcpdf_path)) {
+                    require_once $tcpdf_path;
+                    echo "✅ TCPDF loaded manually from: " . $tcpdf_path . "<br>";
+                } else {
+                    echo "❌ TCPDF file tidak ditemukan di: " . $tcpdf_path . "<br>";
+                }
+            } else {
+                echo "✅ TCPDF class sudah tersedia<br>";
+            }
+            
+            // Test creating PDF
+            if (class_exists('TCPDF')) {
+                $pdf = new TCPDF();
+                echo "✅ TCPDF instance berhasil dibuat<br>";
+            }
+            
+        } catch (Exception $e) {
+            echo "❌ Error testing TCPDF: " . $e->getMessage() . "<br>";
+        }
         
         // Test send message
         echo "<h3>Test Send Message:</h3>";
