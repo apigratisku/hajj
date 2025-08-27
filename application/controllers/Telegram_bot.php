@@ -67,39 +67,57 @@ class Telegram_bot extends CI_Controller {
         }
         
         // Handle commands
-        switch ($text) {
+        // Normalisasi command: ambil kata pertama, lowercase, buang @BotName (jika di grup)
+        $cmd = strtolower(trim(strtok($text, ' ')));
+        $cmd = preg_replace('/@[\w_]+$/', '', $cmd);
+
+        // Daftar perintah yang diizinkan (whitelist)
+        $allowed = [
+            '/start',
+            '/help',
+            '/id',
+            '/statistik_dashboard',
+            '/statistik_download_excel',
+            '/statistik_download_pdf',
+            '/history_data_harian',
+        ];
+
+        // Jika bukan perintah yang dikenal: diam saja (tanpa reply)
+        if (!in_array($cmd, $allowed, true)) {
+            return; // pastikan webhook mengembalikan HTTP 200 OK
+        }
+
+        // Handle commands
+        switch ($cmd) {
             case '/start':
                 $this->send_welcome_message($chat_id);
                 break;
-                
+
             case '/help':
                 $this->send_help_message($chat_id);
                 break;
-                
+
             case '/id':
                 $this->send_user_id_info($chat_id, $user_id, $username);
                 break;
-                
+
             case '/statistik_dashboard':
                 $this->send_dashboard_statistics($chat_id);
                 break;
-                
+
             case '/statistik_download_excel':
                 $this->send_excel_download_link($chat_id);
                 break;
-                
+
             case '/statistik_download_pdf':
                 $this->send_pdf_download_link($chat_id);
                 break;
-                
+
             case '/history_data_harian':
                 $this->send_daily_history($chat_id);
                 break;
-                
-            default:
-                $this->send_message($chat_id, "❓ Perintah tidak dikenali. Gunakan /help untuk melihat daftar perintah.");
-                break;
         }
+
     }
 
     /**
