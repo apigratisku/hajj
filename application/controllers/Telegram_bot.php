@@ -11,7 +11,7 @@ class Telegram_bot extends CI_Controller {
     // Daftar ID user yang diizinkan
     private $allowed_user_ids = [
         -4948593678,  // Group ID
-        //250170651     // User ID
+        250170651     // User ID
     ];
 
     public function __construct() {
@@ -61,7 +61,7 @@ class Telegram_bot extends CI_Controller {
         log_message('debug', "Telegram message from {$username}: {$text}");
         
         // Check if user is authorized (optional security)
-        if (!$this->is_authorized_user($user_id)) {
+        if (!$this->is_authorized_user($user_id, $chat_id)) {
             $this->send_message($chat_id, "❌ Maaf, Anda tidak memiliki akses ke bot ini.");
             return;
         }
@@ -111,7 +111,7 @@ class Telegram_bot extends CI_Controller {
         $user_id = isset($callback_query['from']['id']) ? $callback_query['from']['id'] : 0;
         
         // Check if user is authorized
-        if (!$this->is_authorized_user($user_id)) {
+        if (!$this->is_authorized_user($user_id, $chat_id)) {
             $this->answer_callback_query($callback_query['id'], "❌ Akses ditolak");
             return;
         }
@@ -456,7 +456,12 @@ class Telegram_bot extends CI_Controller {
     /**
      * Check if user is authorized
      */
-    private function is_authorized_user($user_id) {
+    private function is_authorized_user($user_id, $chat_id = null, $chat_type = null) {
+        // If chat_id is provided, check if it's the authorized group
+        if ($chat_id !== null && $chat_id == -4948593678) {
+            return true; // All members in this group are authorized
+        }
+        
         // Check if user ID is in the allowed list
         return in_array($user_id, $this->allowed_user_ids);
     }
@@ -1166,7 +1171,7 @@ class Telegram_bot extends CI_Controller {
         }
         
         // Check if user is authorized
-        if ($this->is_authorized_user($user_id)) {
+        if ($this->is_authorized_user($user_id, $chat_id)) {
             $message .= "✅ <b>Status:</b> Akses diizinkan";
         } else {
             $message .= "❌ <b>Status:</b> Akses ditolak";
