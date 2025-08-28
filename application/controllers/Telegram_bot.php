@@ -499,7 +499,7 @@ class Telegram_bot extends CI_Controller {
      */
     private function is_authorized_user($user_id, $chat_id = null, $chat_type = null) {
         // If chat_id is provided, check if it's the authorized group
-        if ($chat_id !== null && $chat_id == -1003047206786 || $chat_id == -4948593678) {
+        if ($chat_id !== null && $chat_id == -1003047206786) {
             return true; // All members in this group are authorized
         }
         
