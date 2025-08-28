@@ -1126,45 +1126,46 @@ class Telegram_bot extends CI_Controller {
         try {
             // Check if TCPDF library exists
             if (!class_exists('TCPDF')) {
-                // Try to load TCPDF manually
-                $tcpdf_path = APPPATH . 'third_party/tcpdf/tcpdf.php';
-                if (file_exists($tcpdf_path)) {
-                    require_once $tcpdf_path;
-                } else {
-                    throw new Exception('Library TCPDF tidak ditemukan. Path: ' . $tcpdf_path);
+                // Try multiple possible paths for TCPDF
+                $possible_paths = [
+                    APPPATH . 'third_party/tcpdf/tcpdf.php',
+                    APPPATH . 'libraries/tcpdf/tcpdf.php',
+                    APPPATH . 'third_party/TCPDF/tcpdf.php',
+                    FCPATH . 'application/third_party/tcpdf/tcpdf.php'
+                ];
+                
+                $tcpdf_loaded = false;
+                foreach ($possible_paths as $tcpdf_path) {
+                    if (file_exists($tcpdf_path)) {
+                        require_once $tcpdf_path;
+                        log_message('debug', 'TCPDF loaded from: ' . $tcpdf_path);
+                        $tcpdf_loaded = true;
+                        break;
+                    }
+                }
+                
+                if (!$tcpdf_loaded) {
+                    throw new Exception('Library TCPDF tidak ditemukan di semua path yang mungkin');
                 }
             }
             
-            // Create new PDF document
-            $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+            // Create new PDF document with simpler configuration
+            $pdf = new TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
             
             // Set document information
             $pdf->SetCreator('Hajj System');
             $pdf->SetAuthor('Hajj System');
             $pdf->SetTitle('Statistik Data Peserta');
-            $pdf->SetSubject('Statistik Data Peserta');
-            $pdf->SetKeywords('hajj, peserta, statistik, database');
             
-            // Set default header data
-            $pdf->SetHeaderData('', 0, 'STATISTIK DATA PESERTA', 'Export Statistik Data Peserta - ' . date('d/m/Y H:i:s'));
-            
-            // Set header and footer fonts
-            $pdf->setHeaderFont(Array(PDF_FONT_NAME_MAIN, '', PDF_FONT_SIZE_MAIN));
-            $pdf->setFooterFont(Array(PDF_FONT_NAME_DATA, '', PDF_FONT_SIZE_DATA));
-            
-            // Set default monospaced font
-            $pdf->SetDefaultMonospacedFont(PDF_FONT_MONOSPACED);
+            // Remove default header and footer
+            $pdf->setPrintHeader(false);
+            $pdf->setPrintFooter(false);
             
             // Set margins
-            $pdf->SetMargins(PDF_MARGIN_LEFT, PDF_MARGIN_TOP, PDF_MARGIN_RIGHT);
-            $pdf->SetHeaderMargin(PDF_MARGIN_HEADER);
-            $pdf->SetFooterMargin(PDF_MARGIN_FOOTER);
+            $pdf->SetMargins(15, 15, 15);
             
             // Set auto page breaks
-            $pdf->SetAutoPageBreak(TRUE, PDF_MARGIN_BOTTOM);
-            
-            // Set image scale factor
-            $pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
+            $pdf->SetAutoPageBreak(TRUE, 15);
             
             // Add a page
             $pdf->AddPage();
@@ -1172,17 +1173,19 @@ class Telegram_bot extends CI_Controller {
             // Set font
             $pdf->SetFont('helvetica', '', 10);
             
-            // Create table header
-            $html = '<table border="1" cellpadding="6" cellspacing="0" style="width: 100%; font-size: 10px;">
-                <thead>
-                    <tr style="background-color: #8B4513; color: white; font-weight: bold; text-align: center;">
-                        <th width="50%">Nama PDF</th>
-                        <th width="16%">Total</th>
-                        <th width="17%">Done</th>
-                        <th width="17%">Already</th>
-                    </tr>
-                </thead>
-                <tbody>';
+            // Add title
+            $pdf->Cell(0, 10, 'STATISTIK DATA PESERTA', 0, 1, 'C');
+            $pdf->Cell(0, 5, 'Export tanggal: ' . date('d/m/Y H:i:s'), 0, 1, 'C');
+            $pdf->Ln(5);
+            
+            // Create simple table
+            $html = '<table border="1" cellpadding="5" cellspacing="0" style="width: 100%; font-size: 9px;">
+                <tr style="background-color: #8B4513; color: white; font-weight: bold; text-align: center;">
+                    <th width="50%">Nama PDF</th>
+                    <th width="16%">Total</th>
+                    <th width="17%">Done</th>
+                    <th width="17%">Already</th>
+                </tr>';
             
             // Add data rows
             foreach ($statistik_data as $stat) {
@@ -1194,9 +1197,9 @@ class Telegram_bot extends CI_Controller {
                 </tr>';
             }
             
-            $html .= '</tbody></table>';
+            $html .= '</table>';
             
-            // Print text using writeHTMLCell()
+            // Print text using writeHTML
             $pdf->writeHTML($html, true, false, true, false, '');
             
             // Save PDF
@@ -1207,7 +1210,13 @@ class Telegram_bot extends CI_Controller {
                 throw new Exception('File PDF tidak berhasil dibuat: ' . $filepath);
             }
             
-            log_message('debug', 'PDF file generated successfully: ' . $filepath);
+            // Check file size
+            $file_size = filesize($filepath);
+            if ($file_size == 0) {
+                throw new Exception('File PDF kosong (0 bytes)');
+            }
+            
+            log_message('debug', 'PDF file generated successfully: ' . $filepath . ' (size: ' . $file_size . ' bytes)');
             return true;
             
         } catch (Exception $e) {
@@ -1314,13 +1323,30 @@ class Telegram_bot extends CI_Controller {
             if (!class_exists('TCPDF')) {
                 echo "❌ TCPDF class tidak ditemukan<br>";
                 
-                // Try to load manually
-                $tcpdf_path = APPPATH . 'third_party/tcpdf/tcpdf.php';
-                if (file_exists($tcpdf_path)) {
-                    require_once $tcpdf_path;
-                    echo "✅ TCPDF loaded manually from: " . $tcpdf_path . "<br>";
-                } else {
-                    echo "❌ TCPDF file tidak ditemukan di: " . $tcpdf_path . "<br>";
+                // Try multiple possible paths for TCPDF
+                $possible_paths = [
+                    APPPATH . 'third_party/tcpdf/tcpdf.php',
+                    APPPATH . 'libraries/tcpdf/tcpdf.php',
+                    APPPATH . 'third_party/TCPDF/tcpdf.php',
+                    FCPATH . 'application/third_party/tcpdf/tcpdf.php'
+                ];
+                
+                echo "🔍 Mencoba load TCPDF dari berbagai path:<br>";
+                $tcpdf_loaded = false;
+                foreach ($possible_paths as $tcpdf_path) {
+                    echo "&nbsp;&nbsp;• " . $tcpdf_path . ": ";
+                    if (file_exists($tcpdf_path)) {
+                        require_once $tcpdf_path;
+                        echo "✅ <strong>BERHASIL</strong><br>";
+                        $tcpdf_loaded = true;
+                        break;
+                    } else {
+                        echo "❌ File tidak ditemukan<br>";
+                    }
+                }
+                
+                if (!$tcpdf_loaded) {
+                    echo "❌ TCPDF tidak dapat dimuat dari semua path yang dicoba<br>";
                 }
             } else {
                 echo "✅ TCPDF class sudah tersedia<br>";
@@ -1328,12 +1354,31 @@ class Telegram_bot extends CI_Controller {
             
             // Test creating PDF
             if (class_exists('TCPDF')) {
-                $pdf = new TCPDF();
+                echo "🧪 Testing PDF creation...<br>";
+                $pdf = new TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
                 echo "✅ TCPDF instance berhasil dibuat<br>";
+                
+                // Test simple PDF generation
+                $pdf->setPrintHeader(false);
+                $pdf->setPrintFooter(false);
+                $pdf->AddPage();
+                $pdf->SetFont('helvetica', '', 10);
+                $pdf->Cell(0, 10, 'Test PDF Generation', 0, 1, 'C');
+                
+                $test_file = FCPATH . 'uploads/temp/test_pdf.pdf';
+                $pdf->Output($test_file, 'F');
+                
+                if (file_exists($test_file) && filesize($test_file) > 0) {
+                    echo "✅ Test PDF berhasil dibuat: " . $test_file . " (size: " . filesize($test_file) . " bytes)<br>";
+                    unlink($test_file); // Clean up
+                } else {
+                    echo "❌ Test PDF gagal dibuat<br>";
+                }
             }
             
         } catch (Exception $e) {
             echo "❌ Error testing TCPDF: " . $e->getMessage() . "<br>";
+            echo "📋 Stack trace: " . $e->getTraceAsString() . "<br>";
         }
         
         // Test send message
