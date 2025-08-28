@@ -181,11 +181,40 @@ class Transaksi_model extends CI_Model {
             $this->db->where('peserta.gender', $filters['gender']);
         }
         if (isset($filters['flag_doc'])) {
-            // Handle flag_doc filter more precisely
-            if ($filters['flag_doc'] === null || $filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
-                $this->db->where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
+            // Handle multiple flag_doc selection
+            if (is_array($filters['flag_doc'])) {
+                // Multiple flag_doc selected
+                $flag_docs = [];
+                $has_null = false;
+                
+                foreach ($filters['flag_doc'] as $flag_doc) {
+                    if ($flag_doc === null || $flag_doc === 'null' || $flag_doc === 'NULL' || $flag_doc === '') {
+                        $has_null = true;
+                    } else {
+                        $flag_docs[] = $flag_doc;
+                    }
+                }
+                
+                if (!empty($flag_docs) && $has_null) {
+                    // Both specific flag_docs and null values
+                    $this->db->group_start();
+                    $this->db->where_in('peserta.flag_doc', $flag_docs);
+                    $this->db->or_where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
+                    $this->db->group_end();
+                } elseif (!empty($flag_docs)) {
+                    // Only specific flag_docs
+                    $this->db->where_in('peserta.flag_doc', $flag_docs);
+                } elseif ($has_null) {
+                    // Only null values
+                    $this->db->where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
+                }
             } else {
-                $this->db->where('peserta.flag_doc', $filters['flag_doc']);
+                // Single flag_doc (backward compatibility)
+                if ($filters['flag_doc'] === null || $filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
+                    $this->db->where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
+                } else {
+                    $this->db->where('peserta.flag_doc', $filters['flag_doc']);
+                }
             }
         }
         if (!empty($filters['tanggaljam'])) {
@@ -260,11 +289,40 @@ class Transaksi_model extends CI_Model {
             $this->db->where('peserta.status', $filters['status']);
         }
         if (isset($filters['flag_doc'])) {
-            // Handle flag_doc filter more precisely
-            if ($filters['flag_doc'] === null || $filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
-                $this->db->where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
+            // Handle multiple flag_doc selection
+            if (is_array($filters['flag_doc'])) {
+                // Multiple flag_doc selected
+                $flag_docs = [];
+                $has_null = false;
+                
+                foreach ($filters['flag_doc'] as $flag_doc) {
+                    if ($flag_doc === null || $flag_doc === 'null' || $flag_doc === 'NULL' || $flag_doc === '') {
+                        $has_null = true;
+                    } else {
+                        $flag_docs[] = $flag_doc;
+                    }
+                }
+                
+                if (!empty($flag_docs) && $has_null) {
+                    // Both specific flag_docs and null values
+                    $this->db->group_start();
+                    $this->db->where_in('peserta.flag_doc', $flag_docs);
+                    $this->db->or_where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
+                    $this->db->group_end();
+                } elseif (!empty($flag_docs)) {
+                    // Only specific flag_docs
+                    $this->db->where_in('peserta.flag_doc', $flag_docs);
+                } elseif ($has_null) {
+                    // Only null values
+                    $this->db->where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
+                }
             } else {
-                $this->db->where('peserta.flag_doc', $filters['flag_doc']);
+                // Single flag_doc (backward compatibility)
+                if ($filters['flag_doc'] === null || $filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
+                    $this->db->where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
+                } else {
+                    $this->db->where('peserta.flag_doc', $filters['flag_doc']);
+                }
             }
         }
         if (!empty($filters['tanggaljam'])) {
@@ -469,11 +527,40 @@ class Transaksi_model extends CI_Model {
             $this->db->where('peserta.gender', $filters['gender']);
         }
         if (isset($filters['flag_doc'])) {
-            // Handle flag_doc filter more precisely
-            if ($filters['flag_doc'] === null || $filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
-                $this->db->where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
+            // Handle multiple flag_doc selection
+            if (is_array($filters['flag_doc'])) {
+                // Multiple flag_doc selected
+                $flag_docs = [];
+                $has_null = false;
+                
+                foreach ($filters['flag_doc'] as $flag_doc) {
+                    if ($flag_doc === null || $flag_doc === 'null' || $flag_doc === 'NULL' || $flag_doc === '') {
+                        $has_null = true;
+                    } else {
+                        $flag_docs[] = $flag_doc;
+                    }
+                }
+                
+                if (!empty($flag_docs) && $has_null) {
+                    // Both specific flag_docs and null values
+                    $this->db->group_start();
+                    $this->db->where_in('peserta.flag_doc', $flag_docs);
+                    $this->db->or_where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
+                    $this->db->group_end();
+                } elseif (!empty($flag_docs)) {
+                    // Only specific flag_docs
+                    $this->db->where_in('peserta.flag_doc', $flag_docs);
+                } elseif ($has_null) {
+                    // Only null values
+                    $this->db->where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
+                }
             } else {
-                $this->db->where('peserta.flag_doc', $filters['flag_doc']);
+                // Single flag_doc (backward compatibility)
+                if ($filters['flag_doc'] === null || $filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
+                    $this->db->where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
+                } else {
+                    $this->db->where('peserta.flag_doc', $filters['flag_doc']);
+                }
             }
         }
         if (!empty($filters['tanggaljam'])) {
@@ -525,11 +612,40 @@ class Transaksi_model extends CI_Model {
             $this->db->where('peserta.status', $filters['status']);
         }
         if (isset($filters['flag_doc'])) {
-            // Handle flag_doc filter more precisely
-            if ($filters['flag_doc'] === null || $filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
-                $this->db->where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
+            // Handle multiple flag_doc selection
+            if (is_array($filters['flag_doc'])) {
+                // Multiple flag_doc selected
+                $flag_docs = [];
+                $has_null = false;
+                
+                foreach ($filters['flag_doc'] as $flag_doc) {
+                    if ($flag_doc === null || $flag_doc === 'null' || $flag_doc === 'NULL' || $flag_doc === '') {
+                        $has_null = true;
+                    } else {
+                        $flag_docs[] = $flag_doc;
+                    }
+                }
+                
+                if (!empty($flag_docs) && $has_null) {
+                    // Both specific flag_docs and null values
+                    $this->db->group_start();
+                    $this->db->where_in('peserta.flag_doc', $flag_docs);
+                    $this->db->or_where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
+                    $this->db->group_end();
+                } elseif (!empty($flag_docs)) {
+                    // Only specific flag_docs
+                    $this->db->where_in('peserta.flag_doc', $flag_docs);
+                } elseif ($has_null) {
+                    // Only null values
+                    $this->db->where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
+                }
             } else {
-                $this->db->where('peserta.flag_doc', $filters['flag_doc']);
+                // Single flag_doc (backward compatibility)
+                if ($filters['flag_doc'] === null || $filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
+                    $this->db->where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
+                } else {
+                    $this->db->where('peserta.flag_doc', $filters['flag_doc']);
+                }
             }
         }
         if (!empty($filters['tanggaljam'])) {
@@ -655,11 +771,40 @@ class Transaksi_model extends CI_Model {
             $this->db->where('peserta.status', $filters['status']);
         }
         if (isset($filters['flag_doc'])) {
-            // Handle flag_doc filter more precisely
-            if ($filters['flag_doc'] === null || $filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
-                $this->db->where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
+            // Handle multiple flag_doc selection
+            if (is_array($filters['flag_doc'])) {
+                // Multiple flag_doc selected
+                $flag_docs = [];
+                $has_null = false;
+                
+                foreach ($filters['flag_doc'] as $flag_doc) {
+                    if ($flag_doc === null || $flag_doc === 'null' || $flag_doc === 'NULL' || $flag_doc === '') {
+                        $has_null = true;
+                    } else {
+                        $flag_docs[] = $flag_doc;
+                    }
+                }
+                
+                if (!empty($flag_docs) && $has_null) {
+                    // Both specific flag_docs and null values
+                    $this->db->group_start();
+                    $this->db->where_in('peserta.flag_doc', $flag_docs);
+                    $this->db->or_where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
+                    $this->db->group_end();
+                } elseif (!empty($flag_docs)) {
+                    // Only specific flag_docs
+                    $this->db->where_in('peserta.flag_doc', $flag_docs);
+                } elseif ($has_null) {
+                    // Only null values
+                    $this->db->where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
+                }
             } else {
-                $this->db->where('peserta.flag_doc', $filters['flag_doc']);
+                // Single flag_doc (backward compatibility)
+                if ($filters['flag_doc'] === null || $filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
+                    $this->db->where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
+                } else {
+                    $this->db->where('peserta.flag_doc', $filters['flag_doc']);
+                }
             }
         }
         if (!empty($filters['tanggaljam'])) {
@@ -822,10 +967,56 @@ class Transaksi_model extends CI_Model {
             $this->db->like('no_visa', $filters['no_visa']);
         }
         if (isset($filters['flag_doc'])) {
-            if ($filters['flag_doc'] === null || $filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
-                $this->db->where('(flag_doc IS NULL OR flag_doc = "")');
+            // Handle multiple flag_doc selection
+            if (is_array($filters['flag_doc'])) {
+                // Multiple flag_doc selected
+                $flag_docs = [];
+                $has_null = false;
+                $has_empty = false;
+                
+                foreach ($filters['flag_doc'] as $flag_doc) {
+                    if ($flag_doc === null || $flag_doc === 'null' || $flag_doc === 'NULL') {
+                        $has_null = true;
+                    } elseif ($flag_doc === '') {
+                        $has_empty = true;
+                    } else {
+                        $flag_docs[] = $flag_doc;
+                    }
+                }
+                
+                if (!empty($flag_docs) && ($has_null || $has_empty)) {
+                    // Both specific flag_docs and null/empty values
+                    $this->db->group_start();
+                    $this->db->where_in('flag_doc', $flag_docs);
+                    if ($has_null) {
+                        $this->db->or_where('(flag_doc IS NULL OR flag_doc = "")');
+                    }
+                    if ($has_empty) {
+                        $this->db->or_where('flag_doc', '');
+                    }
+                    $this->db->group_end();
+                } elseif (!empty($flag_docs)) {
+                    // Only specific flag_docs
+                    $this->db->where_in('flag_doc', $flag_docs);
+                } elseif ($has_null || $has_empty) {
+                    // Only null/empty values
+                    if ($has_null && $has_empty) {
+                        $this->db->where('(flag_doc IS NULL OR flag_doc = "")');
+                    } elseif ($has_null) {
+                        $this->db->where('(flag_doc IS NULL OR flag_doc = "")');
+                    } elseif ($has_empty) {
+                        $this->db->where('flag_doc', '');
+                    }
+                }
             } else {
-                $this->db->where('flag_doc', $filters['flag_doc']);
+                // Single flag_doc (backward compatibility)
+                if ($filters['flag_doc'] === null || $filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
+                    $this->db->where('(flag_doc IS NULL OR flag_doc = "")');
+                } elseif ($filters['flag_doc'] === '') {
+                    $this->db->where('flag_doc', '');
+                } else {
+                    $this->db->where('flag_doc', $filters['flag_doc']);
+                }
             }
         }
         
@@ -869,10 +1060,56 @@ class Transaksi_model extends CI_Model {
             $this->db->like('no_visa', $filters['no_visa']);
         }
         if (isset($filters['flag_doc'])) {
-            if ($filters['flag_doc'] === null || $filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
-                $this->db->where('(flag_doc IS NULL OR flag_doc = "")');
+            // Handle multiple flag_doc selection for main query
+            if (is_array($filters['flag_doc'])) {
+                // Multiple flag_doc selected
+                $flag_docs = [];
+                $has_null = false;
+                $has_empty = false;
+                
+                foreach ($filters['flag_doc'] as $flag_doc) {
+                    if ($flag_doc === null || $flag_doc === 'null' || $flag_doc === 'NULL') {
+                        $has_null = true;
+                    } elseif ($flag_doc === '') {
+                        $has_empty = true;
+                    } else {
+                        $flag_docs[] = $flag_doc;
+                    }
+                }
+                
+                if (!empty($flag_docs) && ($has_null || $has_empty)) {
+                    // Both specific flag_docs and null/empty values
+                    $this->db->group_start();
+                    $this->db->where_in('flag_doc', $flag_docs);
+                    if ($has_null) {
+                        $this->db->or_where('(flag_doc IS NULL OR flag_doc = "")');
+                    }
+                    if ($has_empty) {
+                        $this->db->or_where('flag_doc', '');
+                    }
+                    $this->db->group_end();
+                } elseif (!empty($flag_docs)) {
+                    // Only specific flag_docs
+                    $this->db->where_in('flag_doc', $flag_docs);
+                } elseif ($has_null || $has_empty) {
+                    // Only null/empty values
+                    if ($has_null && $has_empty) {
+                        $this->db->where('(flag_doc IS NULL OR flag_doc = "")');
+                    } elseif ($has_null) {
+                        $this->db->where('(flag_doc IS NULL OR flag_doc = "")');
+                    } elseif ($has_empty) {
+                        $this->db->where('flag_doc', '');
+                    }
+                }
             } else {
-                $this->db->where('flag_doc', $filters['flag_doc']);
+                // Single flag_doc (backward compatibility)
+                if ($filters['flag_doc'] === null || $filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
+                    $this->db->where('(flag_doc IS NULL OR flag_doc = "")');
+                } elseif ($filters['flag_doc'] === '') {
+                    $this->db->where('flag_doc', '');
+                } else {
+                    $this->db->where('flag_doc', $filters['flag_doc']);
+                }
             }
         }
         

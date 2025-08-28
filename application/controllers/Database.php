@@ -699,23 +699,87 @@ class Database extends CI_Controller {
     }
 
     public function export() {
-        $this->load->model('transaksi_model');
+        try {
+            $this->load->model('transaksi_model');
+            
+            // Get export data type from parameters
+            $export_data = $this->input->get('export_data');
+            
+            // Get filters from GET parameters
+            $filters = [
+                'nama' => $this->input->get('nama'),
+                'nomor_paspor' => $this->input->get('nomor_paspor'),
+                'no_visa' => $this->input->get('no_visa'),
+                'flag_doc' => $this->input->get('flag_doc'),
+                'status' => $this->input->get('status')
+            ];
+            
+            // Handle flag_doc array from GET parameters
+            if ($this->input->get('flag_doc[]')) {
+                $flag_doc_array = $this->input->get('flag_doc[]');
+                // Decode URL-encoded values to handle special characters
+                if (is_array($flag_doc_array)) {
+                    foreach ($flag_doc_array as $key => $value) {
+                        // Use rawurldecode to handle all special characters including :, /, ?, etc.
+                        $flag_doc_array[$key] = rawurldecode($value);
+                    }
+                }
+                $filters['flag_doc'] = $flag_doc_array;
+            }
+            
+            // Log the export request for debugging
+            log_message('debug', 'Export request - export_data: ' . $export_data . ', filters: ' . json_encode($filters));
+            log_message('debug', 'Raw flag_doc from GET: ' . $this->input->get('flag_doc'));
+            log_message('debug', 'Raw flag_doc[] from GET: ' . json_encode($this->input->get('flag_doc[]')));
+            log_message('debug', 'All GET parameters: ' . json_encode($_GET));
+            log_message('debug', 'POST parameters: ' . json_encode($_POST));
+            log_message('debug', 'REQUEST parameters: ' . json_encode($_REQUEST));
+            log_message('debug', 'Decoded flag_doc array: ' . json_encode(isset($filters['flag_doc']) ? $filters['flag_doc'] : 'not set'));
         
-        // Get export data type from parameters
-        $export_data = $this->input->get('export_data');
-        
-        // Get filters from GET parameters
-        $filters = [
-            'nama' => $this->input->get('nama'),
-            'nomor_paspor' => $this->input->get('nomor_paspor'),
-            'no_visa' => $this->input->get('no_visa'),
-            'flag_doc' => $this->input->get('flag_doc'),
-            'status' => $this->input->get('status')
-        ];
-        
-        // Handle null flag_doc (for data without flag_doc)
-        if (isset($filters['flag_doc']) && $filters['flag_doc'] === 'null') {
-            $filters['flag_doc'] = null;
+        // Handle multiple flag_doc selection
+        if (isset($filters['flag_doc'])) {
+            if (is_array($filters['flag_doc'])) {
+                // Multiple flag_doc selected
+                $flag_docs = [];
+                $has_empty = false;
+                $has_null = false;
+                
+                foreach ($filters['flag_doc'] as $value) {
+                    if ($value === '' || $value === null) {
+                        $has_empty = true;
+                    } elseif ($value === 'null') {
+                        $has_null = true;
+                    } else {
+                        $flag_docs[] = $value;
+                    }
+                }
+                
+                // If only empty/null values are selected, handle them properly
+                if (empty($flag_docs) && ($has_empty || $has_null)) {
+                    if ($has_null) {
+                        $filters['flag_doc'] = null;
+                    } else {
+                        $filters['flag_doc'] = [''];
+                    }
+                } elseif (!empty($flag_docs)) {
+                    $filters['flag_doc'] = $flag_docs;
+                    if ($has_null) {
+                        $filters['flag_doc'][] = null;
+                    }
+                    if ($has_empty) {
+                        $filters['flag_doc'][] = '';
+                    }
+                } else {
+                    unset($filters['flag_doc']);
+                }
+            } else {
+                // Single flag_doc (backward compatibility)
+                if ($filters['flag_doc'] === 'null') {
+                    $filters['flag_doc'] = null;
+                } elseif ($filters['flag_doc'] === '') {
+                    $filters['flag_doc'] = '';
+                }
+            }
         }
         
         // Get format from parameters
@@ -739,24 +803,147 @@ class Database extends CI_Controller {
                 $this->export_excel($peserta, $filters);
             }
         }
+        
+        } catch (Exception $e) {
+            // Log the error for debugging
+            log_message('error', 'Export error: ' . $e->getMessage());
+            log_message('error', 'Stack trace: ' . $e->getTraceAsString());
+            
+            // Clear any output that might have been sent
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
+            
+            // Set proper error headers
+            header('HTTP/1.1 500 Internal Server Error');
+            header('Content-Type: text/html; charset=utf-8');
+            
+            // Show user-friendly error message
+            echo '<!DOCTYPE html>
+            <html>
+            <head>
+                <title>Export Error</title>
+                <meta charset="utf-8">
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 50px; }
+                    .error-container { 
+                        border: 2px solid #f44336; 
+                        border-radius: 8px; 
+                        padding: 20px; 
+                        background-color: #ffebee; 
+                        max-width: 600px; 
+                        margin: 0 auto; 
+                    }
+                    .error-title { color: #d32f2f; font-size: 24px; margin-bottom: 15px; }
+                    .error-message { color: #333; margin-bottom: 20px; }
+                    .back-button { 
+                        background-color: #2196F3; 
+                        color: white; 
+                        padding: 10px 20px; 
+                        text-decoration: none; 
+                        border-radius: 4px; 
+                        display: inline-block; 
+                    }
+                    .back-button:hover { background-color: #1976D2; }
+                </style>
+            </head>
+            <body>
+                <div class="error-container">
+                    <div class="error-title">❌ Export Error</div>
+                    <div class="error-message">
+                        <strong>Terjadi kesalahan saat mengexport data:</strong><br><br>
+                        ' . htmlspecialchars($e->getMessage()) . '<br><br>
+                        <strong>Solusi:</strong><br>
+                        • Pastikan data yang dipilih tidak terlalu besar<br>
+                        • Coba export dengan filter yang lebih spesifik<br>
+                        • Hubungi administrator jika masalah berlanjut
+                    </div>
+                    <a href="' . base_url('database') . '" class="back-button">← Kembali ke Database</a>
+                </div>
+            </body>
+            </html>';
+            exit;
+        }
     }
 
     public function export_arsip() {
-        $this->load->model('transaksi_model');
+        try {
+            $this->load->model('transaksi_model');
+            
+            // Get filters from GET parameters
+            $filters = [
+                'nama' => $this->input->get('nama'),
+                'nomor_paspor' => $this->input->get('nomor_paspor'),
+                'no_visa' => $this->input->get('no_visa'),
+                'flag_doc' => $this->input->get('flag_doc'),
+                'status' => $this->input->get('status'),
+                'selesai' => 2
+            ];
+            
+            // Handle flag_doc array from GET parameters
+            if ($this->input->get('flag_doc[]')) {
+                $flag_doc_array = $this->input->get('flag_doc[]');
+                // Decode URL-encoded values to handle special characters
+                if (is_array($flag_doc_array)) {
+                    foreach ($flag_doc_array as $key => $value) {
+                        // Use rawurldecode to handle all special characters including :, /, ?, etc.
+                        $flag_doc_array[$key] = rawurldecode($value);
+                    }
+                }
+                $filters['flag_doc'] = $flag_doc_array;
+            }
+            
+            // Log the export arsip request for debugging
+            log_message('debug', 'Export arsip request - filters: ' . json_encode($filters));
+            log_message('debug', 'Raw flag_doc from GET (arsip): ' . $this->input->get('flag_doc'));
+            log_message('debug', 'Raw flag_doc[] from GET (arsip): ' . json_encode($this->input->get('flag_doc[]')));
+            log_message('debug', 'All GET parameters (arsip): ' . json_encode($_GET));
+            log_message('debug', 'Decoded flag_doc array (arsip): ' . json_encode(isset($filters['flag_doc']) ? $filters['flag_doc'] : 'not set'));
         
-        // Get filters from GET parameters
-        $filters = [
-            'nama' => $this->input->get('nama'),
-            'nomor_paspor' => $this->input->get('nomor_paspor'),
-            'no_visa' => $this->input->get('no_visa'),
-            'flag_doc' => $this->input->get('flag_doc'),
-            'status' => $this->input->get('status'),
-            'selesai' => 2
-        ];
-        
-        // Handle null flag_doc (for data without flag_doc)
-        if (isset($filters['flag_doc']) && $filters['flag_doc'] === 'null') {
-            $filters['flag_doc'] = null;
+        // Handle multiple flag_doc selection
+        if (isset($filters['flag_doc'])) {
+            if (is_array($filters['flag_doc'])) {
+                // Multiple flag_doc selected
+                $flag_docs = [];
+                $has_empty = false;
+                $has_null = false;
+                
+                foreach ($filters['flag_doc'] as $value) {
+                    if ($value === '' || $value === null) {
+                        $has_empty = true;
+                    } elseif ($value === 'null') {
+                        $has_null = true;
+                    } else {
+                        $flag_docs[] = $value;
+                    }
+                }
+                
+                // If only empty/null values are selected, handle them properly
+                if (empty($flag_docs) && ($has_empty || $has_null)) {
+                    if ($has_null) {
+                        $filters['flag_doc'] = null;
+                    } else {
+                        $filters['flag_doc'] = [''];
+                    }
+                } elseif (!empty($flag_docs)) {
+                    $filters['flag_doc'] = $flag_docs;
+                    if ($has_null) {
+                        $filters['flag_doc'][] = null;
+                    }
+                    if ($has_empty) {
+                        $filters['flag_doc'][] = '';
+                    }
+                } else {
+                    unset($filters['flag_doc']);
+                }
+            } else {
+                // Single flag_doc (backward compatibility)
+                if ($filters['flag_doc'] === 'null') {
+                    $filters['flag_doc'] = null;
+                } elseif ($filters['flag_doc'] === '') {
+                    $filters['flag_doc'] = '';
+                }
+            }
         }
         
         // Get archived data using selesai=2 filter
@@ -774,9 +961,75 @@ class Database extends CI_Controller {
         } else {
             $this->export_excel_arsip($peserta, $filters);
         }
+        
+        } catch (Exception $e) {
+            // Log the error for debugging
+            log_message('error', 'Export arsip error: ' . $e->getMessage());
+            log_message('error', 'Stack trace: ' . $e->getTraceAsString());
+            
+            // Clear any output that might have been sent
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
+            
+            // Set proper error headers
+            header('HTTP/1.1 500 Internal Server Error');
+            header('Content-Type: text/html; charset=utf-8');
+            
+            // Show user-friendly error message
+            echo '<!DOCTYPE html>
+            <html>
+            <head>
+                <title>Export Error</title>
+                <meta charset="utf-8">
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 50px; }
+                    .error-container { 
+                        border: 2px solid #f44336; 
+                        border-radius: 8px; 
+                        padding: 20px; 
+                        background-color: #ffebee; 
+                        max-width: 600px; 
+                        margin: 0 auto; 
+                    }
+                    .error-title { color: #d32f2f; font-size: 24px; margin-bottom: 15px; }
+                    .error-message { color: #333; margin-bottom: 20px; }
+                    .back-button { 
+                        background-color: #2196F3; 
+                        color: white; 
+                        padding: 10px 20px; 
+                        text-decoration: none; 
+                        border-radius: 4px; 
+                        display: inline-block; 
+                    }
+                    .back-button:hover { background-color: #1976D2; }
+                </style>
+            </head>
+            <body>
+                <div class="error-container">
+                    <div class="error-title">❌ Export Error</div>
+                    <div class="error-message">
+                        <strong>Terjadi kesalahan saat mengexport data arsip:</strong><br><br>
+                        ' . htmlspecialchars($e->getMessage()) . '<br><br>
+                        <strong>Solusi:</strong><br>
+                        • Pastikan data yang dipilih tidak terlalu besar<br>
+                        • Coba export dengan filter yang lebih spesifik<br>
+                        • Hubungi administrator jika masalah berlanjut
+                    </div>
+                    <a href="' . base_url('database/arsip') . '" class="back-button">← Kembali ke Arsip</a>
+                </div>
+            </body>
+            </html>';
+            exit;
+        }
     }
     
     private function export_excel($peserta, $filters) {
+        // Set memory limit and execution time for large exports
+        ini_set('memory_limit', '512M');
+        ini_set('max_execution_time', 300); // 5 minutes
+        set_time_limit(300);
+        
         // Check if PHPExcel library exists
         $phpexcel_path = APPPATH . 'third_party/PHPExcel/Classes/PHPExcel.php';
         if (!file_exists($phpexcel_path)) {
@@ -896,9 +1149,19 @@ class Database extends CI_Controller {
             $summary_row = $row + 3;
             $total_count = count($peserta);
             
+            // Get flag_doc from filters or use default
+            $flag_doc_display = 'Semua Data';
+            if (!empty($filters['flag_doc'])) {
+                if (is_array($filters['flag_doc'])) {
+                    $flag_doc_display = implode(', ', $filters['flag_doc']);
+                } else {
+                    $flag_doc_display = $filters['flag_doc'] === 'null' ? 'Tanpa Flag Dokumen' : $filters['flag_doc'];
+                }
+            }
+            
             // Add summary headers
             $excel->setActiveSheetIndex(0)
-                ->setCellValue('A' . $summary_row, $p->flag_doc)
+                ->setCellValue('A' . $summary_row, $flag_doc_display)
                 ->setCellValue('B' . $summary_row, '');
             
             $summary_row++;
@@ -1035,21 +1298,94 @@ class Database extends CI_Controller {
             $excel->getActiveSheet()->getStyle('A' . ($row + 5) . ':B' . ($row + 8))->applyFromArray($summaryDataStyle);
             
             // Set filename
-            $filename = $p->flag_doc . '_Data_Peserta_' . date('Y-m-d_H-i-s') . '.xlsx';
+            $filename = 'Data_Peserta_' . date('Y-m-d_H-i-s') . '.xlsx';
+            if (!empty($filters['flag_doc'])) {
+                if (is_array($filters['flag_doc'])) {
+                    $filename = 'Data_Peserta_Multiple_' . date('Y-m-d_H-i-s') . '.xlsx';
+                } else {
+                    $flag_doc_name = $filters['flag_doc'] === 'null' ? 'Tanpa_Flag' : str_replace([' ', '/', '\\'], '_', $filters['flag_doc']);
+                    $filename = $flag_doc_name . '_Data_Peserta_' . date('Y-m-d_H-i-s') . '.xlsx';
+                }
+            }
             
             // Set headers for download
             header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
             header('Content-Disposition: attachment;filename="' . $filename . '"');
             header('Cache-Control: max-age=0');
+            header('Cache-Control: max-age=1');
+            header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
+            header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
+            header('Cache-Control: cache, must-revalidate');
+            header('Pragma: public');
             
             // Create Excel writer
             $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel2007');
             $writer->save('php://output');
+            
+            // Clean up memory
+            $excel->disconnectWorksheets();
+            unset($excel);
             exit;
             
         } catch (Exception $e) {
-            $this->session->set_flashdata('error', 'Error saat export Excel: ' . $e->getMessage());
-            redirect('database');
+            // Log the error for debugging
+            log_message('error', 'Excel export error: ' . $e->getMessage());
+            log_message('error', 'Stack trace: ' . $e->getTraceAsString());
+            
+            // Clear any output that might have been sent
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
+            
+            // Set proper error headers
+            header('HTTP/1.1 500 Internal Server Error');
+            header('Content-Type: text/html; charset=utf-8');
+            
+            // Show user-friendly error message
+            echo '<!DOCTYPE html>
+            <html>
+            <head>
+                <title>Export Error</title>
+                <meta charset="utf-8">
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 50px; }
+                    .error-container { 
+                        border: 2px solid #f44336; 
+                        border-radius: 8px; 
+                        padding: 20px; 
+                        background-color: #ffebee; 
+                        max-width: 600px; 
+                        margin: 0 auto; 
+                    }
+                    .error-title { color: #d32f2f; font-size: 24px; margin-bottom: 15px; }
+                    .error-message { color: #333; margin-bottom: 20px; }
+                    .back-button { 
+                        background-color: #2196F3; 
+                        color: white; 
+                        padding: 10px 20px; 
+                        text-decoration: none; 
+                        border-radius: 4px; 
+                        display: inline-block; 
+                    }
+                    .back-button:hover { background-color: #1976D2; }
+                </style>
+            </head>
+            <body>
+                <div class="error-container">
+                    <div class="error-title">❌ Export Error</div>
+                    <div class="error-message">
+                        <strong>Terjadi kesalahan saat mengexport data Excel:</strong><br><br>
+                        ' . htmlspecialchars($e->getMessage()) . '<br><br>
+                        <strong>Solusi:</strong><br>
+                        • Pastikan data yang dipilih tidak terlalu besar<br>
+                        • Coba export dengan filter yang lebih spesifik<br>
+                        • Hubungi administrator jika masalah berlanjut
+                    </div>
+                    <a href="' . base_url('database') . '" class="back-button">← Kembali ke Database</a>
+                </div>
+            </body>
+            </html>';
+            exit;
         }
     }
     
@@ -2784,6 +3120,11 @@ class Database extends CI_Controller {
      * Export Excel for statistics data
      */
     private function export_statistik_excel($filters) {
+        // Set memory limit and execution time for large exports
+        ini_set('memory_limit', '512M');
+        ini_set('max_execution_time', 300); // 5 minutes
+        set_time_limit(300);
+        
         // Check if PHPExcel library exists
         $phpexcel_path = APPPATH . 'third_party/PHPExcel/Classes/PHPExcel.php';
         if (!file_exists($phpexcel_path)) {
@@ -2837,7 +3178,9 @@ class Database extends CI_Controller {
             $excel->getActiveSheet()->getStyle('A1:D1')->applyFromArray($headerStyle);
             
             // Get statistics data
+            log_message('debug', 'export_statistik_excel - Filters: ' . json_encode($filters));
             $statistik_data = $this->transaksi_model->get_statistik_by_flag_doc($filters);
+            log_message('debug', 'export_statistik_excel - Data count: ' . count($statistik_data));
             
             // Populate data
             $row = 2;
@@ -2908,15 +3251,80 @@ class Database extends CI_Controller {
             header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
             header('Content-Disposition: attachment;filename="' . $filename . '"');
             header('Cache-Control: max-age=0');
+            header('Cache-Control: max-age=1');
+            header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
+            header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
+            header('Cache-Control: cache, must-revalidate');
+            header('Pragma: public');
             
             // Create Excel writer
             $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel2007');
             $writer->save('php://output');
+            
+            // Clean up memory
+            $excel->disconnectWorksheets();
+            unset($excel);
             exit;
             
         } catch (Exception $e) {
-            $this->session->set_flashdata('error', 'Error saat export Excel: ' . $e->getMessage());
-            redirect('database');
+            // Log the error for debugging
+            log_message('error', 'Statistics Excel export error: ' . $e->getMessage());
+            log_message('error', 'Stack trace: ' . $e->getTraceAsString());
+            
+            // Clear any output that might have been sent
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
+            
+            // Set proper error headers
+            header('HTTP/1.1 500 Internal Server Error');
+            header('Content-Type: text/html; charset=utf-8');
+            
+            // Show user-friendly error message
+            echo '<!DOCTYPE html>
+            <html>
+            <head>
+                <title>Export Error</title>
+                <meta charset="utf-8">
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 50px; }
+                    .error-container { 
+                        border: 2px solid #f44336; 
+                        border-radius: 8px; 
+                        padding: 20px; 
+                        background-color: #ffebee; 
+                        max-width: 600px; 
+                        margin: 0 auto; 
+                    }
+                    .error-title { color: #d32f2f; font-size: 24px; margin-bottom: 15px; }
+                    .error-message { color: #333; margin-bottom: 20px; }
+                    .back-button { 
+                        background-color: #2196F3; 
+                        color: white; 
+                        padding: 10px 20px; 
+                        text-decoration: none; 
+                        border-radius: 4px; 
+                        display: inline-block; 
+                    }
+                    .back-button:hover { background-color: #1976D2; }
+                </style>
+            </head>
+            <body>
+                <div class="error-container">
+                    <div class="error-title">❌ Export Error</div>
+                    <div class="error-message">
+                        <strong>Terjadi kesalahan saat mengexport statistik Excel:</strong><br><br>
+                        ' . htmlspecialchars($e->getMessage()) . '<br><br>
+                        <strong>Solusi:</strong><br>
+                        • Pastikan data yang dipilih tidak terlalu besar<br>
+                        • Coba export dengan filter yang lebih spesifik<br>
+                        • Hubungi administrator jika masalah berlanjut
+                    </div>
+                    <a href="' . base_url('database') . '" class="back-button">← Kembali ke Database</a>
+                </div>
+            </body>
+            </html>';
+            exit;
         }
     }
 

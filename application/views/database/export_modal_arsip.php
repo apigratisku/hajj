@@ -26,16 +26,60 @@
                         <label for="export_flag_doc" class="form-label">
                             <i class="fas fa-tag"></i> Pilih Flag Dokumen
                         </label>
-                        <select class="form-select" id="export_flag_doc" name="flag_doc">
-                            <option value="">Semua Data Arsip</option>
-                            <option value="null">Tanpa Flag Dokumen</option>
+                        
+                        <!-- Search input for flag dokumen -->
+                        <div class="mb-2">
+                            <input type="text" class="form-control" id="flagDocSearch" placeholder="🔍 Cari flag dokumen..." style="font-size: 0.9rem;">
+                        </div>
+                        
+                        <!-- Flag dokumen selection area -->
+                        <div class="flag-doc-container" style="max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 8px; padding: 10px; background-color: #f8f9fa;">
+                            
+                            <!-- Select All option -->
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="selectAllFlagDoc">
+                                <label class="form-check-label fw-bold" for="selectAllFlagDoc">
+                                    <i class="fas fa-check-double"></i> Pilih Semua
+                                </label>
+                            </div>
+                            
+                            <hr class="my-2">
+                            
+                            <!-- Individual flag dokumen options -->
+                            <div class="form-check mb-1">
+                                <input class="form-check-input flag-doc-checkbox" type="checkbox" name="flag_doc[]" value="" id="flag_doc_all">
+                                <label class="form-check-label" for="flag_doc_all">
+                                    <i class="fas fa-database"></i> Semua Data Arsip
+                                </label>
+                            </div>
+                            
+                            <div class="form-check mb-1">
+                                <input class="form-check-input flag-doc-checkbox" type="checkbox" name="flag_doc[]" value="null" id="flag_doc_null">
+                                <label class="form-check-label" for="flag_doc_null">
+                                    <i class="fas fa-minus-circle"></i> Tanpa Flag Dokumen
+                                </label>
+                            </div>
+                            
                             <?php if (!empty($flag_doc_list)): foreach ($flag_doc_list as $flag): ?>
-                                <option value="<?= htmlspecialchars($flag->flag_doc) ?>">
-                                    <?= htmlspecialchars($flag->flag_doc) ?>
-                                </option>
+                                <div class="form-check mb-1 flag-doc-item">
+                                    <input class="form-check-input flag-doc-checkbox" type="checkbox" name="flag_doc[]" value="<?= htmlspecialchars($flag->flag_doc) ?>" id="flag_doc_<?= md5($flag->flag_doc) ?>">
+                                    <label class="form-check-label" for="flag_doc_<?= md5($flag->flag_doc) ?>">
+                                        <i class="fas fa-file-alt"></i> <?= htmlspecialchars($flag->flag_doc) ?>
+                                    </label>
+                                </div>
                             <?php endforeach; endif; ?>
-                        </select>
-                        <div class="form-text">Pilih flag dokumen untuk memfilter data arsip yang akan di-export</div>
+                            
+                            <!-- No results message -->
+                            <div id="noFlagDocResults" class="text-muted text-center py-3" style="display: none;">
+                                <i class="fas fa-search"></i> Tidak ada flag dokumen yang cocok
+                            </div>
+                        </div>
+                        
+                        <div class="form-text">
+                            <i class="fas fa-info-circle"></i> 
+                            Pilih satu atau lebih flag dokumen untuk memfilter data arsip yang akan di-export. 
+                            Gunakan kotak pencarian di atas untuk menemukan flag dokumen dengan cepat.
+                        </div>
                     </div>
                     
                     <div class="mb-3">
@@ -153,6 +197,65 @@
     margin-top: 0.25rem;
 }
 
+/* Flag Dokumen Checkbox Styles */
+.flag-doc-container {
+    scrollbar-width: thin;
+    scrollbar-color: #8B4513 #f8f9fa;
+}
+
+.flag-doc-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.flag-doc-container::-webkit-scrollbar-track {
+    background: #f8f9fa;
+    border-radius: 3px;
+}
+
+.flag-doc-container::-webkit-scrollbar-thumb {
+    background: #8B4513;
+    border-radius: 3px;
+}
+
+.flag-doc-container::-webkit-scrollbar-thumb:hover {
+    background: #6d3410;
+}
+
+.form-check-input:checked {
+    background-color: #8B4513;
+    border-color: #8B4513;
+}
+
+.form-check-input:focus {
+    border-color: #8B4513;
+    box-shadow: 0 0 0 0.2rem rgba(139, 69, 19, 0.25);
+}
+
+.form-check-label {
+    cursor: pointer;
+    user-select: none;
+    font-size: 0.9rem;
+}
+
+.form-check-label:hover {
+    color: #8B4513;
+}
+
+.flag-doc-item {
+    transition: all 0.2s ease;
+}
+
+.flag-doc-item.hidden {
+    display: none !important;
+}
+
+.flag-doc-item.highlight {
+    background-color: rgba(139, 69, 19, 0.1);
+    border-radius: 4px;
+    padding: 2px 4px;
+    margin: 0 -4px;
+}
+
 /* Button Styles */
 .btn {
     border-radius: 8px;
@@ -219,14 +322,66 @@ function submitExport() {
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
     submitBtn.disabled = true;
     
-    // Submit form
-    form.submit();
+    // Build export URL with form data
+    const formData = new FormData(form);
+    const params = new URLSearchParams();
+    
+    // Add non-empty values to params
+    for (let [key, value] of formData.entries()) {
+        // Handle flag_doc array specially - append each selected flag_doc
+        if (key === 'flag_doc[]') {
+            // For flag_doc, we want to include empty values too (for "Semua Data" and "Tanpa Flag Dokumen")
+            // Handle special characters by using encodeURIComponent for safe transmission
+            const safeValue = encodeURIComponent(value);
+            params.append('flag_doc[]', safeValue);
+        } else {
+            // For other fields, only add non-empty values
+            if (value.trim() !== '') {
+                params.append(key, value);
+            }
+        }
+    }
+    
+    // Build export URL
+    const exportUrl = '<?= base_url('database/export_arsip') ?>' + (params.toString() ? '?' + params.toString() : '');
+    
+    // Use fetch to check for errors first
+    fetch(exportUrl)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.blob();
+        })
+        .then(blob => {
+            // Create download link
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+            const format = document.getElementById('export_format').value;
+            const extension = format === 'pdf' ? '.html' : '.xlsx';
+            const filename = 'Arsip_Data_Peserta_' + timestamp + extension;
+            
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            
+            // Show success message
+            showAlert('Data arsip berhasil di-export!', 'success');
+        })
+        .catch(error => {
+            console.error('Export error:', error);
+            showAlert('Terjadi kesalahan saat export. Silakan coba lagi atau hubungi administrator.', 'error');
+        });
     
     // Reset button after a delay
     setTimeout(() => {
         submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
-    }, 3000);
+    }, 5000);
 }
 
 // Auto-submit when format is selected (optional)
@@ -236,4 +391,92 @@ document.getElementById('export_format').addEventListener('change', function() {
         // submitExport();
     }
 });
+
+// Initialize flag dokumen functionality when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    initializeFlagDocFunctionality();
+});
+
+// Flag Dokumen Functionality
+function initializeFlagDocFunctionality() {
+    const searchInput = document.getElementById('flagDocSearch');
+    const selectAllCheckbox = document.getElementById('selectAllFlagDoc');
+    const flagDocCheckboxes = document.querySelectorAll('.flag-doc-checkbox');
+    const flagDocItems = document.querySelectorAll('.flag-doc-item');
+    const noResultsDiv = document.getElementById('noFlagDocResults');
+    
+    // Search functionality
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            let visibleCount = 0;
+            
+            flagDocItems.forEach(item => {
+                const label = item.querySelector('label').textContent.toLowerCase();
+                const checkbox = item.querySelector('input[type="checkbox"]');
+                
+                if (label.includes(searchTerm)) {
+                    item.classList.remove('hidden');
+                    item.classList.add('highlight');
+                    visibleCount++;
+                } else {
+                    item.classList.add('hidden');
+                    item.classList.remove('highlight');
+                }
+            });
+            
+            // Show/hide "no results" message
+            if (visibleCount === 0 && searchTerm !== '') {
+                noResultsDiv.style.display = 'block';
+            } else {
+                noResultsDiv.style.display = 'none';
+            }
+            
+            // Update select all checkbox state
+            updateSelectAllState();
+        });
+    }
+    
+    // Select All functionality
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            const isChecked = this.checked;
+            
+            flagDocCheckboxes.forEach(checkbox => {
+                const item = checkbox.closest('.flag-doc-item, .form-check');
+                if (!item.classList.contains('hidden')) {
+                    checkbox.checked = isChecked;
+                }
+            });
+        });
+    }
+    
+    // Individual checkbox change handler
+    flagDocCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            updateSelectAllState();
+        });
+    });
+    
+    // Update select all checkbox state
+    function updateSelectAllState() {
+        const visibleCheckboxes = Array.from(flagDocCheckboxes).filter(checkbox => {
+            const item = checkbox.closest('.flag-doc-item, .form-check');
+            return !item.classList.contains('hidden');
+        });
+        
+        const checkedVisibleCheckboxes = visibleCheckboxes.filter(checkbox => checkbox.checked);
+        
+        if (checkedVisibleCheckboxes.length === 0) {
+            selectAllCheckbox.indeterminate = false;
+            selectAllCheckbox.checked = false;
+        } else if (checkedVisibleCheckboxes.length === visibleCheckboxes.length) {
+            selectAllCheckbox.indeterminate = false;
+            selectAllCheckbox.checked = true;
+        } else {
+            selectAllCheckbox.indeterminate = true;
+            selectAllCheckbox.checked = false;
+        }
+    }
+}
 </script>
