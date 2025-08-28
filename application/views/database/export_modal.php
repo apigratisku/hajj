@@ -72,7 +72,7 @@
                                 </label>
                             </div>
                             
-                            <?php if (!empty($flag_doc_list)): foreach ($flag_doc_list as $flag): ?>
+                            <?php if (!empty($flag_doc_list_export)): foreach ($flag_doc_list_export as $flag): ?>
                                 <div class="form-check mb-1 flag-doc-item">
                                     <input class="form-check-input flag-doc-checkbox" type="checkbox" name="flag_doc[]" value="<?= htmlspecialchars($flag->flag_doc) ?>" id="flag_doc_<?= md5($flag->flag_doc) ?>">
                                     <label class="form-check-label" for="flag_doc_<?= md5($flag->flag_doc) ?>">

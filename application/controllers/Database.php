@@ -61,6 +61,7 @@ class Database extends CI_Controller {
         $data['peserta'] = $this->transaksi_model->get_paginated_filtered($per_page, $offset, $filters);
         // Provide flag_doc options for filter select
         $data['flag_doc_list'] = $this->transaksi_model->get_unique_flag_doc();
+        $data['flag_doc_list_export'] = $this->transaksi_model->get_unique_flag_doc_Export();
         $data['tanggaljam_list'] = $this->transaksi_model->get_unique_tanggaljam();
         $data['tanggal_pengerjaan_list'] = $this->transaksi_model->get_unique_tanggal_pengerjaan();
         

@@ -11,7 +11,7 @@ class Telegram_bot extends CI_Controller {
     // Daftar ID user yang diizinkan
     private $allowed_user_ids = [
         -4948593678,  // Group ID
-        250170651     // User ID
+        250170651,821152395     // User ID
     ];
 
     public function __construct() {

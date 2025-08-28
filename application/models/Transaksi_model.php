@@ -397,6 +397,19 @@ class Transaksi_model extends CI_Model {
         $this->db->order_by('created_at', 'DESC');
         return $this->db->get()->result();
     }
+
+    public function get_unique_flag_doc_Export() {
+        $this->db->select('flag_doc, MAX(created_at) as created_at');
+        $this->db->from($this->table);
+        $this->db->where('flag_doc IS NOT NULL');
+        $this->db->where('flag_doc !=', '');
+        $this->db->group_by('flag_doc');
+        // pastikan hanya grup yang tidak ada status=0
+        $this->db->having('SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) =', 0);
+        $this->db->order_by('created_at', 'DESC');
+        return $this->db->get()->result();
+    }
+    
     public function get_unique_flag_doc_todo() {
         $this->db->select('flag_doc, MAX(created_at) as created_at');
         $this->db->from($this->table);
