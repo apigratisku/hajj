@@ -519,6 +519,21 @@ class Database extends CI_Controller {
             // Jika status = "0" atau tidak dikirim, JANGAN set $data['updated_at']
             // sehingga nilai di database tidak berubah.
 
+            // Logic for history_done field
+            // 1. Jika user melakukan perubahan status menjadi done (status=2), set history_done
+            // 2. Jika history_done sudah ada value di database dan data sudah done, jangan update history_done
+            if ($status_raw == '2') {
+                // Check if current data is already done and has history_done
+                if ($current_peserta->status == '2' && !empty($current_peserta->history_done)) {
+                    // Data sudah done dan history_done sudah ada, jangan update history_done
+                    log_message('debug', 'Update - Data already done with history_done, skipping history_done update');
+                } else {
+                    // Set history_done for new done status
+                    $data['history_done'] = $this->session->userdata('user_id') ?: null;
+                    log_message('debug', 'Update - Setting history_done for new done status: ' . $data['history_done']);
+                }
+            }
+
             // Debug: Log the data being updated
             log_message('debug', 'Updating peserta ID: ' . $id . ' with data: ' . json_encode($data));
 
@@ -615,12 +630,30 @@ class Database extends CI_Controller {
         $data['updated_at'] = date('Y-m-d H:i:s');
         $data['history_update'] = $this->session->userdata('user_id') ?: null;
         
+        // Logic for history_done field
+        // 1. Jika user melakukan perubahan status menjadi done (status=2), set history_done
+        // 2. Jika history_done sudah ada value di database dan data sudah done, jangan update history_done
+        if (isset($data['status']) && $data['status'] == '2') {
+            // Check if current data is already done and has history_done
+            if ($current_peserta->status == '2' && !empty($current_peserta->history_done)) {
+                // Data sudah done dan history_done sudah ada, jangan update history_done
+                log_message('debug', 'Database update_ajax - Data already done with history_done, skipping history_done update');
+            } else {
+                // Set history_done for new done status
+                $data['history_done'] = $this->session->userdata('user_id') ?: null;
+                log_message('debug', 'Database update_ajax - Setting history_done for new done status: ' . $data['history_done']);
+            }
+        }
+        
         // Debug: Log the data being updated
         log_message('debug', 'Database update_ajax - Updating peserta ID: ' . $id . ' with data: ' . json_encode($data));
         log_message('debug', 'Database update_ajax - Raw input: ' . json_encode($input));
         log_message('debug', 'Database update_ajax - Barcode value: ' . (isset($data['barcode']) ? $data['barcode'] : 'NOT SET'));
         log_message('debug', 'Database update_ajax - Allowed fields: ' . json_encode($allowedFields));
         log_message('debug', 'Database update_ajax - History update value: ' . (isset($data['history_update']) ? $data['history_update'] : 'NOT SET'));
+        log_message('debug', 'Database update_ajax - History done value: ' . (isset($data['history_done']) ? $data['history_done'] : 'NOT SET'));
+        log_message('debug', 'Database update_ajax - Current peserta status: ' . $current_peserta->status);
+        log_message('debug', 'Database update_ajax - Current peserta history_done: ' . ($current_peserta->history_done ?: 'NULL'));
         log_message('debug', 'Database update_ajax - User ID from session: ' . $this->session->userdata('user_id'));
        
         
