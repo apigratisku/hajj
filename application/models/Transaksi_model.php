@@ -180,6 +180,9 @@ class Transaksi_model extends CI_Model {
         if (!empty($filters['gender'])) {
             $this->db->where('peserta.gender', $filters['gender']);
         }
+        if (!empty($filters['history_done'])) {
+            $this->db->where('peserta.history_done', $filters['history_done']);
+        }
         if (isset($filters['flag_doc'])) {
             // Handle multiple flag_doc selection
             if (is_array($filters['flag_doc'])) {
@@ -287,6 +290,9 @@ class Transaksi_model extends CI_Model {
         }
         if (isset($filters['status']) && $filters['status'] !== '') {
             $this->db->where('peserta.status', $filters['status']);
+        }
+        if (!empty($filters['history_done'])) {
+            $this->db->where('peserta.history_done', $filters['history_done']);
         }
         if (isset($filters['flag_doc'])) {
             // Handle multiple flag_doc selection
@@ -538,6 +544,9 @@ class Transaksi_model extends CI_Model {
         }
         if (!empty($filters['gender'])) {
             $this->db->where('peserta.gender', $filters['gender']);
+        }
+        if (!empty($filters['history_done'])) {
+            $this->db->where('peserta.history_done', $filters['history_done']);
         }
         if (isset($filters['flag_doc'])) {
             // Handle multiple flag_doc selection

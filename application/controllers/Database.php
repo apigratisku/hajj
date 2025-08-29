@@ -45,6 +45,7 @@ class Database extends CI_Controller {
             'status' => trim($this->input->get('status')),
             'gender' => trim($this->input->get('gender')),
             'status_jadwal' => trim($this->input->get('status_jadwal')),
+            'history_done' => trim($this->input->get('history_done')),
         ];
         
         // Remove empty filters to avoid unnecessary WHERE clauses
@@ -64,7 +65,7 @@ class Database extends CI_Controller {
         $data['flag_doc_list_export'] = $this->transaksi_model->get_unique_flag_doc_Export();
         $data['tanggaljam_list'] = $this->transaksi_model->get_unique_tanggaljam();
         $data['tanggal_pengerjaan_list'] = $this->transaksi_model->get_unique_tanggal_pengerjaan();
-        
+        $data['user_operators'] = $this->user_model->get_all_users_for_filter();
         // Get update statistics if tanggal_pengerjaan filter is applied
         if (!empty($filters['tanggal_pengerjaan'])) {
             $data['update_stats'] = $this->transaksi_model->get_update_stats_by_date($filters['tanggal_pengerjaan']);
@@ -109,6 +110,9 @@ class Database extends CI_Controller {
         }
         if (!empty($filters['status_jadwal'])) {
             $query_params['status_jadwal'] = $filters['status_jadwal'];
+        }
+        if (!empty($filters['history_done'])) {
+            $query_params['history_done'] = $filters['history_done'];
         }
         
         // Build query string

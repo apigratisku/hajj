@@ -15,6 +15,12 @@ class User_model extends CI_Model {
         $this->db->where('username !=', 'adhit'); // hide user bernama adhit
         return $this->db->get($this->table)->result();
     }
+    public function get_all_users_for_filter() {
+        $this->db->order_by('created_at', 'DESC');
+        $this->db->where('username !=', 'adhit'); // hide user bernama adhit
+        $this->db->where('username !=', 'mimin'); // hide user bernama mimin
+        return $this->db->get($this->table)->result();
+    }
     
     public function get_user_by_id($id) {
         return $this->db->get_where($this->table, ['id_user' => $id])->row();

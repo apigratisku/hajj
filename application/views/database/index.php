@@ -103,6 +103,21 @@
                                         <option value="1">Belum dijadwalkan</option>
                                     </select>
                                 </div>
+                                <div class="form-group">
+                                    <select name="history_done" class="form-select mobile-input">
+                                        <option value="">Operator</option>
+                                        <option value="null" <?= (isset($_GET['history_done']) && $_GET['history_done'] === 'null') ? 'selected' : '' ?>>Tanpa Filter User</option>
+                                        <?php if (!empty($user_operators)): foreach ($user_operators as $operator): ?>
+                                            <?php 
+                                                $user = $this->user_model->get_user_by_id($operator->history_done);
+                                                $user_name = ($user && isset($user->nama_lengkap)) ? $user->nama_lengkap : 'User ID: ' . $operator->history_done;
+                                            ?>
+                                            <option value="<?= htmlspecialchars($operator->history_done) ?>" <?= (isset($_GET['history_done']) && $_GET['history_done'] === $operator->history_done) ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($user_name) ?> (<?= $operator->count ?> data)
+                                            </option>
+                                        <?php endforeach; endif; ?>
+                                    </select>
+                                </div>
                                 <?php endif; ?>
                                 <div class="form-actions">
                                     <button type="submit" class="btn btn-search">
@@ -189,6 +204,20 @@
                                         <option value="1" <?= (isset($_GET['status_jadwal']) && $_GET['status_jadwal'] === '1') ? 'selected' : '' ?>>Belum dijadwalkan</option>
                                     </select>
                                 </div>
+                                <?php if($this->session->userdata('role') == 'admin'): ?>
+                                <div class="col-md-1">
+                                    <select name="history_done" class="form-select form-control-sm">
+                                        <option value="">Operator</option>
+                                        
+                                        <?php if (!empty($user_operators)): foreach ($user_operators as $operator): ?>
+                            
+                                            <option value="<?= htmlspecialchars($operator->id_user) ?>" <?= (isset($_GET['history_done']) && $_GET['history_done'] === $operator->id_user) ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($operator->nama_lengkap) ?>
+                                            </option>
+                                        <?php endforeach; endif; ?>
+                                    </select>
+                                </div>
+                                <?php endif; ?>
                                 <div class="col-md-2">
                                     <button type="submit" class="btn btn-brown btn-sm me-2">
                                         <i class="fas fa-search"></i> Cari
