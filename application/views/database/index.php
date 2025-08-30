@@ -166,6 +166,14 @@
                                         <?php endforeach; endif; ?>
                                     </select>
                                 </div>
+                                <!-- gender -->
+                                 <div class="col-md-1">
+                                    <select name="gender" class="form-select form-control-sm">
+                                        <option value="">Gender</option>
+                                        <option value="L" <?= (isset($_GET['gender']) && $_GET['gender'] === 'L') ? 'selected' : '' ?>>Laki-laki</option>
+                                        <option value="P" <?= (isset($_GET['gender']) && $_GET['gender'] === 'P') ? 'selected' : '' ?>>Perempuan</option>
+                                    </select>
+                                </div>
                                 <div class="col-md-1">
                                     <select name="gender" class="form-select form-control-sm">
                                         <option value="">Gender</option>
