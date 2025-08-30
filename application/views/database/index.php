@@ -81,6 +81,13 @@
                                        
                                     </select>
                                 </div>
+                                <div class="form-group">
+                                    <select name="gender" class="form-select mobile-input">
+                                        <option value="">Gender</option>
+                                        <option value="L" <?= (isset($_GET['gender']) && $_GET['gender'] === 'L') ? 'selected' : '' ?>>Laki-laki</option>
+                                        <option value="P" <?= (isset($_GET['gender']) && $_GET['gender'] === 'P') ? 'selected' : '' ?>>Perempuan</option>
+                                    </select>
+                                </div>
                                 <?php if($this->session->userdata('role') == 'admin'): ?>
                                 <div class="form-group">
                                     <select name="tanggal_pengerjaan" class="form-select mobile-input">
@@ -174,13 +181,7 @@
                                         <option value="P" <?= (isset($_GET['gender']) && $_GET['gender'] === 'P') ? 'selected' : '' ?>>Perempuan</option>
                                     </select>
                                 </div>
-                                <div class="col-md-1">
-                                    <select name="gender" class="form-select form-control-sm">
-                                        <option value="">Gender</option>
-                                        <option value="L" <?= (isset($_GET['gender']) && $_GET['gender'] === 'L') ? 'selected' : '' ?>>Laki-laki</option>
-                                        <option value="P" <?= (isset($_GET['gender']) && $_GET['gender'] === 'P') ? 'selected' : '' ?>>Perempuan</option>
-                                    </select>
-                                </div>
+
                                 <div class="col-md-1">
                                     <select name="status" class="form-select form-control-sm">
                                         <option value="">Status Data</option>
