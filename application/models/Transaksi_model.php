@@ -1156,7 +1156,7 @@ class Transaksi_model extends CI_Model {
      * Get operator statistics for performance report
      * Shows Done and Already status data for each operator
      */
-    public function get_operator_statistics() {
+    public function get_operator_statistics($filters = []) {
         $this->db->select('
             u.id_user,
             u.nama_lengkap,
@@ -1170,6 +1170,15 @@ class Transaksi_model extends CI_Model {
         $this->db->join('peserta p', 'u.id_user = p.history_done', 'left');
         $this->db->where('u.role', 'operator');
         $this->db->where('u.status', 1); // Active users only
+        
+        // Apply date range filters if provided
+        if (!empty($filters['start_date'])) {
+            $this->db->where('DATE(p.updated_at) >=', $filters['start_date']);
+        }
+        if (!empty($filters['end_date'])) {
+            $this->db->where('DATE(p.updated_at) <=', $filters['end_date']);
+        }
+        
         $this->db->group_by('u.id_user, u.nama_lengkap, u.username');
         $this->db->order_by('total_processed', 'DESC');
         $this->db->order_by('u.nama_lengkap', 'ASC');

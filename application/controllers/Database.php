@@ -3708,20 +3708,47 @@ class Database extends CI_Controller {
         }
 
         try {
-            // Get operator statistics from model
-            $operator_stats = $this->transaksi_model->get_operator_statistics();
+            // Get date range filters from POST data
+            $start_date = $this->input->post('start_date');
+            $end_date = $this->input->post('end_date');
+            
+            // Validate date format
+            if (!empty($start_date) && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $start_date)) {
+                $this->output->set_status_header(400);
+                echo json_encode(['success' => false, 'message' => 'Format tanggal mulai tidak valid']);
+                return;
+            }
+            
+            if (!empty($end_date) && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $end_date)) {
+                $this->output->set_status_header(400);
+                echo json_encode(['success' => false, 'message' => 'Format tanggal akhir tidak valid']);
+                return;
+            }
+            
+            // Prepare filters array
+            $filters = [];
+            if (!empty($start_date)) {
+                $filters['start_date'] = $start_date;
+            }
+            if (!empty($end_date)) {
+                $filters['end_date'] = $end_date;
+            }
+            
+            // Get operator statistics from model with filters
+            $operator_stats = $this->transaksi_model->get_operator_statistics($filters);
             
             if ($operator_stats) {
                 $this->output->set_content_type('application/json');
                 echo json_encode([
                     'success' => true,
-                    'data' => $operator_stats
+                    'data' => $operator_stats,
+                    'filters' => $filters
                 ]);
             } else {
                 $this->output->set_content_type('application/json');
                 echo json_encode([
                     'success' => false,
-                    'message' => 'Tidak ada data statistik operator'
+                    'message' => 'Tidak ada data statistik operator untuk rentang tanggal yang dipilih'
                 ]);
             }
         } catch (Exception $e) {
@@ -3732,6 +3759,245 @@ class Database extends CI_Controller {
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat mengambil data statistik operator'
             ]);
+        }
+    }
+
+    /**
+     * Export operator statistics to Excel
+     */
+    public function export_operator_statistics() {
+        // Check if user is logged in
+        if (!$this->session->userdata('logged_in')) {
+            $this->session->set_flashdata('error', 'Anda harus login terlebih dahulu');
+            redirect('auth');
+        }
+        
+        try {
+            // Get date range filters from GET parameters
+            $start_date = $this->input->get('start_date');
+            $end_date = $this->input->get('end_date');
+            
+            // Validate date format
+            if (!empty($start_date) && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $start_date)) {
+                $this->session->set_flashdata('error', 'Format tanggal mulai tidak valid');
+                redirect('database');
+            }
+            
+            if (!empty($end_date) && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $end_date)) {
+                $this->session->set_flashdata('error', 'Format tanggal akhir tidak valid');
+                redirect('database');
+            }
+            
+            // Prepare filters array
+            $filters = [];
+            if (!empty($start_date)) {
+                $filters['start_date'] = $start_date;
+            }
+            if (!empty($end_date)) {
+                $filters['end_date'] = $end_date;
+            }
+            
+            // Get operator statistics from model with filters
+            $operator_stats = $this->transaksi_model->get_operator_statistics($filters);
+            
+            if (empty($operator_stats)) {
+                $this->session->set_flashdata('error', 'Tidak ada data statistik operator untuk diexport');
+                redirect('database');
+            }
+            
+            // Export to Excel
+            $this->export_operator_statistics_excel($operator_stats, $filters);
+            
+        } catch (Exception $e) {
+            log_message('error', 'Error exporting operator statistics: ' . $e->getMessage());
+            $this->session->set_flashdata('error', 'Terjadi kesalahan saat export data statistik operator');
+            redirect('database');
+        }
+    }
+    
+    /**
+     * Export operator statistics to Excel file
+     */
+    private function export_operator_statistics_excel($operator_stats, $filters = []) {
+        // Set memory limit and execution time for large exports
+        ini_set('memory_limit', '512M');
+        ini_set('max_execution_time', 300); // 5 minutes
+        set_time_limit(300);
+        
+        // Check if PHPExcel library exists
+        $phpexcel_path = APPPATH . 'third_party/PHPExcel/Classes/PHPExcel.php';
+        if (!file_exists($phpexcel_path)) {
+            $this->session->set_flashdata('error', 'Library PHPExcel tidak ditemukan. Silakan install library terlebih dahulu.');
+            redirect('database');
+        }
+        
+        // Load PHPExcel library
+        require_once $phpexcel_path;
+        
+        try {
+            $excel = new PHPExcel();
+            
+            // Set document properties
+            $excel->getProperties()
+                ->setCreator("Hajj System")
+                ->setLastModifiedBy("Hajj System")
+                ->setTitle("Statistik Performa Operator")
+                ->setSubject("Data Performa Operator")
+                ->setDescription("Export statistik performa operator dari sistem hajj");
+            
+            // Set column headers
+            $excel->setActiveSheetIndex(0)
+                ->setCellValue('A1', 'No')
+                ->setCellValue('B1', 'Nama Operator')
+                ->setCellValue('C1', 'Username')
+                ->setCellValue('D1', 'Total Done')
+                ->setCellValue('E1', 'Total Already')
+                ->setCellValue('F1', 'Total Diproses')
+                ->setCellValue('G1', 'Hari Ini')
+                ->setCellValue('H1', 'Minggu Ini')
+                ->setCellValue('I1', 'Bulan Ini')
+                ->setCellValue('J1', 'Aktivitas Terakhir');
+            
+            // Set column widths
+            $excel->getActiveSheet()->getColumnDimension('A')->setWidth(5);
+            $excel->getActiveSheet()->getColumnDimension('B')->setWidth(25);
+            $excel->getActiveSheet()->getColumnDimension('C')->setWidth(15);
+            $excel->getActiveSheet()->getColumnDimension('D')->setWidth(12);
+            $excel->getActiveSheet()->getColumnDimension('E')->setWidth(12);
+            $excel->getActiveSheet()->getColumnDimension('F')->setWidth(12);
+            $excel->getActiveSheet()->getColumnDimension('G')->setWidth(12);
+            $excel->getActiveSheet()->getColumnDimension('H')->setWidth(12);
+            $excel->getActiveSheet()->getColumnDimension('I')->setWidth(12);
+            $excel->getActiveSheet()->getColumnDimension('J')->setWidth(20);
+            
+            // Style header row
+            $headerStyle = [
+                'font' => [
+                    'bold' => true,
+                    'color' => ['rgb' => 'FFFFFF'],
+                ],
+                'fill' => [
+                    'type' => PHPExcel_Style_Fill::FILL_SOLID,
+                    'color' => ['rgb' => '8B4513'],
+                ],
+                'alignment' => [
+                    'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER,
+                    'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER,
+                ],
+            ];
+            
+            $excel->getActiveSheet()->getStyle('A1:J1')->applyFromArray($headerStyle);
+            
+            // Populate data
+            $row = 2;
+            $totalDone = 0;
+            $totalAlready = 0;
+            $totalProcessed = 0;
+            
+            foreach ($operator_stats as $index => $operator) {
+                $excel->setActiveSheetIndex(0)
+                    ->setCellValue('A' . $row, $index + 1)
+                    ->setCellValue('B' . $row, $operator->nama_lengkap)
+                    ->setCellValue('C' . $row, $operator->username)
+                    ->setCellValue('D' . $row, $operator->done_count)
+                    ->setCellValue('E' . $row, $operator->already_count)
+                    ->setCellValue('F' . $row, $operator->total_processed)
+                    ->setCellValue('G' . $row, $operator->today_total)
+                    ->setCellValue('H' . $row, $operator->week_total)
+                    ->setCellValue('I' . $row, $operator->month_total)
+                    ->setCellValue('J' . $row, $operator->last_activity ? date('d/m/Y H:i:s', strtotime($operator->last_activity)) : '-');
+                
+                $totalDone += $operator->done_count;
+                $totalAlready += $operator->already_count;
+                $totalProcessed += $operator->total_processed;
+                $row++;
+            }
+            
+            // Add summary row
+            $summaryRow = $row + 2;
+            $excel->setActiveSheetIndex(0)
+                ->setCellValue('A' . $summaryRow, 'TOTAL')
+                ->setCellValue('D' . $summaryRow, $totalDone)
+                ->setCellValue('E' . $summaryRow, $totalAlready)
+                ->setCellValue('F' . $summaryRow, $totalProcessed);
+            
+            // Style summary row
+            $summaryStyle = [
+                'font' => [
+                    'bold' => true,
+                    'color' => ['rgb' => 'FFFFFF'],
+                ],
+                'fill' => [
+                    'type' => PHPExcel_Style_Fill::FILL_SOLID,
+                    'color' => ['rgb' => '2E8B57'],
+                ],
+                'alignment' => [
+                    'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER,
+                    'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER,
+                ],
+            ];
+            
+            $excel->getActiveSheet()->getStyle('A' . $summaryRow . ':F' . $summaryRow)->applyFromArray($summaryStyle);
+            
+            // Add filter information
+            if (!empty($filters)) {
+                $filterRow = $summaryRow + 3;
+                $filterInfo = 'Filter: ';
+                if (!empty($filters['start_date']) && !empty($filters['end_date'])) {
+                    $filterInfo .= 'Rentang tanggal ' . date('d/m/Y', strtotime($filters['start_date'])) . ' - ' . date('d/m/Y', strtotime($filters['end_date']));
+                } elseif (!empty($filters['start_date'])) {
+                    $filterInfo .= 'Dari tanggal ' . date('d/m/Y', strtotime($filters['start_date']));
+                } elseif (!empty($filters['end_date'])) {
+                    $filterInfo .= 'Sampai tanggal ' . date('d/m/Y', strtotime($filters['end_date']));
+                }
+                
+                $excel->setActiveSheetIndex(0)->setCellValue('A' . $filterRow, $filterInfo);
+            }
+            
+            // Style data rows
+            $dataStyle = [
+                'alignment' => [
+                    'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER,
+                    'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER,
+                ],
+                'borders' => [
+                    'allborders' => [
+                        'style' => PHPExcel_Style_Border::BORDER_THIN,
+                        'color' => ['rgb' => '000000'],
+                    ],
+                ],
+            ];
+            
+            if ($row > 2) {
+                $excel->getActiveSheet()->getStyle('A2:J' . ($row - 1))->applyFromArray($dataStyle);
+            }
+            
+            // Set filename
+            $filename = 'Statistik_Performa_Operator_' . date('Y-m-d_H-i-s') . '.xlsx';
+            if (!empty($filters)) {
+                if (!empty($filters['start_date']) && !empty($filters['end_date'])) {
+                    $filename = 'Statistik_Performa_Operator_' . $filters['start_date'] . '_to_' . $filters['end_date'] . '.xlsx';
+                }
+            }
+            
+            // Set headers for download
+            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            header('Content-Disposition: attachment;filename="' . $filename . '"');
+            header('Cache-Control: max-age=0');
+            
+            // Create Excel writer
+            $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel2007');
+            $writer->save('php://output');
+            
+            // Clean up memory
+            $excel->disconnectWorksheets();
+            unset($excel);
+            exit;
+            
+        } catch (Exception $e) {
+            log_message('error', 'Excel export error: ' . $e->getMessage());
+            $this->session->set_flashdata('error', 'Error saat export Excel: ' . $e->getMessage());
+            redirect('database');
         }
     }
 } 

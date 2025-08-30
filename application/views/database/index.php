@@ -1694,6 +1694,56 @@
 #operatorStatisticsModal .card:nth-child(4) { animation-delay: 0.4s; }
 #operatorStatisticsModal .card:nth-child(5) { animation-delay: 0.5s; }
 #operatorStatisticsModal .card:nth-child(6) { animation-delay: 0.6s; }
+
+/* Date Filter Styles */
+#operatorStatisticsModal .form-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+#operatorStatisticsModal .form-control {
+    border-radius: 0.375rem;
+    border: 1px solid #ced4da;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+#operatorStatisticsModal .form-control:focus {
+    border-color: #8B4513;
+    box-shadow: 0 0 0 0.2rem rgba(139, 69, 19, 0.25);
+}
+
+#operatorStatisticsModal .btn {
+    border-radius: 0.375rem;
+    font-weight: 500;
+    transition: all 0.15s ease-in-out;
+}
+
+#operatorStatisticsModal .btn-primary {
+    background-color: #8B4513;
+    border-color: #8B4513;
+}
+
+#operatorStatisticsModal .btn-primary:hover {
+    background-color: #6d3610;
+    border-color: #6d3610;
+    transform: translateY(-1px);
+}
+
+#operatorStatisticsModal .btn-secondary {
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+
+#operatorStatisticsModal .btn-secondary:hover {
+    background-color: #5a6268;
+    border-color: #545b62;
+    transform: translateY(-1px);
+}
+
+#operatorStatisticsModal .gap-2 {
+    gap: 0.5rem !important;
+}
 </style>
 
 <?php $this->load->view('database/export_modal'); ?>
@@ -1709,11 +1759,33 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
+                <!-- Date Range Filter -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label for="startDate" class="form-label"><i class="fas fa-calendar"></i> Tanggal Mulai</label>
+                        <input type="date" class="form-control" id="startDate" name="startDate">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="endDate" class="form-label"><i class="fas fa-calendar"></i> Tanggal Akhir</label>
+                        <input type="date" class="form-control" id="endDate" name="endDate">
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-primary" onclick="filterOperatorStatistics()">
+                                <i class="fas fa-filter"></i> Filter
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="resetDateFilter()">
+                                <i class="fas fa-undo"></i> Reset
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="row mb-3">
                     <div class="col-12">
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle"></i>
-                            <strong>Informasi:</strong> Data yang ditampilkan adalah performa operator berdasarkan data status Done dan Already yang telah diproses.
+                            <strong>Informasi:</strong> Data yang ditampilkan adalah performa operator berdasarkan data status Done dan Already yang telah diproses dalam rentang tanggal yang dipilih.
                         </div>
                     </div>
                 </div>
@@ -1767,6 +1839,9 @@
                 </button>
                 <button type="button" class="btn btn-primary" onclick="refreshOperatorStatistics()">
                     <i class="fas fa-sync-alt"></i> Refresh Data
+                </button>
+                <button type="button" class="btn btn-success" onclick="exportOperatorStatistics()">
+                    <i class="fas fa-download"></i> Export Excel
                 </button>
             </div>
         </div>
@@ -3307,17 +3382,27 @@ function showOperatorStatistics() {
     loadOperatorStatistics();
 }
 
-function loadOperatorStatistics() {
+function loadOperatorStatistics(filters = {}) {
     // Show loading state
     document.getElementById('operatorStatsLoading').style.display = 'block';
     document.getElementById('operatorStatsContent').style.display = 'none';
     document.getElementById('operatorStatsError').style.display = 'none';
     
+    // Prepare request data
+    const requestData = new FormData();
+    if (filters.start_date) {
+        requestData.append('start_date', filters.start_date);
+    }
+    if (filters.end_date) {
+        requestData.append('end_date', filters.end_date);
+    }
+    
     fetch('<?= base_url('database/get_operator_statistics') ?>', {
-        method: 'GET',
+        method: 'POST',
         headers: {
             'X-Requested-With': 'XMLHttpRequest'
-        }
+        },
+        body: requestData
     })
     .then(response => {
         if (response.status === 401) {
@@ -3333,7 +3418,7 @@ function loadOperatorStatistics() {
         if (!result) return;
         
         if (result.success) {
-            displayOperatorStatistics(result.data);
+            displayOperatorStatistics(result.data, result.filters);
         } else {
             showOperatorStatisticsError(result.message || 'Gagal memuat data statistik operator');
         }
@@ -3344,7 +3429,69 @@ function loadOperatorStatistics() {
     });
 }
 
-function displayOperatorStatistics(data) {
+function filterOperatorStatistics() {
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    
+    // Validate dates
+    if (startDate && endDate && startDate > endDate) {
+        showAlert('Tanggal mulai tidak boleh lebih besar dari tanggal akhir', 'error');
+        return;
+    }
+    
+    const filters = {};
+    if (startDate) filters.start_date = startDate;
+    if (endDate) filters.end_date = endDate;
+    
+    loadOperatorStatistics(filters);
+}
+
+function resetDateFilter() {
+    document.getElementById('startDate').value = '';
+    document.getElementById('endDate').value = '';
+    loadOperatorStatistics();
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('id-ID', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    });
+}
+
+function refreshOperatorStatistics() {
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    
+    const filters = {};
+    if (startDate) filters.start_date = startDate;
+    if (endDate) filters.end_date = endDate;
+    
+    loadOperatorStatistics(filters);
+}
+
+function exportOperatorStatistics() {
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    
+    // Build export URL with filters
+    let exportUrl = '<?= base_url('database/export_operator_statistics') ?>';
+    const params = [];
+    
+    if (startDate) params.push(`start_date=${encodeURIComponent(startDate)}`);
+    if (endDate) params.push(`end_date=${encodeURIComponent(endDate)}`);
+    
+    if (params.length > 0) {
+        exportUrl += '?' + params.join('&');
+    }
+    
+    // Open export URL in new window
+    window.open(exportUrl, '_blank');
+}
+
+function displayOperatorStatistics(data, filters = {}) {
     // Hide loading, show content
     document.getElementById('operatorStatsLoading').style.display = 'none';
     document.getElementById('operatorStatsContent').style.display = 'block';
@@ -3355,6 +3502,20 @@ function displayOperatorStatistics(data) {
     // Clear existing content
     tableBody.innerHTML = '';
     summaryContainer.innerHTML = '';
+    
+    // Show filter information if dates are set
+    if (filters.start_date || filters.end_date) {
+        let filterInfo = '<div class="alert alert-info mb-3"><i class="fas fa-filter"></i> <strong>Filter Aktif:</strong> ';
+        if (filters.start_date && filters.end_date) {
+            filterInfo += `Rentang tanggal: ${formatDate(filters.start_date)} - ${formatDate(filters.end_date)}`;
+        } else if (filters.start_date) {
+            filterInfo += `Dari tanggal: ${formatDate(filters.start_date)}`;
+        } else if (filters.end_date) {
+            filterInfo += `Sampai tanggal: ${formatDate(filters.end_date)}`;
+        }
+        filterInfo += '</div>';
+        summaryContainer.innerHTML = filterInfo;
+    }
     
     if (!data || data.length === 0) {
         tableBody.innerHTML = '<tr><td colspan="9" class="text-center">Tidak ada data operator yang ditemukan</td></tr>';
