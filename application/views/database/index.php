@@ -30,6 +30,10 @@
                         <button type="button" class="btn btn-sm btn-attachment" onclick="downloadBarcodeAttachments()">
                             <i class="fas fa-download"></i> <span class="d-none d-sm-inline">Download Attachment</span>
                         </button>
+                        <button type="button" class="btn btn-sm btn-statistics" onclick="showOperatorStatistics()">
+                            <i class="fas fa-chart-bar"></i> <span class="d-none d-sm-inline">Statistik Operator</span>
+                        </button>
+                   
                     </div>
                 </div>
                 <div class="card-body p-0">
@@ -781,6 +785,22 @@
 .btn-attachment:hover {
     background-color: #e55a2b !important;
     border-color: #e55a2b !important;
+    color: white !important;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+
+.btn-statistics {
+    background-color: #6f42c1 !important;
+    border-color: #6f42c1 !important;
+    color: white !important;
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+}
+
+.btn-statistics:hover {
+    background-color: #5a32a3 !important;
+    border-color: #5a32a3 !important;
     color: white !important;
     transform: translateY(-2px);
     box-shadow: var(--shadow-hover);
@@ -1621,9 +1641,137 @@
 .mobile-excel-table tbody tr {
     animation: slideIn 0.2s ease-out;
 }
+
+/* Operator Statistics Modal Styles */
+#operatorStatisticsModal .modal-xl {
+    max-width: 95%;
+}
+
+#operatorStatisticsModal .modal-body {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+#operatorStatisticsModal .table th {
+    position: sticky;
+    top: 0;
+    background: #343a40;
+    z-index: 10;
+}
+
+#operatorStatisticsModal .card {
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+}
+
+#operatorStatisticsModal .card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+
+#operatorStatisticsModal .badge {
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+}
+
+#operatorStatisticsModal .table td {
+    vertical-align: middle;
+}
+
+#operatorStatisticsModal .table small {
+    font-size: 0.8rem;
+}
+
+/* Summary Cards Animation */
+#operatorStatisticsModal .card {
+    animation: slideIn 0.3s ease-out;
+}
+
+#operatorStatisticsModal .card:nth-child(1) { animation-delay: 0.1s; }
+#operatorStatisticsModal .card:nth-child(2) { animation-delay: 0.2s; }
+#operatorStatisticsModal .card:nth-child(3) { animation-delay: 0.3s; }
+#operatorStatisticsModal .card:nth-child(4) { animation-delay: 0.4s; }
+#operatorStatisticsModal .card:nth-child(5) { animation-delay: 0.5s; }
+#operatorStatisticsModal .card:nth-child(6) { animation-delay: 0.6s; }
 </style>
 
 <?php $this->load->view('database/export_modal'); ?>
+
+<!-- Operator Statistics Modal -->
+<div class="modal fade" id="operatorStatisticsModal" tabindex="-1" aria-labelledby="operatorStatisticsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-brown text-white">
+                <h5 class="modal-title" id="operatorStatisticsModalLabel">
+                    <i class="fas fa-chart-bar"></i> Statistik Performa Operator
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Informasi:</strong> Data yang ditampilkan adalah performa operator berdasarkan data status Done dan Already yang telah diproses.
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Loading Spinner -->
+                <div id="operatorStatsLoading" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Memuat data statistik operator...</p>
+                </div>
+                
+                <!-- Statistics Content -->
+                <div id="operatorStatsContent" style="display: none;">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th class="text-center">No</th>
+                                    <th>Nama Operator</th>
+                                    <th class="text-center">Total Done</th>
+                                    <th class="text-center">Total Already</th>
+                                    <th class="text-center">Total Diproses</th>
+                                    <th class="text-center">Hari Ini</th>
+                                    <th class="text-center">Minggu Ini</th>
+                                    <th class="text-center">Bulan Ini</th>
+                                    <th class="text-center">Aktivitas Terakhir</th>
+                                </tr>
+                            </thead>
+                            <tbody id="operatorStatsTableBody">
+                                <!-- Data will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Summary Cards -->
+                    <div class="row mt-4" id="operatorStatsSummary">
+                        <!-- Summary cards will be populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <!-- Error Message -->
+                <div id="operatorStatsError" class="alert alert-danger" style="display: none;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span id="operatorStatsErrorMessage">Terjadi kesalahan saat memuat data.</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Tutup
+                </button>
+                <button type="button" class="btn btn-primary" onclick="refreshOperatorStatistics()">
+                    <i class="fas fa-sync-alt"></i> Refresh Data
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <style>
@@ -3148,6 +3296,202 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Any mobile-specific initialization can go here
 });
+
+// Operator Statistics Functions
+function showOperatorStatistics() {
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('operatorStatisticsModal'));
+    modal.show();
+    
+    // Load statistics data
+    loadOperatorStatistics();
+}
+
+function loadOperatorStatistics() {
+    // Show loading state
+    document.getElementById('operatorStatsLoading').style.display = 'block';
+    document.getElementById('operatorStatsContent').style.display = 'none';
+    document.getElementById('operatorStatsError').style.display = 'none';
+    
+    fetch('<?= base_url('database/get_operator_statistics') ?>', {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        if (response.status === 401) {
+            showAlert('Session expired. Silakan login ulang.', 'error');
+            setTimeout(() => {
+                window.location.href = '<?= base_url('auth') ?>';
+            }, 2000);
+            return;
+        }
+        return response.json();
+    })
+    .then(result => {
+        if (!result) return;
+        
+        if (result.success) {
+            displayOperatorStatistics(result.data);
+        } else {
+            showOperatorStatisticsError(result.message || 'Gagal memuat data statistik operator');
+        }
+    })
+    .catch(error => {
+        console.error('Error loading operator statistics:', error);
+        showOperatorStatisticsError('Terjadi kesalahan saat memuat data statistik operator');
+    });
+}
+
+function displayOperatorStatistics(data) {
+    // Hide loading, show content
+    document.getElementById('operatorStatsLoading').style.display = 'none';
+    document.getElementById('operatorStatsContent').style.display = 'block';
+    
+    const tableBody = document.getElementById('operatorStatsTableBody');
+    const summaryContainer = document.getElementById('operatorStatsSummary');
+    
+    // Clear existing content
+    tableBody.innerHTML = '';
+    summaryContainer.innerHTML = '';
+    
+    if (!data || data.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="9" class="text-center">Tidak ada data operator yang ditemukan</td></tr>';
+        return;
+    }
+    
+    // Populate table
+    let totalDone = 0;
+    let totalAlready = 0;
+    let totalProcessed = 0;
+    let totalToday = 0;
+    let totalWeek = 0;
+    let totalMonth = 0;
+    
+    data.forEach((operator, index) => {
+        const row = document.createElement('tr');
+        
+        // Calculate totals
+        totalDone += parseInt(operator.done_count) || 0;
+        totalAlready += parseInt(operator.already_count) || 0;
+        totalProcessed += parseInt(operator.total_processed) || 0;
+        totalToday += parseInt(operator.today_total) || 0;
+        totalWeek += parseInt(operator.week_total) || 0;
+        totalMonth += parseInt(operator.month_total) || 0;
+        
+        // Format last activity
+        const lastActivity = operator.last_activity ? 
+            new Date(operator.last_activity).toLocaleString('id-ID') : 
+            'Belum ada aktivitas';
+        
+        row.innerHTML = `
+            <td class="text-center">${index + 1}</td>
+            <td>
+                <strong>${operator.nama_lengkap}</strong><br>
+                <small class="text-muted">@${operator.username}</small>
+            </td>
+            <td class="text-center">
+                <span class="badge bg-success">${operator.done_count || 0}</span>
+            </td>
+            <td class="text-center">
+                <span class="badge bg-warning text-dark">${operator.already_count || 0}</span>
+            </td>
+            <td class="text-center">
+                <span class="badge bg-primary">${operator.total_processed || 0}</span>
+            </td>
+            <td class="text-center">
+                <small>
+                    <div class="text-success">Done: ${operator.today_done || 0}</div>
+                    <div class="text-warning">Already: ${operator.today_already || 0}</div>
+                    <div class="text-primary"><strong>Total: ${operator.today_total || 0}</strong></div>
+                </small>
+            </td>
+            <td class="text-center">
+                <small>
+                    <div class="text-success">Done: ${operator.week_done || 0}</div>
+                    <div class="text-warning">Already: ${operator.week_already || 0}</div>
+                    <div class="text-primary"><strong>Total: ${operator.week_total || 0}</strong></div>
+                </small>
+            </td>
+            <td class="text-center">
+                <small>
+                    <div class="text-success">Done: ${operator.month_done || 0}</div>
+                    <div class="text-warning">Already: ${operator.month_already || 0}</div>
+                    <div class="text-primary"><strong>Total: ${operator.month_total || 0}</strong></div>
+                </small>
+            </td>
+            <td class="text-center">
+                <small>${lastActivity}</small>
+            </td>
+        `;
+        
+        tableBody.appendChild(row);
+    });
+    
+    // Create summary cards
+    summaryContainer.innerHTML = `
+        <div class="col-md-2">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h4 class="card-title">${totalDone}</h4>
+                    <p class="card-text">Total Done</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-warning text-dark">
+                <div class="card-body text-center">
+                    <h4 class="card-title">${totalAlready}</h4>
+                    <p class="card-text">Total Already</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h4 class="card-title">${totalProcessed}</h4>
+                    <p class="card-text">Total Diproses</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h4 class="card-title">${totalToday}</h4>
+                    <p class="card-text">Hari Ini</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-secondary text-white">
+                <div class="card-body text-center">
+                    <h4 class="card-title">${totalWeek}</h4>
+                    <p class="card-text">Minggu Ini</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-dark text-white">
+                <div class="card-body text-center">
+                    <h4 class="card-title">${totalMonth}</h4>
+                    <p class="card-text">Bulan Ini</p>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function showOperatorStatisticsError(message) {
+    document.getElementById('operatorStatsLoading').style.display = 'none';
+    document.getElementById('operatorStatsContent').style.display = 'none';
+    document.getElementById('operatorStatsError').style.display = 'block';
+    document.getElementById('operatorStatsErrorMessage').textContent = message;
+}
+
+function refreshOperatorStatistics() {
+    loadOperatorStatistics();
+}
 
 // Delete data function with filter preservation
 function deleteData(id) {

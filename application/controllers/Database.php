@@ -3688,4 +3688,50 @@ class Database extends CI_Controller {
 
         echo json_encode($response);
     }
+
+    /**
+     * Get operator statistics for popup modal
+     */
+    public function get_operator_statistics() {
+        // Check if user is logged in
+        if (!$this->session->userdata('logged_in')) {
+            $this->output->set_status_header(401);
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            return;
+        }
+
+        // Check if request is AJAX
+        if (!$this->input->is_ajax_request()) {
+            $this->output->set_status_header(400);
+            echo json_encode(['success' => false, 'message' => 'Invalid request']);
+            return;
+        }
+
+        try {
+            // Get operator statistics from model
+            $operator_stats = $this->transaksi_model->get_operator_statistics();
+            
+            if ($operator_stats) {
+                $this->output->set_content_type('application/json');
+                echo json_encode([
+                    'success' => true,
+                    'data' => $operator_stats
+                ]);
+            } else {
+                $this->output->set_content_type('application/json');
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Tidak ada data statistik operator'
+                ]);
+            }
+        } catch (Exception $e) {
+            log_message('error', 'Error getting operator statistics: ' . $e->getMessage());
+            $this->output->set_status_header(500);
+            $this->output->set_content_type('application/json');
+            echo json_encode([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat mengambil data statistik operator'
+            ]);
+        }
+    }
 } 

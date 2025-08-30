@@ -1151,4 +1151,78 @@ class Transaksi_model extends CI_Model {
         
         return $this->db->get()->result();
     }
+
+    /**
+     * Get operator statistics for performance report
+     * Shows Done and Already status data for each operator
+     */
+    public function get_operator_statistics() {
+        $this->db->select('
+            u.id_user,
+            u.nama_lengkap,
+            u.username,
+            COUNT(CASE WHEN p.status = 2 THEN 1 END) as done_count,
+            COUNT(CASE WHEN p.status = 1 THEN 1 END) as already_count,
+            COUNT(CASE WHEN p.status IN (1, 2) THEN 1 END) as total_processed,
+            MAX(p.updated_at) as last_activity
+        ');
+        $this->db->from('users u');
+        $this->db->join('peserta p', 'u.id_user = p.history_done', 'left');
+        $this->db->where('u.role', 'operator');
+        $this->db->where('u.status', 1); // Active users only
+        $this->db->group_by('u.id_user, u.nama_lengkap, u.username');
+        $this->db->order_by('total_processed', 'DESC');
+        $this->db->order_by('u.nama_lengkap', 'ASC');
+        
+        $result = $this->db->get()->result();
+        
+        // Add additional statistics for each operator
+        foreach ($result as $operator) {
+            // Get today's statistics
+            $this->db->select('
+                COUNT(CASE WHEN p.status = 2 THEN 1 END) as today_done,
+                COUNT(CASE WHEN p.status = 1 THEN 1 END) as today_already
+            ');
+            $this->db->from('peserta p');
+            $this->db->where('p.history_done', $operator->id_user);
+            $this->db->where('DATE(p.updated_at)', date('Y-m-d'));
+            $today_stats = $this->db->get()->row();
+            
+            $operator->today_done = $today_stats ? $today_stats->today_done : 0;
+            $operator->today_already = $today_stats ? $today_stats->today_already : 0;
+            $operator->today_total = $operator->today_done + $operator->today_already;
+            
+            // Get this week's statistics
+            $this->db->select('
+                COUNT(CASE WHEN p.status = 2 THEN 1 END) as week_done,
+                COUNT(CASE WHEN p.status = 1 THEN 1 END) as week_already
+            ');
+            $this->db->from('peserta p');
+            $this->db->where('p.history_done', $operator->id_user);
+            $this->db->where('p.updated_at >=', date('Y-m-d', strtotime('monday this week')));
+            $this->db->where('p.updated_at <=', date('Y-m-d 23:59:59', strtotime('sunday this week')));
+            $week_stats = $this->db->get()->row();
+            
+            $operator->week_done = $week_stats ? $week_stats->week_done : 0;
+            $operator->week_already = $week_stats ? $week_stats->week_already : 0;
+            $operator->week_total = $operator->week_done + $operator->week_already;
+            
+            // Get this month's statistics
+            $this->db->select('
+                COUNT(CASE WHEN p.status = 2 THEN 1 END) as month_done,
+                COUNT(CASE WHEN p.status = 1 THEN 1 END) as month_already
+            ');
+            $this->db->from('peserta p');
+            $this->db->where('p.history_done', $operator->id_user);
+            $this->db->where('MONTH(p.updated_at)', date('m'));
+            $this->db->where('YEAR(p.updated_at)', date('Y'));
+            $month_stats = $this->db->get()->row();
+            
+            $operator->month_done = $month_stats ? $month_stats->month_done : 0;
+            $operator->month_already = $month_stats ? $month_stats->month_already : 0;
+            $operator->month_total = $operator->month_done + $operator->month_already;
+        }
+        
+        return $result;
+    }
 } 
