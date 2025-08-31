@@ -1643,12 +1643,12 @@
 }
 
 /* Operator Statistics Modal Styles */
-#operatorStatisticsModal .modal-xl {
-    max-width: 95%;
+#operatorStatisticsModal .modal-lg {
+    max-width: 800px;
 }
 
 #operatorStatisticsModal .modal-body {
-    max-height: 70vh;
+    max-height: 60vh;
     overflow-y: auto;
 }
 
@@ -1677,10 +1677,17 @@
 
 #operatorStatisticsModal .table td {
     vertical-align: middle;
+    padding: 0.5rem 0.25rem;
+    font-size: 0.875rem;
+}
+
+#operatorStatisticsModal .table th {
+    padding: 0.5rem 0.25rem;
+    font-size: 0.875rem;
 }
 
 #operatorStatisticsModal .table small {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
 }
 
 /* Summary Cards Animation */
@@ -1744,13 +1751,44 @@
 #operatorStatisticsModal .gap-2 {
     gap: 0.5rem !important;
 }
+
+#operatorStatisticsModal .gap-1 {
+    gap: 0.25rem !important;
+}
+
+#operatorStatisticsModal .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    border-radius: 0.25rem;
+}
+
+#operatorStatisticsModal .modal-footer {
+    padding: 0.75rem 1rem;
+}
+
+#operatorStatisticsModal .modal-footer .btn {
+    margin-left: 0.25rem;
+}
+
+#operatorStatisticsModal .card-body {
+    padding: 0.75rem;
+}
+
+#operatorStatisticsModal .card-title {
+    font-size: 1.25rem;
+    font-weight: bold;
+}
+
+#operatorStatisticsModal .card-text {
+    font-size: 0.875rem;
+}
 </style>
 
 <?php $this->load->view('database/export_modal'); ?>
 
 <!-- Operator Statistics Modal -->
 <div class="modal fade" id="operatorStatisticsModal" tabindex="-1" aria-labelledby="operatorStatisticsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header bg-brown text-white">
                 <h5 class="modal-title" id="operatorStatisticsModalLabel">
@@ -1761,21 +1799,21 @@
             <div class="modal-body">
                 <!-- Date Range Filter -->
                 <div class="row mb-3">
-                    <div class="col-md-4">
+                    <div class="col-md-5">
                         <label for="startDate" class="form-label"><i class="fas fa-calendar"></i> Tanggal Mulai</label>
                         <input type="date" class="form-control" id="startDate" name="startDate">
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-5">
                         <label for="endDate" class="form-label"><i class="fas fa-calendar"></i> Tanggal Akhir</label>
                         <input type="date" class="form-control" id="endDate" name="endDate">
                     </div>
-                    <div class="col-md-4 d-flex align-items-end">
-                        <div class="d-flex gap-2">
-                            <button type="button" class="btn btn-primary" onclick="filterOperatorStatistics()">
-                                <i class="fas fa-filter"></i> Filter
+                    <div class="col-md-2 d-flex align-items-end">
+                        <div class="d-flex gap-1 w-100">
+                            <button type="button" class="btn btn-primary btn-sm" onclick="filterOperatorStatistics()">
+                                <i class="fas fa-filter"></i>
                             </button>
-                            <button type="button" class="btn btn-secondary" onclick="resetDateFilter()">
-                                <i class="fas fa-undo"></i> Reset
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="resetDateFilter()">
+                                <i class="fas fa-undo"></i>
                             </button>
                         </div>
                     </div>
@@ -1801,18 +1839,18 @@
                 <!-- Statistics Content -->
                 <div id="operatorStatsContent" style="display: none;">
                     <div class="table-responsive">
-                        <table class="table table-bordered table-striped table-hover">
+                        <table class="table table-bordered table-striped table-hover table-sm">
                             <thead class="table-dark">
                                 <tr>
-                                    <th class="text-center">No</th>
-                                    <th>Nama Operator</th>
-                                    <th class="text-center">Total Done</th>
-                                    <th class="text-center">Total Already</th>
-                                    <th class="text-center">Total Diproses</th>
-                                    <th class="text-center">Hari Ini</th>
-                                    <th class="text-center">Minggu Ini</th>
-                                    <th class="text-center">Bulan Ini</th>
-                                    <th class="text-center">Aktivitas Terakhir</th>
+                                    <th class="text-center" style="width: 5%;">No</th>
+                                    <th style="width: 20%;">Nama Operator</th>
+                                    <th class="text-center" style="width: 10%;">Done</th>
+                                    <th class="text-center" style="width: 10%;">Already</th>
+                                    <th class="text-center" style="width: 10%;">Total</th>
+                                    <th class="text-center" style="width: 10%;">Hari Ini</th>
+                                    <th class="text-center" style="width: 10%;">Minggu Ini</th>
+                                    <th class="text-center" style="width: 10%;">Bulan Ini</th>
+                                    <th class="text-center" style="width: 15%;">Terakhir</th>
                                 </tr>
                             </thead>
                             <tbody id="operatorStatsTableBody">
@@ -1834,14 +1872,14 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
                     <i class="fas fa-times"></i> Tutup
                 </button>
-                <button type="button" class="btn btn-primary" onclick="refreshOperatorStatistics()">
-                    <i class="fas fa-sync-alt"></i> Refresh Data
+                <button type="button" class="btn btn-primary btn-sm" onclick="refreshOperatorStatistics()">
+                    <i class="fas fa-sync-alt"></i> Refresh
                 </button>
-                <button type="button" class="btn btn-success" onclick="exportOperatorStatistics()">
-                    <i class="fas fa-download"></i> Export Excel
+                <button type="button" class="btn btn-success btn-sm" onclick="exportOperatorStatistics()">
+                    <i class="fas fa-download"></i> Export
                 </button>
             </div>
         </div>
@@ -3563,23 +3601,23 @@ function displayOperatorStatistics(data, filters = {}) {
             </td>
             <td class="text-center">
                 <small>
-                    <div class="text-success">Done: ${operator.today_done || 0}</div>
-                    <div class="text-warning">Already: ${operator.today_already || 0}</div>
-                    <div class="text-primary"><strong>Total: ${operator.today_total || 0}</strong></div>
+                    <div class="text-success">${operator.today_done || 0}</div>
+                    <div class="text-warning">${operator.today_already || 0}</div>
+                    <div class="text-primary"><strong>${operator.today_total || 0}</strong></div>
                 </small>
             </td>
             <td class="text-center">
                 <small>
-                    <div class="text-success">Done: ${operator.week_done || 0}</div>
-                    <div class="text-warning">Already: ${operator.week_already || 0}</div>
+                    <div class="text-success">${operator.week_done || 0}</div>
+                    <div class="text-warning">${operator.week_already || 0}</div>
                     <div class="text-primary"><strong>Total: ${operator.week_total || 0}</strong></div>
                 </small>
             </td>
             <td class="text-center">
                 <small>
-                    <div class="text-success">Done: ${operator.month_done || 0}</div>
-                    <div class="text-warning">Already: ${operator.month_already || 0}</div>
-                    <div class="text-primary"><strong>Total: ${operator.month_total || 0}</strong></div>
+                    <div class="text-success">${operator.month_done || 0}</div>
+                    <div class="text-warning">${operator.month_already || 0}</div>
+                    <div class="text-primary"><strong>${operator.month_total || 0}</strong></div>
                 </small>
             </td>
             <td class="text-center">
@@ -3592,51 +3630,51 @@ function displayOperatorStatistics(data, filters = {}) {
     
     // Create summary cards
     summaryContainer.innerHTML = `
-        <div class="col-md-2">
+        <div class="col-md-4">
             <div class="card bg-success text-white">
-                <div class="card-body text-center">
-                    <h4 class="card-title">${totalDone}</h4>
-                    <p class="card-text">Total Done</p>
+                <div class="card-body text-center py-2">
+                    <h5 class="card-title mb-1">${totalDone}</h5>
+                    <p class="card-text mb-0 small">Total Done</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
+        <div class="col-md-4">
             <div class="card bg-warning text-dark">
-                <div class="card-body text-center">
-                    <h4 class="card-title">${totalAlready}</h4>
-                    <p class="card-text">Total Already</p>
+                <div class="card-body text-center py-2">
+                    <h5 class="card-title mb-1">${totalAlready}</h5>
+                    <p class="card-text mb-0 small">Total Already</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
+        <div class="col-md-4">
             <div class="card bg-primary text-white">
-                <div class="card-body text-center">
-                    <h4 class="card-title">${totalProcessed}</h4>
-                    <p class="card-text">Total Diproses</p>
+                <div class="card-body text-center py-2">
+                    <h5 class="card-title mb-1">${totalProcessed}</h5>
+                    <p class="card-text mb-0 small">Total Diproses</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
+        <div class="col-md-4">
             <div class="card bg-info text-white">
-                <div class="card-body text-center">
-                    <h4 class="card-title">${totalToday}</h4>
-                    <p class="card-text">Hari Ini</p>
+                <div class="card-body text-center py-2">
+                    <h5 class="card-title mb-1">${totalToday}</h5>
+                    <p class="card-text mb-0 small">Hari Ini</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
+        <div class="col-md-4">
             <div class="card bg-secondary text-white">
-                <div class="card-body text-center">
-                    <h4 class="card-title">${totalWeek}</h4>
-                    <p class="card-text">Minggu Ini</p>
+                <div class="card-body text-center py-2">
+                    <h5 class="card-title mb-1">${totalWeek}</h5>
+                    <p class="card-text mb-0 small">Minggu Ini</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
+        <div class="col-md-4">
             <div class="card bg-dark text-white">
-                <div class="card-body text-center">
-                    <h4 class="card-title">${totalMonth}</h4>
-                    <p class="card-text">Bulan Ini</p>
+                <div class="card-body text-center py-2">
+                    <h5 class="card-title mb-1">${totalMonth}</h5>
+                    <p class="card-text mb-0 small">Bulan Ini</p>
                 </div>
             </div>
         </div>
