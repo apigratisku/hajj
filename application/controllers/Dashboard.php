@@ -10,6 +10,7 @@ class Dashboard extends CI_Controller {
         $this->load->library('session');
         $this->load->library('telegram_notification');
         $this->load->helper('url');
+        $this->load->helper('time_helper');
         
         // Check if user is logged in
         if (!$this->session->userdata('logged_in')) {
