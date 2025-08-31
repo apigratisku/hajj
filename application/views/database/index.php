@@ -116,15 +116,12 @@
                                 </div>
                                 <div class="form-group">
                                     <select name="history_done" class="form-select mobile-input">
-                                        <option value="">Operator</option>
-                                        <option value="null" <?= (isset($_GET['history_done']) && $_GET['history_done'] === 'null') ? 'selected' : '' ?>>Tanpa Filter User</option>
+                                    <option value="">Operator</option>
+                                        
                                         <?php if (!empty($user_operators)): foreach ($user_operators as $operator): ?>
-                                            <?php 
-                                                $user = $this->user_model->get_user_by_id($operator->history_done);
-                                                $user_name = ($user && isset($user->nama_lengkap)) ? $user->nama_lengkap : 'User ID: ' . $operator->history_done;
-                                            ?>
-                                            <option value="<?= htmlspecialchars($operator->history_done) ?>" <?= (isset($_GET['history_done']) && $_GET['history_done'] === $operator->history_done) ? 'selected' : '' ?>>
-                                                <?= htmlspecialchars($user_name) ?> (<?= $operator->count ?> data)
+                            
+                                            <option value="<?= htmlspecialchars($operator->id_user) ?>" <?= (isset($_GET['history_done']) && $_GET['history_done'] === $operator->id_user) ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($operator->nama_lengkap) ?>
                                             </option>
                                         <?php endforeach; endif; ?>
                                     </select>
