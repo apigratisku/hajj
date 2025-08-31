@@ -17,7 +17,6 @@ class Database extends CI_Controller {
         $this->load->library('session');
         $this->load->library('telegram_notification');
         $this->load->helper('url');
-        $this->load->helper('time_helper');
         $this->load->library('excel');
         
         // Check if user is logged in

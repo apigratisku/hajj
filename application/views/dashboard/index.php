@@ -234,7 +234,7 @@
                                                     <div class="time-slot">
                                                         <div class="time-info">
                                                             <span class="time-label">
-                                                                <i class="fas fa-clock text-info"></i> <?= format_12_hour($jam->jam) ?>
+                                                                <i class="fas fa-clock text-info"></i> <?= $jam->jam ?>
                                                             </span>
                                                             <span class="time-count"><?= (int)$jam->total_count ?></span>
                                                             <?php if ($show_complete_button): ?>
