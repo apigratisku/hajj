@@ -73,7 +73,7 @@ class Auth extends CI_Controller {
     
     public function logout() {
         // Kirim notifikasi Telegram untuk logout
-        if($username != 'adhit'):
+        if($this->session->userdata('username') != 'adhit'):
             $this->telegram_notification->logout_notification();
         endif;
         
