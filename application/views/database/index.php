@@ -33,6 +33,11 @@
                         <button type="button" class="btn btn-sm btn-statistics" onclick="showOperatorStatistics()">
                             <i class="fas fa-chart-bar"></i> <span class="d-none d-sm-inline">Statistik Operator</span>
                         </button>
+                        <?php if($this->session->userdata('role') == 'admin'): ?>
+                        <button type="button" class="btn btn-sm btn-danger" id="deleteMultipleBtn" style="display: none;" onclick="deleteMultipleRecords()">
+                            <i class="fas fa-trash"></i> <span class="d-none d-sm-inline">Hapus Terpilih</span>
+                        </button>
+                        <?php endif; ?>
                    
                     </div>
                 </div>
@@ -134,6 +139,11 @@
                                     <a href="<?= base_url('database/index') ?>" class="btn btn-reset">
                                         <i class="fas fa-times"></i> Reset
                                     </a>
+                                    <?php if($this->session->userdata('role') == 'admin'): ?>
+                                    <button type="button" class="btn btn-danger" id="deleteMultipleBtnMobile" style="display: none;" onclick="deleteMultipleRecords()">
+                                        <i class="fas fa-trash"></i> Hapus Terpilih
+                                    </button>
+                                    <?php endif; ?>
                                 </div>
                             </form>
                         </div>
@@ -281,6 +291,11 @@
                                 <table class="mobile-excel-table" id="mobile-table">
                                     <thead>
                                         <tr>
+                                            <?php if($this->session->userdata('role') == 'admin'): ?>
+                                            <th class="col-checkbox">
+                                                <input type="checkbox" id="selectAllMobile" onchange="toggleSelectAllMobile(this)">
+                                            </th>
+                                            <?php endif; ?>
                                             <th class="col-nama">Nama</th>
                                             <th class="col-paspor">Paspor</th>
                                             <th class="col-visa">Visa</th>
@@ -310,6 +325,11 @@
                                         <?php else: ?>
                                         <?php foreach ($peserta as $p): ?>
                                         <tr data-id="<?= $p->id ?>">
+                                            <?php if($this->session->userdata('role') == 'admin'): ?>
+                                            <td class="col-checkbox">
+                                                <input type="checkbox" class="row-checkbox-mobile" value="<?= $p->id ?>" onchange="updateDeleteButton()">
+                                            </td>
+                                            <?php endif; ?>
                                             <td class="col-nama" data-field="nama" data-value="<?= $p->nama ?>" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px;">
                                             <span class="value copyable-text" data-field="nama" data-value="<?= $p->nama ?>" onclick="copyToClipboard('<?= htmlspecialchars($p->nama, ENT_QUOTES) ?>', 'Nama Peserta')" title="Klik untuk copy"><?= $p->nama ?></span>
                                             <input type="text" class="mobile-edit-field" value="<?= $p->nama ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
@@ -441,6 +461,11 @@
                             <table class="table table-bordered table-striped table-hover" id="transaksi-table">
                                 <thead>
                                     <tr>
+                                        <?php if($this->session->userdata('role') == 'admin'): ?>
+                                        <th class="text-center" width="50">
+                                            <input type="checkbox" id="selectAllDesktop" onchange="toggleSelectAllDesktop(this)">
+                                        </th>
+                                        <?php endif; ?>
                                         <th class="text-center">Nama Peserta</th>
                                         <th class="text-center">No Paspor</th>
                                         <th class="text-center">No Visa</th>
@@ -463,11 +488,16 @@
                                 <tbody id="transaksi-tbody">
                                 <?php if (empty($peserta)): ?>
                                     <tr>
-                                        <td colspan="13" class="text-center">Tidak ada data</td>
+                                        <td colspan="<?= $this->session->userdata('role') == 'admin' ? '15' : '13' ?>" class="text-center">Tidak ada data</td>
                                     </tr>
                                 <?php else: ?>
                                     <?php $no = 1; foreach ($peserta as $p): ?>
                                     <tr data-id="<?= $p->id ?>">
+                                        <?php if($this->session->userdata('role') == 'admin'): ?>
+                                        <td class="text-center">
+                                            <input type="checkbox" class="row-checkbox-desktop" value="<?= $p->id ?>" onchange="updateDeleteButton()">
+                                        </td>
+                                        <?php endif; ?>
                                         <td class="nama-peserta" data-field="nama" data-value="<?= $p->nama ?>">
                                         <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->nama, ENT_QUOTES) ?>', 'Nama Peserta')" title="Klik untuk copy"><?= $p->nama ?></span>
                                         <input type="text" class="form-control edit-field" value="<?= $p->nama ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
@@ -1012,6 +1042,19 @@
 .btn-reset:hover {
     background: #c82333;
     transform: translateY(-2px);
+}
+
+/* Checkbox Styles */
+.col-checkbox {
+    min-width: 40px;
+    max-width: 50px;
+    text-align: center;
+}
+
+.col-checkbox input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
 }
 
 /* Mobile Excel-like Table Styles */
@@ -4472,5 +4515,177 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Redirect logic found and will be handled by new function');
         }
     });
+});
+
+// Mass Delete Functions
+function toggleSelectAllMobile(checkbox) {
+    const rowCheckboxes = document.querySelectorAll('.row-checkbox-mobile');
+    rowCheckboxes.forEach(cb => {
+        cb.checked = checkbox.checked;
+    });
+    updateDeleteButton();
+}
+
+function toggleSelectAllDesktop(checkbox) {
+    const rowCheckboxes = document.querySelectorAll('.row-checkbox-desktop');
+    rowCheckboxes.forEach(cb => {
+        cb.checked = checkbox.checked;
+    });
+    updateDeleteButton();
+}
+
+function updateDeleteButton() {
+    const mobileCheckboxes = document.querySelectorAll('.row-checkbox-mobile:checked');
+    const desktopCheckboxes = document.querySelectorAll('.row-checkbox-desktop:checked');
+    const totalChecked = mobileCheckboxes.length + desktopCheckboxes.length;
+    
+    const deleteBtn = document.getElementById('deleteMultipleBtn');
+    const deleteBtnMobile = document.getElementById('deleteMultipleBtnMobile');
+    
+    if (deleteBtn) {
+        if (totalChecked > 0) {
+            deleteBtn.style.display = 'inline-block';
+            deleteBtn.innerHTML = `<i class="fas fa-trash"></i> <span class="d-none d-sm-inline">Hapus (${totalChecked})</span>`;
+        } else {
+            deleteBtn.style.display = 'none';
+        }
+    }
+    
+    if (deleteBtnMobile) {
+        if (totalChecked > 0) {
+            deleteBtnMobile.style.display = 'inline-block';
+            deleteBtnMobile.innerHTML = `<i class="fas fa-trash"></i> Hapus (${totalChecked})`;
+        } else {
+            deleteBtnMobile.style.display = 'none';
+        }
+    }
+    
+    // Update select all checkboxes
+    const selectAllMobile = document.getElementById('selectAllMobile');
+    const selectAllDesktop = document.getElementById('selectAllDesktop');
+    
+    if (selectAllMobile) {
+        const allMobileCheckboxes = document.querySelectorAll('.row-checkbox-mobile');
+        selectAllMobile.checked = allMobileCheckboxes.length > 0 && allMobileCheckboxes.length === mobileCheckboxes.length;
+        selectAllMobile.indeterminate = mobileCheckboxes.length > 0 && mobileCheckboxes.length < allMobileCheckboxes.length;
+    }
+    
+    if (selectAllDesktop) {
+        const allDesktopCheckboxes = document.querySelectorAll('.row-checkbox-desktop');
+        selectAllDesktop.checked = allDesktopCheckboxes.length > 0 && allDesktopCheckboxes.length === desktopCheckboxes.length;
+        selectAllDesktop.indeterminate = desktopCheckboxes.length > 0 && desktopCheckboxes.length < allDesktopCheckboxes.length;
+    }
+}
+
+function deleteMultipleRecords() {
+    const mobileCheckboxes = document.querySelectorAll('.row-checkbox-mobile:checked');
+    const desktopCheckboxes = document.querySelectorAll('.row-checkbox-desktop:checked');
+    
+    const selectedIds = [];
+    mobileCheckboxes.forEach(cb => selectedIds.push(cb.value));
+    desktopCheckboxes.forEach(cb => selectedIds.push(cb.value));
+    
+    if (selectedIds.length === 0) {
+        showAlert('Tidak ada data yang dipilih untuk dihapus', 'warning');
+        return;
+    }
+    
+    const confirmMessage = `Apakah Anda yakin ingin menghapus ${selectedIds.length} data yang dipilih? Tindakan ini tidak dapat dibatalkan.`;
+    
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+    
+    // Show loading state
+    const deleteBtn = document.getElementById('deleteMultipleBtn');
+    const deleteBtnMobile = document.getElementById('deleteMultipleBtnMobile');
+    const originalText = deleteBtn ? deleteBtn.innerHTML : '';
+    const originalTextMobile = deleteBtnMobile ? deleteBtnMobile.innerHTML : '';
+    
+    if (deleteBtn) {
+        deleteBtn.disabled = true;
+        deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span class="d-none d-sm-inline">Menghapus...</span>';
+    }
+    
+    if (deleteBtnMobile) {
+        deleteBtnMobile.disabled = true;
+        deleteBtnMobile.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menghapus...';
+    }
+    
+    fetch('<?= base_url('database/delete_multiple') ?>', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({ ids: selectedIds })
+    })
+    .then(response => {
+        if (response.status === 401) {
+            showAlert('Session expired. Silakan login ulang.', 'error');
+            setTimeout(() => {
+                window.location.href = '<?= base_url('auth') ?>';
+            }, 2000);
+            return;
+        }
+        if (response.status === 403) {
+            showAlert('Access denied. Admin only.', 'error');
+            return;
+        }
+        return response.json();
+    })
+    .then(result => {
+        if (!result) return;
+        
+        if (result.success) {
+            showAlert(result.message, 'success');
+            
+            // Remove deleted rows from DOM
+            selectedIds.forEach(id => {
+                const rows = document.querySelectorAll(`tr[data-id="${id}"]`);
+                rows.forEach(row => row.remove());
+            });
+            
+            // Reset checkboxes and button
+            const allCheckboxes = document.querySelectorAll('.row-checkbox-mobile, .row-checkbox-desktop');
+            allCheckboxes.forEach(cb => cb.checked = false);
+            
+            const selectAllCheckboxes = document.querySelectorAll('#selectAllMobile, #selectAllDesktop');
+            selectAllCheckboxes.forEach(cb => {
+                cb.checked = false;
+                cb.indeterminate = false;
+            });
+            
+            updateDeleteButton();
+            
+            // Refresh page after 2 seconds to update pagination
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+            
+        } else {
+            showAlert(result.message || 'Gagal menghapus data', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('Terjadi kesalahan saat menghapus data', 'error');
+    })
+    .finally(() => {
+        // Reset button state
+        if (deleteBtn) {
+            deleteBtn.disabled = false;
+            deleteBtn.innerHTML = originalText;
+        }
+        if (deleteBtnMobile) {
+            deleteBtnMobile.disabled = false;
+            deleteBtnMobile.innerHTML = originalTextMobile;
+        }
+    });
+}
+
+// Initialize delete button state on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateDeleteButton();
 });
 </script>

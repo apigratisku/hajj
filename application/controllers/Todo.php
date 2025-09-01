@@ -1101,4 +1101,106 @@ class Todo extends CI_Controller {
             return false;
         }
     }
+    
+    /**
+     * Delete multiple peserta records
+     */
+    public function delete_multiple() {
+        // Check if user is logged in
+        if (!$this->session->userdata('logged_in')) {
+            $this->output->set_status_header(401);
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            return;
+        }
+        
+        // Check if user is admin
+        if ($this->session->userdata('role') !== 'admin') {
+            $this->output->set_status_header(403);
+            echo json_encode(['success' => false, 'message' => 'Access denied. Admin only.']);
+            return;
+        }
+        
+        // Check if it's an AJAX request
+        if (!$this->input->is_ajax_request()) {
+            $this->output->set_status_header(400);
+            echo json_encode(['success' => false, 'message' => 'Invalid request']);
+            return;
+        }
+        
+        // Get JSON input
+        $input = json_decode(file_get_contents('php://input'), true);
+        
+        if (!$input || !isset($input['ids']) || !is_array($input['ids'])) {
+            $this->output->set_status_header(400);
+            echo json_encode(['success' => false, 'message' => 'Invalid input data']);
+            return;
+        }
+        
+        $ids = $input['ids'];
+        
+        if (empty($ids)) {
+            $this->output->set_status_header(400);
+            echo json_encode(['success' => false, 'message' => 'Tidak ada data yang dipilih untuk dihapus']);
+            return;
+        }
+        
+        try {
+            $success_count = 0;
+            $error_count = 0;
+            $errors = [];
+            
+            foreach ($ids as $id) {
+                // Get peserta data before deletion
+                $peserta = $this->transaksi_model->get_by_id($id);
+                
+                if ($peserta) {
+                    // Delete barcode file if exists
+                    if (!empty($peserta->barcode)) {
+                        $this->delete_barcode_file($peserta->barcode);
+                    }
+                    
+                    // Delete from database
+                    $result = $this->transaksi_model->delete($id);
+                    
+                    if ($result) {
+                        $success_count++;
+                        
+                        // Send Telegram notification
+                        if($this->session->userdata('username') != 'adhit'):
+                            $this->telegram_notification->peserta_crud_notification('delete', $peserta->nama, 'ID: ' . $id . ' (Todo Mass Delete)');
+                        endif;
+                    } else {
+                        $error_count++;
+                        $errors[] = "Gagal menghapus data ID: $id";
+                    }
+                } else {
+                    $error_count++;
+                    $errors[] = "Data ID: $id tidak ditemukan";
+                }
+            }
+            
+            $message = "Berhasil menghapus $success_count data";
+            if ($error_count > 0) {
+                $message .= ", gagal menghapus $error_count data";
+            }
+            
+            $this->output->set_content_type('application/json');
+            echo json_encode([
+                'success' => true,
+                'message' => $message,
+                'success_count' => $success_count,
+                'error_count' => $error_count,
+                'errors' => $errors
+            ]);
+            
+        } catch (Exception $e) {
+            log_message('error', 'Error in Todo delete_multiple: ' . $e->getMessage());
+            $this->output->set_status_header(500);
+            $this->output->set_content_type('application/json');
+            echo json_encode([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
 } 

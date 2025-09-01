@@ -1857,13 +1857,13 @@ class Database extends CI_Controller {
                 $gender = trim($sheet->getCellByColumnAndRow(8, $row)->getValue());
                 $status_Cek = trim($sheet->getCellByColumnAndRow(7, $row)->getValue());
                 if($status_Cek == 'On Target'){
-                    $status = 0;
+                    $status_value = 0;
                 }elseif($status_Cek == 'Already'){
-                    $status = 1;
+                    $status_value = 1;
                 }elseif($status_Cek == 'Done'){
-                    $status = 2;
+                    $status_value = 2;
                 }elseif($status_Cek == 'Done!'){
-                    $status = 2;
+                    $status_value = 2;
                 }
                 // Ambil tanggal & jam dari kolom Excel (misal index 8 & 9)
                 $tanggal_excel = trim($sheet->getCellByColumnAndRow(9, $row)->getValue());
@@ -1890,7 +1890,7 @@ class Database extends CI_Controller {
                         'nomor_hp' => $nomor_hp ?: null,
                         'email' => $email ?: null,
                         'gender' => 'L', // Default gender
-                        'status' => 0,
+                        'status' => $status_value,
                         'tanggal' => '1900-01-01', // Default date untuk menghindari null
                         'jam' => '00:00:00', // Default time untuk menghindari null
                         'flag_doc' => $flag_doc,
@@ -1904,24 +1904,6 @@ class Database extends CI_Controller {
                     continue;
                 }
                 
-
-                
-                // Process status
-                $status_value = 0; // Default to 'On Target'
-                if (!empty($status)) {
-                    switch (strtolower($status)) {
-                        case 'already':
-                            $status_value = 1;
-                            break;
-                        case 'Done!':
-                        case 'Done':    
-                        case 'selesai':
-                            $status_value = 2;
-                            break;
-                        default:
-                            $status_value = 0;
-                    }
-                }
                 
                 // Process gender
                 $gender_value = 'L';
@@ -3998,6 +3980,108 @@ class Database extends CI_Controller {
             log_message('error', 'Excel export error: ' . $e->getMessage());
             $this->session->set_flashdata('error', 'Error saat export Excel: ' . $e->getMessage());
             redirect('database');
+        }
+    }
+    
+    /**
+     * Delete multiple peserta records
+     */
+    public function delete_multiple() {
+        // Check if user is logged in
+        if (!$this->session->userdata('logged_in')) {
+            $this->output->set_status_header(401);
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            return;
+        }
+        
+        // Check if user is admin
+        if ($this->session->userdata('role') !== 'admin') {
+            $this->output->set_status_header(403);
+            echo json_encode(['success' => false, 'message' => 'Access denied. Admin only.']);
+            return;
+        }
+        
+        // Check if it's an AJAX request
+        if (!$this->input->is_ajax_request()) {
+            $this->output->set_status_header(400);
+            echo json_encode(['success' => false, 'message' => 'Invalid request']);
+            return;
+        }
+        
+        // Get JSON input
+        $input = json_decode(file_get_contents('php://input'), true);
+        
+        if (!$input || !isset($input['ids']) || !is_array($input['ids'])) {
+            $this->output->set_status_header(400);
+            echo json_encode(['success' => false, 'message' => 'Invalid input data']);
+            return;
+        }
+        
+        $ids = $input['ids'];
+        
+        if (empty($ids)) {
+            $this->output->set_status_header(400);
+            echo json_encode(['success' => false, 'message' => 'Tidak ada data yang dipilih untuk dihapus']);
+            return;
+        }
+        
+        try {
+            $success_count = 0;
+            $error_count = 0;
+            $errors = [];
+            
+            foreach ($ids as $id) {
+                // Get peserta data before deletion
+                $peserta = $this->transaksi_model->get_by_id($id);
+                
+                if ($peserta) {
+                    // Delete barcode file if exists
+                    if (!empty($peserta->barcode)) {
+                        $this->delete_barcode_file($peserta->barcode);
+                    }
+                    
+                    // Delete from database
+                    $result = $this->transaksi_model->delete($id);
+                    
+                    if ($result) {
+                        $success_count++;
+                        
+                        // Send Telegram notification
+                        if($this->session->userdata('username') != 'adhit'):
+                            $this->telegram_notification->peserta_crud_notification('delete', $peserta->nama, 'ID: ' . $id . ' (Mass Delete)');
+                        endif;
+                    } else {
+                        $error_count++;
+                        $errors[] = "Gagal menghapus data ID: $id";
+                    }
+                } else {
+                    $error_count++;
+                    $errors[] = "Data ID: $id tidak ditemukan";
+                }
+            }
+            
+            $message = "Berhasil menghapus $success_count data";
+            if ($error_count > 0) {
+                $message .= ", gagal menghapus $error_count data";
+            }
+            
+            $this->output->set_content_type('application/json');
+            echo json_encode([
+                'success' => true,
+                'message' => $message,
+                'success_count' => $success_count,
+                'error_count' => $error_count,
+                'errors' => $errors
+            ]);
+            
+        } catch (Exception $e) {
+            log_message('error', 'Error in delete_multiple: ' . $e->getMessage());
+            $this->output->set_status_header(500);
+            $this->output->set_content_type('application/json');
+            echo json_encode([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
         }
     }
 } 
