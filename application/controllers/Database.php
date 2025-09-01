@@ -1174,7 +1174,7 @@ class Database extends CI_Controller {
                     ->setCellValue('H' . $row, $p->barcode ?: '-')
                     ->setCellValue('I' . $row, $gender ?: '-')
                     ->setCellValue('J' . $row, $p->tanggal ?: '-')
-                    ->setCellValue('K' . $row, $p->jam ?: '-')
+                    ->setCellValue('K' . $row, $p->jam ? date('h:i A', strtotime($p->jam)) : '-')
                     ->setCellValue('L' . $row, $status)
                     ->setCellValue('M' . $row, $p->flag_doc ?: '-');
                 $row++;
@@ -3089,7 +3089,7 @@ class Database extends CI_Controller {
                     ->setCellValue('H' . $row, $p->barcode ?: '-')
                     ->setCellValue('I' . $row, $gender ?: '-')
                     ->setCellValue('J' . $row, $p->tanggal ?: '-')
-                    ->setCellValue('K' . $row, $p->jam ?: '-')
+                    ->setCellValue('K' . $row, $p->jam ? date('h:i A', strtotime($p->jam)) : '-')
                     ->setCellValue('L' . $row, $status)
                     ->setCellValue('M' . $row, $p->flag_doc ?: '-')
                     ->setCellValue('N' . $row, $p->updated_at ? date('d/m/Y H:i:s', strtotime($p->updated_at)) : '-');
@@ -3887,7 +3887,7 @@ class Database extends CI_Controller {
                     ->setCellValue('G' . $row, $operator->today_total)
                     ->setCellValue('H' . $row, $operator->week_total)
                     ->setCellValue('I' . $row, $operator->month_total)
-                    ->setCellValue('J' . $row, $operator->last_activity ? date('d/m/Y H:i:s', strtotime($operator->last_activity)) : '-');
+                    ->setCellValue('J' . $row, $operator->last_activity ? date('d/m/Y h:i A', strtotime($operator->last_activity)) : '-');
                 
                 $totalDone += $operator->done_count;
                 $totalAlready += $operator->already_count;

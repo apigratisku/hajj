@@ -64,7 +64,7 @@
                                         <option value="">Waktu</option>
                                         <?php if (!empty($tanggaljam_list)): foreach ($tanggaljam_list as $tanggaljam): ?>
                                             <option value="<?= htmlspecialchars($tanggaljam->tanggaljam) ?>" <?= (isset($_GET['tanggaljam']) && $_GET['tanggaljam'] === $tanggaljam->tanggaljam) ? 'selected' : '' ?>>
-                                                <?= date('d-m-Y H:i:s', strtotime($tanggaljam->tanggaljam)) ?>
+                                                <?= date('d-m-Y h:i A', strtotime($tanggaljam->tanggaljam)) ?>
                                             </option>
                                         <?php endforeach; endif; ?>
                                     </select>
@@ -179,7 +179,7 @@
                                         <option value="">Waktu</option>
                                         <?php if (!empty($tanggaljam_list)): foreach ($tanggaljam_list as $tanggaljam): ?>
                                             <option value="<?= htmlspecialchars($tanggaljam->tanggaljam) ?>" <?= (isset($_GET['tanggaljam']) && $_GET['tanggaljam'] === $tanggaljam->tanggaljam) ? 'selected' : '' ?>>
-                                            <?= date('d-m-Y H:i:s', strtotime($tanggaljam->tanggaljam)) ?>
+                                            <?= date('d-m-Y h:i A', strtotime($tanggaljam->tanggaljam)) ?>
                                             </option>
                                         <?php endforeach; endif; ?>
                                     </select>
@@ -395,7 +395,7 @@
                                             <input type="date" class="mobile-edit-field" value="<?= $p->tanggal ?>" style="display:none;">
                                             </td>
                                             <td class="col-jam" data-field="jam" data-value="<?= $p->jam ?>">
-                                            <span class="value" data-field="jam" data-value="<?= $p->jam ?>"><?= $p->jam ?: '-' ?></span>
+                                            <span class="value" data-field="jam" data-value="<?= $p->jam ?>"><?= $p->jam ? date('h:i A', strtotime($p->jam)) : '-' ?></span>
                                             <input type="time" class="mobile-edit-field" value="<?= $p->jam ?>" style="display:none;">
                                             </td>
                                             <td class="col-status" data-field="status" data-value="<?= $p->status ?>">
@@ -565,7 +565,7 @@
                                         <input type="date" class="form-control edit-field" value="<?= $p->tanggal ?>" style="display:none;">
                                         </td>
                                         <td class="jam text-center" data-field="jam" data-value="<?= $p->jam ?>">
-                                        <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->jam ?: '-', ENT_QUOTES) ?>', 'Jam')" title="Klik untuk copy"><?= $p->jam ?: '-' ?></span>
+                                        <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->jam ? date('h:i A', strtotime($p->jam)) : '-', ENT_QUOTES) ?>', 'Jam')" title="Klik untuk copy"><?= $p->jam ? date('h:i A', strtotime($p->jam)) : '-' ?></span>
                                         <input type="time" class="form-control edit-field" value="<?= $p->jam ?>" style="display:none;">
                                         </td>
                                         <td class="status text-center" data-field="status" data-value="<?= $p->status ?>" style="white-space: nowrap;width: auto;">
@@ -3621,7 +3621,14 @@ function displayOperatorStatistics(data, filters = {}) {
         
         // Format last activity
         const lastActivity = operator.last_activity ? 
-            new Date(operator.last_activity).toLocaleString('id-ID') : 
+            new Date(operator.last_activity).toLocaleString('id-ID', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            }) : 
             'Belum ada aktivitas';
         
         row.innerHTML = `

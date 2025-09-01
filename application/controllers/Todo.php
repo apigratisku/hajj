@@ -663,7 +663,7 @@ class Todo extends CI_Controller {
                     ->setCellValue('G' . $row, $p->email ? $p->email : '-')
                     ->setCellValue('H' . $row, $gender ?: '-')
                     ->setCellValue('I' . $row, $p->tanggal ?: '-')
-                    ->setCellValue('J' . $row, $p->jam ?: '-')
+                    ->setCellValue('J' . $row, $p->jam ? date('h:i A', strtotime($p->jam)) : '-')
                     ->setCellValue('K' . $row, $status)
                     ->setCellValue('L' . $row, $p->flag_doc ?: '-');
                 $row++;

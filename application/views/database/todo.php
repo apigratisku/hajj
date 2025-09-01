@@ -189,7 +189,7 @@
                                             <input type="date" class="mobile-edit-field" value="<?= $p->tanggal ?>" style="display:none;">
                                             </td>
                                             <td class="col-jam" data-field="jam" data-value="<?= $p->jam ?>">
-                                            <span class="value" data-field="jam" data-value="<?= $p->jam ?>"><?= $p->jam ?: '-' ?></span>
+                                            <span class="value" data-field="jam" data-value="<?= $p->jam ?>"><?= $p->jam ? date('h:i A', strtotime($p->jam)) : '-' ?></span>
                                             <input type="time" class="mobile-edit-field" value="<?= $p->jam ?>" style="display:none;">
                                             </td>
                                             <td class="col-status" data-field="status" data-value="<?= $p->status ?>">
@@ -345,7 +345,7 @@
                                         <input type="date" class="form-control edit-field" value="<?= $p->tanggal ?>" style="display:none;">
                                         </td>
                                         <td class="jam text-center" data-field="jam" data-value="<?= $p->jam ?>">
-                                        <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->jam ?: '-', ENT_QUOTES) ?>', 'Jam')" title="Klik untuk copy"><?= $p->jam ?: '-' ?></span>
+                                        <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->jam ? date('h:i A', strtotime($p->jam)) : '-', ENT_QUOTES) ?>', 'Jam')" title="Klik untuk copy"><?= $p->jam ? date('h:i A', strtotime($p->jam)) : '-' ?></span>
                                         <input type="time" class="form-control edit-field" value="<?= $p->jam ?>" style="display:none;">
                                         </td>
                                         <td class="status text-center" data-field="status" data-value="<?= $p->status ?>" style="white-space: nowrap;width: auto;">
