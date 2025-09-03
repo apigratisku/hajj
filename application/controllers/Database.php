@@ -1852,7 +1852,76 @@ class Database extends CI_Controller {
                 $no_visa = trim($sheet->getCellByColumnAndRow(2, $row)->getValue());
                 $tgl_lahir = trim($sheet->getCellByColumnAndRow(3, $row)->getValue());
                 $password = trim($sheet->getCellByColumnAndRow(4, $row)->getValue());
-                $nomor_hp = trim($sheet->getCellByColumnAndRow(5, $row)->getValue());
+                $nomor_hp_excel = trim($sheet->getCellByColumnAndRow(5, $row)->getValue());
+                
+                // ===== MODIFIKASI NOMOR HP =====
+                // Logika: 
+                // 1. Jika nomor HP Excel unik → gunakan value asli
+                // 2. Jika nomor HP Excel duplikat → generate random dengan prefix 560
+                $nomor_hp = null;
+                if (!empty($nomor_hp_excel)) {
+                    // Cek apakah nomor HP Excel sudah ada di database
+                    $existing_hp_excel = $this->db->where('nomor_hp', $nomor_hp_excel)->get('peserta')->row();
+                    
+                    if ($existing_hp_excel) {
+                        // Nomor HP Excel duplikat, generate random dengan prefix 560
+                        log_message('info', "Row $row: Nomor HP Excel '$nomor_hp_excel' duplikat, akan di-generate random dengan prefix 560");
+                        
+                        $prefix = '560'; // Fixed prefix untuk nomor HP yang duplikat
+                        
+                        // Generate 6 digit random yang unik
+                        $max_attempts = 100; // Maksimal percobaan untuk menghindari infinite loop
+                        $attempts = 0;
+                        
+                        do {
+                            // Generate 6 digit random
+                            $random_suffix = str_pad(mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
+                            $nomor_hp = $prefix . $random_suffix;
+                            
+                            // Cek apakah nomor HP sudah ada di database
+                            $existing_hp = $this->db->where('nomor_hp', $nomor_hp)->get('peserta')->row();
+                            $attempts++;
+                            
+                            // Jika sudah 100 percobaan dan masih belum unik, gunakan timestamp
+                            if ($attempts >= $max_attempts) {
+                                $timestamp_suffix = substr(time(), -6);
+                                $nomor_hp = $prefix . $timestamp_suffix;
+                                log_message('info', "Row $row: Menggunakan timestamp suffix untuk nomor HP setelah $max_attempts percobaan");
+                                break;
+                            }
+                        } while ($existing_hp);
+                        
+                        // Log proses generate nomor HP
+                        if ($nomor_hp) {
+                            log_message('info', "Row $row: Nomor HP Excel: $nomor_hp_excel (DUPLIKAT), Generated: $nomor_hp (Prefix: $prefix, Attempts: $attempts)");
+                            
+                            // Validasi final: pastikan nomor HP memiliki 9 digit
+                            if (strlen($nomor_hp) !== 9) {
+                                log_message('warning', "Row $row: Nomor HP generated tidak valid (length: " . strlen($nomor_hp) . "): $nomor_hp");
+                                $nomor_hp = null; // Reset jika tidak valid
+                            }
+                        }
+                    } else {
+                        // Nomor HP Excel unik, gunakan value asli
+                        $nomor_hp = $nomor_hp_excel;
+                        log_message('info', "Row $row: Nomor HP Excel '$nomor_hp_excel' unik, digunakan value asli");
+                        
+                        // Validasi: pastikan nomor HP memiliki format yang valid
+                        if (strlen($nomor_hp) < 9) {
+                            log_message('warning', "Row $row: Nomor HP Excel terlalu pendek (length: " . strlen($nomor_hp) . "): $nomor_hp");
+                        }
+                    }
+                }
+                
+                // Fallback: jika nomor HP tidak berhasil di-generate (hanya untuk kasus duplikat)
+                if (empty($nomor_hp) && !empty($nomor_hp_excel)) {
+                    $prefix = '560'; // Tetap gunakan prefix 560
+                    $timestamp_suffix = substr(time(), -6);
+                    $nomor_hp = $prefix . $timestamp_suffix;
+                    log_message('warning', "Row $row: Fallback generate nomor HP dengan timestamp: $nomor_hp");
+                }
+                
+                // ===== END MODIFIKASI NOMOR HP =====
                 $email = trim($sheet->getCellByColumnAndRow(6, $row)->getValue());
                 $gender = trim($sheet->getCellByColumnAndRow(8, $row)->getValue());
                 $status_Cek = trim($sheet->getCellByColumnAndRow(7, $row)->getValue());
