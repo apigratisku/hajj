@@ -33,7 +33,24 @@
                         </select>
                         <div class="form-text">Pilih format file yang akan di-export</div>
                     </div>
-                    
+                    <div class="mb-3">
+                        <label for="export_nama_travel" class="form-label">
+                            <i class="fas fa-plane"></i> Pilih Nama Travel
+                        </label>
+                        <select class="form-select" id="export_nama_travel" name="nama_travel">
+                            <option value="">Semua Travel</option>
+                            <?php if (!empty($travel_list)): foreach ($travel_list as $travel): ?>
+                                <option value="<?= htmlspecialchars($travel->nama_travel) ?>">
+                                    <?= htmlspecialchars($travel->nama_travel) ?>
+                                </option>
+                            <?php endforeach; endif; ?>
+                        </select>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle"></i> 
+                            Pilih nama travel untuk mengexport semua flag dokumen dari travel tersebut. 
+                            Jika dipilih, semua flag dokumen dengan nama travel yang sama akan diexport.
+                        </div>
+                    </div>
                     <div class="mb-3">
                         <label for="export_flag_doc" class="form-label">
                             <i class="fas fa-tag"></i> Pilih Flag Dokumen
@@ -93,6 +110,8 @@
                             Gunakan kotak pencarian di atas untuk menemukan flag dokumen dengan cepat.
                         </div>
                     </div>
+                    
+                    
                     
                     <div class="mb-3">
                         <label for="export_status" class="form-label">

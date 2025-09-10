@@ -51,6 +51,28 @@
                         <div class="mobile-search-form" id="mobileSearchForm" style="display: none;">
                             <form method="get" action="<?= base_url('database/index') ?>" class="mobile-form" id="mobileSearchForm">
                                 <div class="form-group">
+                                    <select name="nama_travel" class="form-select mobile-input">
+                                        <option value="">Semua Travel</option>
+                                        <?php if (!empty($travel_list)): foreach ($travel_list as $travel): ?>
+                                            <option value="<?= htmlspecialchars($travel->nama_travel) ?>" <?= (isset($_GET['nama_travel']) && $_GET['nama_travel'] === $travel->nama_travel) ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($travel->nama_travel) ?>
+                                            </option>
+                                        <?php endforeach; endif; ?>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <select name="flag_doc" class="form-select mobile-input">
+                                        <option value="">Semua Flag Dokumen</option>
+                                        <option value="null" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === 'null') ? 'selected' : '' ?>>Tanpa Flag Dokumen</option>
+                                        <?php if (!empty($flag_doc_list)): foreach ($flag_doc_list as $flag): ?>
+                                            <option value="<?= htmlspecialchars($flag->flag_doc) ?>" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === $flag->flag_doc) ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($flag->flag_doc) ?>
+                                            </option>
+                                        <?php endforeach; endif; ?>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
                                     <input type="text" name="nama" value="<?= isset($_GET['nama']) ? htmlspecialchars($_GET['nama']) : '' ?>" class="form-control mobile-input" placeholder="Nama Peserta">
                                 </div>
                                 <div class="form-group">
@@ -70,17 +92,7 @@
                                     </select>
                                 </div>
                                 
-                                <div class="form-group">
-                                    <select name="flag_doc" class="form-select mobile-input">
-                                        <option value="">Semua Flag Dokumen</option>
-                                        <option value="null" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === 'null') ? 'selected' : '' ?>>Tanpa Flag Dokumen</option>
-                                        <?php if (!empty($flag_doc_list)): foreach ($flag_doc_list as $flag): ?>
-                                            <option value="<?= htmlspecialchars($flag->flag_doc) ?>" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === $flag->flag_doc) ? 'selected' : '' ?>>
-                                                <?= htmlspecialchars($flag->flag_doc) ?>
-                                            </option>
-                                        <?php endforeach; endif; ?>
-                                    </select>
-                                </div>
+                                
                                 <div class="form-group">
                                     <select name="status" class="form-select mobile-input">
                                         <option value="">Status Data</option>
@@ -154,14 +166,15 @@
                     <div class="desktop-search-container d-none d-md-block">
                         <form method="get" action="<?= base_url('database/index') ?>" class="desktop-form">
                             <div class="row g-2 align-items-center">
-                                <div class="col-md-1">
-                                    <input type="text" name="nama" value="<?= isset($_GET['nama']) ? htmlspecialchars($_GET['nama']) : '' ?>" class="form-control form-control-sm" placeholder="Nama Peserta">
-                                </div>
-                                <div class="col-md-1">
-                                    <input type="text" name="nomor_paspor" value="<?= isset($_GET['nomor_paspor']) ? htmlspecialchars($_GET['nomor_paspor']) : '' ?>" class="form-control form-control-sm" placeholder="No Paspor" >
-                                </div>
-                                <div class="col-md-1">
-                                    <input type="text" name="no_visa" value="<?= isset($_GET['no_visa']) ? htmlspecialchars($_GET['no_visa']) : '' ?>" class="form-control form-control-sm" placeholder="No Visa">
+                            <div class="col-md-1">
+                                    <select name="nama_travel" class="form-select form-control-sm">
+                                        <option value="">Semua Travel</option>
+                                        <?php if (!empty($travel_list)): foreach ($travel_list as $travel): ?>
+                                            <option value="<?= htmlspecialchars($travel->nama_travel) ?>" <?= (isset($_GET['nama_travel']) && $_GET['nama_travel'] === $travel->nama_travel) ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($travel->nama_travel) ?>
+                                            </option>
+                                        <?php endforeach; endif; ?>
+                                    </select>
                                 </div>
                                 <div class="col-md-1">
                                     <select name="flag_doc" class="form-select form-control-sm">
@@ -174,6 +187,17 @@
                                         <?php endforeach; endif; ?>
                                     </select>
                                 </div>
+                                <div class="col-md-1">
+                                    <input type="text" name="nama" value="<?= isset($_GET['nama']) ? htmlspecialchars($_GET['nama']) : '' ?>" class="form-control form-control-sm" placeholder="Nama Peserta">
+                                </div>
+                                <div class="col-md-1">
+                                    <input type="text" name="nomor_paspor" value="<?= isset($_GET['nomor_paspor']) ? htmlspecialchars($_GET['nomor_paspor']) : '' ?>" class="form-control form-control-sm" placeholder="No Paspor" >
+                                </div>
+                                <div class="col-md-1">
+                                    <input type="text" name="no_visa" value="<?= isset($_GET['no_visa']) ? htmlspecialchars($_GET['no_visa']) : '' ?>" class="form-control form-control-sm" placeholder="No Visa">
+                                </div>
+                                
+                                
                                 <div class="col-md-1">
                                     <select name="tanggaljam" class="form-select form-control-sm">
                                         <option value="">Waktu</option>

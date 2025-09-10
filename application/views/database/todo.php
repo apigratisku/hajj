@@ -13,8 +13,16 @@
                             <div class="mobile-search-form" id="mobileSearchForm" style="display: none;">
                                 <form method="get" action="<?= base_url('todo/index') ?>" class="mobile-form" id="mobileSearchForm">
                                     <div class="form-group">
-                                        <input type="text" name="nama" class="form-control mobile-input" placeholder="Nama Peserta">
+                                        <select name="nama_travel" class="form-select mobile-input">
+                                            <option value="">Semua Travel</option>
+                                            <?php if (!empty($travel_list)): foreach ($travel_list as $travel): ?>
+                                                <option value="<?= htmlspecialchars($travel->nama_travel) ?>" <?= (isset($_GET['nama_travel']) && $_GET['nama_travel'] === $travel->nama_travel) ? 'selected' : '' ?>>
+                                                    <?= htmlspecialchars($travel->nama_travel) ?>
+                                                </option>
+                                            <?php endforeach; endif; ?>
+                                        </select>
                                     </div>
+                                    
                                     <div class="form-group">
                                         <select name="flag_doc" class="form-select mobile-input">
                                             <option value="">Semua Flag Dokumen</option>
@@ -25,6 +33,9 @@
                                                 </option>
                                             <?php endforeach; endif; ?>
                                         </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <input type="text" name="nama" class="form-control mobile-input" placeholder="Nama Peserta">
                                     </div>
                                     <div class="form-actions">
                                         <button type="submit" class="btn btn-search">
@@ -47,10 +58,18 @@
                     <div class="desktop-search-container d-none d-md-block">
                         <form method="get" action="<?= base_url('todo/index') ?>" class="desktop-form">
                             <div class="row g-2 align-items-center">
-                                <div class="col-md-2">
-                                    <input type="text" name="nama" class="form-control form-control-sm" placeholder="Nama Peserta">
+                                <div class="col-md-1">
+                                    <select name="nama_travel" class="form-select form-control-sm">
+                                        <option value="">Semua Travel</option>
+                                        <?php if (!empty($travel_list)): foreach ($travel_list as $travel): ?>
+                                            <option value="<?= htmlspecialchars($travel->nama_travel) ?>" <?= (isset($_GET['nama_travel']) && $_GET['nama_travel'] === $travel->nama_travel) ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($travel->nama_travel) ?>
+                                            </option>
+                                        <?php endforeach; endif; ?>
+                                    </select>
                                 </div>
-                                <div class="col-md-2">
+                                
+                                <div class="col-md-1">
                                     <select name="flag_doc" class="form-select form-control-sm">
                                         <option value="">Semua Flag Dokumen</option>
                                         <option value="null" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === 'null') ? 'selected' : '' ?>>Tanpa Flag Dokumen</option>
@@ -61,8 +80,11 @@
                                         <?php endforeach; endif; ?>
                                     </select>
                                 </div>
+                                <div class="col-md-1">
+                                    <input type="text" name="nama" class="form-control form-control-sm" placeholder="Nama Peserta">
+                                </div>
                                 
-                                <div class="col-md-2">
+                                <div class="col-md-1">
                                     <button type="submit" class="btn btn-brown btn-sm me-2">
                                         <i class="fas fa-search"></i> Cari
                                     </button>
@@ -71,7 +93,7 @@
                                     </a>
                                 </div>
                                 <?php if($this->session->userdata('role') == 'admin'): ?>
-                                <div class="col-md-2">
+                                <div class="col-md-1">
                                     <button type="button" class="btn btn-sm btn-danger" id="deleteMultipleBtn" style="display: none;" onclick="deleteMultipleRecords()">
                                         <i class="fas fa-trash"></i> Hapus Terpilih
                                     </button>

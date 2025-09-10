@@ -27,7 +27,7 @@
                         </div>
                     <?php endif; ?>
                     
-                    <?php if($this->session->userdata('successful_count')): ?>
+                    <?php if($this->session->userdata('successful_count') || $this->session->userdata('successful_data_cpanel') || $this->session->userdata('successful_data_cpanel_forwarding')): ?>
                         <div class="alert alert-success alert-dismissible fade show" role="alert">
                             <h6><i class="fas fa-check-circle"></i> Data Import Berhasil</h6>
                             <p class="mb-2">Sebanyak <strong><?= $this->session->userdata('successful_count') ?></strong> data berhasil diimport ke database.</p>
@@ -36,9 +36,22 @@
                                     <i class="fas fa-download"></i> Download Data Berhasil
                                 </a>
                             </div>
+                            <br>
+                            <div class="d-flex gap-2">
+                                <a href="<?= base_url('database/download_successful_data_cpanel') ?>" class="btn btn-success btn-sm">
+                                    <i class="fas fa-download"></i> Download Email Import ke Cpanel
+                                </a>
+                            </div>
+                            <br>
+                            <div class="d-flex gap-2">
+                                <a href="<?= base_url('database/download_successful_data_cpanel_forwarding') ?>" class="btn btn-success btn-sm">
+                                    <i class="fas fa-download"></i> Download Forwarding Email Import ke Cpanel
+                                </a>
+                            </div>
                             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
                     <?php endif; ?>
+              
 
                     <?php if($this->session->flashdata('rejected_count')): ?>
                         <div class="alert alert-warning alert-dismissible fade show" role="alert">

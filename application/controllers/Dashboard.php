@@ -52,6 +52,12 @@ class Dashboard extends CI_Controller {
         // Get schedule grouped by date
         $data['schedule_by_date'] = $this->transaksi_model->get_schedule_by_date($flag_doc);
         
+        // Get monthly visa import statistics for the last 12 months
+        $data['monthly_visa_stats'] = $this->transaksi_model->get_monthly_visa_import_stats();
+        
+        // Get unique travel names for filter
+        $data['travel_list'] = $this->transaksi_model->get_unique_nama_travel();
+        
         $this->load->view('templates/sidebar');
         $this->load->view('templates/header', $data);
         $this->load->view('dashboard/index', $data);
@@ -112,6 +118,36 @@ class Dashboard extends CI_Controller {
             echo json_encode(['status' => true, 'message' => 'Status berhasil diperbarui untuk jadwal ' . $tanggal . ' jam ' . $jam]);
         } else {
             echo json_encode(['status' => false, 'message' => 'Gagal memperbarui status']);
+        }
+    }
+
+    /**
+     * Get monthly visa import statistics by travel
+     */
+    public function get_monthly_visa_by_travel() {
+        // Set header untuk AJAX response
+        header('Content-Type: application/json');
+        
+        // Check if user is logged in
+        if (!$this->session->userdata('logged_in')) {
+            echo json_encode(['status' => false, 'message' => 'Unauthorized access']);
+            return;
+        }
+        
+        $nama_travel = $this->input->post('nama_travel');
+        
+        try {
+            $monthly_stats = $this->transaksi_model->get_monthly_visa_import_by_travel($nama_travel);
+            
+            echo json_encode([
+                'status' => true,
+                'data' => $monthly_stats
+            ]);
+        } catch (Exception $e) {
+            echo json_encode([
+                'status' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ]);
         }
     }
 

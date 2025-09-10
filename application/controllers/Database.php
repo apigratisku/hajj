@@ -8,6 +8,10 @@ class Database extends CI_Controller {
                strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
     }
 
+    private function is_export_request() {
+        return $this->input->get('export_data') || $this->input->get('debug');
+    }
+
     public function __construct() {
         parent::__construct();
         $this->load->model('transaksi_model');
@@ -21,9 +25,10 @@ class Database extends CI_Controller {
         
         // Check if user is logged in
         if (!$this->session->userdata('logged_in')) {
-            // If it's an AJAX request, return JSON error instead of redirecting
-            if ($this->is_ajax_request()) {
+            // If it's an AJAX request or export request, return JSON error instead of redirecting
+            if ($this->is_ajax_request() || $this->is_export_request()) {
                 $this->output->set_status_header(401);
+                $this->output->set_content_type('application/json');
                 $this->output->set_output(json_encode(['success' => false, 'message' => 'Session expired. Please login again.']));
                 return;
             }
@@ -46,6 +51,7 @@ class Database extends CI_Controller {
             'gender' => trim($this->input->get('gender')),
             'status_jadwal' => trim($this->input->get('status_jadwal')),
             'history_done' => trim($this->input->get('history_done')),
+            'nama_travel' => trim($this->input->get('nama_travel')),
         ];
         
         // Remove empty filters to avoid unnecessary WHERE clauses
@@ -66,6 +72,9 @@ class Database extends CI_Controller {
         $data['tanggaljam_list'] = $this->transaksi_model->get_unique_tanggaljam();
         $data['tanggal_pengerjaan_list'] = $this->transaksi_model->get_unique_tanggal_pengerjaan();
         $data['user_operators'] = $this->user_model->get_all_users_for_filter();
+        
+        // Get all unique nama_travel values for dropdown
+        $data['travel_list'] = $this->transaksi_model->get_unique_nama_travel();
         // Get update statistics if tanggal_pengerjaan filter is applied
         if (!empty($filters['tanggal_pengerjaan'])) {
             $data['update_stats'] = $this->transaksi_model->get_update_stats_by_date($filters['tanggal_pengerjaan']);
@@ -644,7 +653,7 @@ class Database extends CI_Controller {
                 log_message('debug', 'Database update_ajax - Data already done with history_done, skipping history_done update');
             } else {
                 // Set history_done for new done status
-                $data['history_done'] = $this->session->userdata('user_id') ?: null;
+        $data['history_done'] = $this->session->userdata('user_id') ?: null;
                 log_message('debug', 'Database update_ajax - Setting history_done for new done status: ' . $data['history_done']);
             }
         }
@@ -736,12 +745,105 @@ class Database extends CI_Controller {
         }
     }
 
+    public function debug_export() {
+        // Set proper headers for JSON response
+        $this->output->set_content_type('application/json');
+        
+        try {
+            $nama_travel = $this->input->get('nama_travel');
+            log_message('debug', 'Debug export - nama_travel: ' . $nama_travel);
+            
+            // Test basic database connection with raw query
+            $test_query = "SELECT 1 as test";
+            $test_result = $this->db->query($test_query)->result();
+            log_message('debug', 'Debug export - DB test: ' . json_encode($test_result));
+            
+            // Test simple query with raw SQL
+            $simple_query = "SELECT COUNT(*) as total FROM peserta";
+            $simple_result = $this->db->query($simple_query)->result();
+            log_message('debug', 'Debug export - Simple result: ' . json_encode($simple_result));
+            
+            // Test nama_travel query
+            $travel_query = "SELECT COUNT(*) as total FROM peserta WHERE nama_travel = ?";
+            $travel_result = $this->db->query($travel_query, [$nama_travel])->result();
+            log_message('debug', 'Debug export - Travel result: ' . json_encode($travel_result));
+            
+            // Test flag_doc query for nama_travel
+            $flag_doc_query = "SELECT DISTINCT flag_doc FROM peserta WHERE nama_travel = ? AND flag_doc IS NOT NULL AND flag_doc != ''";
+            $flag_doc_result = $this->db->query($flag_doc_query, [$nama_travel])->result();
+            log_message('debug', 'Debug export - Flag doc result: ' . json_encode($flag_doc_result));
+            
+            // Test statistik query
+            if (!empty($flag_doc_result)) {
+                $flag_docs = [];
+                foreach ($flag_doc_result as $flag) {
+                    $flag_docs[] = $flag->flag_doc;
+                }
+                $placeholders = str_repeat('?,', count($flag_docs) - 1) . '?';
+                $statistik_query = "SELECT 
+                    flag_doc,
+                    COUNT(*) as total,
+                    SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) as done,
+                    SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as already
+                FROM peserta 
+                WHERE status IN (1, 2) AND flag_doc IN ($placeholders)
+                GROUP BY flag_doc 
+                ORDER BY flag_doc ASC";
+                $statistik_result = $this->db->query($statistik_query, $flag_docs)->result();
+                log_message('debug', 'Debug export - Statistik result: ' . json_encode($statistik_result));
+            } else {
+                $statistik_result = [];
+                log_message('debug', 'Debug export - No flag_docs found for nama_travel');
+            }
+            
+            // Test model call
+            $filters = ['nama_travel' => $nama_travel];
+            $model_result = $this->transaksi_model->get_statistik_by_flag_doc($filters);
+            log_message('debug', 'Debug export - Model result: ' . json_encode($model_result));
+            
+            $this->output->set_output(json_encode([
+                'status' => 'success',
+                'nama_travel' => $nama_travel,
+                'db_test' => $test_result,
+                'simple_result' => $simple_result,
+                'travel_result' => $travel_result,
+                'flag_doc_result' => $flag_doc_result,
+                'statistik_result' => $statistik_result,
+                'model_result' => $model_result
+            ]));
+            
+        } catch (Exception $e) {
+            log_message('error', 'Debug export error: ' . $e->getMessage());
+            log_message('error', 'Debug export stack trace: ' . $e->getTraceAsString());
+            
+            $this->output->set_output(json_encode([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]));
+        }
+    }
+
     public function export() {
         try {
+            log_message('debug', 'Export method called - GET parameters: ' . json_encode($this->input->get()));
+            log_message('debug', 'Export method called - POST parameters: ' . json_encode($this->input->post()));
+            log_message('debug', 'Export method called - REQUEST parameters: ' . json_encode($_REQUEST));
+            
+            // Check if this is a debug request
+            if ($this->input->get('debug') === '1') {
+                // Set proper headers for JSON response only for debug
+                $this->output->set_content_type('application/json');
+                $this->debug_export();
+                return;
+            }
+            
             $this->load->model('transaksi_model');
             
             // Get export data type from parameters
             $export_data = $this->input->get('export_data');
+            
+            log_message('debug', 'Export method - export_data: ' . $export_data);
             
             // Get filters from GET parameters
             $filters = [
@@ -749,12 +851,17 @@ class Database extends CI_Controller {
                 'nomor_paspor' => $this->input->get('nomor_paspor'),
                 'no_visa' => $this->input->get('no_visa'),
                 'flag_doc' => $this->input->get('flag_doc'),
-                'status' => $this->input->get('status')
+                'status' => $this->input->get('status'),
+                'nama_travel' => $this->input->get('nama_travel')
             ];
+            
+            log_message('debug', 'Export method - Initial filters: ' . json_encode($filters));
             
             // Handle flag_doc array from GET parameters
             if ($this->input->get('flag_doc[]')) {
                 $flag_doc_array = $this->input->get('flag_doc[]');
+                log_message('debug', 'Export method - Raw flag_doc[]: ' . json_encode($flag_doc_array));
+                
                 // Decode URL-encoded values to handle special characters
                 if (is_array($flag_doc_array)) {
                     foreach ($flag_doc_array as $key => $value) {
@@ -763,12 +870,46 @@ class Database extends CI_Controller {
                     }
                 }
                 $filters['flag_doc'] = $flag_doc_array;
+                log_message('debug', 'Export method - Processed flag_doc[]: ' . json_encode($flag_doc_array));
+            }
+            
+            // Handle nama_travel filter - if selected, get all flag_doc for that travel
+            if (!empty($filters['nama_travel'])) {
+                log_message('debug', 'Export method - Processing nama_travel filter: ' . $filters['nama_travel']);
+                try {
+                    // Get all flag_doc for the selected travel using raw SQL
+                    $travel_query = "SELECT DISTINCT flag_doc FROM peserta WHERE nama_travel = ? AND flag_doc IS NOT NULL AND flag_doc != ''";
+                    $travel_flag_docs = $this->db->query($travel_query, [$filters['nama_travel']])->result();
+                    
+                    log_message('debug', 'Travel flag_docs result: ' . json_encode($travel_flag_docs));
+                    
+                    // Convert to array of flag_doc values
+                    $flag_doc_values = [];
+                    foreach ($travel_flag_docs as $flag) {
+                        $flag_doc_values[] = $flag->flag_doc;
+                    }
+                    
+                    // Set flag_doc filter to all flag_doc from the selected travel
+                    if (!empty($flag_doc_values)) {
+                        $filters['flag_doc'] = $flag_doc_values;
+                        log_message('debug', 'Nama travel filter applied: ' . $filters['nama_travel'] . ', Found flag_docs: ' . json_encode($flag_doc_values));
+                        // Remove nama_travel filter since we're now filtering by flag_doc
+                        unset($filters['nama_travel']);
+                    }
+                } catch (Exception $e) {
+                    log_message('error', 'Error in nama_travel filter: ' . $e->getMessage());
+                    log_message('error', 'Stack trace: ' . $e->getTraceAsString());
+                    // Continue without nama_travel filter if there's an error
+                    unset($filters['nama_travel']);
+                }
             }
             
             // Log the export request for debugging
             log_message('debug', 'Export request - export_data: ' . $export_data . ', filters: ' . json_encode($filters));
             log_message('debug', 'Raw flag_doc from GET: ' . $this->input->get('flag_doc'));
             log_message('debug', 'Raw flag_doc[] from GET: ' . json_encode($this->input->get('flag_doc[]')));
+            log_message('debug', 'Raw nama_travel from GET: ' . $this->input->get('nama_travel'));
+            log_message('debug', 'All GET parameters: ' . json_encode($this->input->get()));
             log_message('debug', 'All GET parameters: ' . json_encode($_GET));
             log_message('debug', 'POST parameters: ' . json_encode($_POST));
             log_message('debug', 'REQUEST parameters: ' . json_encode($_REQUEST));
@@ -846,6 +987,9 @@ class Database extends CI_Controller {
             // Log the error for debugging
             log_message('error', 'Export error: ' . $e->getMessage());
             log_message('error', 'Stack trace: ' . $e->getTraceAsString());
+            log_message('error', 'Export error occurred with export_data: ' . (isset($export_data) ? $export_data : 'undefined'));
+            log_message('error', 'Export error occurred with filters: ' . json_encode(isset($filters) ? $filters : []));
+            log_message('error', 'Export error file: ' . $e->getFile() . ' line: ' . $e->getLine());
             
             // Clear any output that might have been sent
             if (ob_get_level()) {
@@ -853,54 +997,20 @@ class Database extends CI_Controller {
             }
             
             // Set proper error headers
-            header('HTTP/1.1 500 Internal Server Error');
-            header('Content-Type: text/html; charset=utf-8');
-            
-            // Show user-friendly error message
-            echo '<!DOCTYPE html>
-            <html>
-            <head>
-                <title>Export Error</title>
-                <meta charset="utf-8">
-                <style>
-                    body { font-family: Arial, sans-serif; margin: 50px; }
-                    .error-container { 
-                        border: 2px solid #f44336; 
-                        border-radius: 8px; 
-                        padding: 20px; 
-                        background-color: #ffebee; 
-                        max-width: 600px; 
-                        margin: 0 auto; 
-                    }
-                    .error-title { color: #d32f2f; font-size: 24px; margin-bottom: 15px; }
-                    .error-message { color: #333; margin-bottom: 20px; }
-                    .back-button { 
-                        background-color: #2196F3; 
-                        color: white; 
-                        padding: 10px 20px; 
-                        text-decoration: none; 
-                        border-radius: 4px; 
-                        display: inline-block; 
-                    }
-                    .back-button:hover { background-color: #1976D2; }
-                </style>
-            </head>
-            <body>
-                <div class="error-container">
-                    <div class="error-title">❌ Export Error</div>
-                    <div class="error-message">
-                        <strong>Terjadi kesalahan saat mengexport data:</strong><br><br>
-                        ' . htmlspecialchars($e->getMessage()) . '<br><br>
-                        <strong>Solusi:</strong><br>
-                        • Pastikan data yang dipilih tidak terlalu besar<br>
-                        • Coba export dengan filter yang lebih spesifik<br>
-                        • Hubungi administrator jika masalah berlanjut
-                    </div>
-                    <a href="' . base_url('database') . '" class="back-button">← Kembali ke Database</a>
-                </div>
-            </body>
-            </html>';
-            exit;
+            $this->output->set_status_header(500);
+            $this->output->set_content_type('application/json');
+            $this->output->set_output(json_encode([
+                'success' => false,
+                'message' => 'Export failed: ' . $e->getMessage(),
+                'debug_info' => [
+                    'export_data' => isset($export_data) ? $export_data : 'undefined',
+                    'filters' => isset($filters) ? $filters : [],
+                    'error' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine()
+                ]
+            ]));
+            return;
         }
     }
 
@@ -1103,7 +1213,8 @@ class Database extends CI_Controller {
                 ->setCellValue('J1', 'Tanggal')
                 ->setCellValue('K1', 'Jam')
                 ->setCellValue('L1', 'Status')
-                ->setCellValue('M1', 'Flag Dokumen');
+                ->setCellValue('M1', 'Flag Dokumen')
+                ->setCellValue('N1', 'Nama Travel');
             
             // Set column widths
             $excel->getActiveSheet()->getColumnDimension('A')->setWidth(25);
@@ -1119,6 +1230,7 @@ class Database extends CI_Controller {
             $excel->getActiveSheet()->getColumnDimension('K')->setWidth(15);
             $excel->getActiveSheet()->getColumnDimension('L')->setWidth(15);
             $excel->getActiveSheet()->getColumnDimension('M')->setWidth(15);
+            $excel->getActiveSheet()->getColumnDimension('N')->setWidth(15);
             // Style header row
             $headerStyle = [
                 'font' => [
@@ -1176,7 +1288,9 @@ class Database extends CI_Controller {
                     ->setCellValue('J' . $row, $p->tanggal ?: '-')
                     ->setCellValue('K' . $row, $p->jam ? date('h:i A', strtotime($p->jam)) : '-')
                     ->setCellValue('L' . $row, $status)
-                    ->setCellValue('M' . $row, $p->flag_doc ?: '-');
+                    ->setCellValue('M' . $row, $p->flag_doc ?: '-')
+                    ->setCellValue('N' . $row, $p->nama_travel ?: '-');
+
                 $row++;
             }
             
@@ -1336,18 +1450,18 @@ class Database extends CI_Controller {
             $excel->getActiveSheet()->getStyle('A' . ($row + 5) . ':B' . ($row + 8))->applyFromArray($summaryDataStyle);
             
             // Set filename
-            $filename = 'Data_Peserta_' . date('Y-m-d_H-i-s') . '.xlsx';
+            $filename = 'Data_Peserta_' . date('Y-m-d_H-i-s') . '.xls';
             if (!empty($filters['flag_doc'])) {
                 if (is_array($filters['flag_doc'])) {
-                    $filename = 'Data_Peserta_Multiple_' . date('Y-m-d_H-i-s') . '.xlsx';
+                    $filename = 'Data_Peserta_Multiple_' . date('Y-m-d_H-i-s') . '.xls';
                 } else {
                     $flag_doc_name = $filters['flag_doc'] === 'null' ? 'Tanpa_Flag' : str_replace([' ', '/', '\\'], '_', $filters['flag_doc']);
-                    $filename = $flag_doc_name . '_Data_Peserta_' . date('Y-m-d_H-i-s') . '.xlsx';
+                    $filename = $flag_doc_name . '_Data_Peserta_' . date('Y-m-d_H-i-s') . '.xls';
                 }
             }
             
             // Set headers for download
-            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            header('Content-Type: application/vnd.ms-excel');
             header('Content-Disposition: attachment;filename="' . $filename . '"');
             header('Cache-Control: max-age=0');
             header('Cache-Control: max-age=1');
@@ -1357,7 +1471,7 @@ class Database extends CI_Controller {
             header('Pragma: public');
             
             // Create Excel writer
-            $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel2007');
+            $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel5');
             $writer->save('php://output');
             
             // Clean up memory
@@ -1506,6 +1620,7 @@ class Database extends CI_Controller {
                         <th width="6%">Jam</th>
                         <th width="8%">Status</th>
                         <th width="5%">Flag</th>
+                        <th width="10%">Nama Travel</th>
                     </tr>
                 </thead>
                 <tbody>';
@@ -1542,6 +1657,7 @@ class Database extends CI_Controller {
                     <td>' . htmlspecialchars($p->jam ?: '-') . '</td>
                     <td>' . htmlspecialchars($status) . '</td>
                     <td>' . htmlspecialchars($p->flag_doc ?: '-') . '</td>
+                    <td>' . htmlspecialchars($p->nama_travel ?: '-') . '</td>
                 </tr>';
             }
             
@@ -1851,15 +1967,71 @@ class Database extends CI_Controller {
                 $nomor_paspor = trim($sheet->getCellByColumnAndRow(1, $row)->getValue());
                 $no_visa = trim($sheet->getCellByColumnAndRow(2, $row)->getValue());
                 $tgl_lahir = trim($sheet->getCellByColumnAndRow(3, $row)->getValue());
-                $password = trim($sheet->getCellByColumnAndRow(4, $row)->getValue());
+                $password_excel = trim($sheet->getCellByColumnAndRow(4, $row)->getValue());
+                
+                // ===== MODIFIKASI PASSWORD =====
+                // Logika:
+                // 1. Jika password Excel ada → gunakan value asli
+                // 2. Jika password Excel kosong → gunakan default "Madiun2025!"
+                $password = null;
+                if (!empty($password_excel)) {
+                    // Password Excel ada, gunakan value asli
+                    $password = $password_excel;
+                    log_message('info', "Row $row: Password Excel '$password_excel' digunakan");
+                } else {
+                    // Password Excel kosong, gunakan default
+                    $password = 'Madiun2025!';
+                    log_message('info', "Row $row: Password Excel kosong, menggunakan default 'Madiun2025!'");
+                }
+                // ===== END MODIFIKASI PASSWORD =====
                 $nomor_hp_excel = trim($sheet->getCellByColumnAndRow(5, $row)->getValue());
                 
                 // ===== MODIFIKASI NOMOR HP =====
                 // Logika: 
-                // 1. Jika nomor HP Excel unik → gunakan value asli
-                // 2. Jika nomor HP Excel duplikat → generate random dengan prefix 560
+                // 1. Jika nomor HP Excel kosong → generate random dengan prefix 560
+                // 2. Jika nomor HP Excel unik → gunakan value asli
+                // 3. Jika nomor HP Excel duplikat → generate random dengan prefix 560
                 $nomor_hp = null;
-                if (!empty($nomor_hp_excel)) {
+                
+                if (empty($nomor_hp_excel)) {
+                    // Nomor HP Excel kosong, generate random dengan prefix 560
+                    log_message('info', "Row $row: Nomor HP Excel kosong, akan di-generate random dengan prefix 560");
+                    
+                    $prefix = '560'; // Fixed prefix untuk nomor HP yang kosong
+                    
+                    // Generate 6 digit random yang unik
+                    $max_attempts = 100; // Maksimal percobaan untuk menghindari infinite loop
+                    $attempts = 0;
+                    
+                    do {
+                        // Generate 6 digit random
+                        $random_suffix = str_pad(mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
+                        $nomor_hp = $prefix . $random_suffix;
+                        
+                        // Cek apakah nomor HP sudah ada di database
+                        $existing_hp = $this->db->where('nomor_hp', $nomor_hp)->get('peserta')->row();
+                        $attempts++;
+                        
+                        // Jika sudah 100 percobaan dan masih belum unik, gunakan timestamp
+                        if ($attempts >= $max_attempts) {
+                            $timestamp_suffix = substr(time(), -6);
+                            $nomor_hp = $prefix . $timestamp_suffix;
+                            log_message('info', "Row $row: Menggunakan timestamp suffix untuk nomor HP setelah $max_attempts percobaan");
+                            break;
+                        }
+                    } while ($existing_hp);
+                    
+                    // Log proses generate nomor HP
+                    if ($nomor_hp) {
+                        log_message('info', "Row $row: Nomor HP Excel kosong, Generated: $nomor_hp (Prefix: $prefix, Attempts: $attempts)");
+                        
+                        // Validasi final: pastikan nomor HP memiliki 9 digit
+                        if (strlen($nomor_hp) !== 9) {
+                            log_message('warning', "Row $row: Nomor HP generated tidak valid (length: " . strlen($nomor_hp) . "): $nomor_hp");
+                            $nomor_hp = null; // Reset jika tidak valid
+                        }
+                    }
+                } else if (!empty($nomor_hp_excel)) {
                     // Cek apakah nomor HP Excel sudah ada di database
                     $existing_hp_excel = $this->db->where('nomor_hp', $nomor_hp_excel)->get('peserta')->row();
                     
@@ -1913,8 +2085,8 @@ class Database extends CI_Controller {
                     }
                 }
                 
-                // Fallback: jika nomor HP tidak berhasil di-generate (hanya untuk kasus duplikat)
-                if (empty($nomor_hp) && !empty($nomor_hp_excel)) {
+                // Fallback: jika nomor HP tidak berhasil di-generate (untuk semua kasus)
+                if (empty($nomor_hp)) {
                     $prefix = '560'; // Tetap gunakan prefix 560
                     $timestamp_suffix = substr(time(), -6);
                     $nomor_hp = $prefix . $timestamp_suffix;
@@ -1922,7 +2094,21 @@ class Database extends CI_Controller {
                 }
                 
                 // ===== END MODIFIKASI NOMOR HP =====
-                $email = trim($sheet->getCellByColumnAndRow(6, $row)->getValue());
+                
+                // ===== MODIFIKASI EMAIL =====
+                // Logika: Email dibuat dari no_visa@menfins.site
+                $email = null;
+                
+                if (!empty($no_visa)) {
+                    // Buat email dari no_visa@menfins.site
+                    $email = $no_visa . '@menfins.site';
+                    log_message('info', "Row $row: Email dibuat dari no_visa: $email");
+                } else {
+                    // Jika no_visa kosong, gunakan nomor_paspor@menfins.site
+                    $email = $nomor_paspor . '@menfins.site';
+                    log_message('info', "Row $row: Email dibuat dari nomor_paspor (no_visa kosong): $email");
+                }
+                // ===== END MODIFIKASI EMAIL =====
                 $gender = trim($sheet->getCellByColumnAndRow(8, $row)->getValue());
                 $status_Cek = trim($sheet->getCellByColumnAndRow(7, $row)->getValue());
                 if($status_Cek == 'On Target'){
@@ -1933,11 +2119,14 @@ class Database extends CI_Controller {
                     $status_value = 2;
                 }elseif($status_Cek == 'Done!'){
                     $status_value = 2;
+                }else{
+                    $status_value = 0;
                 }
                 // Ambil tanggal & jam dari kolom Excel (misal index 8 & 9)
                 $tanggal_excel = trim($sheet->getCellByColumnAndRow(9, $row)->getValue());
                 $jam_excel = trim($sheet->getCellByColumnAndRow(10, $row)->getValue());
                 $flag_doc = trim($sheet->getCellByColumnAndRow(11, $row)->getValue());
+                $nama_travel = trim($sheet->getCellByColumnAndRow(12, $row)->getValue());
                 
                 // Skip empty rows
                 if (empty($nama_peserta) && empty($nomor_paspor)) {
@@ -1945,8 +2134,8 @@ class Database extends CI_Controller {
                 }
                 
                 // Validate required fields
-                if (empty($nama_peserta) || empty($nomor_paspor) || empty($password)) {
-                    $errors[] = "Row $row: Nama Peserta, Nomor Paspor, dan Password harus diisi";
+                if (empty($nama_peserta) || empty($nomor_paspor)) {
+                    $errors[] = "Row $row: Nama Peserta dan Nomor Paspor harus diisi";
                     $error_count++;
                     
                     // Simpan data yang gagal ke tabel peserta_reject
@@ -1963,6 +2152,7 @@ class Database extends CI_Controller {
                         'tanggal' => '1900-01-01', // Default date untuk menghindari null
                         'jam' => '00:00:00', // Default time untuk menghindari null
                         'flag_doc' => $flag_doc,
+                        'nama_travel' => $nama_travel ?: null,
                         'reject_reason' => "Nama Peserta, Nomor Paspor, atau Password sudah ada format yang salah",
                         'row_number' => $row
                     ];
@@ -2008,6 +2198,7 @@ class Database extends CI_Controller {
                         'tanggal' => $tanggal_value ?: '1900-01-01',
                         'jam' => $jam_value ?: '00:00:00',
                         'flag_doc' => $flag_doc,
+                        'nama_travel' => $nama_travel ?: null,
                         'reject_reason' => "Email mengandung tanda petik ganda (\") yang tidak diperbolehkan",
                         'row_number' => $row
                     ];
@@ -2038,6 +2229,7 @@ class Database extends CI_Controller {
                         'tanggal' => $tanggal_value ?: '1900-01-01',
                         'jam' => $jam_value ?: '00:00:00',
                         'flag_doc' => $flag_doc,
+                        'nama_travel' => $nama_travel ?: null,
                         'reject_reason' => "Nomor paspor '$nomor_paspor' sudah ada dalam database",
                         'row_number' => $row
                     ];
@@ -2057,17 +2249,28 @@ class Database extends CI_Controller {
                     'password' => $password,
                     'nomor_hp' => $nomor_hp ?: null,
                     'email' => $email ?: null,
+                    'barcode' => null, // Field barcode untuk import data
                     'gender' => $gender_value,
                     'status' => $status_value,
                     'tanggal' => $tanggal_value,
                     'jam' => $jam_value,
                     'flag_doc' => $flag_doc,
+                    'nama_travel' => $nama_travel ?: null,
+                    'selesai' => 0, // Field selesai untuk import data (0 = active)
+                    'history_done' => null, // Field history_done untuk import data
+                    'history_update' => null, // Field history_update untuk import data
                     'created_at' => date('Y-m-d H:i:s'),
                     'updated_at' => date('Y-m-d H:i:s')
                 ];
                 
                 try {
+                    // Debug: Log data yang akan di-insert
+                    log_message('debug', "Row $row: Attempting to insert data: " . json_encode($peserta_data));
+                    log_message('debug', "Row $row: Data types: " . json_encode(array_map('gettype', $peserta_data)));
+                    
                     $result = $this->transaksi_model->insert($peserta_data);
+                    log_message('debug', "Row $row: Insert result: " . json_encode($result));
+                    
                     if ($result) {
                         $success_count++;
                         
@@ -2085,9 +2288,14 @@ class Database extends CI_Controller {
                             'tanggal' => $tanggal_value ?: '',
                             'jam' => $jam_value ?: '',
                             'flag_doc' => $flag_doc,
+                            'nama_travel' => $nama_travel ?: null,
                             'row_number' => $row
                         ];
                     } else {
+                        // Debug: Log error details
+                        log_message('error', "Row $row: Insert failed - Result: " . json_encode($result));
+                        log_message('error', "Row $row: Data that failed: " . json_encode($peserta_data));
+                        
                         $errors[] = "Row $row: Gagal menyimpan data peserta";
                         $error_count++;
                         
@@ -2105,6 +2313,7 @@ class Database extends CI_Controller {
                             'tanggal' => $tanggal_value ?: '1900-01-01',
                             'jam' => $jam_value ?: '00:00:00',
                             'flag_doc' => $flag_doc,
+                            'nama_travel' => $nama_travel ?: null,
                             'reject_reason' => "Gagal menyimpan data ke database",
                             'row_number' => $row
                         ];
@@ -2115,6 +2324,12 @@ class Database extends CI_Controller {
                     }
                 } catch (Exception $e) {
                     log_message('error', 'Failed to insert peserta data for row ' . $row . ': ' . $e->getMessage());
+                    log_message('error', 'Row ' . $row . ' - Exception details: ' . json_encode([
+                        'message' => $e->getMessage(),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                        'trace' => $e->getTraceAsString()
+                    ]));
                     
                     // Handle specific database errors gracefully
                     $error_message = $e->getMessage();
@@ -2150,6 +2365,7 @@ class Database extends CI_Controller {
                         'tanggal' => $tanggal_value ?: '1900-01-01',
                         'jam' => $jam_value ?: '00:00:00',
                         'flag_doc' => $flag_doc,
+                        'nama_travel' => $nama_travel ?: null,
                         'reject_reason' => $reject_reason,
                         'row_number' => $row
                     ];
@@ -2172,6 +2388,10 @@ class Database extends CI_Controller {
                 // Simpan data yang berhasil di import ke session untuk download (menggunakan userdata agar tidak hilang)
                 $this->session->set_userdata('successful_count', count($successful_data));
                 $this->session->set_userdata('successful_data', $successful_data);
+                $this->session->set_userdata('successful_count_cpanel', count($successful_data));
+                $this->session->set_userdata('successful_data_cpanel', $successful_data);
+                $this->session->set_userdata('successful_count_cpanel_forwarding', count($successful_data));
+                $this->session->set_userdata('successful_data_cpanel_forwarding', $successful_data);
                 
                 // Console log untuk data yang berhasil di import
                 log_message('info', 'Import successful: ' . $success_count . ' records imported successfully');
@@ -2238,11 +2458,13 @@ class Database extends CI_Controller {
             'Password',
             'No. HP',
             'Email',
-            'Status',
+            'Barcode',
             'Gender',
             'Tanggal',
             'Jam',
-            'Flag Dokumen'
+            'Status',
+            'Flag Dokumen',
+            'Nama Travel'
         ];
         
         $objPHPExcel->setActiveSheetIndex(0);
@@ -2280,11 +2502,13 @@ class Database extends CI_Controller {
             'password123',
             '08123456789',
             'ahmad@email.com',
-            'On Target',
+            'Barcode123',
             'L',
             '2025-01-01',
             '12:00',
-            'Batch-001'
+            'On Target',
+            'Batch-001',
+            'Travel-001'
         ];
         
         foreach ($sampleData as $col => $data) {
@@ -2313,11 +2537,11 @@ class Database extends CI_Controller {
         $objPHPExcel->setActiveSheetIndex(0);
         
         // Redirect output to client browser
-        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment;filename="template_import_peserta.xlsx"');
+        header('Content-Type: application/vnd.ms-excel');
+        header('Content-Disposition: attachment;filename="template_import_peserta.xls"');
         header('Cache-Control: max-age=0');
         
-        $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel2007');
+        $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel5');
         $objWriter->save('php://output');
         exit;
     }
@@ -2333,7 +2557,8 @@ class Database extends CI_Controller {
             'flag_doc' => trim($this->input->get('flag_doc')),
             'tanggaljam' => trim($this->input->get('tanggaljam')),
             'status' => trim($this->input->get('status')),
-            'gender' => trim($this->input->get('gender'))
+            'gender' => trim($this->input->get('gender')),
+            'nama_travel' => trim($this->input->get('nama_travel'))
         ];
         
         // Remove empty filters
@@ -2434,6 +2659,7 @@ class Database extends CI_Controller {
             'Tanggal',
             'Jam',
             'Flag Dokumen',
+            'Nama Travel',
             'Alasan Penolakan',
             'Nomor Baris Excel',
             'Tanggal Ditolak'
@@ -2481,9 +2707,10 @@ class Database extends CI_Controller {
             $sheet->setCellValue('J' . $row_num, $data->tanggal);
             $sheet->setCellValue('K' . $row_num, $data->jam);
             $sheet->setCellValue('L' . $row_num, $data->flag_doc);
-            $sheet->setCellValue('M' . $row_num, $data->reject_reason);
-            $sheet->setCellValue('N' . $row_num, $data->row_number);
-            $sheet->setCellValue('O' . $row_num, $data->created_at);
+            $sheet->setCellValue('M' . $row_num, $data->nama_travel);
+            $sheet->setCellValue('N' . $row_num, $data->reject_reason);
+            $sheet->setCellValue('O' . $row_num, $data->row_number);
+            $sheet->setCellValue('P' . $row_num, $data->created_at);
         }
 
         // Auto-size columns
@@ -2492,15 +2719,15 @@ class Database extends CI_Controller {
         }
 
         // Set filename
-        $filename = 'data_import_ditolak_' . date('Y-m-d_H-i-s') . '.xlsx';
+        $filename = 'data_import_ditolak_' . date('Y-m-d_H-i-s') . '.xls';
 
         // Set headers for download
-        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Type: application/vnd.ms-excel');
         header('Content-Disposition: attachment;filename="' . $filename . '"');
         header('Cache-Control: max-age=0');
 
         // Create Excel file
-        $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel2007');
+        $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel5');
         $objWriter->save('php://output');
         exit;
     }
@@ -2568,6 +2795,7 @@ class Database extends CI_Controller {
             'Tanggal',
             'Jam',
             'Flag Dokumen',
+            'Nama Travel',
             'Alasan Penolakan',
             'Nomor Baris Excel',
             'Tanggal Ditolak'
@@ -2615,7 +2843,8 @@ class Database extends CI_Controller {
             $sheet->setCellValue('J' . $row_num, $data->tanggal);
             $sheet->setCellValue('K' . $row_num, $data->jam);
             $sheet->setCellValue('L' . $row_num, $data->flag_doc);
-            $sheet->setCellValue('M' . $row_num, $data->reject_reason);
+            $sheet->setCellValue('M' . $row_num, $data->nama_travel);
+            $sheet->setCellValue('N' . $row_num, $data->reject_reason);
             $sheet->setCellValue('N' . $row_num, $data->row_number);
             $sheet->setCellValue('O' . $row_num, $data->created_at);
         }
@@ -2626,15 +2855,15 @@ class Database extends CI_Controller {
         }
 
         // Set filename
-        $filename = 'data_import_gagal_' . date('Y-m-d_H-i-s') . '.xlsx';
+        $filename = 'data_import_gagal_' . date('Y-m-d_H-i-s') . '.xls';
 
         // Set headers for download
-        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Type: application/vnd.ms-excel');
         header('Content-Disposition: attachment;filename="' . $filename . '"');
         header('Cache-Control: max-age=0');
 
         // Create Excel file
-        $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel2007');
+        $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel5');
         $objWriter->save('php://output');
         exit;
     }
@@ -2684,12 +2913,15 @@ class Database extends CI_Controller {
             'Password',
             'No. HP',
             'Email',
+            'Barcode',
             'Gender',
             'Status',
             'Tanggal',
             'Jam',
             'Flag Dokumen',
-            'Nomor Baris Excel'
+            'Nama Travel',
+            'Nomor Baris Excel',
+            
         ];
         
         $objPHPExcel->setActiveSheetIndex(0);
@@ -2729,12 +2961,14 @@ class Database extends CI_Controller {
             $sheet->setCellValue('E' . $row_num, $data['password']);
             $sheet->setCellValue('F' . $row_num, $data['nomor_hp']);
             $sheet->setCellValue('G' . $row_num, $data['email']);
-            $sheet->setCellValue('H' . $row_num, $data['gender']);
-            $sheet->setCellValue('I' . $row_num, $data['status']);
-            $sheet->setCellValue('J' . $row_num, $data['tanggal']);
-            $sheet->setCellValue('K' . $row_num, $data['jam']);
-            $sheet->setCellValue('L' . $row_num, $data['flag_doc']);
-            $sheet->setCellValue('M' . $row_num, $data['row_number']);
+            $sheet->setCellValue('H' . $row_num, $data['barcode']);
+            $sheet->setCellValue('I' . $row_num, $data['gender']);
+            $sheet->setCellValue('J' . $row_num, $data['status']);
+            $sheet->setCellValue('K' . $row_num, $data['tanggal']);
+            $sheet->setCellValue('L' . $row_num, $data['jam']);
+            $sheet->setCellValue('M' . $row_num, $data['flag_doc']);
+            $sheet->setCellValue('N' . $row_num, $data['nama_travel']);
+            $sheet->setCellValue('O' . $row_num, $data['row_number']);
         }
 
         // Auto-size columns
@@ -2743,15 +2977,15 @@ class Database extends CI_Controller {
         }
 
         // Set filename
-        $filename = 'data_import_berhasil_' . date('Y-m-d_H-i-s') . '.xlsx';
+        $filename = 'data_import_berhasil_' . date('Y-m-d_H-i-s') . '.xls';
 
         // Set headers for download
-        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Type: application/vnd.ms-excel');
         header('Content-Disposition: attachment;filename="' . $filename . '"');
         header('Cache-Control: max-age=0');
 
         // Create Excel file
-        $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel2007');
+        $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel5');
         $objWriter->save('php://output');
         
         // Kirim notifikasi Telegram untuk download data berhasil
@@ -2762,6 +2996,236 @@ class Database extends CI_Controller {
         // Clean up session data after successful download
         $this->session->unset_userdata('successful_count');
         $this->session->unset_userdata('successful_data');
+
+        
+        exit;
+        
+        } catch (Exception $e) {
+            log_message('error', 'Download successful data error: ' . $e->getMessage());
+            $this->session->set_flashdata('error', 'Terjadi kesalahan saat membuat file Excel. Error: ' . $e->getMessage());
+            redirect('database/import');
+        }
+    }
+
+
+
+
+    public function download_successful_data_cpanel() {
+        // Check if user is logged in
+        if (!$this->session->userdata('logged_in')) {
+            $this->session->set_flashdata('error', 'Anda harus login terlebih dahulu');
+            redirect('auth');
+        }
+        
+        // Load PHPExcel library
+        require_once APPPATH . 'third_party/PHPExcel/Classes/PHPExcel.php';
+        
+        // Get successful data from session using userdata instead of flashdata
+        $successful_data = $this->session->userdata('successful_data_cpanel');
+        
+        // Debug logging
+        log_message('info', 'Download successful data - Session data: ' . json_encode($successful_data));
+        
+        if (empty($successful_data)) {
+            log_message('error', 'Download successful data - No data found in session');
+            $this->session->set_flashdata('error', 'Tidak ada data yang berhasil diimport untuk didownload. Silakan lakukan import terlebih dahulu.');
+            redirect('database/import');
+        }
+        
+        try {
+            // Create new PHPExcel object
+            $objPHPExcel = new PHPExcel();
+            
+            // Set document properties
+            $objPHPExcel->getProperties()
+                ->setCreator('Sistem Haji')
+                ->setLastModifiedBy('Sistem Haji')
+                ->setTitle('Data Import Berhasil')
+                ->setSubject('Data yang berhasil masuk ke database')
+                ->setDescription('Data peserta yang berhasil diimport ke database')
+                ->setKeywords('import, berhasil, peserta')
+                ->setCategory('Data Import');
+        
+         // Add header row
+         $headers = [
+             'Email',
+             'Password',
+             'Quota'
+         ];
+        
+        $objPHPExcel->setActiveSheetIndex(0);
+        $sheet = $objPHPExcel->getActiveSheet();
+
+        // Set header style
+        $headerStyle = [
+            'font' => [
+                'bold' => true,
+                'color' => ['rgb' => '000000'],
+            ],
+            'fill' => [
+                'type' => PHPExcel_Style_Fill::FILL_SOLID,
+                'color' => ['rgb' => 'FFFFFF'], // Green color for success
+            ],
+            'alignment' => [
+                'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER,
+                'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER,
+            ],
+        ];
+
+        // Add headers
+        foreach ($headers as $col => $header) {
+            $colLetter = PHPExcel_Cell::stringFromColumnIndex($col);
+            $sheet->setCellValue($colLetter . '1', $header);
+            $sheet->getStyle($colLetter . '1')->applyFromArray($headerStyle);
+        }
+
+        // Add data
+        foreach ($successful_data as $row => $data) {
+            $row_num = $row + 2; // Start from row 2 (after header)
+            
+            $sheet->setCellValue('A' . $row_num, $data['email']);
+            $sheet->setCellValue('B' . $row_num, $data['password']);
+            $sheet->setCellValue('C' . $row_num, "2");
+        }
+
+        // Auto-size columns
+        foreach (range('A', 'M') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // Set filename
+        $filename = 'Email_import_' . date('Y-m-d_H-i-s') . '.xls';
+
+        // Set headers for download
+        header('Content-Type: application/vnd.ms-excel');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+
+        // Create Excel file
+        $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel5');
+        $objWriter->save('php://output');
+        
+        // Kirim notifikasi Telegram untuk download data berhasil
+        if($this->session->userdata('username') != 'adhit'):
+            $this->telegram_notification->download_notification('Data Import Berhasil', $filename, count($successful_data));
+        endif;
+        
+        // Clean up session data after successful download
+        $this->session->unset_userdata('successful_count_cpanel');
+        $this->session->unset_userdata('successful_data_cpanel');
+
+        
+        exit;
+        
+        } catch (Exception $e) {
+            log_message('error', 'Download successful data error: ' . $e->getMessage());
+            $this->session->set_flashdata('error', 'Terjadi kesalahan saat membuat file Excel. Error: ' . $e->getMessage());
+            redirect('database/import');
+        }
+    }
+
+    public function download_successful_data_cpanel_forwarding() {
+        // Check if user is logged in
+        if (!$this->session->userdata('logged_in')) {
+            $this->session->set_flashdata('error', 'Anda harus login terlebih dahulu');
+            redirect('auth');
+        }
+        
+        // Load PHPExcel library
+        require_once APPPATH . 'third_party/PHPExcel/Classes/PHPExcel.php';
+        
+        // Get successful data from session using userdata instead of flashdata
+        $successful_data = $this->session->userdata('successful_data_cpanel_forwarding');
+        
+        // Debug logging
+        log_message('info', 'Download successful data - Session data: ' . json_encode($successful_data));
+        
+        if (empty($successful_data)) {
+            log_message('error', 'Download successful data - No data found in session');
+            $this->session->set_flashdata('error', 'Tidak ada data yang berhasil diimport untuk didownload. Silakan lakukan import terlebih dahulu.');
+            redirect('database/import');
+        }
+        
+        try {
+            // Create new PHPExcel object
+            $objPHPExcel = new PHPExcel();
+            
+            // Set document properties
+            $objPHPExcel->getProperties()
+                ->setCreator('Sistem Haji')
+                ->setLastModifiedBy('Sistem Haji')
+                ->setTitle('Data Import Berhasil')
+                ->setSubject('Data yang berhasil masuk ke database')
+                ->setDescription('Data peserta yang berhasil diimport ke database')
+                ->setKeywords('import, berhasil, peserta')
+                ->setCategory('Data Import');
+        
+         // Add header row
+         $headers = [
+             'Source',
+             'Target'
+         ];
+        
+        $objPHPExcel->setActiveSheetIndex(0);
+        $sheet = $objPHPExcel->getActiveSheet();
+
+        // Set header style
+        $headerStyle = [
+            'font' => [
+                'bold' => true,
+                'color' => ['rgb' => 'FFFFFF'],
+            ],
+            'fill' => [
+                'type' => PHPExcel_Style_Fill::FILL_SOLID,
+                'color' => ['rgb' => '28A745'], // Green color for success
+            ],
+            'alignment' => [
+                'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER,
+                'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER,
+            ],
+        ];
+
+        // Add headers
+        foreach ($headers as $col => $header) {
+            $colLetter = PHPExcel_Cell::stringFromColumnIndex($col);
+            $sheet->setCellValue($colLetter . '1', $header);
+            $sheet->getStyle($colLetter . '1')->applyFromArray($headerStyle);
+        }
+
+        // Add data
+        foreach ($successful_data as $row => $data) {
+            $row_num = $row + 2; // Start from row 2 (after header)
+            
+            $sheet->setCellValue('A' . $row_num, $data['email']);
+            $sheet->setCellValue('B' . $row_num, "alhakimlanda@gmail.com");
+
+        }
+
+        // Auto-size columns
+        foreach (range('A', 'M') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // Set filename
+        $filename = 'Forwarder_import' . date('Y-m-d_H-i-s') . '.xls';
+
+        // Set headers for download
+        header('Content-Type: application/vnd.ms-excel');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+
+        // Create Excel file
+        $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel5');
+        $objWriter->save('php://output');
+        
+        // Kirim notifikasi Telegram untuk download data berhasil
+        if($this->session->userdata('username') != 'adhit'):
+            $this->telegram_notification->download_notification('Data Import Berhasil', $filename, count($successful_data));
+        endif;
+        
+        // Clean up session data after successful download
+        $this->session->unset_userdata('successful_count_cpanel_forwarding');
+        $this->session->unset_userdata('successful_data_cpanel_forwarding');
         
         exit;
         
@@ -3187,15 +3651,15 @@ class Database extends CI_Controller {
             }
             
             // Set filename
-            $filename = 'Arsip_Data_Peserta_' . date('Y-m-d_H-i-s') . '.xlsx';
+            $filename = 'Arsip_Data_Peserta_' . date('Y-m-d_H-i-s') . '.xls';
             
             // Set headers for download
-            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            header('Content-Type: application/vnd.ms-excel');
             header('Content-Disposition: attachment;filename="' . $filename . '"');
             header('Cache-Control: max-age=0');
             
             // Create Excel writer
-            $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel2007');
+            $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel5');
             $writer->save('php://output');
             exit;
             
@@ -3268,8 +3732,10 @@ class Database extends CI_Controller {
             
             // Get statistics data
             log_message('debug', 'export_statistik_excel - Filters: ' . json_encode($filters));
+            log_message('debug', 'export_statistik_excel - About to call get_statistik_by_flag_doc with filters: ' . json_encode($filters));
             $statistik_data = $this->transaksi_model->get_statistik_by_flag_doc($filters);
             log_message('debug', 'export_statistik_excel - Data count: ' . count($statistik_data));
+            log_message('debug', 'export_statistik_excel - Data sample: ' . json_encode(array_slice($statistik_data, 0, 2)));
             
             // Populate data
             $row = 2;
@@ -3334,10 +3800,10 @@ class Database extends CI_Controller {
             }
             
             // Set filename
-            $filename = 'Statistik_Data_Peserta_' . date('Y-m-d_H-i-s') . '.xlsx';
+            $filename = 'Statistik_Data_Peserta_' . date('Y-m-d_H-i-s') . '.xls';
             
             // Set headers for download
-            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            header('Content-Type: application/vnd.ms-excel');
             header('Content-Disposition: attachment;filename="' . $filename . '"');
             header('Cache-Control: max-age=0');
             header('Cache-Control: max-age=1');
@@ -3347,7 +3813,7 @@ class Database extends CI_Controller {
             header('Pragma: public');
             
             // Create Excel writer
-            $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel2007');
+            $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel5');
             $writer->save('php://output');
             
             // Clean up memory
@@ -4024,20 +4490,20 @@ class Database extends CI_Controller {
             }
             
             // Set filename
-            $filename = 'Statistik_Performa_Operator_' . date('Y-m-d_H-i-s') . '.xlsx';
+            $filename = 'Statistik_Performa_Operator_' . date('Y-m-d_H-i-s') . '.xls';
             if (!empty($filters)) {
                 if (!empty($filters['start_date']) && !empty($filters['end_date'])) {
-                    $filename = 'Statistik_Performa_Operator_' . $filters['start_date'] . '_to_' . $filters['end_date'] . '.xlsx';
+                    $filename = 'Statistik_Performa_Operator_' . $filters['start_date'] . '_to_' . $filters['end_date'] . '.xls';
                 }
             }
             
             // Set headers for download
-            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            header('Content-Type: application/vnd.ms-excel');
             header('Content-Disposition: attachment;filename="' . $filename . '"');
             header('Cache-Control: max-age=0');
             
             // Create Excel writer
-            $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel2007');
+            $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel5');
             $writer->save('php://output');
             
             // Clean up memory

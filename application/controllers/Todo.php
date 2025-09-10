@@ -57,7 +57,8 @@ class Todo extends CI_Controller {
             'nomor_paspor' => trim($this->input->get('nomor_paspor')),
             'no_visa' => trim($this->input->get('no_visa')),
             'flag_doc' => trim($this->input->get('flag_doc')),
-            'tanggaljam' => trim($this->input->get('tanggaljam'))
+            'tanggaljam' => trim($this->input->get('tanggaljam')),
+            'nama_travel' => trim($this->input->get('nama_travel'))
         ];
         
         // Remove empty filters to avoid unnecessary WHERE clauses
@@ -88,6 +89,9 @@ class Todo extends CI_Controller {
         $data['flag_doc_list'] = $this->transaksi_model->get_unique_flag_doc_todo();
         $data['tanggaljam_list'] = $this->transaksi_model->get_unique_tanggaljam();
         
+        // Get all unique nama_travel values for dropdown
+        $data['travel_list'] = $this->transaksi_model->get_unique_nama_travel();
+        
         // Get total count for pagination
         $total_rows = $this->transaksi_model->count_filtered_todo($filters);
         
@@ -113,6 +117,9 @@ class Todo extends CI_Controller {
         }
         if (!empty($filters['tanggaljam'])) {
             $query_params['tanggaljam'] = $filters['tanggaljam'];
+        }
+        if (!empty($filters['nama_travel'])) {
+            $query_params['nama_travel'] = $filters['nama_travel'];
         }
         
         // Build query string

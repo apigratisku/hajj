@@ -65,6 +65,9 @@ class Transaksi_model extends CI_Model {
                 $error = $this->db->error();
                 log_message('error', 'Insert failed - Last query: ' . $this->db->last_query());
                 log_message('error', 'DB Error: ' . json_encode($error));
+                log_message('error', 'DB Error Code: ' . $error['code']);
+                log_message('error', 'DB Error Message: ' . $error['message']);
+                log_message('error', 'Filtered data that failed: ' . json_encode($filtered_data));
                 return false;
             }
         } catch (Exception $e) {
@@ -183,6 +186,9 @@ class Transaksi_model extends CI_Model {
         if (!empty($filters['history_done'])) {
             $this->db->where('peserta.history_done', $filters['history_done']);
         }
+        if (!empty($filters['nama_travel'])) {
+            $this->db->where('peserta.nama_travel', $filters['nama_travel']);
+        }
         if (isset($filters['flag_doc'])) {
             // Handle multiple flag_doc selection
             if (is_array($filters['flag_doc'])) {
@@ -259,6 +265,9 @@ class Transaksi_model extends CI_Model {
         if (!empty($filters['nama'])) {
             $this->db->like('peserta.nama', $filters['nama']);
         }
+        if (!empty($filters['nama_travel'])) {
+            $this->db->where('peserta.nama_travel', $filters['nama_travel']);
+        }
 
         if (isset($filters['flag_doc'])) {
             // Handle flag_doc filter more precisely
@@ -267,6 +276,10 @@ class Transaksi_model extends CI_Model {
             } else {
                 $this->db->where('peserta.flag_doc', $filters['flag_doc']);
             }
+        }
+
+        if (!empty($filters['nama_travel'])) {
+            $this->db->where('peserta.nama_travel', $filters['nama_travel']);
         }
 
         $this->db->where('peserta.status', 0);
@@ -288,11 +301,17 @@ class Transaksi_model extends CI_Model {
         if (!empty($filters['no_visa'])) {
             $this->db->like('peserta.no_visa', $filters['no_visa']);
         }
+        if (!empty($filters['gender'])) {
+            $this->db->where('peserta.gender', $filters['gender']);
+        }
         if (isset($filters['status']) && $filters['status'] !== '') {
             $this->db->where('peserta.status', $filters['status']);
         }
         if (!empty($filters['history_done'])) {
             $this->db->where('peserta.history_done', $filters['history_done']);
+        }
+        if (!empty($filters['nama_travel'])) {
+            $this->db->where('peserta.nama_travel', $filters['nama_travel']);
         }
         if (isset($filters['flag_doc'])) {
             // Handle multiple flag_doc selection
@@ -371,20 +390,23 @@ class Transaksi_model extends CI_Model {
         if (!empty($filters['no_visa'])) {
             $this->db->like('peserta.no_visa', $filters['no_visa']);
         }
-       
         if (isset($filters['flag_doc'])) {
             // Handle flag_doc filter more precisely
             if ($filters['flag_doc'] === null || $filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
                 $this->db->where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
-                $this->db->where('peserta.status', 0);
             } else {
                 $this->db->where('peserta.flag_doc', $filters['flag_doc']);
-                $this->db->where('peserta.status', 0);
             }
+        }
+        if (!empty($filters['nama_travel'])) {
+            $this->db->where('peserta.nama_travel', $filters['nama_travel']);
         }
         if (!empty($filters['tanggaljam'])) {
             $this->db->like("CONCAT(tanggal, ' ', jam)", $filters['tanggaljam']);
         }
+        
+        // Always filter by status = 0 for todo
+        $this->db->where('peserta.status', 0);
         
             return $this->db->count_all_results();
         }
@@ -401,6 +423,16 @@ class Transaksi_model extends CI_Model {
         $this->db->where('flag_doc !=', '');
         $this->db->group_by('flag_doc');
         $this->db->order_by('created_at', 'DESC');
+        return $this->db->get()->result();
+    }
+    
+    public function get_unique_nama_travel() {
+        $this->db->select('nama_travel, MAX(created_at) as created_at');
+        $this->db->from($this->table);
+        $this->db->where('nama_travel IS NOT NULL');
+        $this->db->where('nama_travel !=', '');
+        $this->db->group_by('nama_travel');
+        $this->db->order_by('created_at', 'ASC');
         return $this->db->get()->result();
     }
 
@@ -973,77 +1005,42 @@ class Transaksi_model extends CI_Model {
      * Only include status 1 (Already) and 2 (Done) data
      */
     public function get_statistik_by_flag_doc($filters = []) {
-        // First, get all flag_doc that have status 0 (On Target) data
-        $this->db->select('flag_doc');
-        $this->db->from($this->table);
-        $this->db->where('status', 0); // Status On Target
-        
-        // Apply filters for the exclusion query
+        try {
+            log_message('debug', 'get_statistik_by_flag_doc - Input filters: ' . json_encode($filters));
+            
+            // Build exclusion query using raw SQL - only exclude flags that have status 0 data
+            $exclusion_conditions = ['status = 0'];
+            $exclusion_params = [];
+            
+            // Apply filters for the exclusion query - but only if they don't conflict with flag_doc filter
         if (!empty($filters['nama'])) {
-            $this->db->like('nama', $filters['nama']);
+                $exclusion_conditions[] = 'nama LIKE ?';
+                $exclusion_params[] = '%' . $filters['nama'] . '%';
         }
         if (!empty($filters['nomor_paspor'])) {
-            $this->db->like('nomor_paspor', $filters['nomor_paspor']);
+                $exclusion_conditions[] = 'nomor_paspor LIKE ?';
+                $exclusion_params[] = '%' . $filters['nomor_paspor'] . '%';
         }
         if (!empty($filters['no_visa'])) {
-            $this->db->like('no_visa', $filters['no_visa']);
-        }
-        if (isset($filters['flag_doc'])) {
-            // Handle multiple flag_doc selection
-            if (is_array($filters['flag_doc'])) {
-                // Multiple flag_doc selected
-                $flag_docs = [];
-                $has_null = false;
-                $has_empty = false;
-                
-                foreach ($filters['flag_doc'] as $flag_doc) {
-                    if ($flag_doc === null || $flag_doc === 'null' || $flag_doc === 'NULL') {
-                        $has_null = true;
-                    } elseif ($flag_doc === '') {
-                        $has_empty = true;
-                    } else {
-                        $flag_docs[] = $flag_doc;
-                    }
-                }
-                
-                if (!empty($flag_docs) && ($has_null || $has_empty)) {
-                    // Both specific flag_docs and null/empty values
-                    $this->db->group_start();
-                    $this->db->where_in('flag_doc', $flag_docs);
-                    if ($has_null) {
-                        $this->db->or_where('(flag_doc IS NULL OR flag_doc = "")');
-                    }
-                    if ($has_empty) {
-                        $this->db->or_where('flag_doc', '');
-                    }
-                    $this->db->group_end();
-                } elseif (!empty($flag_docs)) {
-                    // Only specific flag_docs
-                    $this->db->where_in('flag_doc', $flag_docs);
-                } elseif ($has_null || $has_empty) {
-                    // Only null/empty values
-                    if ($has_null && $has_empty) {
-                        $this->db->where('(flag_doc IS NULL OR flag_doc = "")');
-                    } elseif ($has_null) {
-                        $this->db->where('(flag_doc IS NULL OR flag_doc = "")');
-                    } elseif ($has_empty) {
-                        $this->db->where('flag_doc', '');
-                    }
-                }
-            } else {
-                // Single flag_doc (backward compatibility)
-                if ($filters['flag_doc'] === null || $filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
-                    $this->db->where('(flag_doc IS NULL OR flag_doc = "")');
-                } elseif ($filters['flag_doc'] === '') {
-                    $this->db->where('flag_doc', '');
-                } else {
-                    $this->db->where('flag_doc', $filters['flag_doc']);
-                }
+                $exclusion_conditions[] = 'no_visa LIKE ?';
+                $exclusion_params[] = '%' . $filters['no_visa'] . '%';
             }
-        }
-        
-        $this->db->group_by('flag_doc');
-        $excluded_flags = $this->db->get()->result();
+            if (!empty($filters['nama_travel'])) {
+                $exclusion_conditions[] = 'nama_travel = ?';
+                $exclusion_params[] = $filters['nama_travel'];
+            }
+            
+            // Don't apply flag_doc filter to exclusion query when we're filtering by specific flag_docs
+            // This prevents excluding the very flags we want to include
+            
+            $exclusion_query = "SELECT DISTINCT flag_doc FROM peserta WHERE " . implode(' AND ', $exclusion_conditions);
+            log_message('debug', 'Exclusion query: ' . $exclusion_query);
+            log_message('debug', 'Exclusion params: ' . json_encode($exclusion_params));
+            
+            $excluded_flags = $this->db->query($exclusion_query, $exclusion_params)->result();
+            
+            log_message('debug', 'Exclusion query - Result count: ' . count($excluded_flags));
+            log_message('debug', 'Excluded flags: ' . json_encode($excluded_flags));
         
         // Get flag_doc values to exclude
         $excluded_flag_docs = [];
@@ -1051,40 +1048,38 @@ class Transaksi_model extends CI_Model {
             $excluded_flag_docs[] = $flag->flag_doc;
         }
         
-        // Reset query builder
-        $this->db->reset_query();
-        
-        // Main query: Get statistics for flags that don't have status 0 data
-        $this->db->select("
-            flag_doc,
-            COUNT(*) as total,
-            SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) as done,
-            SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as already
-        ");
-        $this->db->from($this->table);
-        
-        // Only include status 1 (Already) and 2 (Done)
-        $this->db->where_in('status', [1, 2]);
-        
-        // Exclude flags that have status 0 data
-        if (!empty($excluded_flag_docs)) {
-            $this->db->where_not_in('flag_doc', $excluded_flag_docs);
-        }
-        
-        // Apply filters
+            log_message('debug', 'Excluded flag_docs array: ' . json_encode($excluded_flag_docs));
+            
+            // Build main query using raw SQL
+            $main_conditions = ['status IN (1, 2)'];
+            $main_params = [];
+            
+            // Exclude flags that have status 0 data, but only if we're not filtering by specific flag_docs
+            if (!empty($excluded_flag_docs) && !isset($filters['flag_doc'])) {
+                $placeholders = str_repeat('?,', count($excluded_flag_docs) - 1) . '?';
+                $main_conditions[] = "flag_doc NOT IN ($placeholders)";
+                $main_params = array_merge($main_params, $excluded_flag_docs);
+            }
+            
+            // Apply filters for main query
         if (!empty($filters['nama'])) {
-            $this->db->like('nama', $filters['nama']);
+                $main_conditions[] = 'nama LIKE ?';
+                $main_params[] = '%' . $filters['nama'] . '%';
         }
         if (!empty($filters['nomor_paspor'])) {
-            $this->db->like('nomor_paspor', $filters['nomor_paspor']);
+                $main_conditions[] = 'nomor_paspor LIKE ?';
+                $main_params[] = '%' . $filters['nomor_paspor'] . '%';
         }
         if (!empty($filters['no_visa'])) {
-            $this->db->like('no_visa', $filters['no_visa']);
+                $main_conditions[] = 'no_visa LIKE ?';
+                $main_params[] = '%' . $filters['no_visa'] . '%';
+            }
+            if (!empty($filters['nama_travel'])) {
+                $main_conditions[] = 'nama_travel = ?';
+                $main_params[] = $filters['nama_travel'];
         }
         if (isset($filters['flag_doc'])) {
-            // Handle multiple flag_doc selection for main query
             if (is_array($filters['flag_doc'])) {
-                // Multiple flag_doc selected
                 $flag_docs = [];
                 $has_null = false;
                 $has_empty = false;
@@ -1099,46 +1094,52 @@ class Transaksi_model extends CI_Model {
                     }
                 }
                 
-                if (!empty($flag_docs) && ($has_null || $has_empty)) {
-                    // Both specific flag_docs and null/empty values
-                    $this->db->group_start();
-                    $this->db->where_in('flag_doc', $flag_docs);
-                    if ($has_null) {
-                        $this->db->or_where('(flag_doc IS NULL OR flag_doc = "")');
+                    if (!empty($flag_docs)) {
+                        $placeholders = str_repeat('?,', count($flag_docs) - 1) . '?';
+                        $main_conditions[] = "flag_doc IN ($placeholders)";
+                        $main_params = array_merge($main_params, $flag_docs);
                     }
-                    if ($has_empty) {
-                        $this->db->or_where('flag_doc', '');
-                    }
-                    $this->db->group_end();
-                } elseif (!empty($flag_docs)) {
-                    // Only specific flag_docs
-                    $this->db->where_in('flag_doc', $flag_docs);
-                } elseif ($has_null || $has_empty) {
-                    // Only null/empty values
-                    if ($has_null && $has_empty) {
-                        $this->db->where('(flag_doc IS NULL OR flag_doc = "")');
-                    } elseif ($has_null) {
-                        $this->db->where('(flag_doc IS NULL OR flag_doc = "")');
-                    } elseif ($has_empty) {
-                        $this->db->where('flag_doc', '');
-                    }
+                    
+                    if ($has_null || $has_empty) {
+                        $main_conditions[] = '(flag_doc IS NULL OR flag_doc = "")';
                 }
             } else {
-                // Single flag_doc (backward compatibility)
                 if ($filters['flag_doc'] === null || $filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
-                    $this->db->where('(flag_doc IS NULL OR flag_doc = "")');
+                        $main_conditions[] = '(flag_doc IS NULL OR flag_doc = "")';
                 } elseif ($filters['flag_doc'] === '') {
-                    $this->db->where('flag_doc', '');
+                        $main_conditions[] = 'flag_doc = ?';
+                        $main_params[] = '';
                 } else {
-                    $this->db->where('flag_doc', $filters['flag_doc']);
+                        $main_conditions[] = 'flag_doc = ?';
+                        $main_params[] = $filters['flag_doc'];
+                    }
                 }
             }
+            
+            $main_query = "SELECT 
+                flag_doc,
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) as done,
+                SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as already
+            FROM peserta 
+            WHERE " . implode(' AND ', $main_conditions) . "
+            GROUP BY flag_doc 
+            ORDER BY flag_doc ASC";
+            
+            log_message('debug', 'Main query: ' . $main_query);
+            log_message('debug', 'Main params: ' . json_encode($main_params));
+            
+            $result = $this->db->query($main_query, $main_params)->result();
+            log_message('debug', 'get_statistik_by_flag_doc - Result count: ' . count($result));
+            log_message('debug', 'Main query - Result data: ' . json_encode($result));
+            
+            return $result;
+        
+        } catch (Exception $e) {
+            log_message('error', 'Error in get_statistik_by_flag_doc: ' . $e->getMessage());
+            log_message('error', 'Stack trace: ' . $e->getTraceAsString());
+            throw $e;
         }
-        
-        $this->db->group_by('flag_doc');
-        $this->db->order_by('flag_doc', 'ASC');
-        
-        return $this->db->get()->result();
     }
     
     /**
@@ -1233,5 +1234,62 @@ class Transaksi_model extends CI_Model {
         }
         
         return $result;
+    }
+    
+    /**
+     * Get monthly visa import statistics for the last 12 months
+     */
+    public function get_monthly_visa_import_stats() {
+        $this->db->select('
+            DATE_FORMAT(created_at, "%Y-%m") as month_year,
+            COUNT(*) as total_imported,
+            SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) as on_target,
+            SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as already,
+            SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) as done
+        ');
+        $this->db->from($this->table);
+        $this->db->where('created_at >=', date('Y-m-01', strtotime('-11 months')));
+        $this->db->group_by('DATE_FORMAT(created_at, "%Y-%m")');
+        $this->db->order_by('month_year', 'ASC');
+        
+        return $this->db->get()->result();
+    }
+    
+    /**
+     * Get monthly visa import statistics by travel for the last 12 months
+     */
+    public function get_monthly_visa_import_by_travel($nama_travel = null) {
+        if (!empty($nama_travel)) {
+            // Filter by specific travel
+            $this->db->select('
+                DATE_FORMAT(created_at, "%Y-%m") as month_year,
+                nama_travel,
+                COUNT(*) as total_imported,
+                SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) as on_target,
+                SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as already,
+                SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) as done
+            ');
+            $this->db->from($this->table);
+            $this->db->where('created_at >=', date('Y-m-01', strtotime('-11 months')));
+            $this->db->where('nama_travel', $nama_travel);
+            $this->db->group_by('DATE_FORMAT(created_at, "%Y-%m"), nama_travel');
+            $this->db->order_by('month_year', 'ASC');
+        } else {
+            // Show total for all travels combined
+            $this->db->select('
+                DATE_FORMAT(created_at, "%Y-%m") as month_year,
+                "All Travels" as nama_travel,
+                COUNT(*) as total_imported,
+                SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) as on_target,
+                SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as already,
+                SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) as done
+            ');
+            $this->db->from($this->table);
+            $this->db->where('created_at >=', date('Y-m-01', strtotime('-11 months')));
+            $this->db->group_by('DATE_FORMAT(created_at, "%Y-%m")');
+            $this->db->order_by('month_year', 'ASC');
+        }
+        
+        return $this->db->get()->result();
     }
 } 

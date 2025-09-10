@@ -159,6 +159,95 @@
         </div>
     </div>
     
+    <!-- Monthly Visa Import Statistics Toggle Button -->
+    <div class="row mb-1">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="toggle-buttons">
+                    <!-- Desktop Toggle -->
+                    <button class="btn btn-outline-info btn-sm d-none d-md-inline-block toggle-stats-btn" 
+                            data-target="monthly-visa-stats" 
+                            data-action="toggle">
+                        <i class="fas fa-eye-slash"></i> 
+                        <span class="toggle-text">Tampilkan</span> Statistik Visa Import
+                    </button>
+                    <!-- Mobile Toggle -->
+                    <button class="btn btn-outline-info btn-sm d-md-none toggle-stats-btn" 
+                            data-target="monthly-visa-stats" 
+                            data-action="toggle">
+                        <i class="fas fa-eye-slash"></i> 
+                        <span class="toggle-text">Tampilkan</span> Statistik Visa Import
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Visa Import Statistics -->
+    <div class="row mb-3 stats-container" id="monthly-visa-stats" style="display: none;">
+        <div class="col-12">
+            <div class="card mobile-card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line"></i> Statistik Import Visa Bulanan (12 Bulan Terakhir)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Travel Filter -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="travelFilter" class="form-label">
+                                <i class="fas fa-plane"></i> Filter Berdasarkan Travel
+                            </label>
+                            <select id="travelFilter" class="form-select">
+                                <option value="">Semua Travel</option>
+                                <?php foreach ($travel_list as $travel): ?>
+                                    <option value="<?= $travel->nama_travel ?>">
+                                        <?= $travel->nama_travel ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-end">
+                            <button type="button" class="btn btn-info btn-sm" onclick="loadMonthlyStats()">
+                                <i class="fas fa-sync-alt"></i> Refresh Data
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Chart Container -->
+                    <div class="row">
+                        <div class="col-12">
+                            <canvas id="monthlyVisaChart" height="5"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Summary Table -->
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-striped table-sm">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th class="text-center">Bulan</th>
+                                            <th class="text-center">Total Import</th>
+                                            <th class="text-center">On Target</th>
+                                            <th class="text-center">Already</th>
+                                            <th class="text-center">Done</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="monthlyStatsTable">
+                                        <!-- Data will be populated by JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Detailed Statistics -->
     <div class="row mb-2">
         
@@ -1409,8 +1498,23 @@
 </style>
 
 
+<!-- Chart.js Library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize monthly stats first
+    loadMonthlyStats();
+    
+    // Add event listener for travel filter
+    document.getElementById('travelFilter').addEventListener('change', function() {
+        loadMonthlyStats();
+    });
+    
+    
+    // Load saved state for monthly visa stats
+    loadMonthlyVisaStatsState();
+    
     // Handle tombol Selesai
     document.addEventListener('click', function(e) {
         if (e.target.closest('.complete-btn')) {
@@ -1507,12 +1611,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         localStorage.setItem('stats_' + target + '_visible', 'true');
                     } else {
                         // Hide statistics
-                        targetElement.classList.add('hide');
+                        targetElement.style.display = 'none';
                         targetElement.classList.remove('show');
-                        
-                        setTimeout(function() {
-                            targetElement.style.display = 'none';
-                        }, 300);
+                        targetElement.classList.remove('hide');
                         
                         // Update button
                         button.classList.remove('active');
@@ -1597,5 +1698,118 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 
 // Layout is now default ultra compact for all devices
+
+// Monthly Visa Import Statistics Chart
+let monthlyVisaChart = null;
+
+
+function loadMonthlyStats() {
+    const travelFilter = document.getElementById('travelFilter').value;
+    
+    // Show loading state
+    const chartContainer = document.getElementById('monthlyVisaChart');
+    const tableBody = document.getElementById('monthlyStatsTable');
+    
+    if (tableBody) {
+        tableBody.innerHTML = '<tr><td colspan="5" class="text-center">Loading...</td></tr>';
+    }
+    
+    // Fetch data
+    fetch('<?= base_url("dashboard/get_monthly_visa_by_travel") ?>', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'nama_travel=' + encodeURIComponent(travelFilter)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status) {
+            updateMonthlyChart(data.data);
+            updateMonthlyTable(data.data);
+        } else {
+            console.error('Error loading monthly stats:', data.message);
+            if (tableBody) {
+                tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error loading data</td></tr>';
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        if (tableBody) {
+            tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error loading data</td></tr>';
+        }
+    });
+}
+
+function updateMonthlyChart(data) {
+    const ctx = document.getElementById('monthlyVisaChart').getContext('2d');
+    
+    // Destroy existing chart
+    if (monthlyVisaChart) {
+        monthlyVisaChart.destroy();
+    }
+    
+    // Prepare data
+    const labels = data.map(item => {
+        const date = new Date(item.month_year + '-01');
+        return date.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' });
+    });
+    
+    const totalData = data.map(item => parseInt(item.total_imported));
+    const onTargetData = data.map(item => parseInt(item.on_target));
+    const alreadyData = data.map(item => parseInt(item.already));
+    const doneData = data.map(item => parseInt(item.done));
+    
+    
+}
+
+function updateMonthlyTable(data) {
+    const tableBody = document.getElementById('monthlyStatsTable');
+    
+    if (!tableBody) return;
+    
+    if (data.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Tidak ada data</td></tr>';
+        return;
+    }
+    
+    let html = '';
+    data.forEach(item => {
+        const date = new Date(item.month_year + '-01');
+        const monthName = date.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+        
+        html += `
+            <tr>
+                <td class="text-center">${monthName}</td>
+                <td class="text-center">${item.total_imported}</td>
+                <td class="text-center">${item.on_target}</td>
+                <td class="text-center">${item.already}</td>
+                <td class="text-center">${item.done}</td>
+            </tr>
+        `;
+    });
+    
+    tableBody.innerHTML = html;
+}
+
+// Load saved state for monthly visa stats
+function loadMonthlyVisaStatsState() {
+    var monthlyVisaStats = document.getElementById('monthly-visa-stats');
+    var monthlyVisaBtn = document.querySelector('[data-target="monthly-visa-stats"]');
+    
+    if (monthlyVisaStats && monthlyVisaBtn) {
+        var monthlyVisaVisible = localStorage.getItem('stats_monthly-visa-stats_visible');
+        if (monthlyVisaVisible === 'true') {
+            monthlyVisaStats.style.display = 'block';
+            monthlyVisaStats.classList.add('show');
+            monthlyVisaBtn.classList.add('active');
+            monthlyVisaBtn.querySelector('i').className = 'fas fa-eye';
+            monthlyVisaBtn.querySelector('.toggle-text').textContent = 'Sembunyikan';
+            monthlyVisaBtn.setAttribute('data-action', 'hide');
+        }
+    }
+}
+
 });
 </script> 
