@@ -1450,18 +1450,18 @@ class Database extends CI_Controller {
             $excel->getActiveSheet()->getStyle('A' . ($row + 5) . ':B' . ($row + 8))->applyFromArray($summaryDataStyle);
             
             // Set filename
-            $filename = 'Data_Peserta_' . date('Y-m-d_H-i-s') . '.xls';
+            $filename = 'Data_Peserta_' . date('Y-m-d_H-i-s') . '.xlsx';
             if (!empty($filters['flag_doc'])) {
                 if (is_array($filters['flag_doc'])) {
-                    $filename = 'Data_Peserta_Multiple_' . date('Y-m-d_H-i-s') . '.xls';
+                    $filename = 'Data_Peserta_Multiple_' . date('Y-m-d_H-i-s') . '.xlsx';
                 } else {
                     $flag_doc_name = $filters['flag_doc'] === 'null' ? 'Tanpa_Flag' : str_replace([' ', '/', '\\'], '_', $filters['flag_doc']);
-                    $filename = $flag_doc_name . '_Data_Peserta_' . date('Y-m-d_H-i-s') . '.xls';
+                    $filename = $flag_doc_name . '_Data_Peserta_' . date('Y-m-d_H-i-s') . '.xlsx';
                 }
             }
             
             // Set headers for download
-            header('Content-Type: application/vnd.ms-excel');
+            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
             header('Content-Disposition: attachment;filename="' . $filename . '"');
             header('Cache-Control: max-age=0');
             header('Cache-Control: max-age=1');
@@ -1471,7 +1471,7 @@ class Database extends CI_Controller {
             header('Pragma: public');
             
             // Create Excel writer
-            $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel5');
+            $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel2007');
             $writer->save('php://output');
             
             // Clean up memory
@@ -2537,11 +2537,11 @@ class Database extends CI_Controller {
         $objPHPExcel->setActiveSheetIndex(0);
         
         // Redirect output to client browser
-        header('Content-Type: application/vnd.ms-excel');
-        header('Content-Disposition: attachment;filename="template_import_peserta.xls"');
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="template_import_peserta.xlsx"');
         header('Cache-Control: max-age=0');
         
-        $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel5');
+        $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel2007');
         $objWriter->save('php://output');
         exit;
     }
@@ -2719,15 +2719,15 @@ class Database extends CI_Controller {
         }
 
         // Set filename
-        $filename = 'data_import_ditolak_' . date('Y-m-d_H-i-s') . '.xls';
+        $filename = 'data_import_ditolak_' . date('Y-m-d_H-i-s') . '.xlsx';
 
         // Set headers for download
-        header('Content-Type: application/vnd.ms-excel');
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment;filename="' . $filename . '"');
         header('Cache-Control: max-age=0');
 
         // Create Excel file
-        $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel5');
+        $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel2007');
         $objWriter->save('php://output');
         exit;
     }
@@ -2855,15 +2855,15 @@ class Database extends CI_Controller {
         }
 
         // Set filename
-        $filename = 'data_import_gagal_' . date('Y-m-d_H-i-s') . '.xls';
+        $filename = 'data_import_gagal_' . date('Y-m-d_H-i-s') . '.xlsx';
 
         // Set headers for download
-        header('Content-Type: application/vnd.ms-excel');
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment;filename="' . $filename . '"');
         header('Cache-Control: max-age=0');
 
         // Create Excel file
-        $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel5');
+        $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel2007');
         $objWriter->save('php://output');
         exit;
     }
@@ -2977,15 +2977,15 @@ class Database extends CI_Controller {
         }
 
         // Set filename
-        $filename = 'data_import_berhasil_' . date('Y-m-d_H-i-s') . '.xls';
+        $filename = 'data_import_berhasil_' . date('Y-m-d_H-i-s') . '.xlsx';
 
         // Set headers for download
-        header('Content-Type: application/vnd.ms-excel');
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment;filename="' . $filename . '"');
         header('Cache-Control: max-age=0');
 
         // Create Excel file
-        $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel5');
+        $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel2007');
         $objWriter->save('php://output');
         
         // Kirim notifikasi Telegram untuk download data berhasil
@@ -3651,15 +3651,15 @@ class Database extends CI_Controller {
             }
             
             // Set filename
-            $filename = 'Arsip_Data_Peserta_' . date('Y-m-d_H-i-s') . '.xls';
+            $filename = 'Arsip_Data_Peserta_' . date('Y-m-d_H-i-s') . '.xlsx';
             
             // Set headers for download
-            header('Content-Type: application/vnd.ms-excel');
+            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
             header('Content-Disposition: attachment;filename="' . $filename . '"');
             header('Cache-Control: max-age=0');
             
             // Create Excel writer
-            $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel5');
+            $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel2007');
             $writer->save('php://output');
             exit;
             
@@ -3800,10 +3800,10 @@ class Database extends CI_Controller {
             }
             
             // Set filename
-            $filename = 'Statistik_Data_Peserta_' . date('Y-m-d_H-i-s') . '.xls';
+            $filename = 'Statistik_Data_Peserta_' . date('Y-m-d_H-i-s') . '.xlsx';
             
             // Set headers for download
-            header('Content-Type: application/vnd.ms-excel');
+            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
             header('Content-Disposition: attachment;filename="' . $filename . '"');
             header('Cache-Control: max-age=0');
             header('Cache-Control: max-age=1');
@@ -3813,7 +3813,7 @@ class Database extends CI_Controller {
             header('Pragma: public');
             
             // Create Excel writer
-            $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel5');
+            $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel2007');
             $writer->save('php://output');
             
             // Clean up memory
@@ -4490,20 +4490,20 @@ class Database extends CI_Controller {
             }
             
             // Set filename
-            $filename = 'Statistik_Performa_Operator_' . date('Y-m-d_H-i-s') . '.xls';
+            $filename = 'Statistik_Performa_Operator_' . date('Y-m-d_H-i-s') . '.xlsx';
             if (!empty($filters)) {
                 if (!empty($filters['start_date']) && !empty($filters['end_date'])) {
-                    $filename = 'Statistik_Performa_Operator_' . $filters['start_date'] . '_to_' . $filters['end_date'] . '.xls';
+                    $filename = 'Statistik_Performa_Operator_' . $filters['start_date'] . '_to_' . $filters['end_date'] . '.xlsx';
                 }
             }
             
             // Set headers for download
-            header('Content-Type: application/vnd.ms-excel');
+            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
             header('Content-Disposition: attachment;filename="' . $filename . '"');
             header('Cache-Control: max-age=0');
             
             // Create Excel writer
-            $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel5');
+            $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel2007');
             $writer->save('php://output');
             
             // Clean up memory
