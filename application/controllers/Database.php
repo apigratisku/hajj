@@ -52,6 +52,10 @@ class Database extends CI_Controller {
             'status_jadwal' => trim($this->input->get('status_jadwal')),
             'history_done' => trim($this->input->get('history_done')),
             'nama_travel' => trim($this->input->get('nama_travel')),
+            'sortir_waktu_start' => trim($this->input->get('sortir_waktu_start')),
+            'sortir_waktu_end' => trim($this->input->get('sortir_waktu_end')),
+            'startDate' => trim($this->input->get('startDate')),
+            'endDate' => trim($this->input->get('endDate')),
         ];
         
         // Remove empty filters to avoid unnecessary WHERE clauses
@@ -199,6 +203,7 @@ class Database extends CI_Controller {
             'status' => trim($this->input->get('status')),
             'gender' => trim($this->input->get('gender')),
             'selesai' => 2
+            
         ];
         
         // Remove empty filters to avoid unnecessary WHERE clauses
@@ -852,7 +857,9 @@ class Database extends CI_Controller {
                 'no_visa' => $this->input->get('no_visa'),
                 'flag_doc' => $this->input->get('flag_doc'),
                 'status' => $this->input->get('status'),
-                'nama_travel' => $this->input->get('nama_travel')
+                'nama_travel' => $this->input->get('nama_travel'),
+                'startDate' => $this->input->get('startDate'),
+                'endDate' => $this->input->get('endDate')
             ];
             
             log_message('debug', 'Export method - Initial filters: ' . json_encode($filters));

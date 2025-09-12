@@ -1,0 +1,10 @@
+2025-09-12 15:09:33 - Upload PDF request received
+2025-09-12 15:09:33 - POST data: []
+2025-09-12 15:09:33 - FILES data: {"pdf_file":{"name":"VISA ADAM 25 AUG 63 pax.pdf","type":"application\/pdf","tmp_name":"D:\\XAMPP\\tmp\\php4DB3.tmp","error":0,"size":19108835}}
+2025-09-12 15:09:33 - Checking user authentication
+2025-09-12 15:09:33 - User authenticated: adhit
+2025-09-12 20:58:10 - Upload PDF request received
+2025-09-12 20:58:10 - POST data: []
+2025-09-12 20:58:10 - FILES data: {"pdf_file":{"name":"VISA ADAM 25 AUG 63 pax.pdf","type":"application\/pdf","tmp_name":"D:\\XAMPP\\tmp\\php7F34.tmp","error":0,"size":19108835}}
+2025-09-12 20:58:10 - Checking user authentication
+2025-09-12 20:58:10 - User authenticated: adhit

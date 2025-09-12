@@ -1,0 +1,9 @@
+# Deny direct access to files in uploads directory
+<Files "*">
+    Require all denied
+</Files>
+
+# Allow PHP to write files but deny direct browser access
+<Directory "uploads/parsing">
+    Require all denied
+</Directory>

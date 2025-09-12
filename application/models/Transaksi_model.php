@@ -239,6 +239,15 @@ class Transaksi_model extends CI_Model {
             }
             $this->db->where('DATE(updated_at)', $tanggal_pengerjaan);
         }
+        
+        // Filter berdasarkan tanggal updated_at (Sortir Mulai dan Sortir Akhir)
+        if (!empty($filters['startDate'])) {
+            $this->db->where('DATE(updated_at) >=', $filters['startDate']);
+        }
+        if (!empty($filters['endDate'])) {
+            $this->db->where('DATE(updated_at) <=', $filters['endDate']);
+        }
+        
         if (!empty($filters['status_jadwal'])) {
             if ($filters['status_jadwal'] === '2') {
                 $this->db->where('peserta.status', 2);
@@ -363,6 +372,15 @@ class Transaksi_model extends CI_Model {
             }
             $this->db->where('DATE(updated_at)', $tanggal_pengerjaan);
         }
+        
+        // Filter berdasarkan tanggal updated_at (Sortir Mulai dan Sortir Akhir)
+        if (!empty($filters['startDate'])) {
+            $this->db->where('DATE(updated_at) >=', $filters['startDate']);
+        }
+        if (!empty($filters['endDate'])) {
+            $this->db->where('DATE(updated_at) <=', $filters['endDate']);
+        }
+        
         if (!empty($filters['status_jadwal'])) {
             if ($filters['status_jadwal'] === '2') {
                 $this->db->where('peserta.status', 2);

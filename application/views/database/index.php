@@ -144,6 +144,23 @@
                                     </select>
                                 </div>
                                 <?php endif; ?>
+                                
+                                <!-- Filter Tanggal Updated untuk Mobile -->
+                                <div class="form-group">
+                                    <label for="startDateMobile" class="form-label">
+                                        <i class="fas fa-calendar"></i> Sortir Mulai
+                                    </label>
+                                    <input type="date" name="startDate" class="form-control mobile-input" id="startDateMobile" 
+                                           value="<?= isset($_GET['startDate']) ? htmlspecialchars($_GET['startDate']) : '' ?>">
+                                </div>
+                                <div class="form-group">
+                                    <label for="endDateMobile" class="form-label">
+                                        <i class="fas fa-calendar"></i> Sortir Akhir
+                                    </label>
+                                    <input type="date" name="endDate" class="form-control mobile-input" id="endDateMobile"
+                                           value="<?= isset($_GET['endDate']) ? htmlspecialchars($_GET['endDate']) : '' ?>">
+                                </div>
+                                
                                 <div class="form-actions">
                                     <button type="submit" class="btn btn-search">
                                         <i class="fas fa-search"></i> Cari
@@ -166,7 +183,7 @@
                     <div class="desktop-search-container d-none d-md-block">
                         <form method="get" action="<?= base_url('database/index') ?>" class="desktop-form">
                             <div class="row g-2 align-items-center">
-                            <div class="col-md-1">
+                                <div class="col-md-1">
                                     <select name="nama_travel" class="form-select form-control-sm">
                                         <option value="">Semua Travel</option>
                                         <?php if (!empty($travel_list)): foreach ($travel_list as $travel): ?>
@@ -262,6 +279,24 @@
                                     </select>
                                 </div>
                                 <?php endif; ?>
+                                
+                            </div>
+                            <div class="row g-2 align-items-center">
+                                
+                                <div class="col-md-1">
+                                    <label for="startDate" class="form-label"><i class="fas fa-calendar"></i> Sortir Mulai</label>
+                                    <input type="date" class="form-control" id="startDate" name="startDate" 
+                                           value="<?= isset($_GET['startDate']) ? htmlspecialchars($_GET['startDate']) : '' ?>">
+                                </div>
+                                <div class="col-md-1">
+                                    <label for="endDate" class="form-label"><i class="fas fa-calendar"></i> Sortir Akhir</label>
+                                    <input type="date" class="form-control" id="endDate" name="endDate"
+                                           value="<?= isset($_GET['endDate']) ? htmlspecialchars($_GET['endDate']) : '' ?>">
+                                </div>
+                                      
+                            </div> 
+                            <br>
+                            <div class="row g-2 align-items-center">
                                 <div class="col-md-2">
                                     <button type="submit" class="btn btn-brown btn-sm me-2">
                                         <i class="fas fa-search"></i> Cari
@@ -269,7 +304,7 @@
                                     <a href="<?= base_url('database/index') ?>" class="btn btn-brown-light btn-sm">
                                         <i class="fas fa-times"></i> Reset
                                     </a>
-                                </div>
+                                </div>             
                             </div>
                         </form>
                     </div>

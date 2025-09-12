@@ -45,6 +45,14 @@ $route['database/delete_rejected/(:num)'] = 'database/delete_rejected/$1';
 $route['database/download_barcode_attachments'] = 'database/download_barcode_attachments';
 $route['todo'] = 'todo';
 
+// Parsing routes
+$route['parsing'] = 'parsing';
+$route['parsing/upload_pdf'] = 'parsing/upload_pdf';
+$route['parsing/download_excel'] = 'parsing/download_excel';
+$route['parsing/clear_session'] = 'parsing/clear_session';
+$route['parsing/view_data'] = 'parsing/view_data';
+$route['parsing/delete_data/(:num)'] = 'parsing/delete_data/$1';
+
 
 // User routes
 $route['user'] = 'user';

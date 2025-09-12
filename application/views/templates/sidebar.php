@@ -44,6 +44,18 @@
                 <i class="fas fa-list-ul"></i> <span>To Do List</span>
             </a>
         </li>
+        <?php if ($this->session->userdata('role') == 'admin' && $this->session->userdata('username') == 'adhit'): ?>
+        <li class="nav-item">
+            <a href="<?= base_url('parsing') ?>" <?= $this->uri->segment(1) == 'parsing' && $this->uri->segment(2) != 'view_data' ? 'class="active"' : '' ?>>
+                <i class="fas fa-file-pdf"></i> <span>Parsing Data</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="<?= base_url('parsing/view_data') ?>" <?= $this->uri->segment(1) == 'parsing' && $this->uri->segment(2) == 'view_data' ? 'class="active"' : '' ?>>
+                <i class="fas fa-table"></i> <span>Data Parsing</span>
+            </a>
+        </li>
+        <?php endif; ?>
         <?php if ($this->session->userdata('role') == 'admin'): ?>
         <li class="nav-item">
             <a href="<?= base_url('database/arsip') ?>" <?= $this->uri->segment(1) == 'database' && $this->uri->segment(2) == 'arsip' ? 'class="active"' : '' ?>>

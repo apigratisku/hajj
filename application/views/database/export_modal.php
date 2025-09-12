@@ -111,7 +111,23 @@
                         </div>
                     </div>
                     
-                    
+                    <!-- Filter Tanggal Updated -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="export_startDate" class="form-label">
+                                <i class="fas fa-calendar"></i> Sortir Mulai
+                            </label>
+                            <input type="date" class="form-control" id="export_startDate" name="startDate">
+                            <div class="form-text">Filter data berdasarkan tanggal mulai updated_at</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="export_endDate" class="form-label">
+                                <i class="fas fa-calendar"></i> Sortir Akhir
+                            </label>
+                            <input type="date" class="form-control" id="export_endDate" name="endDate">
+                            <div class="form-text">Filter data berdasarkan tanggal akhir updated_at</div>
+                        </div>
+                    </div>
                     
                     <div class="mb-3">
                         <label for="export_status" class="form-label">
