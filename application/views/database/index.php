@@ -370,6 +370,7 @@
                                             <th class="col-flag">Flag</th>
                                             <?php if($this->session->userdata('role') == 'admin'): ?>
                                             <th class="col-history">Update Terakhir</th>
+                                            <th class="col-history-done">History Done</th>
                                             <?php endif; ?>
                                             <th class="col-aksi">Aksi</th>
                                         </tr>
@@ -491,6 +492,17 @@
                                                 <?= ($user && isset($user->nama_lengkap)) ? $user->nama_lengkap : '-' ?>
                                             </td>
                                             <?php endif; ?>
+                                            <?php if($this->session->userdata('role') == 'admin'): ?>
+                                            <td class="col-history-done">
+                                                <?php 
+                                                $user = null;
+                                                if ($p->history_done) {
+                                                    $user = $this->user_model->get_user_by_id($p->history_done);
+                                                }
+                                                ?>
+                                                <?= ($user && isset($user->nama_lengkap)) ? $user->nama_lengkap : '-' ?>
+                                            </td>
+                                            <?php endif; ?>
                                             <td class="col-aksi">
                                                 <button class="mobile-table-btn mobile-table-btn-edit btn-edit" onclick="toggleEditMobileTable(this)">
                                                     <i class="fas fa-edit"></i>
@@ -540,6 +552,7 @@
                                         <th class="text-center">Flag Dokumen</th>
                                         <?php if($this->session->userdata('role') == 'admin'): ?>
                                         <th class="text-center">Update Terakhir</th>
+                                        <th class="text-center">History Done</th>
                                         <?php endif; ?>
                                         <th width="100" class="text-center">Aksi</th>
                                     </tr>
@@ -653,6 +666,17 @@
                                                 $user = null;
                                                 if ($p->history_update) {
                                                     $user = $this->user_model->get_user_by_id($p->history_update);
+                                                }
+                                                ?>
+                                                <?= ($user && isset($user->nama_lengkap)) ? $user->nama_lengkap : '-' ?>
+                                            </td>
+                                        <?php endif; ?>
+                                        <?php if($this->session->userdata('role') == 'admin'): ?>
+                                        <td class="col-history-done text-center">
+                                                <?php 
+                                                $user = null;
+                                                if ($p->history_done) {
+                                                    $user = $this->user_model->get_user_by_id($p->history_done);
                                                 }
                                                 ?>
                                                 <?= ($user && isset($user->nama_lengkap)) ? $user->nama_lengkap : '-' ?>
