@@ -127,6 +127,12 @@ class Database extends CI_Controller {
         if (!empty($filters['history_done'])) {
             $query_params['history_done'] = $filters['history_done'];
         }
+        if (!empty($filters['startDate'])) {
+            $query_params['startDate'] = $filters['startDate'];
+        }
+        if (!empty($filters['endDate'])) {
+            $query_params['endDate'] = $filters['endDate'];
+        }
         
         // Build query string
         if (!empty($query_params)) {
