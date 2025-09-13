@@ -16,6 +16,16 @@ $route['telegram_bot/get_webhook_info'] = 'telegram_bot/get_webhook_info';
 
 
 
+// Parsing routes
+$route['parsing'] = 'parsing/index';
+$route['parsing/upload_pdf'] = 'parsing/upload_pdf';
+$route['parsing/download_excel'] = 'parsing/download_excel';
+$route['parsing/clear_session'] = 'parsing/clear_session';
+$route['parsing/view_data'] = 'parsing/view_data';
+$route['parsing/delete_data/(:num)'] = 'parsing/delete_data/$1';
+$route['parsing/bulk_delete'] = 'parsing/bulk_delete';
+$route['parsing/debug_parsing'] = 'parsing/debug_parsing';
+
 // Installation routes
 $route['install'] = 'install/index';
 $route['update-database'] = 'install/update';

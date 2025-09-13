@@ -125,6 +125,11 @@
                                     <li>Data yang diekstrak: Visa No., Passport No., Full Name, Birth Date</li>
                                     <li>Hasil parsing dapat didownload dalam format Excel</li>
                                     <li>Format Excel: Nama, No Paspor, No Visa, Tanggal Lahir</li>
+                                    <li><strong>Tips:</strong> Jika hasil parsing kurang, coba format PDF yang berbeda</li>
+                                    <li><strong>Advanced Parsing:</strong> Sistem menggunakan 3 metode parsing berbeda untuk hasil maksimal</li>
+                                    <li><strong>Multi-Strategy:</strong> Structured PDF, MRZ, dan Labeled parsing</li>
+                                    <li><strong>Real PDF Tested:</strong> Sudah diuji dengan file PDF asli 63 pax</li>
+                                    <li><a href="<?= base_url('parsing/debug_parsing') ?>" target="_blank" class="alert-link">Test Parsing Engine dengan File PDF Asli</a></li>
                                 </ul>
                             </div>
                         </div>
@@ -274,7 +279,12 @@ document.addEventListener('DOMContentLoaded', function() {
             method: 'POST',
             body: formData
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
         .then(data => {
             hideProgress();
             
@@ -344,10 +354,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${index + 1}</td>
-                    <td>${item.full_name || '-'}</td>
-                    <td>${item.passport_no || '-'}</td>
-                    <td>${item.visa_no || '-'}</td>
-                    <td>${item.birth_date || '-'}</td>
+                    <td>${item.nama || '-'}</td>
+                    <td>${item.no_paspor || '-'}</td>
+                    <td>${item.no_visa || '-'}</td>
+                    <td>${item.tanggal_lahir || '-'}</td>
                 `;
                 previewTableBody.appendChild(row);
             });

@@ -15,6 +15,27 @@
                 
                 <!-- Statistics Cards -->
                 <div class="card-body">
+                    <!-- Flash Messages -->
+                    <?php if ($this->session->flashdata('success')): ?>
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="fas fa-check-circle"></i>
+                            <?= $this->session->flashdata('success') ?>
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if ($this->session->flashdata('error')): ?>
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <?= $this->session->flashdata('error') ?>
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                    <?php endif; ?>
+
                     <div class="row mb-4">
                         <div class="col-lg-3 col-6">
                             <div class="small-box bg-info">
@@ -102,7 +123,7 @@
                             </thead>
                             <tbody>
                                 <?php if (!empty($parsing_data)): ?>
-                                    <?php $no = $offset + 1; ?>
+                                    <?php $no = (isset($offset) ? $offset : 0) + 1; ?>
                                     <?php foreach ($parsing_data as $data): ?>
                                         <tr>
                                             <td class="text-center"><?= $no++ ?></td>
@@ -233,20 +254,81 @@
 <script>
 let deleteId = null;
 
-function deleteData(id, name) {
-    deleteId = id;
-    document.getElementById('deleteName').textContent = name;
-    $('#deleteModal').modal('show');
+// Safe auto hide alerts function
+function safeHideAlerts() {
+    try {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(function(alert) {
+            if (alert && alert.parentNode) {
+                alert.style.transition = 'opacity 0.5s';
+                alert.style.opacity = '0';
+                setTimeout(function() {
+                    if (alert.parentNode) {
+                        alert.parentNode.removeChild(alert);
+                    }
+                }, 500);
+            }
+        });
+    } catch (e) {
+        console.log('Error hiding alerts:', e);
+    }
 }
 
-document.getElementById('confirmDelete').addEventListener('click', function() {
-    if (deleteId) {
-        window.location.href = '<?= base_url('parsing/delete_data') ?>/' + deleteId;
+// Auto hide alerts after 5 seconds
+setTimeout(safeHideAlerts, 5000);
+
+// Enhanced delete function with better error handling
+function deleteData(id, name) {
+    try {
+        deleteId = id;
+        const deleteNameElement = document.getElementById('deleteName');
+        if (deleteNameElement) {
+            deleteNameElement.textContent = name;
+        }
+        
+        // Use jQuery modal if available, otherwise use vanilla JS
+        if (typeof $ !== 'undefined' && $('#deleteModal').length) {
+            $('#deleteModal').modal('show');
+        } else {
+            const modal = document.getElementById('deleteModal');
+            if (modal) {
+                modal.style.display = 'block';
+                modal.classList.add('show');
+            }
+        }
+    } catch (e) {
+        console.error('Error showing delete modal:', e);
+        // Fallback: direct redirect
+        if (confirm('Apakah Anda yakin ingin menghapus data ' + name + '?')) {
+            window.location.href = '<?= base_url('parsing/delete_data') ?>/' + id;
+        }
+    }
+}
+
+// Enhanced confirm delete with loading state
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmDeleteBtn = document.getElementById('confirmDelete');
+    if (confirmDeleteBtn) {
+        confirmDeleteBtn.addEventListener('click', function() {
+            if (deleteId) {
+                try {
+                    // Show loading state
+                    const btn = this;
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menghapus...';
+                    btn.disabled = true;
+                    
+                    // Redirect after a short delay to show loading
+                    setTimeout(function() {
+                        window.location.href = '<?= base_url('parsing/delete_data') ?>/' + deleteId;
+                    }, 500);
+                } catch (e) {
+                    console.error('Error in delete confirmation:', e);
+                    // Fallback: direct redirect
+                    window.location.href = '<?= base_url('parsing/delete_data') ?>/' + deleteId;
+                }
+            }
+        });
     }
 });
-
-// Auto hide alerts
-setTimeout(function() {
-    $('.alert').fadeOut('slow');
-}, 5000);
 </script>

@@ -3,6 +3,8 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 class Parsing_model extends CI_Model {
 
+    private $table = 'parsing';
+
     public function __construct() {
         parent::__construct();
         $this->load->database();
@@ -15,7 +17,7 @@ class Parsing_model extends CI_Model {
         try {
             // Validate required fields
             if (empty($data['nama']) || empty($data['no_paspor']) || empty($data['no_visa']) || empty($data['tanggal_lahir'])) {
-                throw new Exception('Data parsing tidak lengkap');
+                return array('success' => false, 'message' => 'Data parsing tidak lengkap');
             }
 
             // Prepare data for insert
@@ -30,38 +32,33 @@ class Parsing_model extends CI_Model {
                 'status' => 'active'
             );
 
-            // Check if data already exists (based on no_paspor and no_visa)
+            // Check if data already exists
             $this->db->where('no_paspor', $insert_data['no_paspor']);
             $this->db->where('no_visa', $insert_data['no_visa']);
             $this->db->where('status', 'active');
-            $existing = $this->db->get('parsing');
+            $existing = $this->db->get($this->table);
 
             if ($existing->num_rows() > 0) {
                 // Update existing record
                 $this->db->where('no_paspor', $insert_data['no_paspor']);
                 $this->db->where('no_visa', $insert_data['no_visa']);
                 $this->db->where('status', 'active');
-                $result = $this->db->update('parsing', $insert_data);
+                $result = $this->db->update($this->table, $insert_data);
                 
-                if ($result) {
-                    return array('success' => true, 'message' => 'Data parsing berhasil diupdate', 'action' => 'update');
-                } else {
-                    throw new Exception('Gagal mengupdate data parsing');
-                }
+                return array('success' => true, 'message' => 'Data parsing berhasil diupdate', 'action' => 'update');
             } else {
                 // Insert new record
-                $result = $this->db->insert('parsing', $insert_data);
+                $result = $this->db->insert($this->table, $insert_data);
                 
                 if ($result) {
                     return array('success' => true, 'message' => 'Data parsing berhasil disimpan', 'action' => 'insert', 'id' => $this->db->insert_id());
                 } else {
-                    throw new Exception('Gagal menyimpan data parsing');
+                    return array('success' => false, 'message' => 'Gagal menyimpan data parsing');
                 }
             }
 
         } catch (Exception $e) {
-            log_message('error', 'Parsing model error: ' . $e->getMessage());
-            return array('success' => false, 'message' => $e->getMessage());
+            return array('success' => false, 'message' => 'Error: ' . $e->getMessage());
         }
     }
 
@@ -100,7 +97,6 @@ class Parsing_model extends CI_Model {
             return $results;
 
         } catch (Exception $e) {
-            log_message('error', 'Multiple parsing save error: ' . $e->getMessage());
             return array('success' => 0, 'updated' => 0, 'failed' => count($data_array), 'errors' => array($e->getMessage()));
         }
     }
@@ -111,7 +107,7 @@ class Parsing_model extends CI_Model {
     public function get_parsing_data($limit = 10, $offset = 0, $search = '') {
         try {
             $this->db->select('*');
-            $this->db->from('parsing');
+            $this->db->from($this->table);
             $this->db->where('status', 'active');
 
             if (!empty($search)) {
@@ -129,7 +125,6 @@ class Parsing_model extends CI_Model {
             return $query->result_array();
 
         } catch (Exception $e) {
-            log_message('error', 'Get parsing data error: ' . $e->getMessage());
             return array();
         }
     }
@@ -139,7 +134,7 @@ class Parsing_model extends CI_Model {
      */
     public function count_parsing_data($search = '') {
         try {
-            $this->db->from('parsing');
+            $this->db->from($this->table);
             $this->db->where('status', 'active');
 
             if (!empty($search)) {
@@ -153,7 +148,6 @@ class Parsing_model extends CI_Model {
             return $this->db->count_all_results();
 
         } catch (Exception $e) {
-            log_message('error', 'Count parsing data error: ' . $e->getMessage());
             return 0;
         }
     }
@@ -167,22 +161,22 @@ class Parsing_model extends CI_Model {
 
             // Total records
             $this->db->where('status', 'active');
-            $stats['total_records'] = $this->db->count_all_results('parsing');
+            $stats['total_records'] = $this->db->count_all_results($this->table);
 
             // Records today
             $this->db->where('status', 'active');
             $this->db->where('DATE(parsed_at)', date('Y-m-d'));
-            $stats['today_records'] = $this->db->count_all_results('parsing');
+            $stats['today_records'] = $this->db->count_all_results($this->table);
 
             // Records this month
             $this->db->where('status', 'active');
             $this->db->where('YEAR(parsed_at)', date('Y'));
             $this->db->where('MONTH(parsed_at)', date('m'));
-            $stats['month_records'] = $this->db->count_all_results('parsing');
+            $stats['month_records'] = $this->db->count_all_results($this->table);
 
             // Unique passports
             $this->db->select('COUNT(DISTINCT no_paspor) as unique_passports');
-            $this->db->from('parsing');
+            $this->db->from($this->table);
             $this->db->where('status', 'active');
             $query = $this->db->get();
             $result = $query->row_array();
@@ -191,8 +185,26 @@ class Parsing_model extends CI_Model {
             return $stats;
 
         } catch (Exception $e) {
-            log_message('error', 'Get parsing statistics error: ' . $e->getMessage());
-            return array();
+            return array(
+                'total_records' => 0,
+                'today_records' => 0,
+                'month_records' => 0,
+                'unique_passports' => 0
+            );
+        }
+    }
+
+    /**
+     * Check if parsing data exists
+     */
+    public function get_parsing_data_by_id($id) {
+        try {
+            $this->db->where('id', $id);
+            $this->db->where('status', 'active');
+            $query = $this->db->get($this->table);
+            return $query->row_array();
+        } catch (Exception $e) {
+            return null;
         }
     }
 
@@ -201,18 +213,60 @@ class Parsing_model extends CI_Model {
      */
     public function delete_parsing_data($id) {
         try {
+            // Check if data exists
+            $existing_data = $this->get_parsing_data_by_id($id);
+            if (!$existing_data) {
+                return array('success' => false, 'message' => 'Data parsing tidak ditemukan');
+            }
+
+            // Perform soft delete
             $this->db->where('id', $id);
-            $result = $this->db->update('parsing', array('status' => 'deleted'));
+            $result = $this->db->update($this->table, array('status' => 'deleted'));
 
             if ($result) {
                 return array('success' => true, 'message' => 'Data parsing berhasil dihapus');
             } else {
-                throw new Exception('Gagal menghapus data parsing');
+                return array('success' => false, 'message' => 'Gagal menghapus data parsing');
             }
 
         } catch (Exception $e) {
-            log_message('error', 'Delete parsing data error: ' . $e->getMessage());
-            return array('success' => false, 'message' => $e->getMessage());
+            return array('success' => false, 'message' => 'Error: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Bulk delete parsing data (soft delete)
+     */
+    public function bulk_delete_parsing_data($ids) {
+        try {
+            if (empty($ids) || !is_array($ids)) {
+                return array('success' => false, 'message' => 'ID data tidak valid');
+            }
+
+            // Validate all IDs
+            $valid_ids = array();
+            foreach ($ids as $id) {
+                if (is_numeric($id) && $id > 0) {
+                    $valid_ids[] = $id;
+                }
+            }
+
+            if (empty($valid_ids)) {
+                return array('success' => false, 'message' => 'Tidak ada ID yang valid');
+            }
+
+            // Perform bulk soft delete
+            $this->db->where_in('id', $valid_ids);
+            $result = $this->db->update($this->table, array('status' => 'deleted'));
+
+            if ($result) {
+                return array('success' => true, 'message' => count($valid_ids) . ' data parsing berhasil dihapus');
+            } else {
+                return array('success' => false, 'message' => 'Gagal menghapus data parsing');
+            }
+
+        } catch (Exception $e) {
+            return array('success' => false, 'message' => 'Error: ' . $e->getMessage());
         }
     }
 }
