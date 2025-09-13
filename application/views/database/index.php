@@ -18,18 +18,18 @@
                     </div>
                    
                     <div class="d-flex flex-wrap gap-2">
+                        <?php if($this->session->userdata('role') == 'admin'): ?>
                         <a href="<?= base_url('database/tambah') ?>" class="btn btn-sm btn-tambah">
                             <i class="fas fa-plus"></i> <span class="d-none d-sm-inline">Tambah</span>
                         </a>
+                        <?php endif; ?>
                         <a href="<?= base_url('database/import') ?>" class="btn btn-sm btn-import">
                             <i class="fas fa-file-import"></i> <span class="d-none d-sm-inline">Import</span>
                         </a>
                         <button type="button" class="btn btn-sm btn-export" data-bs-toggle="modal" data-bs-target="#exportModal">
                             <i class="fas fa-file-export"></i> <span class="d-none d-sm-inline">Export</span>
                         </button>
-                        <button type="button" class="btn btn-sm btn-attachment" onclick="downloadBarcodeAttachments()">
-                            <i class="fas fa-download"></i> <span class="d-none d-sm-inline">Download Attachment</span>
-                        </button>
+                        
                         <button type="button" class="btn btn-sm btn-statistics" onclick="showOperatorStatistics()">
                             <i class="fas fa-chart-bar"></i> <span class="d-none d-sm-inline">Statistik Operator</span>
                         </button>
@@ -337,6 +337,12 @@
                                         <?php endforeach; ?>
                                     </div>
                                 </div>
+                                <br>
+                                <p class="mb-2">
+                                    <button type="button" class="btn btn-sm btn-attachment" onclick="downloadBarcodeAttachments()">
+                                        <i class="fas fa-download"></i> <span class="d-none d-sm-inline">Download Barcode</span>
+                                    </button>
+                                </p>
                                 <?php endif; ?>
                             </div>
                         </div>
