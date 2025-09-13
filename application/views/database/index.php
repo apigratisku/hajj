@@ -355,6 +355,7 @@
                                                 <input type="checkbox" id="selectAllMobile" onchange="toggleSelectAllMobile(this)">
                                             </th>
                                             <?php endif; ?>
+                                            <th class="col-travel">Travel</th>
                                             <th class="col-nama">Nama</th>
                                             <th class="col-paspor">Paspor</th>
                                             <th class="col-visa">Visa</th>
@@ -390,6 +391,9 @@
                                                 <input type="checkbox" class="row-checkbox-mobile" value="<?= $p->id ?>" onchange="updateDeleteButton()">
                                             </td>
                                             <?php endif; ?>
+                                            <td class="col-travel" data-field="nama_travel" data-value="<?= $p->nama_travel ?>">
+                                            <span class="value copyable-text" data-field="nama_travel" data-value="<?= $p->nama_travel ?>" onclick="copyToClipboard('<?= htmlspecialchars($p->nama_travel, ENT_QUOTES) ?>', 'Nama Travel')" title="Klik untuk copy"><?= $p->nama_travel ?></span>
+                                            </td>
                                             <td class="col-nama" data-field="nama" data-value="<?= $p->nama ?>" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px;">
                                             <span class="value copyable-text" data-field="nama" data-value="<?= $p->nama ?>" onclick="copyToClipboard('<?= htmlspecialchars($p->nama, ENT_QUOTES) ?>', 'Nama Peserta')" title="Klik untuk copy"><?= $p->nama ?></span>
                                             <input type="text" class="mobile-edit-field" value="<?= $p->nama ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
@@ -537,6 +541,7 @@
                                             <input type="checkbox" id="selectAllDesktop" onchange="toggleSelectAllDesktop(this)">
                                         </th>
                                         <?php endif; ?>
+                                        <th class="text-center">Travel</th>
                                         <th class="text-center">Nama Peserta</th>
                                         <th class="text-center">No Paspor</th>
                                         <th class="text-center">No Visa</th>
@@ -570,6 +575,10 @@
                                             <input type="checkbox" class="row-checkbox-desktop" value="<?= $p->id ?>" onchange="updateDeleteButton()">
                                         </td>
                                         <?php endif; ?>
+                                        <td class="text-center" data-field="nama_travel" data-value="<?= $p->nama_travel ?>">
+                                        <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->nama_travel, ENT_QUOTES) ?>', 'Nama Travel')" title="Klik untuk copy"><?= $p->nama_travel ?></span>
+                                        <input type="text" class="form-control edit-field" value="<?= $p->nama_travel ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
+                                        </td>
                                         <td class="nama-peserta" data-field="nama" data-value="<?= $p->nama ?>">
                                         <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->nama, ENT_QUOTES) ?>', 'Nama Peserta')" title="Klik untuk copy"><?= $p->nama ?></span>
                                         <input type="text" class="form-control edit-field" value="<?= $p->nama ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
