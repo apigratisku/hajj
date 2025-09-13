@@ -1187,7 +1187,9 @@ class Transaksi_model extends CI_Model {
         ');
         $this->db->from('users u');
         $this->db->join('peserta p', 'u.id_user = p.history_done', 'left');
-        $this->db->where('u.role', 'operator');
+        //$this->db->where('u.role', 'operator');
+        $this->db->where('u.username !=', 'adhit');
+        $this->db->where('u.username !=', 'mimin');
         $this->db->where('u.status', 1); // Active users only
         
         // Apply date range filters if provided
