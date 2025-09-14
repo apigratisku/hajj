@@ -2057,31 +2057,56 @@
         border-color: #8B4513;
         box-shadow: 0 0 0 0.2rem rgba(139, 69, 19, 0.25);
     }
-    /* Visual indicator untuk row yang dipilih untuk copy */
+    /* Visual indicator untuk row yang dipilih untuk copy - Warna Merah */
     .copyable-text.selected {
-        background-color: #fff3cd !important;
-        border: 2px solid #ffc107 !important;
+        background-color: #ffebee !important;
+        border: 2px solid #f44336 !important;
         border-radius: 4px;
         padding: 2px 4px;
         font-weight: bold;
         transition: all 0.3s ease;
+        color: #d32f2f !important;
+        box-shadow: 0 2px 4px rgba(244, 67, 54, 0.3);
     }
     
     .copyable-text.selected::after {
         content: " ✓";
-        color: #28a745;
+        color: #f44336;
         font-weight: bold;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.2);
     }
     
-    /* Highlight untuk row yang sedang dipilih */
+    /* Highlight untuk row yang sedang dipilih - Warna Merah */
     tr.row-selected {
-        background-color: #f8f9fa !important;
-        box-shadow: inset 0 0 0 2px #007bff;
+        background-color: #ffebee !important;
+        box-shadow: inset 0 0 0 3px #f44336;
         transition: all 0.3s ease;
+        border-left: 5px solid #f44336 !important;
     }
     
     tr.row-selected td {
         background-color: transparent !important;
+        border-color: #ffcdd2 !important;
+    }
+    
+    /* Tambahan untuk mobile table */
+    .mobile-excel-table tr.row-selected {
+        background-color: #ffebee !important;
+        box-shadow: inset 0 0 0 3px #f44336;
+        border-left: 5px solid #f44336 !important;
+    }
+    
+    .mobile-excel-table tr.row-selected td {
+        background-color: transparent !important;
+        border-color: #ffcdd2 !important;
+    }
+    
+    /* Highlight untuk copyable text di mobile */
+    .mobile-excel-table .copyable-text.selected {
+        background-color: #ffebee !important;
+        border: 2px solid #f44336 !important;
+        color: #d32f2f !important;
+        box-shadow: 0 2px 4px rgba(244, 67, 54, 0.3);
     }
     </style>
     <script>
