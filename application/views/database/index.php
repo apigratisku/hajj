@@ -109,7 +109,7 @@
                                         <option value="P" <?= (isset($_GET['gender']) && $_GET['gender'] === 'P') ? 'selected' : '' ?>>Perempuan</option>
                                     </select>
                                 </div>
-                                <?php if($this->session->userdata('role') == 'admin'): ?>
+                               
                                 <div class="form-group">
                                     <select name="tanggal_pengerjaan" class="form-select mobile-input">
                                         <option value="">Tanggal Pengerjaan</option>
@@ -131,6 +131,7 @@
                                         <option value="1">Belum dijadwalkan</option>
                                     </select>
                                 </div>
+                                <?php if($this->session->userdata('role') == 'admin'): ?>
                                 <div class="form-group">
                                     <select name="history_done" class="form-select mobile-input">
                                     <option value="">Operator</option>
@@ -242,7 +243,7 @@
                                         <option value="2" <?= (isset($_GET['status']) && $_GET['status'] === '2') ? 'selected' : '' ?>>Done</option>
                                     </select>
                                 </div>
-                                <?php if($this->session->userdata('role') == 'admin'): ?>
+                                
                                 <div class="col-md-1">
                                     <select name="tanggal_pengerjaan" class="form-select form-control-sm">
                                         <option value="">Tanggal Pengerjaan</option>
@@ -257,7 +258,7 @@
                                         <?php endforeach; endif; ?>
                                     </select>
                                 </div>
-                                <?php endif; ?>
+                                
                                 <div class="col-md-1">
                                     <select name="status_jadwal" class="form-select form-control-sm">
                                         <option value="">Status Jadwal</option>
