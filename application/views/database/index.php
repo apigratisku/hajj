@@ -2144,7 +2144,7 @@ function copyToClipboard(text, fieldName) {
             // Keep selection for 3 seconds to show success
             setTimeout(() => {
                 clearAllSelections();
-            }, 3000);
+            }, 10000);
         }).catch(err => {
             console.error('Clipboard API failed:', err);
             removeLoading();
@@ -3032,7 +3032,7 @@ function copyToClipboard(text, fieldName) {
             // Keep selection for 3 seconds to show success
             setTimeout(() => {
                 clearAllSelections();
-            }, 3000);
+            }, 10000);
         }).catch(err => {
             console.error('Clipboard API failed:', err);
             removeLoading();
@@ -3082,7 +3082,7 @@ function fallbackCopyTextToClipboard(text, fieldName) {
             // Keep selection for 3 seconds to show success
             setTimeout(() => {
                 clearAllSelections();
-            }, 3000);
+            }, 10000);
         } /*else {
             showAlert('Gagal copy teks ke clipboard', 'error');
         }*/
