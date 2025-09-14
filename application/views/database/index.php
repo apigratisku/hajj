@@ -2057,9 +2057,35 @@
         border-color: #8B4513;
         box-shadow: 0 0 0 0.2rem rgba(139, 69, 19, 0.25);
     }
+    /* Visual indicator untuk row yang dipilih untuk copy */
+    .copyable-text.selected {
+        background-color: #fff3cd !important;
+        border: 2px solid #ffc107 !important;
+        border-radius: 4px;
+        padding: 2px 4px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+    
+    .copyable-text.selected::after {
+        content: " ✓";
+        color: #28a745;
+        font-weight: bold;
+    }
+    
+    /* Highlight untuk row yang sedang dipilih */
+    tr.row-selected {
+        background-color: #f8f9fa !important;
+        box-shadow: inset 0 0 0 2px #007bff;
+        transition: all 0.3s ease;
+    }
+    
+    tr.row-selected td {
+        background-color: transparent !important;
+    }
     </style>
     <script>
-// Copy to clipboard function (unchanged)
+// Copy to clipboard function dengan visual indicator
 function copyToClipboard(text, fieldName) {
     // Handle empty or dash values
     if (!text || text === '-' || text === '') {
@@ -2067,8 +2093,22 @@ function copyToClipboard(text, fieldName) {
         return;
     }
     
-    // Add loading state
+    // Remove previous selections
+    clearAllSelections();
+    
+    // Add visual indicator
     const clickedElement = event.target;
+    const row = clickedElement.closest('tr');
+    
+    // Highlight the clicked element
+    clickedElement.classList.add('selected');
+    
+    // Highlight the entire row
+    if (row) {
+        row.classList.add('row-selected');
+    }
+    
+    // Add loading state
     const removeLoading = addCopyLoadingState(clickedElement);
     
     // Try to use the modern Clipboard API first
@@ -2076,6 +2116,10 @@ function copyToClipboard(text, fieldName) {
         navigator.clipboard.writeText(text).then(() => {
             removeLoading();
             showCopySuccess(fieldName, text);
+            // Keep selection for 3 seconds to show success
+            setTimeout(() => {
+                clearAllSelections();
+            }, 3000);
         }).catch(err => {
             console.error('Clipboard API failed:', err);
             removeLoading();
@@ -2088,7 +2132,22 @@ function copyToClipboard(text, fieldName) {
     }
 }
 
-// Fallback copy function for older browsers (unchanged)
+// Function untuk menghapus semua selection
+function clearAllSelections() {
+    // Remove selected class from all copyable text elements
+    const selectedElements = document.querySelectorAll('.copyable-text.selected');
+    selectedElements.forEach(element => {
+        element.classList.remove('selected');
+    });
+    
+    // Remove row-selected class from all rows
+    const selectedRows = document.querySelectorAll('tr.row-selected');
+    selectedRows.forEach(row => {
+        row.classList.remove('row-selected');
+    });
+}
+
+// Fallback copy function for older browsers dengan visual indicator
 function fallbackCopyTextToClipboard(text, fieldName) {
     const textArea = document.createElement('textarea');
     textArea.value = text;
@@ -2107,6 +2166,10 @@ function fallbackCopyTextToClipboard(text, fieldName) {
         const successful = document.execCommand('copy');
         if (successful) {
             showCopySuccess(fieldName, text);
+            // Keep selection for 3 seconds to show success
+            setTimeout(() => {
+                clearAllSelections();
+            }, 3000);
         } /*else {
             showAlert('Gagal copy teks ke clipboard', 'error');
         }*/
@@ -2910,7 +2973,7 @@ function downloadBarcodeAttachments() {
     }, 1000);
 }
 </script><script>
-// Copy to clipboard function
+// Copy to clipboard function dengan visual indicator
 function copyToClipboard(text, fieldName) {
     // Handle empty or dash values
     if (!text || text === '-' || text === '') {
@@ -2918,8 +2981,22 @@ function copyToClipboard(text, fieldName) {
         return;
     }
     
-    // Add loading state
+    // Remove previous selections
+    clearAllSelections();
+    
+    // Add visual indicator
     const clickedElement = event.target;
+    const row = clickedElement.closest('tr');
+    
+    // Highlight the clicked element
+    clickedElement.classList.add('selected');
+    
+    // Highlight the entire row
+    if (row) {
+        row.classList.add('row-selected');
+    }
+    
+    // Add loading state
     const removeLoading = addCopyLoadingState(clickedElement);
     
     // Try to use the modern Clipboard API first
@@ -2927,6 +3004,10 @@ function copyToClipboard(text, fieldName) {
         navigator.clipboard.writeText(text).then(() => {
             removeLoading();
             showCopySuccess(fieldName, text);
+            // Keep selection for 3 seconds to show success
+            setTimeout(() => {
+                clearAllSelections();
+            }, 3000);
         }).catch(err => {
             console.error('Clipboard API failed:', err);
             removeLoading();
@@ -2939,7 +3020,22 @@ function copyToClipboard(text, fieldName) {
     }
 }
 
-// Fallback copy function for older browsers
+// Function untuk menghapus semua selection
+function clearAllSelections() {
+    // Remove selected class from all copyable text elements
+    const selectedElements = document.querySelectorAll('.copyable-text.selected');
+    selectedElements.forEach(element => {
+        element.classList.remove('selected');
+    });
+    
+    // Remove row-selected class from all rows
+    const selectedRows = document.querySelectorAll('tr.row-selected');
+    selectedRows.forEach(row => {
+        row.classList.remove('row-selected');
+    });
+}
+
+// Fallback copy function for older browsers dengan visual indicator
 function fallbackCopyTextToClipboard(text, fieldName) {
     const textArea = document.createElement('textarea');
     textArea.value = text;
@@ -2958,6 +3054,10 @@ function fallbackCopyTextToClipboard(text, fieldName) {
         const successful = document.execCommand('copy');
         if (successful) {
             showCopySuccess(fieldName, text);
+            // Keep selection for 3 seconds to show success
+            setTimeout(() => {
+                clearAllSelections();
+            }, 3000);
         } /*else {
             showAlert('Gagal copy teks ke clipboard', 'error');
         }*/
