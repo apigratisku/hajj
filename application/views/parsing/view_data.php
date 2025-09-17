@@ -100,9 +100,21 @@
                             </form>
                         </div>
                         <div class="col-md-6 text-right">
-                            <span class="text-muted">
-                                Menampilkan <?= count($parsing_data) ?> dari <?= number_format($total_records) ?> data
-                            </span>
+                            <div class="btn-group" role="group">
+                                <a href="<?= base_url('parsing/download_excel') ?>" class="btn btn-success btn-sm">
+                                    <i class="fas fa-file-excel"></i> Download All Excel
+                                </a>
+                                <?php if (!empty($search)): ?>
+                                    <a href="<?= base_url('parsing/download_excel_filtered?search=' . urlencode($search)) ?>" class="btn btn-warning btn-sm">
+                                        <i class="fas fa-file-excel"></i> Download Filtered Excel
+                                    </a>
+                                <?php endif; ?>
+                            </div>
+                            <div class="mt-2">
+                                <span class="text-muted">
+                                    Menampilkan <?= count($parsing_data) ?> dari <?= number_format($total_records) ?> data
+                                </span>
+                            </div>
                         </div>
                     </div>
 
@@ -129,27 +141,22 @@
                                             <td class="text-center"><?= $no++ ?></td>
                                             <td><?= htmlspecialchars($data['nama']) ?></td>
                                             <td class="text-center">
-                                                <span class="badge badge-primary"><?= htmlspecialchars($data['no_paspor']) ?></span>
+                                                <span class="badge badge-primary"><?= htmlspecialchars($data['passport_no']) ?></span>
                                             </td>
                                             <td class="text-center">
-                                                <span class="badge badge-success"><?= htmlspecialchars($data['no_visa']) ?></span>
+                                                <span class="badge badge-success"><?= htmlspecialchars($data['visa_no']) ?></span>
                                             </td>
                                             <td class="text-center">
                                                 <?= date('d/m/Y', strtotime($data['tanggal_lahir'])) ?>
                                             </td>
                                             <td class="text-center">
                                                 <small class="text-muted">
-                                                    <?= htmlspecialchars($data['file_name']) ?>
-                                                    <?php if ($data['file_size'] > 0): ?>
-                                                        <br><span class="badge badge-secondary">
-                                                            <?= number_format($data['file_size'] / 1024, 1) ?> KB
-                                                        </span>
-                                                    <?php endif; ?>
+                                                    PDF File
                                                 </small>
                                             </td>
                                             <td class="text-center">
                                                 <small>
-                                                    <?= date('d/m/Y H:i', strtotime($data['parsed_at'])) ?>
+                                                    <?= date('d/m/Y H:i', strtotime($data['created_at'])) ?>
                                                 </small>
                                             </td>
                                             <td class="text-center">
@@ -318,10 +325,28 @@ document.addEventListener('DOMContentLoaded', function() {
                     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menghapus...';
                     btn.disabled = true;
                     
-                    // Redirect after a short delay to show loading
-                    setTimeout(function() {
+                    // Use fetch for better error handling
+                    fetch('<?= base_url('parsing/delete_data') ?>/' + deleteId, {
+                        method: 'GET',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(function(response) {
+                        if (response.ok) {
+                            // Success - redirect to view_data
+                            window.location.href = '<?= base_url('parsing/view_data') ?>';
+                        } else {
+                            // Error - show message and redirect
+                            console.error('Delete failed with status:', response.status);
+                            window.location.href = '<?= base_url('parsing/view_data') ?>';
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error('Delete request failed:', error);
+                        // Fallback: direct redirect
                         window.location.href = '<?= base_url('parsing/delete_data') ?>/' + deleteId;
-                    }, 500);
+                    });
                 } catch (e) {
                     console.error('Error in delete confirmation:', e);
                     // Fallback: direct redirect

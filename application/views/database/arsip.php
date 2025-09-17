@@ -91,6 +91,20 @@
                                         <?php endforeach; endif; ?>
                                     </select>
                                 </div>
+                                <div class="form-group">
+                                    <select name="tanggal_pengarsipan" class="form-select mobile-input">
+                                        <option value="">Tanggal Pengarsipan</option>
+                                        <?php if (!empty($tanggal_pengarsipan_list)): foreach ($tanggal_pengarsipan_list as $tanggal_pengarsipan): ?>
+                                            <?php 
+                                                $display_date = date('d-m-Y', strtotime($tanggal_pengarsipan->tanggal_pengarsipan));
+                                                $value_date = date('d-m-Y', strtotime($tanggal_pengarsipan->tanggal_pengarsipan));
+                                            ?>
+                                            <option value="<?= htmlspecialchars($value_date) ?>" <?= (isset($_GET['tanggal_pengarsipan']) && $_GET['tanggal_pengarsipan'] === $value_date) ? 'selected' : '' ?>>
+                                                <?= $display_date ?> (<?= $tanggal_pengarsipan->jumlah_arsip ?> data)
+                                            </option>
+                                        <?php endforeach; endif; ?>
+                                    </select>
+                                </div>
                                 <?php endif; ?>
                                 <div class="form-actions">
                                     <button type="submit" class="btn btn-search">
@@ -169,6 +183,20 @@
                                         <?php endforeach; endif; ?>
                                     </select>
                                 </div>
+                                <div class="col-md-1">
+                                    <select name="tanggal_pengarsipan" class="form-select form-control-sm">
+                                        <option value="">Tanggal Pengarsipan</option>
+                                        <?php if (!empty($tanggal_pengarsipan_list)): foreach ($tanggal_pengarsipan_list as $tanggal_pengarsipan): ?>
+                                            <?php 
+                                                $display_date = date('d-m-Y', strtotime($tanggal_pengarsipan->tanggal_pengarsipan));
+                                                $value_date = date('d-m-Y', strtotime($tanggal_pengarsipan->tanggal_pengarsipan));
+                                            ?>
+                                            <option value="<?= htmlspecialchars($value_date) ?>" <?= (isset($_GET['tanggal_pengarsipan']) && $_GET['tanggal_pengarsipan'] === $value_date) ? 'selected' : '' ?>>
+                                                <?= $display_date ?> (<?= $tanggal_pengarsipan->jumlah_arsip ?> data)
+                                            </option>
+                                        <?php endforeach; endif; ?>
+                                    </select>
+                                </div>
                                 <?php endif; ?>
                                 <div class="col-md-2">
                                     <button type="submit" class="btn btn-brown btn-sm me-2">
@@ -194,6 +222,12 @@
                                     <strong>Tanggal Pengerjaan:</strong> 
                                     <?= date('d-m-Y', strtotime($_GET['tanggal_pengerjaan'])) ?>
                                 </p>
+                                <?php if (isset($_GET['tanggal_pengarsipan']) && !empty($_GET['tanggal_pengarsipan'])): ?>
+                                <p class="mb-2">
+                                    <strong>Tanggal Pengarsipan:</strong> 
+                                    <?= date('d-m-Y', strtotime($_GET['tanggal_pengarsipan'])) ?>
+                                </p>
+                                <?php endif; ?>
                                 <p class="mb-2">
                                     <strong>Total Data Diarsipkan:</strong> 
                                     <span class="badge bg-primary"><?= $update_stats ?> data</span>
@@ -204,6 +238,40 @@
                                     <div class="d-flex flex-wrap gap-2 mt-1">
                                         <?php foreach ($update_stats_detail as $stat): ?>
                                             <span class="badge bg-secondary">
+                                                <?= $stat->status == 0 ? 'On Target' : ($stat->status == 1 ? 'Already' : 'Done') ?>: 
+                                                <?= $stat->count ?> data
+                                            </span>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                    
+                    <!-- Archive Statistics Info -->
+                    <?php if (isset($arsip_stats) && isset($_GET['tanggal_pengarsipan'])): ?>
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="alert alert-warning">
+                                <h6 class="alert-heading">
+                                    <i class="fas fa-archive"></i> Statistik Pengarsipan Data
+                                </h6>
+                                <p class="mb-2">
+                                    <strong>Tanggal Pengarsipan:</strong> 
+                                    <?= date('d-m-Y', strtotime($_GET['tanggal_pengarsipan'])) ?>
+                                </p>
+                                <p class="mb-2">
+                                    <strong>Total Data Diarsipkan:</strong> 
+                                    <span class="badge bg-warning text-dark"><?= $arsip_stats ?> data</span>
+                                </p>
+                                <?php if (isset($arsip_stats_detail) && !empty($arsip_stats_detail)): ?>
+                                <div class="mt-2">
+                                    <strong>Status Sebelum Diarsipkan:</strong>
+                                    <div class="d-flex flex-wrap gap-2 mt-1">
+                                        <?php foreach ($arsip_stats_detail as $stat): ?>
+                                            <span class="badge bg-info">
                                                 <?= $stat->status == 0 ? 'On Target' : ($stat->status == 1 ? 'Already' : 'Done') ?>: 
                                                 <?= $stat->count ?> data
                                             </span>
@@ -1938,7 +2006,7 @@ function saveRowMobileTable(button) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
     
-    fetch('<?= base_url('database/update_ajax/') ?>' + rowId, {
+    fetch('<?= base_url('database/update_ajax_arsip/') ?>' + rowId, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -2167,7 +2235,7 @@ function saveRow(button) {
     }
     console.log('==========================');
     
-    fetch('<?= base_url('database/update_ajax/') ?>' + rowId, {
+    fetch('<?= base_url('database/update_ajax_arsip/') ?>' + rowId, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -2933,7 +3001,7 @@ function saveRowMobileTable(button) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
     
-    fetch('<?= base_url('database/update_ajax/') ?>' + rowId, {
+    fetch('<?= base_url('database/update_ajax_arsip/') ?>' + rowId, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -3109,7 +3177,7 @@ function saveRow(button) {
         data[fieldName] = field.value;
     });
     
-    fetch('<?= base_url('database/update_ajax/') ?>' + rowId, {
+    fetch('<?= base_url('database/update_ajax_arsip/') ?>' + rowId, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -3734,11 +3802,11 @@ function autoSaveBarcodeToDatabase(row, barcodeValue) {
     }
     
     console.log('=== SENDING FETCH REQUEST ===');
-    console.log('URL:', '<?= base_url('database/update_ajax/') ?>' + rowId);
+    console.log('URL:', '<?= base_url('database/update_ajax_arsip/') ?>' + rowId);
     console.log('Data to send:', data);
     console.log('================================');
     
-    fetch('<?= base_url('database/update_ajax/') ?>' + rowId, {
+    fetch('<?= base_url('database/update_ajax_arsip/') ?>' + rowId, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

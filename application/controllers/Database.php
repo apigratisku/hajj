@@ -56,6 +56,7 @@ class Database extends CI_Controller {
             'sortir_waktu_end' => trim($this->input->get('sortir_waktu_end')),
             'startDate' => trim($this->input->get('startDate')),
             'endDate' => trim($this->input->get('endDate')),
+            'has_barcode' => trim($this->input->get('has_barcode')),
         ];
         
         // Remove empty filters to avoid unnecessary WHERE clauses
@@ -133,6 +134,9 @@ class Database extends CI_Controller {
         if (!empty($filters['endDate'])) {
             $query_params['endDate'] = $filters['endDate'];
         }
+        if (!empty($filters['has_barcode'])) {
+            $query_params['has_barcode'] = $filters['has_barcode'];
+        }
         
         // Build query string
         if (!empty($query_params)) {
@@ -206,6 +210,7 @@ class Database extends CI_Controller {
             'flag_doc' => trim($this->input->get('flag_doc')),
             'tanggaljam' => trim($this->input->get('tanggaljam')),
             'tanggal_pengerjaan' => trim($this->input->get('tanggal_pengerjaan')),
+            'tanggal_pengarsipan' => trim($this->input->get('tanggal_pengarsipan')),
             'status' => trim($this->input->get('status')),
             'gender' => trim($this->input->get('gender')),
             'selesai' => 2
@@ -229,11 +234,18 @@ class Database extends CI_Controller {
         $data['flag_doc_list'] = $this->transaksi_model->get_unique_flag_doc_arsip();
         $data['tanggaljam_list'] = $this->transaksi_model->get_unique_tanggaljam_arsip();
         $data['tanggal_pengerjaan_list'] = $this->transaksi_model->get_unique_tanggal_pengerjaan_arsip();
+        $data['tanggal_pengarsipan_list'] = $this->transaksi_model->get_unique_tanggal_pengarsipan_arsip();
         
         // Get update statistics if tanggal_pengerjaan filter is applied
         if (!empty($filters['tanggal_pengerjaan'])) {
             $data['update_stats'] = $this->transaksi_model->get_update_stats_by_date_arsip($filters['tanggal_pengerjaan']);
             $data['update_stats_detail'] = $this->transaksi_model->get_update_stats_detail_by_date_arsip($filters['tanggal_pengerjaan']);
+        }
+        
+        // Get archive statistics if tanggal_pengarsipan filter is applied
+        if (!empty($filters['tanggal_pengarsipan'])) {
+            $data['arsip_stats'] = $this->transaksi_model->get_arsip_stats_by_date($filters['tanggal_pengarsipan']);
+            $data['arsip_stats_detail'] = $this->transaksi_model->get_arsip_stats_detail_by_date($filters['tanggal_pengarsipan']);
         }
         
         // Get total count for pagination
@@ -334,8 +346,8 @@ class Database extends CI_Controller {
         // Update status from 2 (archived) to 0 (active)
         $data = [
             'status' => 0,
-            'updated_at' => date('Y-m-d H:i:s'),
-            'history_update' => $this->session->userdata('user_id') ?: null
+            'arsip_restore_at' => date('Y-m-d H:i:s'),
+            'eksekutor_arsip_restore_at' => $this->session->userdata('user_id') ?: null
         ];
         
         try {
@@ -398,78 +410,7 @@ class Database extends CI_Controller {
         redirect($redirect_url);
     }   
     
-    public function download($id) {
-        $peserta = $this->transaksi_model->get_by_id($id);
-        
-        if (!$peserta) {
-            $this->session->set_flashdata('error', 'Data peserta tidak ditemukan');
-            redirect('database');
-        }
-        
-        // Create PDF
-        $this->load->library('pdf');
-        
-        $pdf = new FPDF('P', 'mm', 'A4');
-        $pdf->AddPage();
-        
-        // Header
-        $pdf->SetFont('Arial', 'B', 16);
-        $pdf->Cell(0, 10, 'LAPORAN DATA PESERTA', 0, 1, 'C');
-        $pdf->Ln(10);
-        
-        // Content
-        $pdf->SetFont('Arial', 'B', 12);
-        $pdf->Cell(50, 10, 'ID Agent:', 0, 0);
-        $pdf->SetFont('Arial', '', 12);
-        $pdf->Cell(0, 10, $transaksi->agent_id, 0, 1);
-        
-        $pdf->SetFont('Arial', 'B', 12);
-        $pdf->Cell(50, 10, 'Nama Peserta:', 0, 0);
-        $pdf->SetFont('Arial', '', 12);
-        $pdf->Cell(0, 10, $transaksi->nama, 0, 1);
-        
-        $pdf->SetFont('Arial', 'B', 12);
-        $pdf->Cell(50, 10, 'Nomor Passpor:', 0, 0);
-        $pdf->SetFont('Arial', '', 12);
-        $pdf->Cell(0, 10, $transaksi->no, 0, 1);
-        
-        $pdf->SetFont('Arial', 'B', 12);
-        $pdf->Cell(50, 10, 'Dermaga:', 0, 0);
-        $pdf->SetFont('Arial', '', 12);
-        $pdf->Cell(0, 10, 'Dermaga ' . $transaksi->dermaga, 0, 1);
-        
-        $pdf->SetFont('Arial', 'B', 12);
-        $pdf->Cell(50, 10, 'Waktu Mulai Sandar:', 0, 0);
-        $pdf->SetFont('Arial', '', 12);
-        $pdf->Cell(0, 10, $transaksi->waktu_mulai_sandar, 0, 1);
-        
-        $pdf->SetFont('Arial', 'B', 12);
-        $pdf->Cell(50, 10, 'Waktu Selesai Sandar:', 0, 0);
-        $pdf->SetFont('Arial', '', 12);
-        $pdf->Cell(0, 10, $transaksi->waktu_selesai_sandar, 0, 1);
-        
-        $pdf->SetFont('Arial', 'B', 12);
-        $pdf->Cell(50, 10, 'Volume Air Tawar:', 0, 0);
-        $pdf->SetFont('Arial', '', 12);
-        $pdf->Cell(0, 10, $transaksi->volume_total . ' Liter', 0, 1);
-        
-        $pdf->Output('Transaksi_' . $transaksi->kode_transaksi . '.pdf', 'D');
-    }
     
-    public function print_laporan($id) {
-        $transaksi = $this->transaksi_model->get_by_id($id);
-        
-        if (!$transaksi) {
-            $this->session->set_flashdata('error', 'Data transaksi tidak ditemukan');
-            redirect('database');
-        }
-        
-        $data['title'] = 'Print Laporan Transaksi';
-        $data['transaksi'] = $transaksi;
-        
-        // Load print view
-        $this->load->view('database/print_laporan', $data);
-    }
 
     public function edit($id) {
         // Load required models
@@ -668,6 +609,129 @@ class Database extends CI_Controller {
                 log_message('debug', 'Database update_ajax - Setting history_done for new done status: ' . $data['history_done']);
             }
         }
+        
+        // Debug: Log the data being updated
+        log_message('debug', 'Database update_ajax - Updating peserta ID: ' . $id . ' with data: ' . json_encode($data));
+        log_message('debug', 'Database update_ajax - Raw input: ' . json_encode($input));
+        log_message('debug', 'Database update_ajax - Barcode value: ' . (isset($data['barcode']) ? $data['barcode'] : 'NOT SET'));
+        log_message('debug', 'Database update_ajax - Allowed fields: ' . json_encode($allowedFields));
+        log_message('debug', 'Database update_ajax - History update value: ' . (isset($data['history_update']) ? $data['history_update'] : 'NOT SET'));
+        log_message('debug', 'Database update_ajax - History done value: ' . (isset($data['history_done']) ? $data['history_done'] : 'NOT SET'));
+        log_message('debug', 'Database update_ajax - Current peserta status: ' . $current_peserta->status);
+        log_message('debug', 'Database update_ajax - Current peserta history_done: ' . ($current_peserta->history_done ?: 'NULL'));
+        log_message('debug', 'Database update_ajax - User ID from session: ' . $this->session->userdata('user_id'));
+       
+        
+        try {
+            // Final check to ensure no output has been sent
+            if (headers_sent()) {
+                log_message('error', 'Headers already sent in Database update_ajax');
+                $this->output->set_status_header(500);
+                $this->output->set_content_type('application/json');
+                $this->output->set_output(json_encode(['success' => false, 'message' => 'Headers sudah terkirim. Silakan coba lagi.']));
+                return;
+            }
+            
+            // Update data
+            $result = $this->transaksi_model->update($id, $data);
+            
+            if ($result) {
+                // Kirim notifikasi Telegram untuk update data peserta via AJAX
+                
+                    $peserta_name = isset($data['nama']) ? $data['nama'] : $current_peserta->nama;
+                    if($this->session->userdata('username') != 'adhit'):
+                    $this->telegram_notification->peserta_crud_notification('update', $peserta_name, 'ID: ' . $id);
+                    endif;
+                
+                // Get current URL with filters for redirect
+                $redirect_url = $this->get_redirect_url_with_filters();
+                
+                // Debug: Log the redirect URL
+                log_message('debug', 'AJAX Update - Redirect URL: ' . $redirect_url);
+                log_message('debug', 'AJAX Update - Current GET params: ' . json_encode($_GET));
+                
+                $this->output->set_content_type('application/json');
+                $this->output->set_output(json_encode([
+                    'success' => true, 
+                    'message' => 'Data berhasil diperbarui',
+                    'redirect_url' => $redirect_url
+                ]));
+            } else {
+                $this->output->set_status_header(500);
+                $this->output->set_content_type('application/json');
+                $this->output->set_output(json_encode(['success' => false, 'message' => 'Gagal memperbarui data. Silakan coba lagi.']));
+            }
+        } catch (Exception $e) {
+            log_message('error', 'Exception in Database update_ajax: ' . $e->getMessage());
+            $this->output->set_status_header(500);
+            $this->output->set_content_type('application/json');
+            $this->output->set_output(json_encode(['success' => false, 'message' => 'Terjadi kesalahan saat memperbarui data: ' . $e->getMessage()]));
+        }
+    }
+
+    public function update_ajax_arsip($id) {
+        // Check if it's an AJAX request
+        if (!$this->is_ajax_request()) {
+            $this->output->set_status_header(400);
+            $this->output->set_output(json_encode(['success' => false, 'message' => 'Invalid request']));
+            return;
+        }
+        
+        // Get JSON input
+        $input = json_decode(file_get_contents('php://input'), true);
+        
+        // Debug: Log the input data
+        log_message('debug', 'AJAX Update - Input data: ' . json_encode($input));
+        log_message('debug', 'AJAX Update - GET params: ' . json_encode($_GET));
+        log_message('debug', 'AJAX Update - POST params: ' . json_encode($_POST));
+        
+        if (!$input) {
+            $this->output->set_status_header(400);
+            $this->output->set_output(json_encode(['success' => false, 'message' => 'Invalid input data']));
+            return;
+        }
+        
+        // For inline mobile edits, allow partial updates (no hard required fields)
+        
+        // Check database connection
+        if (!$this->db->simple_query('SELECT 1')) {
+            log_message('error', 'Database connection failed in Database update_ajax');
+            $this->output->set_status_header(500);
+            $this->output->set_content_type('application/json');
+            $this->output->set_output(json_encode(['success' => false, 'message' => 'Koneksi database gagal. Silakan coba lagi.']));
+            return;
+        }
+        
+        // Check if peserta exists
+        $current_peserta = $this->transaksi_model->get_by_id($id);
+        if (!$current_peserta) {
+            $this->output->set_status_header(404);
+            $this->output->set_output(json_encode(['success' => false, 'message' => 'Data peserta tidak ditemukan']));
+            return;
+        }
+        
+        // Prepare data for update only for fields provided
+        $allowedFields = ['nama','flag_doc','nomor_paspor','no_visa','tgl_lahir','password','nomor_hp','email','barcode','gender','status','tanggal','jam','status_jadwal','tanggal_pengerjaan'];
+        $data = [];
+        foreach ($allowedFields as $field) {
+            if (array_key_exists($field, $input)) {
+                $value = $input[$field];
+        
+                if ($field === 'tgl_lahir' && empty($value)) {
+                    $data[$field] = null;
+                } 
+                // ✅ Khusus field yang boleh bernilai "0", jangan pakai ?: null
+                elseif ($field === 'status') {
+                    $data[$field] = $value; // Biarkan "0", "1", "2" tetap masuk
+                }
+                // Untuk field lain: tetap pakai trim dan null jika kosong
+                else {
+                    $data[$field] = trim($value) ?: null;
+                }
+            }
+        }
+        
+
         
         // Debug: Log the data being updated
         log_message('debug', 'Database update_ajax - Updating peserta ID: ' . $id . ' with data: ' . json_encode($data));
@@ -1037,6 +1101,8 @@ class Database extends CI_Controller {
                 'nomor_paspor' => $this->input->get('nomor_paspor'),
                 'no_visa' => $this->input->get('no_visa'),
                 'flag_doc' => $this->input->get('flag_doc'),
+                'tanggal_pengerjaan' => $this->input->get('tanggal_pengerjaan'),
+                'tanggal_pengarsipan' => $this->input->get('tanggal_pengarsipan'),
                 'status' => $this->input->get('status'),
                 'selesai' => 2
             ];
@@ -3453,7 +3519,9 @@ class Database extends CI_Controller {
             'tanggaljam' => $this->input->get('tanggaljam'),
             'status' => $this->input->get('status'),
             'gender' => $this->input->get('gender'),
-            'page' => $this->input->get('page')
+            'page' => $this->input->get('page'),
+            'tanggal_pengerjaan' => $this->input->get('tanggal_pengerjaan'),
+            'tanggal_pengarsipan' => $this->input->get('tanggal_pengarsipan')
         ];
         
         // Add non-empty filters to query parameters
@@ -3501,6 +3569,7 @@ class Database extends CI_Controller {
             'page' => $this->input->get('page'),
             'status_jadwal' => $this->input->get('status_jadwal'),
             'tanggal_pengerjaan' => $this->input->get('tanggal_pengerjaan'),
+            'tanggal_pengarsipan' => $this->input->get('tanggal_pengarsipan'),
         ];
         
         // Add all filters to query parameters (including empty ones)
@@ -4170,8 +4239,8 @@ class Database extends CI_Controller {
             // Update selesai from 2 (archived) to 0 (active)
             $update_data = [
                 'selesai' => 0,
-                'updated_at' => date('Y-m-d H:i:s'),
-                'history_update' => $this->session->userdata('user_id')
+                'arsip_restore_at' => date('Y-m-d H:i:s'),
+                'eksekutor_arsip_restore_at' => $this->session->userdata('user_id') ?: null
             ];
 
             $result = $this->transaksi_model->update($id, $update_data);

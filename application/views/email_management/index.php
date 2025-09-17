@@ -47,7 +47,43 @@
                         </div>
                     <?php endif; ?>
 
-                  
+                    <!-- Search and Filter Section -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-search"></i>
+                                </span>
+                                <input type="text" class="form-control" id="emailSearchInput" 
+                                       placeholder="Cari email address..." 
+                                       onkeyup="debouncedFilterEmails()">
+                                <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="statusFilter" onchange="filterEmails()">
+                                <option value="">Semua Status</option>
+                                <option value="active">Active</option>
+                                <option value="suspended">Suspended</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="quotaFilter" onchange="filterEmails()">
+                                <option value="">Semua Quota</option>
+                                <option value="small">Kecil (< 100MB)</option>
+                                <option value="medium">Sedang (100MB - 500MB)</option>
+                                <option value="large">Besar (> 500MB)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Search Results Info -->
+                    <div id="searchResultsInfo" class="alert alert-info" style="display: none;">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <span id="searchResultsText"></span>
+                    </div>
 
                     <!-- Debug Panel -->
                     <div class="alert alert-info" id="debug-panel" style="display: none;">
@@ -113,12 +149,28 @@
                                                 <strong><?= $isEmailValid ? $emailValue : 'N/A' ?></strong>
                                             </td>
                                             <td class="text-center">
-                                                <span class="badge bg-info">
+                                                <span class="badge bg-info" title="Total quota">
                                                     <?= number_format($account['quota']) ?> MB
                                                 </span>
+                                                <?php if (isset($account['usage']) && $account['quota'] > 0): 
+                                                    $usage_percentage = ($account['usage'] / $account['quota']) * 100;
+                                                ?>
+                                                    <br><small class="text-muted">
+                                                        <?= number_format($usage_percentage, 1) ?>% used
+                                                    </small>
+                                                <?php endif; ?>
                                             </td>
                                             <td class="text-center">
-                                                <?= number_format($account['usage']) ?> MB
+                                                <span class="text-primary" title="Used space">
+                                                    <?= number_format($account['usage']) ?> MB
+                                                </span>
+                                                <?php if (isset($account['usage']) && $account['quota'] > 0): 
+                                                    $available = $account['quota'] - $account['usage'];
+                                                ?>
+                                                    <br><small class="text-success">
+                                                        <?= number_format($available) ?> MB free
+                                                    </small>
+                                                <?php endif; ?>
                                             </td>
                                             <td class="text-center">
                                                 <?php if ($account['suspended']): ?>
@@ -138,6 +190,16 @@
                                                             title="Detail" <?= !$isEmailValid ? 'disabled' : '' ?>>
                                                         <i class="fas fa-eye"></i>
                                                     </button>
+                                    <button type="button" class="btn btn-primary" 
+                                            onclick="openEmailInbox('<?= $emailValue ?>')"
+                                            title="Buka Inbox" <?= !$isEmailValid ? 'disabled' : '' ?>>
+                                        <i class="fas fa-inbox"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-info" 
+                                            onclick="refreshQuotaInfo('<?= $emailValue ?>')"
+                                            title="Refresh Quota Info" <?= !$isEmailValid ? 'disabled' : '' ?>>
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
                                                     <a href="<?= base_url('email/edit/' . urlencode($account['email'])) ?>" 
                                                         class="btn btn-warning" title="Edit" <?= !$isEmailValid ? 'style="pointer-events: none; opacity: 0.6;"' : '' ?>>
                                                         <i class="fas fa-edit"></i>
@@ -256,6 +318,120 @@
     </div>
 </div>
 
+<!-- Email Inbox Modal -->
+<div class="modal fade" id="emailInboxModal" tabindex="-1" aria-labelledby="emailInboxModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="emailInboxModalLabel">
+                    <i class="fas fa-inbox me-2"></i>Inbox Email
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <!-- Email Folders -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-folder me-2"></i>Folders
+                                </h6>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="list-group list-group-flush">
+                                    <a href="#" class="list-group-item list-group-item-action active" data-folder="INBOX">
+                                        <i class="fas fa-inbox me-2"></i>Inbox
+                                        <span class="badge bg-primary float-end" id="inboxCount">0</span>
+                                    </a>
+                                    <a href="#" class="list-group-item list-group-item-action" data-folder="SENT">
+                                        <i class="fas fa-paper-plane me-2"></i>Sent
+                                        <span class="badge bg-secondary float-end" id="sentCount">0</span>
+                                    </a>
+                                    <a href="#" class="list-group-item list-group-item-action" data-folder="DRAFTS">
+                                        <i class="fas fa-file-alt me-2"></i>Drafts
+                                        <span class="badge bg-warning float-end" id="draftsCount">0</span>
+                                    </a>
+                                    <a href="#" class="list-group-item list-group-item-action" data-folder="TRASH">
+                                        <i class="fas fa-trash me-2"></i>Trash
+                                        <span class="badge bg-danger float-end" id="trashCount">0</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Email Account Info -->
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-info-circle me-2"></i>Account Info
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="emailAccountInfo">
+                                    <!-- Account info will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-8">
+                        <!-- Email List -->
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-list me-2"></i><span id="currentFolderName">Inbox</span>
+                                </h6>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="refreshInbox()">
+                                        <i class="fas fa-sync-alt"></i> Refresh
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-success" onclick="composeEmail()">
+                                        <i class="fas fa-plus"></i> Compose
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div id="emailList">
+                                    <div class="text-center p-4">
+                                        <div class="spinner-border" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                        <p class="mt-2">Memuat email...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Email Content -->
+                        <div class="card mt-3" id="emailContentCard" style="display: none;">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-envelope-open me-2"></i>Email Content
+                                </h6>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="replyEmail()">
+                                        <i class="fas fa-reply"></i> Reply
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteEmail()">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body" id="emailContent">
+                                <!-- Email content will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -325,6 +501,12 @@
 // Global variables
 // Global variable for delete email address
 window.deleteEmailAddress = '';
+// Global variable to store all email accounts for filtering
+window.allEmailAccounts = [];
+// Global variables for email inbox
+window.currentEmailAccount = '';
+window.currentFolder = 'INBOX';
+window.currentEmailId = '';
 
 // Helper functions
 function isValidEmail(email) {
@@ -340,6 +522,795 @@ function getValidEmails(checkboxes) {
         .map(checkbox => checkbox.value)
         .filter(email => isValidEmail(email));
 }
+
+// Email filtering and search functions
+function filterEmails() {
+    const searchTerm = document.getElementById('emailSearchInput').value.toLowerCase();
+    const statusFilter = document.getElementById('statusFilter').value;
+    const quotaFilter = document.getElementById('quotaFilter').value;
+    const searchResultsInfo = document.getElementById('searchResultsInfo');
+    const searchResultsText = document.getElementById('searchResultsText');
+    
+    if (!window.allEmailAccounts || window.allEmailAccounts.length === 0) {
+        console.log('No accounts to filter');
+        return;
+    }
+    
+    let filteredAccounts = window.allEmailAccounts.filter(account => {
+        // Search filter
+        const matchesSearch = !searchTerm || 
+            account.email.toLowerCase().includes(searchTerm);
+        
+        // Status filter
+        const matchesStatus = !statusFilter || 
+            (statusFilter === 'active' && !account.suspended) ||
+            (statusFilter === 'suspended' && account.suspended);
+        
+        // Quota filter
+        let matchesQuota = true;
+        if (quotaFilter) {
+            const quota = parseInt(account.quota) || 0;
+            switch(quotaFilter) {
+                case 'small':
+                    matchesQuota = quota < 100;
+                    break;
+                case 'medium':
+                    matchesQuota = quota >= 100 && quota <= 500;
+                    break;
+                case 'large':
+                    matchesQuota = quota > 500;
+                    break;
+            }
+        }
+        
+        return matchesSearch && matchesStatus && matchesQuota;
+    });
+    
+    // Update search results info
+    const totalAccounts = window.allEmailAccounts.length;
+    const filteredCount = filteredAccounts.length;
+    
+    if (searchTerm || statusFilter || quotaFilter) {
+        searchResultsInfo.style.display = 'block';
+        searchResultsText.textContent = `Menampilkan ${filteredCount} dari ${totalAccounts} akun email`;
+    } else {
+        searchResultsInfo.style.display = 'none';
+    }
+    
+    // Update table with filtered results
+    updateEmailTable(filteredAccounts);
+    
+    console.log(`Filtered ${filteredCount} accounts from ${totalAccounts} total accounts`);
+}
+
+function clearSearch() {
+    document.getElementById('emailSearchInput').value = '';
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('quotaFilter').value = '';
+    filterEmails();
+}
+
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Debounced search function
+const debouncedFilterEmails = debounce(filterEmails, 300);
+
+// Email Inbox Functions
+function openEmailInbox(email) {
+    console.log('=== EMAIL OPEN INBOX ===');
+    console.log('Opening inbox for email:', email);
+    
+    if (!isValidEmail(email)) {
+        console.error('No valid email provided for inbox');
+        showAlert('error', 'Email tidak valid untuk membuka inbox');
+        return;
+    }
+    
+    window.currentEmailAccount = email;
+    window.currentFolder = 'INBOX';
+    
+    const emailInboxModal = document.getElementById('emailInboxModal');
+    const modalTitle = document.getElementById('emailInboxModalLabel');
+    
+    if (!emailInboxModal) {
+        console.error('Email inbox modal not found');
+        showAlert('error', 'Modal inbox tidak ditemukan');
+        return;
+    }
+    
+    // Update modal title
+    if (modalTitle) {
+        modalTitle.innerHTML = `<i class="fas fa-inbox me-2"></i>Inbox Email - ${email}`;
+    }
+    
+    // Load account info
+    loadEmailAccountInfo(email);
+    
+    // Load inbox
+    loadEmailFolder('INBOX');
+    
+    // Show modal with proper focus management
+    const modal = new bootstrap.Modal(emailInboxModal, {
+        focus: true,
+        backdrop: 'static',
+        keyboard: false
+    });
+    
+    // Handle modal events for accessibility
+    emailInboxModal.addEventListener('shown.bs.modal', function () {
+        // Remove aria-hidden when modal is shown
+        emailInboxModal.removeAttribute('aria-hidden');
+        
+        // Focus on first interactive element
+        const firstButton = emailInboxModal.querySelector('button:not([disabled])');
+        if (firstButton) {
+            firstButton.focus();
+        }
+    });
+    
+    emailInboxModal.addEventListener('hidden.bs.modal', function () {
+        // Clean up when modal is hidden
+        window.currentEmailAccount = '';
+        window.currentFolder = 'INBOX';
+        window.currentEmailId = '';
+        
+        // Reset modal state
+        const emailContentCard = document.getElementById('emailContentCard');
+        if (emailContentCard) {
+            emailContentCard.style.display = 'none';
+        }
+    });
+    
+    modal.show();
+}
+
+function loadEmailAccountInfo(email) {
+    console.log('=== EMAIL LOAD ACCOUNT INFO ===');
+    console.log('Loading account info for:', email);
+    
+    const accountInfo = document.getElementById('emailAccountInfo');
+    if (!accountInfo) {
+        console.error('Account info element not found');
+        return;
+    }
+    
+    // Show loading state
+    accountInfo.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border spinner-border-sm" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2 small">Memuat info akun...</p>
+        </div>
+    `;
+    
+    // Fetch detailed quota information from server
+    const encodedEmail = encodeURIComponent(email);
+    console.log('Fetching quota info for encoded email:', encodedEmail);
+    
+    fetch(`<?= base_url('email/get_quota_info/') ?>${encodedEmail}`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Quota info response:', data);
+        
+        if (data.success && data.data) {
+            const info = data.data;
+            const warningClass = getWarningClass(info.warning_level);
+            const progressClass = getProgressClass(info.usage_percentage);
+            
+            accountInfo.innerHTML = `
+                <div class="mb-2">
+                    <strong>Email:</strong><br>
+                    <span class="text-primary">${info.email}</span>
+                </div>
+                <div class="mb-2">
+                    <strong>Quota:</strong><br>
+                    <span class="badge bg-info">${info.quota_formatted}</span>
+                    <small class="text-muted d-block">${numberFormat(info.quota_mb)} MB</small>
+                </div>
+                <div class="mb-2">
+                    <strong>Usage:</strong><br>
+                    <span class="badge bg-secondary">${info.usage_formatted}</span>
+                    <small class="text-muted d-block">${numberFormat(info.usage_mb)} MB</small>
+                </div>
+                <div class="mb-2">
+                    <strong>Available:</strong><br>
+                    <span class="badge bg-success">${info.available_formatted}</span>
+                    <small class="text-muted d-block">${numberFormat(info.available_mb)} MB</small>
+                </div>
+                <div class="mb-2">
+                    <strong>Status:</strong><br>
+                    ${info.suspended ? 
+                        '<span class="badge bg-danger">Suspended</span>' : 
+                        '<span class="badge bg-success">Active</span>'
+                    }
+                    ${info.warning_level !== 'good' ? 
+                        `<br><span class="badge ${warningClass} mt-1">${getWarningText(info.warning_level)}</span>` : 
+                        ''
+                    }
+                </div>
+                <div class="mb-0">
+                    <strong>Usage:</strong> ${info.usage_percentage}%<br>
+                    <div class="progress" style="height: 20px;">
+                        <div class="progress-bar ${progressClass}" 
+                             style="width: ${Math.min(info.usage_percentage, 100)}%"
+                             title="${info.usage_percentage}% used">
+                            ${Math.round(info.usage_percentage)}%
+                        </div>
+                    </div>
+                </div>
+                ${info.created ? `
+                <div class="mt-2">
+                    <small class="text-muted">
+                        <strong>Created:</strong> ${new Date(info.created).toLocaleDateString()}
+                    </small>
+                </div>
+                ` : ''}
+            `;
+        } else {
+            // Fallback to basic info if API fails
+            const account = window.allEmailAccounts.find(acc => acc.email === email);
+            if (account) {
+                accountInfo.innerHTML = `
+                    <div class="mb-2">
+                        <strong>Email:</strong><br>
+                        <span class="text-primary">${account.email}</span>
+                    </div>
+                    <div class="mb-2">
+                        <strong>Quota:</strong><br>
+                        <span class="badge bg-info">${numberFormat(account.quota)} MB</span>
+                    </div>
+                    <div class="mb-2">
+                        <strong>Usage:</strong><br>
+                        <span class="badge bg-secondary">${numberFormat(account.usage)} MB</span>
+                    </div>
+                    <div class="mb-2">
+                        <strong>Status:</strong><br>
+                        ${account.suspended ? 
+                            '<span class="badge bg-danger">Suspended</span>' : 
+                            '<span class="badge bg-success">Active</span>'
+                        }
+                    </div>
+                    <div class="mb-0">
+                        <strong>Usage %:</strong><br>
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar ${account.usage/account.quota > 0.8 ? 'bg-danger' : account.usage/account.quota > 0.6 ? 'bg-warning' : 'bg-success'}" 
+                                 style="width: ${Math.min((account.usage/account.quota)*100, 100)}%">
+                                ${Math.round((account.usage/account.quota)*100)}%
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Info dasar (detil tidak tersedia)
+                        </small>
+                    </div>
+                `;
+            } else {
+                accountInfo.innerHTML = `
+                    <div class="text-muted">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Informasi akun tidak ditemukan
+                    </div>
+                `;
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error loading quota info:', error);
+        
+        // Show fallback info if available
+        const account = window.allEmailAccounts.find(acc => acc.email === email);
+        if (account) {
+            accountInfo.innerHTML = `
+                <div class="mb-2">
+                    <strong>Email:</strong><br>
+                    <span class="text-primary">${account.email}</span>
+                </div>
+                <div class="mb-2">
+                    <strong>Quota:</strong><br>
+                    <span class="badge bg-info">${numberFormat(account.quota)} MB</span>
+                </div>
+                <div class="mb-2">
+                    <strong>Usage:</strong><br>
+                    <span class="badge bg-secondary">${numberFormat(account.usage)} MB</span>
+                </div>
+                <div class="mb-2">
+                    <strong>Status:</strong><br>
+                    ${account.suspended ? 
+                        '<span class="badge bg-danger">Suspended</span>' : 
+                        '<span class="badge bg-success">Active</span>'
+                    }
+                </div>
+                <div class="mb-0">
+                    <strong>Usage %:</strong><br>
+                    <div class="progress" style="height: 20px;">
+                        <div class="progress-bar ${account.usage/account.quota > 0.8 ? 'bg-danger' : account.usage/account.quota > 0.6 ? 'bg-warning' : 'bg-success'}" 
+                             style="width: ${Math.min((account.usage/account.quota)*100, 100)}%">
+                            ${Math.round((account.usage/account.quota)*100)}%
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <small class="text-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Info dasar (API quota tidak tersedia)
+                    </small>
+                </div>
+            `;
+        } else {
+            accountInfo.innerHTML = `
+                <div class="text-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Gagal memuat informasi quota
+                    <br><small>${error.message}</small>
+                    <br><small class="text-muted">Pastikan email address valid dan cPanel API dapat diakses</small>
+                </div>
+            `;
+        }
+    });
+}
+
+function getWarningClass(warningLevel) {
+    switch(warningLevel) {
+        case 'critical': return 'bg-danger';
+        case 'warning': return 'bg-warning';
+        case 'caution': return 'bg-info';
+        default: return 'bg-success';
+    }
+}
+
+function getProgressClass(usagePercentage) {
+    if (usagePercentage >= 95) return 'bg-danger';
+    if (usagePercentage >= 85) return 'bg-warning';
+    if (usagePercentage >= 70) return 'bg-info';
+    return 'bg-success';
+}
+
+function getWarningText(warningLevel) {
+    switch(warningLevel) {
+        case 'critical': return 'Critical - 95%+ used';
+        case 'warning': return 'Warning - 85%+ used';
+        case 'caution': return 'Caution - 70%+ used';
+        default: return 'Good';
+    }
+}
+
+function refreshQuotaInfo(email) {
+    console.log('=== EMAIL REFRESH QUOTA INFO ===');
+    console.log('Refreshing quota info for:', email);
+    
+    if (!isValidEmail(email)) {
+        showAlert('error', 'Email tidak valid');
+        return;
+    }
+    
+    // Show loading state
+    showAlert('info', 'Memuat informasi quota terbaru...');
+    
+    // Fetch detailed quota information from server
+    const encodedEmail = encodeURIComponent(email);
+    console.log('Fetching quota info for encoded email:', encodedEmail);
+    
+    fetch(`<?= base_url('email/get_quota_info/') ?>${encodedEmail}`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Quota info response:', data);
+        
+        if (data.success && data.data) {
+            const info = data.data;
+            
+            // Update the account in global array
+            const accountIndex = window.allEmailAccounts.findIndex(acc => acc.email === email);
+            if (accountIndex !== -1) {
+                window.allEmailAccounts[accountIndex].quota = info.quota_mb;
+                window.allEmailAccounts[accountIndex].usage = info.usage_mb;
+                window.allEmailAccounts[accountIndex].suspended = info.suspended;
+            }
+            
+            // Update the table display
+            updateEmailTable(window.allEmailAccounts);
+            
+            // Show success message
+            showAlert('success', `Quota info berhasil diupdate: ${info.usage_formatted} dari ${info.quota_formatted} (${info.usage_percentage}%)`);
+        } else {
+            showAlert('error', data.message || 'Gagal memuat informasi quota');
+        }
+    })
+    .catch(error => {
+        console.error('Error refreshing quota info:', error);
+        
+        // Show more specific error message
+        let errorMessage = 'Terjadi kesalahan saat memuat informasi quota';
+        if (error.message.includes('400')) {
+            errorMessage = 'Format email tidak valid atau tidak ditemukan di cPanel';
+        } else if (error.message.includes('500')) {
+            errorMessage = 'Server error - cPanel API tidak dapat diakses';
+        } else if (error.message.includes('404')) {
+            errorMessage = 'Email account tidak ditemukan di cPanel';
+        } else {
+            errorMessage = 'Terjadi kesalahan saat memuat informasi quota: ' + error.message;
+        }
+        
+        showAlert('error', errorMessage);
+    });
+}
+
+function loadEmailFolder(folder) {
+    console.log('=== EMAIL LOAD FOLDER ===');
+    console.log('Loading folder:', folder, 'for account:', window.currentEmailAccount);
+    
+    window.currentFolder = folder;
+    
+    // Update folder selection
+    document.querySelectorAll('.list-group-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.dataset.folder === folder) {
+            item.classList.add('active');
+        }
+    });
+    
+    // Update current folder name
+    const folderNames = {
+        'INBOX': 'Inbox',
+        'SENT': 'Sent',
+        'DRAFTS': 'Drafts',
+        'TRASH': 'Trash'
+    };
+    
+    const currentFolderName = document.getElementById('currentFolderName');
+    if (currentFolderName) {
+        currentFolderName.textContent = folderNames[folder] || folder;
+    }
+    
+    // Show loading state
+    const emailList = document.getElementById('emailList');
+    if (emailList) {
+        emailList.innerHTML = `
+            <div class="text-center p-4">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Memuat email dari ${folderNames[folder]}...</p>
+            </div>
+        `;
+    }
+    
+    // Hide email content
+    const emailContentCard = document.getElementById('emailContentCard');
+    if (emailContentCard) {
+        emailContentCard.style.display = 'none';
+    }
+    
+    // Simulate loading emails (in real implementation, this would be an AJAX call)
+    setTimeout(() => {
+        loadEmailsForFolder(folder);
+    }, 1000);
+}
+
+function loadEmailsForFolder(folder) {
+    console.log('=== EMAIL LOAD EMAILS FOR FOLDER ===');
+    console.log('Loading emails for folder:', folder);
+    
+    const emailList = document.getElementById('emailList');
+    if (!emailList) {
+        console.error('Email list element not found');
+        return;
+    }
+    
+    // Simulate email data (in real implementation, this would come from server)
+    const sampleEmails = generateSampleEmails(folder);
+    
+    if (sampleEmails.length === 0) {
+        emailList.innerHTML = `
+            <div class="text-center p-4 text-muted">
+                <i class="fas fa-inbox fa-2x mb-2"></i>
+                <p>Tidak ada email di folder ini</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    sampleEmails.forEach((email, index) => {
+        const isUnread = !email.read;
+        const priorityClass = email.priority === 'high' ? 'border-start border-danger border-3' : 
+                             email.priority === 'low' ? 'border-start border-info border-3' : '';
+        
+        html += `
+            <div class="list-group-item list-group-item-action email-item ${priorityClass} ${isUnread ? 'bg-light' : ''}" 
+                 onclick="loadEmailContent('${email.id}', '${folder}')" 
+                 data-email-id="${email.id}">
+                <div class="d-flex w-100 justify-content-between">
+                    <div class="mb-1">
+                        <h6 class="mb-1 ${isUnread ? 'fw-bold' : ''}">
+                            ${email.from}
+                            ${isUnread ? '<span class="badge bg-primary ms-2">New</span>' : ''}
+                            ${email.priority === 'high' ? '<span class="badge bg-danger ms-1">High</span>' : ''}
+                        </h6>
+                        <p class="mb-1 ${isUnread ? 'fw-bold' : ''}">${email.subject}</p>
+                        <small class="text-muted">${email.preview}</small>
+                    </div>
+                    <div class="text-end">
+                        <small class="text-muted">${email.date}</small>
+                        ${email.hasAttachment ? '<i class="fas fa-paperclip ms-2 text-muted"></i>' : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    emailList.innerHTML = html;
+    
+    // Update folder counts
+    updateFolderCounts();
+}
+
+function generateSampleEmails(folder) {
+    const sampleData = {
+        'INBOX': [
+            {
+                id: 'inbox_1',
+                from: 'noreply@github.com',
+                subject: 'GitHub: Repository update notification',
+                preview: 'Your repository has been updated with new commits...',
+                date: '2 hours ago',
+                read: false,
+                priority: 'normal',
+                hasAttachment: false
+            },
+            {
+                id: 'inbox_2',
+                from: 'support@cpanel.com',
+                subject: 'Server maintenance scheduled',
+                preview: 'We will be performing scheduled maintenance on...',
+                date: '1 day ago',
+                read: true,
+                priority: 'high',
+                hasAttachment: true
+            },
+            {
+                id: 'inbox_3',
+                from: 'newsletter@example.com',
+                subject: 'Weekly Newsletter - Tech Updates',
+                preview: 'Here are the latest technology updates and news...',
+                date: '3 days ago',
+                read: true,
+                priority: 'low',
+                hasAttachment: false
+            }
+        ],
+        'SENT': [
+            {
+                id: 'sent_1',
+                from: window.currentEmailAccount,
+                subject: 'Re: Project proposal',
+                preview: 'Thank you for your email regarding the project...',
+                date: '1 hour ago',
+                read: true,
+                priority: 'normal',
+                hasAttachment: true
+            }
+        ],
+        'DRAFTS': [
+            {
+                id: 'draft_1',
+                from: window.currentEmailAccount,
+                subject: 'Meeting request for next week',
+                preview: 'I would like to schedule a meeting for...',
+                date: '2 days ago',
+                read: true,
+                priority: 'normal',
+                hasAttachment: false
+            }
+        ],
+        'TRASH': []
+    };
+    
+    return sampleData[folder] || [];
+}
+
+function loadEmailContent(emailId, folder) {
+    console.log('=== EMAIL LOAD CONTENT ===');
+    console.log('Loading content for email:', emailId, 'in folder:', folder);
+    
+    window.currentEmailId = emailId;
+    
+    // Update email item selection
+    document.querySelectorAll('.email-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.dataset.emailId === emailId) {
+            item.classList.add('active');
+        }
+    });
+    
+    const emailContentCard = document.getElementById('emailContentCard');
+    const emailContent = document.getElementById('emailContent');
+    
+    if (!emailContentCard || !emailContent) {
+        console.error('Email content elements not found');
+        return;
+    }
+    
+    // Show loading state
+    emailContent.innerHTML = `
+        <div class="text-center p-4">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Memuat konten email...</p>
+        </div>
+    `;
+    
+    emailContentCard.style.display = 'block';
+    
+    // Simulate loading email content
+    setTimeout(() => {
+        const sampleContent = generateEmailContent(emailId);
+        emailContent.innerHTML = sampleContent;
+    }, 500);
+}
+
+function generateEmailContent(emailId) {
+    // Sample email content based on ID
+    const contentData = {
+        'inbox_1': {
+            from: 'noreply@github.com',
+            to: window.currentEmailAccount,
+            subject: 'GitHub: Repository update notification',
+            date: '2024-01-15 10:30:00',
+            content: `
+                <p>Hello,</p>
+                <p>Your repository <strong>my-project</strong> has been updated with new commits:</p>
+                <ul>
+                    <li>Commit: <code>abc123</code> - Fixed bug in authentication</li>
+                    <li>Commit: <code>def456</code> - Added new feature</li>
+                </ul>
+                <p>You can view the changes at: <a href="#">https://github.com/user/my-project</a></p>
+                <p>Best regards,<br>GitHub Team</p>
+            `
+        },
+        'inbox_2': {
+            from: 'support@cpanel.com',
+            to: window.currentEmailAccount,
+            subject: 'Server maintenance scheduled',
+            date: '2024-01-14 15:45:00',
+            content: `
+                <p>Dear Customer,</p>
+                <p>We will be performing scheduled maintenance on our servers:</p>
+                <p><strong>Date:</strong> January 20, 2024<br>
+                <strong>Time:</strong> 02:00 - 04:00 UTC<br>
+                <strong>Duration:</strong> 2 hours</p>
+                <p>During this time, there may be brief interruptions to your services.</p>
+                <p>We apologize for any inconvenience.</p>
+                <p>Best regards,<br>cPanel Support Team</p>
+            `
+        }
+    };
+    
+    const content = contentData[emailId] || {
+        from: 'unknown@example.com',
+        to: window.currentEmailAccount,
+        subject: 'Sample Email',
+        date: new Date().toISOString(),
+        content: '<p>This is sample email content.</p>'
+    };
+    
+    return `
+        <div class="email-header mb-3">
+            <div class="row">
+                <div class="col-md-6">
+                    <strong>From:</strong> ${content.from}
+                </div>
+                <div class="col-md-6 text-end">
+                    <strong>Date:</strong> ${content.date}
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-12">
+                    <strong>To:</strong> ${content.to}
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-12">
+                    <strong>Subject:</strong> ${content.subject}
+                </div>
+            </div>
+        </div>
+        <hr>
+        <div class="email-body">
+            ${content.content}
+        </div>
+    `;
+}
+
+function updateFolderCounts() {
+    // Update folder counts (in real implementation, this would come from server)
+    document.getElementById('inboxCount').textContent = '3';
+    document.getElementById('sentCount').textContent = '1';
+    document.getElementById('draftsCount').textContent = '1';
+    document.getElementById('trashCount').textContent = '0';
+}
+
+function refreshInbox() {
+    console.log('=== EMAIL REFRESH INBOX ===');
+    console.log('Refreshing inbox for:', window.currentEmailAccount);
+    
+    // Refresh account info first
+    loadEmailAccountInfo(window.currentEmailAccount);
+    
+    // Then refresh folder
+    loadEmailFolder(window.currentFolder);
+}
+
+function composeEmail() {
+    console.log('=== EMAIL COMPOSE ===');
+    showAlert('info', 'Fitur compose email akan tersedia dalam update selanjutnya');
+}
+
+function replyEmail() {
+    console.log('=== EMAIL REPLY ===');
+    showAlert('info', 'Fitur reply email akan tersedia dalam update selanjutnya');
+}
+
+function deleteEmail() {
+    console.log('=== EMAIL DELETE ===');
+    if (!window.currentEmailId) {
+        showAlert('error', 'Tidak ada email yang dipilih untuk dihapus');
+        return;
+    }
+    
+    if (confirm('Apakah Anda yakin ingin menghapus email ini?')) {
+        showAlert('success', 'Email berhasil dihapus');
+        loadEmailFolder(window.currentFolder);
+        document.getElementById('emailContentCard').style.display = 'none';
+    }
+}
+
+// Folder click handlers
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listeners for folder navigation
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-folder]')) {
+            e.preventDefault();
+            const folder = e.target.closest('[data-folder]').dataset.folder;
+            loadEmailFolder(folder);
+        }
+    });
+});
 
 // Checkbox management functions
 function toggleSelectAll() {
@@ -740,6 +1711,11 @@ function updateEmailTable(accounts, pagination = null) {
     console.log('Updating table with accounts:', accounts);
     console.log('Pagination data:', pagination);
     
+    // Store all accounts in global variable for filtering
+    if (Array.isArray(accounts)) {
+        window.allEmailAccounts = accounts;
+    }
+    
     if (!Array.isArray(accounts)) {
         console.error('Accounts is not an array:', accounts);
         tbody.innerHTML = `
@@ -789,9 +1765,21 @@ function updateEmailTable(accounts, pagination = null) {
                     <strong>${emailIsValid ? emailValue : 'N/A'}</strong>
                 </td>
                 <td class="text-center">
-                    <span class="badge bg-info">${numberFormat(account.quota || 0)} MB</span>
+                    <span class="badge bg-info" title="Total quota">${numberFormat(account.quota || 0)} MB</span>
+                    ${account.quota > 0 ? `
+                        <br><small class="text-muted">
+                            ${((account.usage || 0) / account.quota * 100).toFixed(1)}% used
+                        </small>
+                    ` : ''}
                 </td>
-                <td class="text-center">${numberFormat(account.usage || 0)} MB</td>
+                <td class="text-center">
+                    <span class="text-primary" title="Used space">${numberFormat(account.usage || 0)} MB</span>
+                    ${account.quota > 0 ? `
+                        <br><small class="text-success">
+                            ${numberFormat(Math.max(0, account.quota - (account.usage || 0)))} MB free
+                        </small>
+                    ` : ''}
+                </td>
                 <td class="text-center">${statusBadge}</td>
                 <td class="text-center">
                     <div class="btn-group btn-group-sm" role="group">
@@ -799,6 +1787,16 @@ function updateEmailTable(accounts, pagination = null) {
                                 onclick="showAccountDetails('${emailValue}')"
                                 title="Detail" ${!emailIsValid ? 'disabled' : ''}>
                             <i class="fas fa-eye"></i>
+                        </button>
+                        <button type="button" class="btn btn-primary" 
+                                onclick="openEmailInbox('${emailValue}')"
+                                title="Buka Inbox" ${!emailIsValid ? 'disabled' : ''}>
+                            <i class="fas fa-inbox"></i>
+                        </button>
+                        <button type="button" class="btn btn-info" 
+                                onclick="refreshQuotaInfo('${emailValue}')"
+                                title="Refresh Quota Info" ${!emailIsValid ? 'disabled' : ''}>
+                            <i class="fas fa-sync-alt"></i>
                         </button>
                         <a href="<?= base_url('email/edit/') ?>${encodeURIComponent(emailValue)}" 
                             class="btn btn-warning" title="Edit" ${!emailIsValid ? 'style="pointer-events: none; opacity: 0.6;"' : ''}>

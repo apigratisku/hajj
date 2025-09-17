@@ -1,190 +1,42 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 
-class Parsing_model extends CI_Model {
+class Parsing_model extends CI_Model
+{
+    protected $table = 'visa_data';
 
-    private $table = 'parsing';
-
-    public function __construct() {
+    public function __construct()
+    {
         parent::__construct();
         $this->load->database();
     }
 
-    /**
-     * Simpan data parsing ke database
-     */
-    public function save_parsing_data($data) {
-        try {
-            // Validate required fields
-            if (empty($data['nama']) || empty($data['no_paspor']) || empty($data['no_visa']) || empty($data['tanggal_lahir'])) {
-                return array('success' => false, 'message' => 'Data parsing tidak lengkap');
-            }
-
-            // Prepare data for insert
-            $insert_data = array(
-                'nama' => trim($data['nama']),
-                'no_paspor' => trim($data['no_paspor']),
-                'no_visa' => trim($data['no_visa']),
-                'tanggal_lahir' => $data['tanggal_lahir'],
-                'file_name' => isset($data['file_name']) ? $data['file_name'] : '',
-                'file_size' => isset($data['file_size']) ? $data['file_size'] : 0,
-                'parsed_by' => isset($data['parsed_by']) ? $data['parsed_by'] : 'system',
-                'status' => 'active'
-            );
-
-            // Check if data already exists
-            $this->db->where('no_paspor', $insert_data['no_paspor']);
-            $this->db->where('no_visa', $insert_data['no_visa']);
-            $this->db->where('status', 'active');
-            $existing = $this->db->get($this->table);
-
-            if ($existing->num_rows() > 0) {
-                // Update existing record
-                $this->db->where('no_paspor', $insert_data['no_paspor']);
-                $this->db->where('no_visa', $insert_data['no_visa']);
-                $this->db->where('status', 'active');
-                $result = $this->db->update($this->table, $insert_data);
-                
-                return array('success' => true, 'message' => 'Data parsing berhasil diupdate', 'action' => 'update');
-            } else {
-                // Insert new record
-                $result = $this->db->insert($this->table, $insert_data);
-                
-                if ($result) {
-                    return array('success' => true, 'message' => 'Data parsing berhasil disimpan', 'action' => 'insert', 'id' => $this->db->insert_id());
-                } else {
-                    return array('success' => false, 'message' => 'Gagal menyimpan data parsing');
-                }
-            }
-
-        } catch (Exception $e) {
-            return array('success' => false, 'message' => 'Error: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Simpan multiple data parsing
-     */
-    public function save_multiple_parsing_data($data_array, $file_info = array()) {
-        try {
-            $results = array(
-                'success' => 0,
-                'updated' => 0,
-                'failed' => 0,
-                'errors' => array()
-            );
-
-            foreach ($data_array as $index => $data) {
-                // Add file info to each data
-                $data['file_name'] = isset($file_info['name']) ? $file_info['name'] : '';
-                $data['file_size'] = isset($file_info['size']) ? $file_info['size'] : 0;
-                $data['parsed_by'] = isset($file_info['parsed_by']) ? $file_info['parsed_by'] : 'system';
-
-                $result = $this->save_parsing_data($data);
-                
-                if ($result['success']) {
-                    if ($result['action'] === 'insert') {
-                        $results['success']++;
-                    } else {
-                        $results['updated']++;
-                    }
-                } else {
-                    $results['failed']++;
-                    $results['errors'][] = "Record " . ($index + 1) . ": " . $result['message'];
-                }
-            }
-
-            return $results;
-
-        } catch (Exception $e) {
-            return array('success' => 0, 'updated' => 0, 'failed' => count($data_array), 'errors' => array($e->getMessage()));
-        }
-    }
-
-    /**
-     * Get parsing data dengan pagination
-     */
-    public function get_parsing_data($limit = 10, $offset = 0, $search = '') {
-        try {
-            $this->db->select('*');
-            $this->db->from($this->table);
-            $this->db->where('status', 'active');
-
-            if (!empty($search)) {
-                $this->db->group_start();
-                $this->db->like('nama', $search);
-                $this->db->or_like('no_paspor', $search);
-                $this->db->or_like('no_visa', $search);
-                $this->db->group_end();
-            }
-
-            $this->db->order_by('parsed_at', 'DESC');
-            $this->db->limit($limit, $offset);
-
-            $query = $this->db->get();
-            return $query->result_array();
-
-        } catch (Exception $e) {
-            return array();
-        }
-    }
-
-    /**
-     * Count total parsing data
-     */
-    public function count_parsing_data($search = '') {
-        try {
-            $this->db->from($this->table);
-            $this->db->where('status', 'active');
-
-            if (!empty($search)) {
-                $this->db->group_start();
-                $this->db->like('nama', $search);
-                $this->db->or_like('no_paspor', $search);
-                $this->db->or_like('no_visa', $search);
-                $this->db->group_end();
-            }
-
-            return $this->db->count_all_results();
-
-        } catch (Exception $e) {
-            return 0;
-        }
-    }
-
-    /**
-     * Get parsing statistics
-     */
-    public function get_parsing_statistics() {
+    public function get_parsing_statistics()
+    {
         try {
             $stats = array();
 
             // Total records
-            $this->db->where('status', 'active');
-            $stats['total_records'] = $this->db->count_all_results($this->table);
+            $stats['total_records'] = $this->db->count_all($this->table);
 
             // Records today
-            $this->db->where('status', 'active');
-            $this->db->where('DATE(parsed_at)', date('Y-m-d'));
+            $this->db->where('DATE(created_at)', date('Y-m-d'));
             $stats['today_records'] = $this->db->count_all_results($this->table);
 
             // Records this month
-            $this->db->where('status', 'active');
-            $this->db->where('YEAR(parsed_at)', date('Y'));
-            $this->db->where('MONTH(parsed_at)', date('m'));
+            $this->db->where('YEAR(created_at)', date('Y'));
+            $this->db->where('MONTH(created_at)', date('m'));
             $stats['month_records'] = $this->db->count_all_results($this->table);
 
             // Unique passports
-            $this->db->select('COUNT(DISTINCT no_paspor) as unique_passports');
-            $this->db->from($this->table);
-            $this->db->where('status', 'active');
-            $query = $this->db->get();
+            $this->db->select('COUNT(DISTINCT passport_no) as unique_passports');
+            $query = $this->db->get($this->table);
             $result = $query->row_array();
             $stats['unique_passports'] = $result['unique_passports'];
 
             return $stats;
-
         } catch (Exception $e) {
+            log_message('error', 'Error getting parsing statistics: ' . $e->getMessage());
             return array(
                 'total_records' => 0,
                 'today_records' => 0,
@@ -194,80 +46,70 @@ class Parsing_model extends CI_Model {
         }
     }
 
-    /**
-     * Check if parsing data exists
-     */
-    public function get_parsing_data_by_id($id) {
+    public function save_parsed_data($data)
+    {
         try {
-            $this->db->where('id', $id);
-            $this->db->where('status', 'active');
-            $query = $this->db->get($this->table);
-            return $query->row_array();
-        } catch (Exception $e) {
-            return null;
-        }
-    }
-
-    /**
-     * Delete parsing data (soft delete)
-     */
-    public function delete_parsing_data($id) {
-        try {
-            // Check if data exists
-            $existing_data = $this->get_parsing_data_by_id($id);
-            if (!$existing_data) {
-                return array('success' => false, 'message' => 'Data parsing tidak ditemukan');
-            }
-
-            // Perform soft delete
-            $this->db->where('id', $id);
-            $result = $this->db->update($this->table, array('status' => 'deleted'));
-
-            if ($result) {
-                return array('success' => true, 'message' => 'Data parsing berhasil dihapus');
-            } else {
-                return array('success' => false, 'message' => 'Gagal menghapus data parsing');
-            }
-
-        } catch (Exception $e) {
-            return array('success' => false, 'message' => 'Error: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Bulk delete parsing data (soft delete)
-     */
-    public function bulk_delete_parsing_data($ids) {
-        try {
-            if (empty($ids) || !is_array($ids)) {
-                return array('success' => false, 'message' => 'ID data tidak valid');
-            }
-
-            // Validate all IDs
-            $valid_ids = array();
-            foreach ($ids as $id) {
-                if (is_numeric($id) && $id > 0) {
-                    $valid_ids[] = $id;
+            $this->db->trans_start();
+            $saved_count = 0;
+            
+            foreach ($data as $row) {
+                $result = $this->upsert($row);
+                if ($result !== false) {
+                    $saved_count++;
                 }
             }
-
-            if (empty($valid_ids)) {
-                return array('success' => false, 'message' => 'Tidak ada ID yang valid');
-            }
-
-            // Perform bulk soft delete
-            $this->db->where_in('id', $valid_ids);
-            $result = $this->db->update($this->table, array('status' => 'deleted'));
-
-            if ($result) {
-                return array('success' => true, 'message' => count($valid_ids) . ' data parsing berhasil dihapus');
+            
+            $this->db->trans_complete();
+            
+            if ($this->db->trans_status()) {
+                log_message('info', 'Successfully saved ' . $saved_count . ' out of ' . count($data) . ' records');
+                return $saved_count;
             } else {
-                return array('success' => false, 'message' => 'Gagal menghapus data parsing');
+                log_message('error', 'Database transaction failed');
+                return false;
             }
-
         } catch (Exception $e) {
-            return array('success' => false, 'message' => 'Error: ' . $e->getMessage());
+            log_message('error', 'Error saving parsed data: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    private function upsert($row)
+    {
+        // Validate required fields sesuai dengan database structure
+        if (empty($row['nama']) || empty($row['passport_no']) || empty($row['visa_no']) || empty($row['tanggal_lahir'])) {
+            log_message('error', 'Missing required fields for visa data');
+            return false;
+        }
+        
+        // Check if record already exists based on passport_no and visa_no
+        $this->db->where('passport_no', $row['passport_no']);
+        $this->db->where('visa_no', $row['visa_no']);
+        $query = $this->db->get($this->table);
+        
+        // Prepare data sesuai dengan struktur database
+        $data = array(
+            'nama' => substr($row['nama'], 0, 255), // Limit to 255 chars
+            'visa_no' => substr($row['visa_no'], 0, 50), // Limit to 50 chars
+            'passport_no' => substr($row['passport_no'], 0, 50), // Limit to 50 chars
+            'tanggal_lahir' => $row['tanggal_lahir'],
+            'raw' => substr($row['raw'], 0, 65535) // Limit raw data size for longblob
+        );
+        
+        if ($query->num_rows() > 0) {
+            // Update existing record (tidak ada updated_at di database)
+            $existing = $query->row();
+            $this->db->where('id', $existing->id);
+            $this->db->update($this->table, $data);
+            log_message('info', 'Updated existing visa record: ID ' . $existing->id);
+            return $existing->id;
+        } else {
+            // Insert new record dengan created_at
+            $data['created_at'] = date('Y-m-d H:i:s');
+            $this->db->insert($this->table, $data);
+            $insert_id = $this->db->insert_id();
+            log_message('info', 'Inserted new visa record: ID ' . $insert_id);
+            return $insert_id;
         }
     }
 }
-?>

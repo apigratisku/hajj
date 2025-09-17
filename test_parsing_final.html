@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Parsing Final - Controller Asli</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #fafafa;
+        }
+        .result {
+            background: #f5f5f5;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 3px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .error {
+            background: #ffe6e6;
+            color: #d00;
+            border: 1px solid #ffcccc;
+        }
+        .success {
+            background: #e6ffe6;
+            color: #060;
+            border: 1px solid #ccffcc;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 3px;
+            background: #007cba;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #005a87;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .progress {
+            width: 100%;
+            height: 20px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-bar {
+            height: 100%;
+            background: #007cba;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Test Parsing Final - Controller Asli</h1>
+        <p>Testing controller parsing yang sudah diperbaiki dengan multiple extraction methods.</p>
+        
+        <div class="test-section">
+            <h2>1. Test Simple Endpoint (No Auth)</h2>
+            <button onclick="testSimple()">Test Simple Endpoint</button>
+            <div id="simpleStatus" class="status" style="display: none;"></div>
+            <div id="simpleResult" class="result">Click button to test...</div>
+        </div>
+        
+        <div class="test-section">
+            <h2>2. Test Debug Endpoint (With Auth)</h2>
+            <button onclick="testDebug()">Test Debug Endpoint</button>
+            <div id="debugStatus" class="status" style="display: none;"></div>
+            <div id="debugResult" class="result">Click button to test...</div>
+        </div>
+        
+        <div class="test-section">
+            <h2>3. Test Parse Endpoint (With File Upload)</h2>
+            <input type="file" id="pdfFile" accept=".pdf" style="margin: 10px 0;">
+            <br>
+            <button onclick="testParse()">Test Parse Endpoint</button>
+            <div id="parseStatus" class="status" style="display: none;"></div>
+            <div class="progress" id="parseProgress" style="display: none;">
+                <div class="progress-bar" id="parseProgressBar"></div>
+            </div>
+            <div id="parseResult" class="result">Select PDF file and click button to test...</div>
+        </div>
+
+        <div class="test-section">
+            <h2>4. Test Results Summary</h2>
+            <div id="summaryResult" class="result">
+                <strong>Test Results:</strong>
+                <br>• Simple Endpoint: <span id="simpleSummary">Not tested</span>
+                <br>• Debug Endpoint: <span id="debugSummary">Not tested</span>
+                <br>• Parse Endpoint: <span id="parseSummary">Not tested</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let testResults = {
+            simple: null,
+            debug: null,
+            parse: null
+        };
+
+        function showResult(elementId, data, isError = false, isWarning = false) {
+            const element = document.getElementById(elementId);
+            const statusElement = document.getElementById(elementId.replace('Result', 'Status'));
+            
+            element.textContent = JSON.stringify(data, null, 2);
+            
+            if (isError) {
+                element.className = 'result error';
+                statusElement.className = 'status error';
+                statusElement.textContent = '❌ ERROR';
+            } else if (isWarning) {
+                element.className = 'result warning';
+                statusElement.className = 'status warning';
+                statusElement.textContent = '⚠️ WARNING';
+            } else {
+                element.className = 'result success';
+                statusElement.className = 'status success';
+                statusElement.textContent = '✅ SUCCESS';
+            }
+            
+            statusElement.style.display = 'block';
+        }
+        
+        function updateSummary() {
+            document.getElementById('simpleSummary').textContent = 
+                testResults.simple === null ? 'Not tested' : 
+                testResults.simple ? '✅ Success' : '❌ Failed';
+                
+            document.getElementById('debugSummary').textContent = 
+                testResults.debug === null ? 'Not tested' : 
+                testResults.debug ? '✅ Success' : '❌ Failed';
+                
+            document.getElementById('parseSummary').textContent = 
+                testResults.parse === null ? 'Not tested' : 
+                testResults.parse ? '✅ Success' : '❌ Failed';
+        }
+        
+        async function testSimple() {
+            const resultDiv = document.getElementById('simpleResult');
+            const statusDiv = document.getElementById('simpleStatus');
+            resultDiv.textContent = 'Testing...';
+            statusDiv.style.display = 'none';
+            
+            try {
+                console.log('Testing simple endpoint...');
+                const startTime = Date.now();
+                
+                const response = await fetch('/hajj/parsing/simple_test');
+                const endTime = Date.now();
+                const duration = endTime - startTime;
+                
+                console.log('Response status:', response.status);
+                console.log('Response time:', duration + 'ms');
+                
+                const text = await response.text();
+                console.log('Response text:', text);
+                
+                if (!text) {
+                    testResults.simple = false;
+                    showResult('simpleResult', { error: 'Empty response from server' }, true);
+                    updateSummary();
+                    return;
+                }
+                
+                try {
+                    const data = JSON.parse(text);
+                    testResults.simple = true;
+                    data.responseTime = duration + 'ms';
+                    showResult('simpleResult', data);
+                } catch (e) {
+                    testResults.simple = false;
+                    showResult('simpleResult', { 
+                        error: 'Invalid JSON response', 
+                        parseError: e.message,
+                        rawResponse: text 
+                    }, true);
+                }
+            } catch (error) {
+                console.error('Network error:', error);
+                testResults.simple = false;
+                showResult('simpleResult', { 
+                    error: 'Network error', 
+                    message: error.message 
+                }, true);
+            }
+            
+            updateSummary();
+        }
+        
+        async function testDebug() {
+            const resultDiv = document.getElementById('debugResult');
+            const statusDiv = document.getElementById('debugStatus');
+            resultDiv.textContent = 'Testing...';
+            statusDiv.style.display = 'none';
+            
+            try {
+                console.log('Testing debug endpoint...');
+                const startTime = Date.now();
+                
+                const response = await fetch('/hajj/parsing/debug');
+                const endTime = Date.now();
+                const duration = endTime - startTime;
+                
+                console.log('Response status:', response.status);
+                console.log('Response time:', duration + 'ms');
+                
+                const text = await response.text();
+                console.log('Response text:', text);
+                
+                if (!text) {
+                    testResults.debug = false;
+                    showResult('debugResult', { error: 'Empty response from server' }, true);
+                    updateSummary();
+                    return;
+                }
+                
+                try {
+                    const data = JSON.parse(text);
+                    testResults.debug = true;
+                    data.responseTime = duration + 'ms';
+                    showResult('debugResult', data);
+                } catch (e) {
+                    testResults.debug = false;
+                    showResult('debugResult', { 
+                        error: 'Invalid JSON response', 
+                        parseError: e.message,
+                        rawResponse: text 
+                    }, true);
+                }
+            } catch (error) {
+                console.error('Network error:', error);
+                testResults.debug = false;
+                showResult('debugResult', { 
+                    error: 'Network error', 
+                    message: error.message 
+                }, true);
+            }
+            
+            updateSummary();
+        }
+        
+        async function testParse() {
+            const fileInput = document.getElementById('pdfFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                testResults.parse = false;
+                showResult('parseResult', { error: 'Please select a PDF file' }, true);
+                updateSummary();
+                return;
+            }
+            
+            const resultDiv = document.getElementById('parseResult');
+            const statusDiv = document.getElementById('parseStatus');
+            const progressDiv = document.getElementById('parseProgress');
+            const progressBar = document.getElementById('parseProgressBar');
+            
+            resultDiv.textContent = 'Testing...';
+            statusDiv.style.display = 'none';
+            progressDiv.style.display = 'block';
+            progressBar.style.width = '0%';
+            
+            try {
+                console.log('Testing parse endpoint...');
+                
+                // Simulate progress
+                let progress = 0;
+                const progressInterval = setInterval(() => {
+                    progress += 10;
+                    progressBar.style.width = progress + '%';
+                    if (progress >= 90) {
+                        clearInterval(progressInterval);
+                    }
+                }, 100);
+                
+                const formData = new FormData();
+                formData.append('pdf', file);
+                
+                const startTime = Date.now();
+                const response = await fetch('/hajj/parsing/parse', {
+                    method: 'POST',
+                    body: formData
+                });
+                const endTime = Date.now();
+                const duration = endTime - startTime;
+                
+                clearInterval(progressInterval);
+                progressBar.style.width = '100%';
+                
+                console.log('Response status:', response.status);
+                console.log('Response time:', duration + 'ms');
+                
+                const text = await response.text();
+                console.log('Response text:', text);
+                
+                setTimeout(() => {
+                    progressDiv.style.display = 'none';
+                }, 500);
+                
+                if (!text) {
+                    testResults.parse = false;
+                    showResult('parseResult', { error: 'Empty response from server' }, true);
+                    updateSummary();
+                    return;
+                }
+                
+                try {
+                    const data = JSON.parse(text);
+                    testResults.parse = true;
+                    data.responseTime = duration + 'ms';
+                    data.fileSize = file.size;
+                    data.fileName = file.name;
+                    showResult('parseResult', data);
+                } catch (e) {
+                    testResults.parse = false;
+                    showResult('parseResult', { 
+                        error: 'Invalid JSON response', 
+                        parseError: e.message,
+                        rawResponse: text 
+                    }, true);
+                }
+            } catch (error) {
+                console.error('Network error:', error);
+                testResults.parse = false;
+                showResult('parseResult', { 
+                    error: 'Network error', 
+                    message: error.message 
+                }, true);
+            }
+            
+            updateSummary();
+        }
+    </script>
+</body>
+</html>

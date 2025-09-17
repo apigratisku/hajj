@@ -672,6 +672,152 @@ class Email extends CI_Controller {
         }
     }
 
+    public function get_email_quota_info($email) {
+        try {
+            // Clean any output buffer
+            while (ob_get_level()) {
+                ob_end_clean();
+            }
+            
+            // Set JSON response headers
+            header('Content-Type: application/json; charset=utf-8');
+            header('Cache-Control: no-cache, must-revalidate');
+            
+            // Decode URL encoded email
+            $email = urldecode($email);
+            log_message('info', 'Email get_email_quota_info - Getting quota info for: ' . $email);
+            
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                log_message('error', 'Email get_email_quota_info - Invalid email format: ' . $email);
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Format email tidak valid: ' . $email]);
+                exit;
+            }
+            
+            // Load cPanel library
+            $this->load->library('Cpanel_new', $this->cpanel_config);
+            
+            // Get detailed email account info including quota and usage
+            // Check if the method exists in the cPanel library
+            if (!method_exists($this->cpanel_new, 'getEmailQuotaInfo')) {
+                log_message('warning', 'Email get_email_quota_info - getEmailQuotaInfo method not available, using fallback');
+                
+                // Fallback: get basic email account info
+                $result = $this->cpanel_new->listEmailAccounts();
+                
+                if (isset($result['error'])) {
+                    http_response_code(500);
+                    echo json_encode(['success' => false, 'message' => $result['error']]);
+                    exit;
+                }
+                
+                // Find the specific email account
+                $account_info = null;
+                if (is_array($result)) {
+                    foreach ($result as $account) {
+                        if (isset($account['email']) && $account['email'] === $email) {
+                            $account_info = $account;
+                            break;
+                        }
+                    }
+                } elseif (isset($result['data']) && is_array($result['data'])) {
+                    foreach ($result['data'] as $account) {
+                        if (isset($account['email']) && $account['email'] === $email) {
+                            $account_info = $account;
+                            break;
+                        }
+                    }
+                }
+                
+                if (!$account_info) {
+                    http_response_code(404);
+                    echo json_encode(['success' => false, 'message' => 'Email account not found']);
+                    exit;
+                }
+                
+                // Use fallback data
+                $result = [
+                    'quota_mb' => isset($account_info['quota']) ? (float)$account_info['quota'] : 250,
+                    'usage_mb' => isset($account_info['usage']) ? (float)$account_info['usage'] : 0,
+                    'suspended' => isset($account_info['suspended']) ? $account_info['suspended'] : false,
+                    'status' => isset($account_info['suspended']) && $account_info['suspended'] ? 'suspended' : 'active',
+                    'created' => isset($account_info['created']) ? $account_info['created'] : null
+                ];
+            } else {
+                $result = $this->cpanel_new->getEmailQuotaInfo($email);
+            }
+            
+            log_message('info', 'Email get_email_quota_info - Result: ' . json_encode($result));
+            
+            if (isset($result['error'])) {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => $result['error']]);
+                exit;
+            }
+            
+            // Calculate usage percentage and format data
+            $quota_mb = isset($result['quota_mb']) ? (float)$result['quota_mb'] : 0;
+            $usage_mb = isset($result['usage_mb']) ? (float)$result['usage_mb'] : 0;
+            $usage_percentage = $quota_mb > 0 ? ($usage_mb / $quota_mb) * 100 : 0;
+            
+            $response_data = [
+                'success' => true,
+                'data' => [
+                    'email' => $email,
+                    'quota_mb' => $quota_mb,
+                    'usage_mb' => $usage_mb,
+                    'usage_percentage' => round($usage_percentage, 2),
+                    'quota_bytes' => isset($result['quota_bytes']) ? (int)$result['quota_bytes'] : 0,
+                    'usage_bytes' => isset($result['usage_bytes']) ? (int)$result['usage_bytes'] : 0,
+                    'quota_formatted' => $this->formatBytes($quota_mb * 1024 * 1024),
+                    'usage_formatted' => $this->formatBytes($usage_mb * 1024 * 1024),
+                    'available_mb' => max(0, $quota_mb - $usage_mb),
+                    'available_formatted' => $this->formatBytes(max(0, $quota_mb - $usage_mb) * 1024 * 1024),
+                    'status' => isset($result['status']) ? $result['status'] : 'unknown',
+                    'suspended' => isset($result['suspended']) ? (bool)$result['suspended'] : false,
+                    'created' => isset($result['created']) ? $result['created'] : null,
+                    'last_login' => isset($result['last_login']) ? $result['last_login'] : null,
+                    'warning_level' => $this->getWarningLevel($usage_percentage)
+                ]
+            ];
+            
+            echo json_encode($response_data);
+            exit;
+            
+        } catch (Exception $e) {
+            log_message('error', 'Error in get_email_quota_info: ' . $e->getMessage());
+            
+            http_response_code(500);
+            echo json_encode([
+                'success' => false, 
+                'message' => 'Terjadi kesalahan saat mengambil informasi quota: ' . $e->getMessage()
+            ]);
+            exit;
+        }
+    }
+    
+    private function formatBytes($bytes, $precision = 2) {
+        $units = array('B', 'KB', 'MB', 'GB', 'TB');
+        
+        for ($i = 0; $bytes > 1024 && $i < count($units) - 1; $i++) {
+            $bytes /= 1024;
+        }
+        
+        return round($bytes, $precision) . ' ' . $units[$i];
+    }
+    
+    private function getWarningLevel($usage_percentage) {
+        if ($usage_percentage >= 95) {
+            return 'critical';
+        } elseif ($usage_percentage >= 85) {
+            return 'warning';
+        } elseif ($usage_percentage >= 70) {
+            return 'caution';
+        } else {
+            return 'good';
+        }
+    }
+
     public function bulk_delete() {
         try {
             log_message('info', 'Email bulk_delete - Processing bulk delete request');

@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Parsing Endpoint</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .result {
+            background: #f5f5f5;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 3px;
+            white-space: pre-wrap;
+        }
+        .error {
+            background: #ffe6e6;
+            color: #d00;
+        }
+        .success {
+            background: #e6ffe6;
+            color: #060;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 3px;
+            background: #007cba;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #005a87;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Parsing Endpoint</h1>
+    
+    <div class="test-section">
+        <h2>1. Test Simple Endpoint (No Auth)</h2>
+        <button onclick="testSimple()">Test Simple Endpoint</button>
+        <div id="simpleResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Test Debug Endpoint</h2>
+        <button onclick="testDebug()">Test Debug Endpoint</button>
+        <div id="debugResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Test Parse Endpoint</h2>
+        <input type="file" id="pdfFile" accept=".pdf">
+        <button onclick="testParse()">Test Parse Endpoint</button>
+        <div id="parseResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. Test Raw Response</h2>
+        <button onclick="testRawResponse()">Test Raw Response</button>
+        <div id="rawResult" class="result"></div>
+    </div>
+
+    <script>
+        function showResult(elementId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            element.textContent = JSON.stringify(data, null, 2);
+            element.className = 'result ' + (isError ? 'error' : 'success');
+        }
+        
+        async function testSimple() {
+            try {
+                const response = await fetch('/hajj/parsing/simple_test');
+                const text = await response.text();
+                
+                console.log('Simple Response Status:', response.status);
+                console.log('Simple Response Headers:', [...response.headers.entries()]);
+                console.log('Simple Response Text:', text);
+                
+                if (!text) {
+                    showResult('simpleResult', { error: 'Empty response from server' }, true);
+                    return;
+                }
+                
+                try {
+                    const data = JSON.parse(text);
+                    showResult('simpleResult', data);
+                } catch (e) {
+                    showResult('simpleResult', { 
+                        error: 'Invalid JSON response', 
+                        parseError: e.message,
+                        rawResponse: text 
+                    }, true);
+                }
+            } catch (error) {
+                showResult('simpleResult', { 
+                    error: 'Network error', 
+                    message: error.message 
+                }, true);
+            }
+        }
+        
+        async function testDebug() {
+            try {
+                const response = await fetch('/hajj/parsing/debug');
+                const text = await response.text();
+                
+                console.log('Debug Response Status:', response.status);
+                console.log('Debug Response Headers:', [...response.headers.entries()]);
+                console.log('Debug Response Text:', text);
+                
+                if (!text) {
+                    showResult('debugResult', { error: 'Empty response from server' }, true);
+                    return;
+                }
+                
+                try {
+                    const data = JSON.parse(text);
+                    showResult('debugResult', data);
+                } catch (e) {
+                    showResult('debugResult', { 
+                        error: 'Invalid JSON response', 
+                        parseError: e.message,
+                        rawResponse: text 
+                    }, true);
+                }
+            } catch (error) {
+                showResult('debugResult', { 
+                    error: 'Network error', 
+                    message: error.message 
+                }, true);
+            }
+        }
+        
+        async function testParse() {
+            const fileInput = document.getElementById('pdfFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showResult('parseResult', { error: 'Please select a PDF file' }, true);
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                formData.append('pdf', file);
+                
+                const response = await fetch('/hajj/parsing/parse', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const text = await response.text();
+                
+                console.log('Parse Response Status:', response.status);
+                console.log('Parse Response Headers:', [...response.headers.entries()]);
+                console.log('Parse Response Text:', text);
+                
+                if (!text) {
+                    showResult('parseResult', { error: 'Empty response from server' }, true);
+                    return;
+                }
+                
+                try {
+                    const data = JSON.parse(text);
+                    showResult('parseResult', data);
+                } catch (e) {
+                    showResult('parseResult', { 
+                        error: 'Invalid JSON response', 
+                        parseError: e.message,
+                        rawResponse: text 
+                    }, true);
+                }
+            } catch (error) {
+                showResult('parseResult', { 
+                    error: 'Network error', 
+                    message: error.message 
+                }, true);
+            }
+        }
+        
+        async function testRawResponse() {
+            try {
+                const response = await fetch('/hajj/parsing/debug');
+                
+                const result = {
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: {},
+                    body: null
+                };
+                
+                // Get all headers
+                for (let [key, value] of response.headers.entries()) {
+                    result.headers[key] = value;
+                }
+                
+                // Get response body
+                const text = await response.text();
+                result.body = text;
+                result.bodyLength = text.length;
+                
+                showResult('rawResult', result);
+            } catch (error) {
+                showResult('rawResult', { 
+                    error: 'Network error', 
+                    message: error.message 
+                }, true);
+            }
+        }
+    </script>
+</body>
+</html>

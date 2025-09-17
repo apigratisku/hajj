@@ -259,6 +259,21 @@ class Transaksi_model extends CI_Model {
                 $this->db->where('peserta.jam IS NULL');
             }
         }
+        
+        // Filter berdasarkan kondisi barcode
+        if (isset($filters['has_barcode'])) {
+            if ($filters['has_barcode'] === '1') {
+                // Ada barcode
+                $this->db->where('peserta.barcode IS NOT NULL');
+                $this->db->where('peserta.barcode !=', '');
+            } elseif ($filters['has_barcode'] === '0') {
+                // Tidak ada barcode
+                $this->db->group_start();
+                $this->db->where('peserta.barcode IS NULL');
+                $this->db->or_where('peserta.barcode =', '');
+                $this->db->group_end();
+            }
+        }
     
         // Urut berdasarkan abjad nama
         $this->db->order_by('peserta.flag_doc', 'DESC');
@@ -390,6 +405,21 @@ class Transaksi_model extends CI_Model {
                 $this->db->where('peserta.status', 2);
                 $this->db->where('peserta.tanggal IS NULL');
                 $this->db->where('peserta.jam IS NULL');
+            }
+        }
+        
+        // Filter berdasarkan kondisi barcode
+        if (isset($filters['has_barcode'])) {
+            if ($filters['has_barcode'] === '1') {
+                // Ada barcode
+                $this->db->where('peserta.barcode IS NOT NULL');
+                $this->db->where('peserta.barcode !=', '');
+            } elseif ($filters['has_barcode'] === '0') {
+                // Tidak ada barcode
+                $this->db->group_start();
+                $this->db->where('peserta.barcode IS NULL');
+                $this->db->or_where('peserta.barcode =', '');
+                $this->db->group_end();
             }
         }
         
@@ -648,6 +678,16 @@ class Transaksi_model extends CI_Model {
             }
             $this->db->where('DATE(updated_at)', $tanggal_pengerjaan);
         }
+        if (!empty($filters['tanggal_pengarsipan'])) {
+            // Convert dd-mm-yyyy format to yyyy-mm-dd for database comparison
+            $tanggal_pengarsipan = $filters['tanggal_pengarsipan'];
+            if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $tanggal_pengarsipan)) {
+                // Convert from dd-mm-yyyy to yyyy-mm-dd
+                $date_parts = explode('-', $tanggal_pengarsipan);
+                $tanggal_pengarsipan = $date_parts[2] . '-' . $date_parts[1] . '-' . $date_parts[0];
+            }
+            $this->db->where('DATE(arsip_create_at)', $tanggal_pengarsipan);
+        }
     
         // Debug: Log the query
         $this->db->order_by('peserta.flag_doc', 'DESC');
@@ -733,6 +773,16 @@ class Transaksi_model extends CI_Model {
             }
             $this->db->where('DATE(updated_at)', $tanggal_pengerjaan);
         }
+        if (!empty($filters['tanggal_pengarsipan'])) {
+            // Convert dd-mm-yyyy format to yyyy-mm-dd for database comparison
+            $tanggal_pengarsipan = $filters['tanggal_pengarsipan'];
+            if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $tanggal_pengarsipan)) {
+                // Convert from dd-mm-yyyy to yyyy-mm-dd
+                $date_parts = explode('-', $tanggal_pengarsipan);
+                $tanggal_pengarsipan = $date_parts[2] . '-' . $date_parts[1] . '-' . $date_parts[0];
+            }
+            $this->db->where('DATE(arsip_create_at)', $tanggal_pengarsipan);
+        }
         
         $count = $this->db->count_all_results();
         
@@ -784,6 +834,19 @@ class Transaksi_model extends CI_Model {
         $this->db->order_by("tanggal_pengerjaan", "DESC");
         return $this->db->get()->result();
     }
+    
+    /**
+     * Get unique tanggal pengarsipan for arsip
+     */
+    public function get_unique_tanggal_pengarsipan_arsip() {
+        $this->db->select("DATE(arsip_create_at) as tanggal_pengarsipan, COUNT(*) as jumlah_arsip");
+        $this->db->from($this->table);
+        $this->db->where("arsip_create_at IS NOT NULL");
+        $this->db->where('selesai', 2); // Only archived data
+        $this->db->group_by("DATE(arsip_create_at)");
+        $this->db->order_by("tanggal_pengarsipan", "DESC");
+        return $this->db->get()->result();
+    }
 
     /**
      * Get update statistics by date for arsip
@@ -819,6 +882,43 @@ class Transaksi_model extends CI_Model {
         $this->db->where('selesai', 2); // Only archived data (selesai=2)
         $this->db->group_by('selesai');
         $this->db->order_by('selesai', 'ASC');
+        return $this->db->get()->result();
+    }
+    
+    /**
+     * Get archive statistics by date for pengarsipan
+     */
+    public function get_arsip_stats_by_date($tanggal_pengarsipan) {
+        // Convert dd-mm-yyyy format to yyyy-mm-dd for database comparison
+        if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $tanggal_pengarsipan)) {
+            $date_parts = explode('-', $tanggal_pengarsipan);
+            $tanggal_pengarsipan = $date_parts[2] . '-' . $date_parts[1] . '-' . $date_parts[0];
+        }
+        
+        $this->db->select('COUNT(*) as total_archived');
+        $this->db->from($this->table);
+        $this->db->where('DATE(arsip_create_at)', $tanggal_pengarsipan);
+        $this->db->where('selesai', 2); // Only archived data
+        $result = $this->db->get()->row();
+        return $result ? $result->total_archived : 0;
+    }
+    
+    /**
+     * Get detailed archive statistics by date with status breakdown
+     */
+    public function get_arsip_stats_detail_by_date($tanggal_pengarsipan) {
+        // Convert dd-mm-yyyy format to yyyy-mm-dd for database comparison
+        if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $tanggal_pengarsipan)) {
+            $date_parts = explode('-', $tanggal_pengarsipan);
+            $tanggal_pengarsipan = $date_parts[2] . '-' . $date_parts[1] . '-' . $date_parts[0];
+        }
+        
+        $this->db->select('status, COUNT(*) as count');
+        $this->db->from($this->table);
+        $this->db->where('DATE(arsip_create_at)', $tanggal_pengarsipan);
+        $this->db->where('selesai', 2); // Only archived data (selesai=2)
+        $this->db->group_by('status');
+        $this->db->order_by('status', 'ASC');
         return $this->db->get()->result();
     }
 
@@ -891,6 +991,16 @@ class Transaksi_model extends CI_Model {
                 $tanggal_pengerjaan = $date_parts[2] . '-' . $date_parts[1] . '-' . $date_parts[0];
             }
             $this->db->where('DATE(updated_at)', $tanggal_pengerjaan);
+        }
+        if (!empty($filters['tanggal_pengarsipan'])) {
+            // Convert dd-mm-yyyy format to yyyy-mm-dd for database comparison
+            $tanggal_pengarsipan = $filters['tanggal_pengarsipan'];
+            if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $tanggal_pengarsipan)) {
+                // Convert from dd-mm-yyyy to yyyy-mm-dd
+                $date_parts = explode('-', $tanggal_pengarsipan);
+                $tanggal_pengarsipan = $date_parts[2] . '-' . $date_parts[1] . '-' . $date_parts[0];
+            }
+            $this->db->where('DATE(arsip_create_at)', $tanggal_pengarsipan);
         }
         
         $this->db->order_by('peserta.flag_doc', 'DESC');
@@ -977,6 +1087,10 @@ class Transaksi_model extends CI_Model {
 
     public function get_schedule_detail_by_date($tanggal, $flag_doc = null) {
         $this->db->select("jam,
+            SUM(CASE WHEN gender = 'L' AND (barcode IS NOT NULL AND barcode != '') THEN 1 ELSE 0 END) AS male_with_barcode,
+            SUM(CASE WHEN gender = 'L' AND (barcode IS NULL OR barcode = '') THEN 1 ELSE 0 END) AS male_no_barcode,
+            SUM(CASE WHEN gender = 'P' AND (barcode IS NOT NULL AND barcode != '') THEN 1 ELSE 0 END) AS female_with_barcode,
+            SUM(CASE WHEN gender = 'P' AND (barcode IS NULL OR barcode = '') THEN 1 ELSE 0 END) AS female_no_barcode,
             SUM(CASE WHEN gender = 'L' THEN 1 ELSE 0 END) AS male_count,
             SUM(CASE WHEN gender = 'P' THEN 1 ELSE 0 END) AS female_count,
             COUNT(*) AS total_count");
@@ -1006,7 +1120,9 @@ class Transaksi_model extends CI_Model {
         }
         
         $data = [
-            'selesai' => 2
+            'selesai' => 2,
+            'arsip_create_at' => date('Y-m-d H:i:s'),
+            'eksekutor_arsip_create_at' => $this->session->userdata('user_id') ?: null
         ];
         
         $result = $this->db->update($this->table, $data);

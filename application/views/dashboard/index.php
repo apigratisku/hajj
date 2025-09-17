@@ -336,14 +336,37 @@
                                                             <?php endif; ?>
                                                         </div>
                                                         <div class="time-gender-breakdown">
-                                                            <a href="<?= base_url('database/index?flag_doc=' . ($selected_flag_doc ?: '') . '&tanggaljam=' . $tanggal . ' ' . $jam->jam . '&status=&gender=L') ?>" 
-                                                               class="gender-link male">
-                                                                <span><i class="fas fa-mars text-primary"></i> Laki-laki: <strong><?= (int)$jam->male_count ?></strong></span>
+                                                            <!-- Laki-laki dengan Barcode -->
+                                                            <?php if (isset($jam->male_with_barcode) && $jam->male_with_barcode > 0): ?>
+                                                            <a href="<?= base_url('database/index?flag_doc=' . ($selected_flag_doc ?: '') . '&tanggaljam=' . $tanggal . ' ' . $jam->jam . '&status=&gender=L&has_barcode=1') ?>" 
+                                                               class="gender-link male with-barcode">
+                                                                <span><i class="fas fa-mars text-primary"></i> Laki-laki: <strong><?= (int)$jam->male_with_barcode ?></strong> <i class="fas fa-check-circle" style="color: green;" title="Ada barcode"></i></span>
                                                             </a>
-                                                            <a href="<?= base_url('database/index?flag_doc=' . ($selected_flag_doc ?: '') . '&tanggaljam=' . $tanggal . ' ' . $jam->jam . '&status=&gender=P') ?>" 
-                                                               class="gender-link female">
-                                                                <span><i class="fas fa-venus text-danger"></i> Perempuan: <strong><?= (int)$jam->female_count ?></strong></span>
+                                                            <?php endif; ?>
+                                                            
+                                                            <!-- Laki-laki tanpa Barcode -->
+                                                            <?php if (isset($jam->male_no_barcode) && $jam->male_no_barcode > 0): ?>
+                                                            <a href="<?= base_url('database/index?flag_doc=' . ($selected_flag_doc ?: '') . '&tanggaljam=' . $tanggal . ' ' . $jam->jam . '&status=&gender=L&has_barcode=0') ?>" 
+                                                               class="gender-link male no-barcode">
+                                                                <span><i class="fas fa-mars text-primary"></i> Laki-laki: <strong><?= (int)$jam->male_no_barcode ?></strong> <i class="fas fa-times-circle" style="color: red;" title="Tidak ada barcode"></i></span>
                                                             </a>
+                                                            <?php endif; ?>
+                                                            
+                                                            <!-- Perempuan dengan Barcode -->
+                                                            <?php if (isset($jam->female_with_barcode) && $jam->female_with_barcode > 0): ?>
+                                                            <a href="<?= base_url('database/index?flag_doc=' . ($selected_flag_doc ?: '') . '&tanggaljam=' . $tanggal . ' ' . $jam->jam . '&status=&gender=P&has_barcode=1') ?>" 
+                                                               class="gender-link female with-barcode">
+                                                                <span><i class="fas fa-venus text-danger"></i> Perempuan: <strong><?= (int)$jam->female_with_barcode ?></strong> <i class="fas fa-check-circle" style="color: green;" title="Ada barcode"></i></span>
+                                                            </a>
+                                                            <?php endif; ?>
+                                                            
+                                                            <!-- Perempuan tanpa Barcode -->
+                                                            <?php if (isset($jam->female_no_barcode) && $jam->female_no_barcode > 0): ?>
+                                                            <a href="<?= base_url('database/index?flag_doc=' . ($selected_flag_doc ?: '') . '&tanggaljam=' . $tanggal . ' ' . $jam->jam . '&status=&gender=P&has_barcode=0') ?>" 
+                                                               class="gender-link female no-barcode">
+                                                                <span><i class="fas fa-venus text-danger"></i> Perempuan: <strong><?= (int)$jam->female_no_barcode ?></strong> <i class="fas fa-times-circle" style="color: red;" title="Tidak ada barcode"></i></span>
+                                                            </a>
+                                                            <?php endif; ?>
                                                         </div>
                                                     </div>
                                                 <?php endforeach; ?>
@@ -1198,6 +1221,23 @@
 /* Spesifik untuk Perempuan */
 .gender-link.female:hover {
     background-color: #e63946;
+}
+
+/* Styling untuk kondisi barcode */
+.gender-link.with-barcode {
+    border-left: 3px solid #28a745;
+}
+
+.gender-link.no-barcode {
+    border-left: 3px solid #dc3545;
+}
+
+.gender-link.with-barcode:hover {
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+}
+
+.gender-link.no-barcode:hover {
+    box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
 }
 
 /* Tombol Selesai Styles */

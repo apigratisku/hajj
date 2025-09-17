@@ -86,6 +86,8 @@ $route['email/edit/(:any)'] = 'email/edit/$1';
 $route['email/delete/(:any)'] = 'email/delete/$1';
 $route['email/check_accounts'] = 'email/check_accounts';
 $route['email/test_connection'] = 'email/test_connection';
+$route['email/get_quota_info/(:any)'] = 'email/get_email_quota_info/$1';
+$route['email/bulk_delete'] = 'email/bulk_delete';
 
 // Upload routes
 $route['upload/upload_barcode'] = 'upload/upload_barcode';
@@ -97,3 +99,13 @@ $route['setup'] = 'setup';
 
 // Test routes
 $route['email_test/jupiter'] = 'email_test/jupiter';
+$route['parsing/test'] = 'parsing/test';
+$route['parsing/debug'] = 'parsing/debug';
+$route['parsing/debug_text'] = 'parsing/debug_text';
+$route['parsing/simple_test'] = 'parsing/simple_test';
+
+// Test parsing routes
+$route['parsing_test/test'] = 'parsing_test/test';
+$route['parsing_test/debug'] = 'parsing_test/debug';
+$route['parsing_test/simple_test'] = 'parsing_test/simple_test';
+$route['parsing_test/parse'] = 'parsing_test/parse';

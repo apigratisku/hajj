@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug PDF Text - Parsing VISA</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #fafafa;
+        }
+        .result {
+            background: #f5f5f5;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 3px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .error {
+            background: #ffe6e6;
+            color: #d00;
+            border: 1px solid #ffcccc;
+        }
+        .success {
+            background: #e6ffe6;
+            color: #060;
+            border: 1px solid #ccffcc;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 3px;
+            background: #007cba;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #005a87;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .progress {
+            width: 100%;
+            height: 20px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-bar {
+            height: 100%;
+            background: #007cba;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .text-analysis {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .pattern-test {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .pattern-result {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 3px;
+            margin: 5px 0;
+            font-family: monospace;
+            font-size: 11px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Debug PDF Text - Parsing VISA</h1>
+        <p>Debug tool untuk melihat teks yang diekstrak dari PDF dan menganalisis pola parsing.</p>
+        
+        <div class="test-section">
+            <h2>1. Upload PDF untuk Debug</h2>
+            <input type="file" id="pdfFile" accept=".pdf" style="margin: 10px 0;">
+            <br>
+            <button onclick="debugPdfText()">Debug PDF Text</button>
+            <div id="debugStatus" class="status" style="display: none;"></div>
+            <div class="progress" id="debugProgress" style="display: none;">
+                <div class="progress-bar" id="debugProgressBar"></div>
+            </div>
+            <div id="debugResult" class="result">Select PDF file and click button to debug...</div>
+        </div>
+
+        <div class="test-section" id="analysisSection" style="display: none;">
+            <h2>2. Text Analysis</h2>
+            <div id="textAnalysis" class="text-analysis">
+                <!-- Analysis will be populated here -->
+            </div>
+        </div>
+
+        <div class="test-section" id="patternSection" style="display: none;">
+            <h2>3. Pattern Testing</h2>
+            <div id="patternTesting" class="pattern-test">
+                <!-- Pattern testing will be populated here -->
+            </div>
+        </div>
+
+        <div class="test-section" id="suggestionSection" style="display: none;">
+            <h2>4. Parsing Suggestions</h2>
+            <div id="parsingSuggestions" class="result">
+                <!-- Suggestions will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let extractedText = '';
+        let analysisData = null;
+
+        function showResult(elementId, data, isError = false, isWarning = false) {
+            const element = document.getElementById(elementId);
+            const statusElement = document.getElementById(elementId.replace('Result', 'Status'));
+            
+            element.textContent = JSON.stringify(data, null, 2);
+            
+            if (isError) {
+                element.className = 'result error';
+                statusElement.className = 'status error';
+                statusElement.textContent = '❌ ERROR';
+            } else if (isWarning) {
+                element.className = 'result warning';
+                statusElement.className = 'status warning';
+                statusElement.textContent = '⚠️ WARNING';
+            } else {
+                element.className = 'result success';
+                statusElement.className = 'status success';
+                statusElement.textContent = '✅ SUCCESS';
+            }
+            
+            statusElement.style.display = 'block';
+        }
+        
+        async function debugPdfText() {
+            const fileInput = document.getElementById('pdfFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showResult('debugResult', { error: 'Please select a PDF file' }, true);
+                return;
+            }
+            
+            const resultDiv = document.getElementById('debugResult');
+            const statusDiv = document.getElementById('debugStatus');
+            const progressDiv = document.getElementById('debugProgress');
+            const progressBar = document.getElementById('debugProgressBar');
+            
+            resultDiv.textContent = 'Debugging...';
+            statusDiv.style.display = 'none';
+            progressDiv.style.display = 'block';
+            progressBar.style.width = '0%';
+            
+            try {
+                // Simulate progress
+                let progress = 0;
+                const progressInterval = setInterval(() => {
+                    progress += 10;
+                    progressBar.style.width = progress + '%';
+                    if (progress >= 90) {
+                        clearInterval(progressInterval);
+                    }
+                }, 100);
+                
+                const formData = new FormData();
+                formData.append('pdf', file);
+                
+                const response = await fetch('/hajj/parsing/debug_text', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                clearInterval(progressInterval);
+                progressBar.style.width = '100%';
+                
+                const text = await response.text();
+                
+                setTimeout(() => {
+                    progressDiv.style.display = 'none';
+                }, 500);
+                
+                if (!text) {
+                    showResult('debugResult', { error: 'Empty response from server' }, true);
+                    return;
+                }
+                
+                const data = JSON.parse(text);
+                showResult('debugResult', data);
+                
+                // Store extracted text for analysis
+                extractedText = data.first_1000_chars + (data.last_1000_chars || '');
+                analysisData = data;
+                
+                // Show analysis sections
+                document.getElementById('analysisSection').style.display = 'block';
+                document.getElementById('patternSection').style.display = 'block';
+                document.getElementById('suggestionSection').style.display = 'block';
+                
+                // Perform analysis
+                performTextAnalysis(data);
+                performPatternTesting(data);
+                generateParsingSuggestions(data);
+                
+            } catch (error) {
+                showResult('debugResult', { error: 'Network error', message: error.message }, true);
+            }
+        }
+
+        function performTextAnalysis(data) {
+            const analysisDiv = document.getElementById('textAnalysis');
+            
+            let analysis = '<h4>📊 Text Analysis</h4>';
+            analysis += `<p><strong>File:</strong> ${data.file_info.name}</p>`;
+            analysis += `<p><strong>Size:</strong> ${(data.file_info.size / 1024).toFixed(2)} KB</p>`;
+            analysis += `<p><strong>Extraction Method:</strong> ${data.extraction_method}</p>`;
+            analysis += `<p><strong>Text Length:</strong> ${data.normalized_text_length} characters</p>`;
+            analysis += `<p><strong>Total Lines:</strong> ${data.text_preview.total_lines}</p>`;
+            
+            analysis += '<h5>📝 First 20 Lines:</h5>';
+            analysis += '<div class="pattern-result">';
+            data.text_preview.lines.forEach((line, index) => {
+                analysis += `<div>${index + 1}: ${line}</div>`;
+            });
+            analysis += '</div>';
+            
+            analysis += '<h5>🔍 Common Patterns Found:</h5>';
+            const text = data.first_1000_chars;
+            
+            // Check for common visa document patterns
+            const patterns = {
+                'Visa': /visa/gi,
+                'Passport': /passport/gi,
+                'Name': /name/gi,
+                'Birth': /birth/gi,
+                'Date': /date/gi,
+                'No.': /no\./gi,
+                'Numbers': /\d+/g,
+                'Uppercase Letters': /[A-Z]+/g
+            };
+            
+            analysis += '<div class="pattern-result">';
+            for (const [patternName, regex] of Object.entries(patterns)) {
+                const matches = text.match(regex);
+                if (matches) {
+                    analysis += `<div><strong>${patternName}:</strong> ${matches.length} matches</div>`;
+                }
+            }
+            analysis += '</div>';
+            
+            analysisDiv.innerHTML = analysis;
+        }
+
+        function performPatternTesting(data) {
+            const patternDiv = document.getElementById('patternTesting');
+            const text = data.first_1000_chars;
+            
+            let patternResults = '<h4>🧪 Pattern Testing</h4>';
+            
+            // Test visa patterns
+            const visaPatterns = [
+                { name: 'Visa No. Pattern', pattern: /Visa\s*No\.?\s*[:\-]?\s*([A-Z]?\d{7,15})/i },
+                { name: 'General Visa Pattern', pattern: /Visa\s*[:\-]?\s*([A-Z]?\d{7,15})/i },
+                { name: 'E Visa Pattern', pattern: /E\s*Visa\s*[:\-]?\s*([A-Z]?\d{7,15})/i },
+                { name: 'General Visa Numbers', pattern: /\b([A-Z]\d{9,15})\b/ },
+                { name: 'Numeric Visa Numbers', pattern: /\b(\d{10,15})\b/ }
+            ];
+            
+            patternResults += '<h5>🔍 Visa Number Patterns:</h5>';
+            patternResults += '<div class="pattern-result">';
+            visaPatterns.forEach(test => {
+                const matches = text.match(test.pattern);
+                if (matches) {
+                    patternResults += `<div><strong>${test.name}:</strong> Found "${matches[0]}"</div>`;
+                } else {
+                    patternResults += `<div><strong>${test.name}:</strong> No match</div>`;
+                }
+            });
+            patternResults += '</div>';
+            
+            // Test passport patterns
+            const passportPatterns = [
+                { name: 'Passport No. Pattern', pattern: /Passport\s*No\.?\s*[:\-]?\s*([A-Z]\d{6,9})/i },
+                { name: 'General Passport Pattern', pattern: /Passport\s*[:\-]?\s*([A-Z]\d{6,9})/i },
+                { name: 'General Passport Numbers', pattern: /\b([A-Z]\d{6,9})\b/ },
+                { name: 'No. Pattern', pattern: /No\.\s*([A-Z]\d{6,9})/i }
+            ];
+            
+            patternResults += '<h5>📘 Passport Number Patterns:</h5>';
+            patternResults += '<div class="pattern-result">';
+            passportPatterns.forEach(test => {
+                const matches = text.match(test.pattern);
+                if (matches) {
+                    patternResults += `<div><strong>${test.name}:</strong> Found "${matches[0]}"</div>`;
+                } else {
+                    patternResults += `<div><strong>${test.name}:</strong> No match</div>`;
+                }
+            });
+            patternResults += '</div>';
+            
+            // Test name patterns
+            const namePatterns = [
+                { name: 'Full Name Pattern', pattern: /Full\s*Name\s*[:\-]?\s*([A-Z][A-Z\s\.\'-]{3,})/i },
+                { name: 'Name Pattern', pattern: /Name\s*[:\-]?\s*([A-Z][A-Z\s\.\'-]{3,})/i },
+                { name: 'Nama Pattern', pattern: /Nama\s*[:\-]?\s*([A-Z][A-Z\s\.\'-]{3,})/i },
+                { name: 'Basic Name Pattern', pattern: /\b([A-Z][a-z]+\s+[A-Z][a-z]+)\b/ }
+            ];
+            
+            patternResults += '<h5>👤 Name Patterns:</h5>';
+            patternResults += '<div class="pattern-result">';
+            namePatterns.forEach(test => {
+                const matches = text.match(test.pattern);
+                if (matches) {
+                    patternResults += `<div><strong>${test.name}:</strong> Found "${matches[0]}"</div>`;
+                } else {
+                    patternResults += `<div><strong>${test.name}:</strong> No match</div>`;
+                }
+            });
+            patternResults += '</div>';
+            
+            patternDiv.innerHTML = patternResults;
+        }
+
+        function generateParsingSuggestions(data) {
+            const suggestionDiv = document.getElementById('parsingSuggestions');
+            const text = data.first_1000_chars;
+            
+            let suggestions = 'Based on the text analysis, here are suggestions to improve parsing:\n\n';
+            
+            // Analyze text structure
+            const lines = text.split('\n');
+            const hasNumbers = /\d/.test(text);
+            const hasUppercase = /[A-Z]/.test(text);
+            const hasKeywords = /(visa|passport|name|birth|date)/i.test(text);
+            
+            suggestions += '📋 Text Structure Analysis:\n';
+            suggestions += `- Total lines: ${lines.length}\n`;
+            suggestions += `- Contains numbers: ${hasNumbers ? 'Yes' : 'No'}\n`;
+            suggestions += `- Contains uppercase: ${hasUppercase ? 'Yes' : 'No'}\n`;
+            suggestions += `- Contains keywords: ${hasKeywords ? 'Yes' : 'No'}\n\n`;
+            
+            suggestions += '💡 Suggestions:\n';
+            
+            if (!hasKeywords) {
+                suggestions += '- Consider adding more flexible keyword patterns\n';
+                suggestions += '- The document might use different terminology\n';
+            }
+            
+            if (!hasNumbers) {
+                suggestions += '- No numbers found - check if document is text-based or image-based\n';
+            }
+            
+            if (lines.length < 5) {
+                suggestions += '- Very few lines detected - might be a single-page document\n';
+            }
+            
+            // Check for specific patterns that might need attention
+            if (!/(visa|passport|name)/i.test(text)) {
+                suggestions += '- Consider adding patterns for non-English documents\n';
+                suggestions += '- Document might use Arabic or other language keywords\n';
+            }
+            
+            if (text.length < 100) {
+                suggestions += '- Very short text - might need different extraction method\n';
+            }
+            
+            suggestionDiv.textContent = suggestions;
+        }
+    </script>
+</body>
+</html>
