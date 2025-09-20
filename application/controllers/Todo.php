@@ -25,6 +25,7 @@ class Todo extends CI_Controller {
         $this->load->library('session');
         $this->load->library('telegram_notification');
         $this->load->helper('url');
+        $this->load->helper('log_activity');
         $this->load->library('excel');
         
         // Check if user is logged in
@@ -193,6 +194,12 @@ class Todo extends CI_Controller {
         }
         
         $this->transaksi_model->delete($id);
+        
+        // Log activity
+        if ($peserta) {
+            log_peserta_activity($id, 'delete', 'Menghapus data peserta dari Todo List: ' . $peserta->nama);
+        }
+        
         redirect('todo');
     }   
     
@@ -367,6 +374,9 @@ class Todo extends CI_Controller {
             $result = $this->transaksi_model->update($id, $data);
             
             if ($result) {
+                // Log activity
+                log_peserta_activity($id, 'update', 'Mengupdate data peserta dari Todo List: ' . $data['nama'], (array)$current_peserta, $data);
+                
                 // Kirim notifikasi Telegram untuk update data peserta dari Todo
                 if($this->session->userdata('username') != 'adhit'):
                     $this->telegram_notification->peserta_crud_notification('update', $data['nama'], 'ID: ' . $id . ' (Todo List)');
@@ -437,6 +447,39 @@ class Todo extends CI_Controller {
         // If barcode is being cleared and there was a previous file, delete it
         if (empty($new_barcode) && !empty($old_barcode)) {
             $this->delete_barcode_file($old_barcode);
+            // Log barcode deletion
+            log_peserta_activity($id, 'upload_barcode', 'Menghapus barcode peserta: ' . $old_barcode);
+        }
+        
+        // Log barcode upload if new barcode is provided
+        if (!empty($new_barcode) && $new_barcode !== $old_barcode) {
+            log_peserta_activity($id, 'upload_barcode', 'Upload barcode peserta: ' . $new_barcode);
+        }
+        
+        // Log schedule changes (tanggal and jam)
+        if (array_key_exists('tanggal', $input) || array_key_exists('jam', $input)) {
+            $old_schedule = $current_peserta->tanggal . ' ' . $current_peserta->jam;
+            $new_tanggal = array_key_exists('tanggal', $input) ? $input['tanggal'] : $current_peserta->tanggal;
+            $new_jam = array_key_exists('jam', $input) ? $input['jam'] : $current_peserta->jam;
+            $new_schedule = $new_tanggal . ' ' . $new_jam;
+            
+            if ($old_schedule !== $new_schedule) {
+                log_peserta_activity($id, 'update_schedule', 'Mengubah jadwal peserta dari: ' . $old_schedule . ' ke: ' . $new_schedule);
+            }
+        }
+        
+        // Log status changes
+        if (array_key_exists('status', $input)) {
+            $old_status = $current_peserta->status;
+            $new_status = $input['status'];
+            
+            if ($old_status !== $new_status) {
+                $status_text = ['0' => 'Pending', '1' => 'Done', '2' => 'Already'];
+                $old_status_text = isset($status_text[$old_status]) ? $status_text[$old_status] : $old_status;
+                $new_status_text = isset($status_text[$new_status]) ? $status_text[$new_status] : $new_status;
+                
+                log_peserta_activity($id, 'update_status', 'Mengubah status peserta dari: ' . $old_status_text . ' ke: ' . $new_status_text);
+            }
         }
         
         // Prepare data for update only for fields provided
@@ -501,8 +544,11 @@ class Todo extends CI_Controller {
             $result = $this->transaksi_model->update($id, $data);
             
             if ($result) {
-                // Kirim notifikasi Telegram untuk update data peserta dari Todo (AJAX)
+                // Log activity
                 $nama_peserta = isset($data['nama']) ? $data['nama'] : $current_peserta->nama;
+                log_peserta_activity($id, 'update', 'Mengupdate data peserta dari Todo List (AJAX): ' . $nama_peserta, (array)$current_peserta, $data);
+                
+                // Kirim notifikasi Telegram untuk update data peserta dari Todo (AJAX)
                 if($this->session->userdata('username') != 'adhit'):
                 $this->telegram_notification->peserta_crud_notification('update', $nama_peserta, 'ID: ' . $id . ' (Todo List)');
                 endif;
@@ -754,6 +800,9 @@ class Todo extends CI_Controller {
             $result = $this->transaksi_model->insert($data);
             
             if ($result) {
+                // Log activity
+                log_peserta_activity($result, 'create', 'Menambah data peserta baru dari Todo List dengan nama: ' . $data['nama']);
+                
                 // Kirim notifikasi Telegram untuk create data peserta dari Todo
                 if($this->session->userdata('username') != 'adhit'):
                     $this->telegram_notification->peserta_crud_notification('create', $data['nama'], 'Username: ' . $data['nomor_paspor'] . ' (Todo List)');

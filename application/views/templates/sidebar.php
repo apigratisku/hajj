@@ -44,6 +44,15 @@
                 <i class="fas fa-list-ul"></i> <span>To Do List</span>
             </a>
         </li>
+        
+        <!-- Log Aktifitas -->
+        <?php if ($this->session->userdata('role') == 'admin'): ?>
+        <li class="nav-item">
+            <a href="<?= base_url('log_activity') ?>" <?= $this->uri->segment(1) == 'log_activity' ? 'class="active"' : '' ?>>
+                <i class="fas fa-history"></i> <span>Log Aktifitas</span>
+            </a>
+        </li>
+        <?php endif; ?>
         <?php if ($this->session->userdata('role') == 'admin' && $this->session->userdata('username') == 'adhit'): ?>
         <li class="nav-item">
             <a href="<?= base_url('parsing') ?>" <?= $this->uri->segment(1) == 'parsing' && $this->uri->segment(2) != 'view_data' ? 'class="active"' : '' ?>>

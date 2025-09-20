@@ -8,6 +8,7 @@ class Peserta extends CI_Controller {
         $this->load->model('peserta_model');
         $this->load->library('session');
         $this->load->helper('url');
+        $this->load->helper('log_activity');
         $this->load->library('form_validation');
         
         // Check if user is logged in
@@ -94,7 +95,11 @@ class Peserta extends CI_Controller {
                     'status' => 'Aktif'
                 ];
                 
-                $this->peserta_model->insert($data_insert);
+                $peserta_id = $this->peserta_model->insert($data_insert);
+                
+                // Log activity
+                log_peserta_activity($peserta_id, 'create', 'Menambah data peserta baru dengan nama: ' . $data_insert['nama']);
+                
                 $this->session->set_flashdata('success', 'Data peserta berhasil ditambahkan');
                 redirect('peserta');
             }
@@ -128,6 +133,9 @@ class Peserta extends CI_Controller {
             $this->form_validation->set_rules('gender', 'Gender', 'required');
             
             if ($this->form_validation->run() === TRUE) {
+                // Get old data for comparison
+                $old_data = $this->peserta_model->get_by_id($id);
+                
                 $data_update = [
                     'id_agent' => $this->input->post('id_agent'),
                     'nama' => $this->input->post('nama'),
@@ -142,6 +150,10 @@ class Peserta extends CI_Controller {
                 ];
                 
                 $this->peserta_model->update($id, $data_update);
+                
+                // Log activity
+                log_peserta_activity($id, 'update', 'Mengupdate data peserta: ' . $data_update['nama'], (array)$old_data, $data_update);
+                
                 $this->session->set_flashdata('success', 'Data peserta berhasil diupdate');
                 redirect('peserta');
             }
@@ -154,13 +166,25 @@ class Peserta extends CI_Controller {
     }
 
     public function delete($id) {
+        // Get data before deletion for logging
+        $peserta_data = $this->peserta_model->get_by_id($id);
+        
         $this->peserta_model->delete($id);
+        
+        // Log activity
+        if ($peserta_data) {
+            log_peserta_activity($id, 'delete', 'Menghapus data peserta: ' . $peserta_data->nama);
+        }
+        
         $this->session->set_flashdata('success', 'Data peserta berhasil dihapus');
         redirect('peserta');
     }
 
     public function export() {
         $peserta = $this->peserta_model->get_all();
+        
+        // Log activity
+        log_system_activity('Export data peserta ke Excel - Total: ' . count($peserta) . ' data');
         
         // Load PHPExcel library
         $this->load->library('Excel');

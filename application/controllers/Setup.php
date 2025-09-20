@@ -267,5 +267,59 @@ class Setup extends CI_Controller {
 
             echo "Struktur tabel '$table_peserta' berhasil disinkronkan.";
         }
+
+        // Create log_aktivitas_user table
+        $table_log = 'log_aktivitas_user';
+        
+        if (!$this->db->table_exists($table_log)) {
+            $fields_log = array(
+                'id_log' => array(
+                    'type' => 'INT',
+                    'constraint' => 11,
+                    'auto_increment' => TRUE
+                ),
+                'id_peserta' => array(
+                    'type' => 'INT',
+                    'constraint' => 11,
+                    'null' => FALSE
+                ),
+                'user_operator' => array(
+                    'type' => 'VARCHAR',
+                    'constraint' => 100,
+                    'null' => FALSE
+                ),
+                'tanggal' => array(
+                    'type' => 'DATE',
+                    'null' => FALSE
+                ),
+                'jam' => array(
+                    'type' => 'TIME',
+                    'null' => FALSE
+                ),
+                'aktivitas' => array(
+                    'type' => 'VARCHAR',
+                    'constraint' => 255,
+                    'null' => FALSE
+                ),
+                'created_at' => array(
+                    'type' => 'DATETIME',
+                    'null' => TRUE
+                )
+            );
+
+            $this->dbforge->add_field($fields_log);
+            $this->dbforge->add_key('id_log', TRUE); // Primary key
+            $this->dbforge->create_table($table_log, TRUE);
+
+            // Add indexes for better performance
+            $this->db->query("ALTER TABLE `$table_log` ADD INDEX `idx_user_operator` (`user_operator`)");
+            $this->db->query("ALTER TABLE `$table_log` ADD INDEX `idx_id_peserta` (`id_peserta`)");
+            $this->db->query("ALTER TABLE `$table_log` ADD INDEX `idx_tanggal` (`tanggal`)");
+            $this->db->query("ALTER TABLE `$table_log` ADD INDEX `idx_created_at` (`created_at`)");
+
+            echo "Tabel '$table_log' berhasil dibuat.<br>";
+        } else {
+            echo "Tabel '$table_log' sudah ada.<br>";
+        }
     }
 }

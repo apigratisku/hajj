@@ -1192,14 +1192,99 @@ class Parsing extends CI_Controller
             log_message('info', 'All numbers (4-15 digits) found in text: ' . implode(', ', $matches[1]));
         }
         
+        // Log all numbers found in the text for debugging
+        if (preg_match_all('/\b(\d{7,15})\b/', $page_text, $matches)) {
+            log_message('info', 'All numbers (7-15 digits) found in text: ' . implode(', ', $matches[1]));
+        }
+        
+        // Log all numbers found in the text for debugging
+        if (preg_match_all('/\b(\d{8,12})\b/', $page_text, $matches)) {
+            log_message('info', 'All numbers (8-12 digits) found in text: ' . implode(', ', $matches[1]));
+        }
+        
+        // Log all numbers found in the text for debugging
+        if (preg_match_all('/\b(\d{9,11})\b/', $page_text, $matches)) {
+            log_message('info', 'All numbers (9-11 digits) found in text: ' . implode(', ', $matches[1]));
+        }
+        
+        // Log all numbers found in the text for debugging
+        if (preg_match_all('/\b(\d{10})\b/', $page_text, $matches)) {
+            log_message('info', 'All numbers (10 digits) found in text: ' . implode(', ', $matches[1]));
+        }
+        
+        // Log all numbers found in the text for debugging
+        if (preg_match_all('/\b(\d{11})\b/', $page_text, $matches)) {
+            log_message('info', 'All numbers (11 digits) found in text: ' . implode(', ', $matches[1]));
+        }
+        
+        // Log all numbers found in the text for debugging
+        if (preg_match_all('/\b(\d{12})\b/', $page_text, $matches)) {
+            log_message('info', 'All numbers (12 digits) found in text: ' . implode(', ', $matches[1]));
+        }
+        
         // Log all alphanumeric patterns found in the text for debugging
         if (preg_match_all('/\b([A-Za-z]\d{6,9})\b/', $page_text, $matches)) {
             log_message('info', 'All alphanumeric patterns found in text: ' . implode(', ', $matches[1]));
         }
         
+        // Log all alphanumeric patterns found in the text for debugging
+        if (preg_match_all('/\b([A-Za-z]\d{7})\b/', $page_text, $matches)) {
+            log_message('info', 'All alphanumeric patterns (letter+7 digits) found in text: ' . implode(', ', $matches[1]));
+        }
+        
+        // Log all alphanumeric patterns found in the text for debugging
+        if (preg_match_all('/\b([A-Za-z]\d{8})\b/', $page_text, $matches)) {
+            log_message('info', 'All alphanumeric patterns (letter+8 digits) found in text: ' . implode(', ', $matches[1]));
+        }
+        
+        // Log all alphanumeric patterns found in the text for debugging
+        if (preg_match_all('/\b([A-Za-z]\d{9})\b/', $page_text, $matches)) {
+            log_message('info', 'All alphanumeric patterns (letter+9 digits) found in text: ' . implode(', ', $matches[1]));
+        }
+        
         // Log all alphanumeric patterns (shorter) found in the text for debugging
         if (preg_match_all('/\b([A-Za-z]\d{4,10})\b/', $page_text, $matches)) {
             log_message('info', 'All alphanumeric patterns (4-10 chars) found in text: ' . implode(', ', $matches[1]));
+        }
+        
+        // Log all alphanumeric patterns found in the text for debugging
+        if (preg_match_all('/\b([A-Za-z]\d{6,9})\b/', $page_text, $matches)) {
+            log_message('info', 'All alphanumeric patterns (letter+6-9 digits) found in text: ' . implode(', ', $matches[1]));
+        }
+        
+        // Log all alphanumeric patterns found in the text for debugging
+        if (preg_match_all('/\b([A-Za-z]\d{7})\b/', $page_text, $matches)) {
+            log_message('info', 'All alphanumeric patterns (letter+7 digits) found in text: ' . implode(', ', $matches[1]));
+        }
+        
+        // Log all alphanumeric patterns found in the text for debugging
+        if (preg_match_all('/\b([A-Za-z]\d{8})\b/', $page_text, $matches)) {
+            log_message('info', 'All alphanumeric patterns (letter+8 digits) found in text: ' . implode(', ', $matches[1]));
+        }
+        
+        // Log all alphanumeric patterns found in the text for debugging
+        if (preg_match_all('/\b([A-Za-z]\d{9})\b/', $page_text, $matches)) {
+            log_message('info', 'All alphanumeric patterns (letter+9 digits) found in text: ' . implode(', ', $matches[1]));
+        }
+        
+        // Log all dates found in the text for debugging
+        if (preg_match_all('/\b(\d{1,2}[\/\.\-]\d{1,2}[\/\.\-]\d{2,4})\b/', $page_text, $matches)) {
+            log_message('info', 'All dates found in text: ' . implode(', ', $matches[1]));
+        }
+        
+        // Log all dates found in the text for debugging
+        if (preg_match_all('/\b(\d{1,2}[\/\.\-]\d{1,2}[\/\.\-]\d{2,4})\b/', $page_text, $matches)) {
+            log_message('info', 'All dates found in text: ' . implode(', ', $matches[1]));
+        }
+        
+        // Log all dates found in the text for debugging
+        if (preg_match_all('/\b(\d{1,2}[\/\.\-]\d{1,2}[\/\.\-]\d{2,4})\b/', $page_text, $matches)) {
+            log_message('info', 'All dates found in text: ' . implode(', ', $matches[1]));
+        }
+        
+        // Log all dates found in the text for debugging
+        if (preg_match_all('/\b(\d{1,2}[\/\.\-]\d{1,2}[\/\.\-]\d{2,4})\b/', $page_text, $matches)) {
+            log_message('info', 'All dates found in text: ' . implode(', ', $matches[1]));
         }
         
         // Log all dates found in the text for debugging
@@ -1215,6 +1300,26 @@ class Parsing extends CI_Controller
         // Log all words found in the text for debugging
         if (preg_match_all('/\b([A-Za-z]{3,})\b/', $page_text, $matches)) {
             log_message('info', 'All words (3+ chars) found in text: ' . implode(', ', $matches[1]));
+        }
+        
+        // Log all alphanumeric patterns found in the text for debugging
+        if (preg_match_all('/\b([A-Za-z]\d{6,9})\b/', $page_text, $matches)) {
+            log_message('info', 'All alphanumeric patterns (letter+6-9 digits) found in text: ' . implode(', ', $matches[1]));
+        }
+        
+        // Log all alphanumeric patterns found in the text for debugging
+        if (preg_match_all('/\b([A-Za-z]\d{7})\b/', $page_text, $matches)) {
+            log_message('info', 'All alphanumeric patterns (letter+7 digits) found in text: ' . implode(', ', $matches[1]));
+        }
+        
+        // Log all alphanumeric patterns found in the text for debugging
+        if (preg_match_all('/\b([A-Za-z]\d{8})\b/', $page_text, $matches)) {
+            log_message('info', 'All alphanumeric patterns (letter+8 digits) found in text: ' . implode(', ', $matches[1]));
+        }
+        
+        // Log all alphanumeric patterns found in the text for debugging
+        if (preg_match_all('/\b([A-Za-z]\d{9})\b/', $page_text, $matches)) {
+            log_message('info', 'All alphanumeric patterns (letter+9 digits) found in text: ' . implode(', ', $matches[1]));
         }
         
         // Extract Visa Number - enhanced patterns for multiple pages
@@ -1262,7 +1367,18 @@ class Parsing extends CI_Controller
             '/\b(\d{10})\s*(?:Umrah|عمرة)/i', // 10 digits before Umrah
             '/\b(\d{10})\s*(?:Operator|مكتب)/i', // 10 digits before Operator
             '/\b(\d{10})\s*(?:Agent|الوكيل)/i', // 10 digits before Agent
-            '/\b(\d{10})\s*(?:Border|الحدود)/i' // 10 digits before Border
+            '/\b(\d{10})\s*(?:Border|الحدود)/i', // 10 digits before Border
+            // SIMPLE PATTERNS: Look for any number that could be a visa
+            '/\b(\d{7,15})\b/', // Any 7-15 digit number
+            '/\b([A-Z]?\d{7,15})\b/', // Any alphanumeric 7-15 chars
+            '/\b(\d{8,12})\b/', // Any 8-12 digit number
+            '/\b(\d{9,11})\b/', // Any 9-11 digit number
+            '/\b(\d{10})\b/', // Any 10 digit number
+            '/\b(\d{11})\b/', // Any 11 digit number
+            '/\b(\d{12})\b/', // Any 12 digit number
+            '/\b(\d{13})\b/', // Any 13 digit number
+            '/\b(\d{14})\b/', // Any 14 digit number
+            '/\b(\d{15})\b/' // Any 15 digit number
         ];
         
         log_message('info', 'Trying to extract visa number with ' . count($visa_patterns) . ' patterns');
@@ -1397,6 +1513,43 @@ class Parsing extends CI_Controller
                     !preg_match('/^\d{2}\d{2}\d{4,6}$/', $match)) { // Not a date format
                     $visa_numbers[] = trim($match);
                 }
+            }
+        }
+        
+        // SIMPLE PATTERNS: Look for any number that could be a visa
+        if (preg_match_all('/\b(\d{7,15})\b/', $page_text, $matches)) {
+            foreach ($matches[1] as $match) {
+                $visa_numbers[] = trim($match);
+            }
+        }
+        
+        if (preg_match_all('/\b(\d{8,12})\b/', $page_text, $matches)) {
+            foreach ($matches[1] as $match) {
+                $visa_numbers[] = trim($match);
+            }
+        }
+        
+        if (preg_match_all('/\b(\d{9,11})\b/', $page_text, $matches)) {
+            foreach ($matches[1] as $match) {
+                $visa_numbers[] = trim($match);
+            }
+        }
+        
+        if (preg_match_all('/\b(\d{10})\b/', $page_text, $matches)) {
+            foreach ($matches[1] as $match) {
+                $visa_numbers[] = trim($match);
+            }
+        }
+        
+        if (preg_match_all('/\b(\d{11})\b/', $page_text, $matches)) {
+            foreach ($matches[1] as $match) {
+                $visa_numbers[] = trim($match);
+            }
+        }
+        
+        if (preg_match_all('/\b(\d{12})\b/', $page_text, $matches)) {
+            foreach ($matches[1] as $match) {
+                $visa_numbers[] = trim($match);
             }
         }
         
@@ -1603,6 +1756,37 @@ class Parsing extends CI_Controller
         
         // AGGRESSIVE PATTERN: Look for any letter followed by 7 digits that could be a passport
         if (preg_match_all('/\b([A-Z]\d{7})\b/', $page_text, $matches)) {
+            foreach ($matches[1] as $match) {
+                $passport_numbers[] = strtoupper(trim($match));
+            }
+        }
+        
+        // SIMPLE PATTERNS: Look for any alphanumeric that could be a passport
+        if (preg_match_all('/\b([A-Z]\d{6,9})\b/', $page_text, $matches)) {
+            foreach ($matches[1] as $match) {
+                $passport_numbers[] = strtoupper(trim($match));
+            }
+        }
+        
+        if (preg_match_all('/\b([A-Z]\d{7})\b/', $page_text, $matches)) {
+            foreach ($matches[1] as $match) {
+                $passport_numbers[] = strtoupper(trim($match));
+            }
+        }
+        
+        if (preg_match_all('/\b([A-Z]\d{8})\b/', $page_text, $matches)) {
+            foreach ($matches[1] as $match) {
+                $passport_numbers[] = strtoupper(trim($match));
+            }
+        }
+        
+        if (preg_match_all('/\b([A-Z]\d{9})\b/', $page_text, $matches)) {
+            foreach ($matches[1] as $match) {
+                $passport_numbers[] = strtoupper(trim($match));
+            }
+        }
+        
+        if (preg_match_all('/\b([A-Za-z]\d{6,9})\b/', $page_text, $matches)) {
             foreach ($matches[1] as $match) {
                 $passport_numbers[] = strtoupper(trim($match));
             }
