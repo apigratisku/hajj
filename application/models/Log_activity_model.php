@@ -31,18 +31,22 @@ class Log_activity_model extends CI_Model
             return false;
         }
 
-        // Set created_at jika tidak ada
-        if (!isset($data['created_at'])) {
-            $data['created_at'] = date('Y-m-d H:i:s');
-        }
+        // created_at akan diisi otomatis oleh database dengan CURRENT_TIMESTAMP
+        // Tidak perlu set manual karena sudah ada default value
 
+        // Debug: Log data yang akan diinsert
+        log_message('debug', "Log_activity_model: Attempting to insert data: " . json_encode($data));
+        
         $result = $this->db->insert($this->table, $data);
         
         if ($result) {
-            log_message('info', "Log_activity_model: Successfully inserted log for user {$data['user_operator']} - {$data['aktivitas']}");
-            return $this->db->insert_id();
+            $insert_id = $this->db->insert_id();
+            log_message('info', "Log_activity_model: Successfully inserted log for user {$data['user_operator']} - {$data['aktivitas']} - ID: {$insert_id}");
+            return $insert_id;
         } else {
-            log_message('error', "Log_activity_model: Failed to insert log - " . $this->db->last_query());
+            $error = $this->db->error();
+            log_message('error', "Log_activity_model: Failed to insert log - Query: " . $this->db->last_query());
+            log_message('error', "Log_activity_model: DB Error: " . json_encode($error));
             return false;
         }
     }

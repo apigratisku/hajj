@@ -57,8 +57,8 @@ if (!function_exists('log_user_activity')) {
             'user_operator' => $user_operator,
             'tanggal' => $tanggal,
             'jam' => $jam,
-            'aktivitas' => $aktivitas,
-            'created_at' => date('Y-m-d H:i:s')
+            'aktivitas' => $aktivitas
+            // created_at akan diisi otomatis oleh database dengan CURRENT_TIMESTAMP
         ];
         
         // Debug: Log data yang akan diinsert
@@ -73,7 +73,8 @@ if (!function_exists('log_user_activity')) {
             log_message('error', "Failed to log user activity: {$user_operator} - {$aktivitas} (Peserta ID: {$id_peserta})");
             // Debug: Log error details
             log_message('error', "Log_activity_helper: Last query: " . $CI->db->last_query());
-            log_message('error', "Log_activity_helper: DB error: " . $CI->db->error()['message']);
+            $db_error = $CI->db->error();
+            log_message('error', "Log_activity_helper: DB error: " . json_encode($db_error));
         }
         
         return $result;

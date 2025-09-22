@@ -302,8 +302,9 @@ class Setup extends CI_Controller {
                     'null' => FALSE
                 ),
                 'created_at' => array(
-                    'type' => 'DATETIME',
-                    'null' => TRUE
+                    'type' => 'TIMESTAMP',
+                    'null' => FALSE,
+                    'default' => 'CURRENT_TIMESTAMP'
                 )
             );
 
