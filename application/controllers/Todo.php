@@ -396,46 +396,50 @@ class Todo extends CI_Controller {
         // Suppress all PHP errors and warnings to prevent HTML output
         error_reporting(0);
         ini_set('display_errors', 0);
+        ini_set('log_errors', 1);
 
-        // Clear any existing output buffer
-        if (ob_get_level()) {
+        // Clear any existing output buffer completely
+        while (ob_get_level()) {
             ob_end_clean();
         }
         
-        // Check if it's an AJAX request
-        if (!$this->is_ajax_request()) {
-            $this->output->set_status_header(400);
-            $this->output->set_output(json_encode(['success' => false, 'message' => 'Invalid request']));
-            return;
-        }
+        // Start new output buffer
+        ob_start();
         
-        // Get JSON input
-        $input = json_decode(file_get_contents('php://input'), true);
+        // Set JSON content type immediately
+        $this->output->set_content_type('application/json');
         
-        if (!$input) {
-            $this->output->set_status_header(400);
-            $this->output->set_output(json_encode(['success' => false, 'message' => 'Invalid input data']));
-            return;
-        }
-        
-        // For inline mobile edits, allow partial updates (no hard required fields)
-        
-        // Check database connection
-        if (!$this->db->simple_query('SELECT 1')) {
-            log_message('error', 'Database connection failed in Todo update_ajax');
-            $this->output->set_status_header(500);
-            $this->output->set_content_type('application/json');
-            $this->output->set_output(json_encode(['success' => false, 'message' => 'Koneksi database gagal. Silakan coba lagi.']));
-            return;
-        }
-        
-        // Check if peserta exists
-        $current_peserta = $this->transaksi_model->get_by_id($id);
-        if (!$current_peserta) {
-            $this->output->set_status_header(404);
-            $this->output->set_output(json_encode(['success' => false, 'message' => 'Data peserta tidak ditemukan']));
-            return;
-        }
+        try {
+            // Check if it's an AJAX request
+            if (!$this->is_ajax_request()) {
+                $this->output->set_status_header(400);
+                $this->output->set_output(json_encode(['success' => false, 'message' => 'Invalid request']));
+                return;
+            }
+            
+            // Get JSON input
+            $input = json_decode(file_get_contents('php://input'), true);
+            
+            if (!$input) {
+                $this->output->set_status_header(400);
+                $this->output->set_output(json_encode(['success' => false, 'message' => 'Invalid input data']));
+                return;
+            }
+            
+            // Check database connection
+            if (!$this->db->simple_query('SELECT 1')) {
+                $this->output->set_status_header(500);
+                $this->output->set_output(json_encode(['success' => false, 'message' => 'Koneksi database gagal. Silakan coba lagi.']));
+                return;
+            }
+            
+            // Check if peserta exists
+            $current_peserta = $this->transaksi_model->get_by_id($id);
+            if (!$current_peserta) {
+                $this->output->set_status_header(404);
+                $this->output->set_output(json_encode(['success' => false, 'message' => 'Data peserta tidak ditemukan']));
+                return;
+            }
         
         // Check if barcode field is being cleared (file deletion)
         $new_barcode = null;
@@ -521,21 +525,18 @@ class Todo extends CI_Controller {
             }
         }
         
-        // Debug: Log the data being updated
-        log_message('debug', 'Todo update_ajax - Updating peserta ID: ' . $id . ' with data: ' . json_encode($data));
-        log_message('debug', 'Todo update_ajax - Raw input: ' . json_encode($input));
-        log_message('debug', 'Todo update_ajax - Barcode value: ' . (isset($data['barcode']) ? $data['barcode'] : 'NOT SET'));
-        log_message('debug', 'Todo update_ajax - History done value: ' . (isset($data['history_done']) ? $data['history_done'] : 'NOT SET'));
-        log_message('debug', 'Todo update_ajax - Current peserta status: ' . $current_peserta->status);
-        log_message('debug', 'Todo update_ajax - Current peserta history_done: ' . ($current_peserta->history_done ?: 'NULL'));
-        log_message('debug', 'Todo update_ajax - User ID from session: ' . $this->session->userdata('user_id'));
-        
-        try {
+            // Debug: Log the data being updated
+            log_message('debug', 'Todo update_ajax - Updating peserta ID: ' . $id . ' with data: ' . json_encode($data));
+            log_message('debug', 'Todo update_ajax - Raw input: ' . json_encode($input));
+            log_message('debug', 'Todo update_ajax - Barcode value: ' . (isset($data['barcode']) ? $data['barcode'] : 'NOT SET'));
+            log_message('debug', 'Todo update_ajax - History done value: ' . (isset($data['history_done']) ? $data['history_done'] : 'NOT SET'));
+            log_message('debug', 'Todo update_ajax - Current peserta status: ' . $current_peserta->status);
+            log_message('debug', 'Todo update_ajax - Current peserta history_done: ' . ($current_peserta->history_done ?: 'NULL'));
+            log_message('debug', 'Todo update_ajax - User ID from session: ' . $this->session->userdata('user_id'));
+            
             // Final check to ensure no output has been sent
             if (headers_sent()) {
-                log_message('error', 'Headers already sent in Todo update_ajax');
                 $this->output->set_status_header(500);
-                $this->output->set_content_type('application/json');
                 $this->output->set_output(json_encode(['success' => false, 'message' => 'Headers sudah terkirim. Silakan coba lagi.']));
                 return;
             }
@@ -544,36 +545,44 @@ class Todo extends CI_Controller {
             $result = $this->transaksi_model->update($id, $data);
             
             if ($result) {
-                // Log activity
-                $nama_peserta = isset($data['nama']) ? $data['nama'] : $current_peserta->nama;
+            // Log activity
+            $nama_peserta = isset($data['nama']) ? $data['nama'] : $current_peserta->nama;
+            try {
                 log_peserta_activity($id, 'update', 'Mengupdate data peserta dari Todo List (AJAX): ' . $nama_peserta, (array)$current_peserta, $data);
-                
-                // Kirim notifikasi Telegram untuk update data peserta dari Todo (AJAX)
+            } catch (Exception $e) {
+                // Log error but don't fail the update
+                log_message('error', 'Failed to log activity: ' . $e->getMessage());
+            }
+            
+            // Kirim notifikasi Telegram untuk update data peserta dari Todo (AJAX)
+            try {
                 if($this->session->userdata('username') != 'adhit'):
-                $this->telegram_notification->peserta_crud_notification('update', $nama_peserta, 'ID: ' . $id . ' (Todo List)');
+                    $this->telegram_notification->peserta_crud_notification('update', $nama_peserta, 'ID: ' . $id . ' (Todo List)');
                 endif;
-                $this->output->set_content_type('application/json');
+            } catch (Exception $e) {
+                // Log error but don't fail the update
+                log_message('error', 'Failed to send telegram notification: ' . $e->getMessage());
+            }
                 $this->output->set_output(json_encode(['success' => true, 'message' => 'Data berhasil diperbarui']));
             } else {
                 $this->output->set_status_header(500);
-                $this->output->set_content_type('application/json');
                 $this->output->set_output(json_encode(['success' => false, 'message' => 'Gagal memperbarui data. Silakan coba lagi.']));
             }
+            
         } catch (Exception $e) {
-            log_message('error', 'Exception in Todo update_ajax: ' . $e->getMessage());
             $this->output->set_status_header(500);
-            $this->output->set_content_type('application/json');
             $this->output->set_output(json_encode(['success' => false, 'message' => 'Terjadi kesalahan saat memperbarui data: ' . $e->getMessage()]));
         } catch (Error $e) {
-            log_message('error', 'Error in Todo update_ajax: ' . $e->getMessage());
             $this->output->set_status_header(500);
-            $this->output->set_content_type('application/json');
             $this->output->set_output(json_encode(['success' => false, 'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()]));
         } catch (Throwable $e) {
-            log_message('error', 'Throwable in Todo update_ajax: ' . $e->getMessage());
             $this->output->set_status_header(500);
-            $this->output->set_content_type('application/json');
             $this->output->set_output(json_encode(['success' => false, 'message' => 'Terjadi kesalahan tidak terduga: ' . $e->getMessage()]));
+        } finally {
+            // Clean up output buffer
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
         }
     }
 
