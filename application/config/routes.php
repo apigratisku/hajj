@@ -13,7 +13,7 @@ $route['telegram_bot/webhook'] = 'telegram_bot/webhook';
 $route['telegram_bot/set_webhook'] = 'telegram_bot/set_webhook';
 $route['telegram_bot/delete_webhook'] = 'telegram_bot/delete_webhook';
 $route['telegram_bot/get_webhook_info'] = 'telegram_bot/get_webhook_info';
-$route['api/status'] = 'api/status';
+$route['api/test'] = 'api/test';
 $route['api/schedule_notifications'] = 'api/schedule_notifications';
 $route['api/overdue_schedules'] = 'api/overdue_schedules';
 

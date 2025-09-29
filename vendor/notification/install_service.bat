@@ -15,14 +15,6 @@ if errorlevel 1 (
 echo ✅ Python ditemukan
 echo.
 
-REM Install dependencies
-echo 📦 Menginstall dependencies...
-pip install -r requirements.txt
-if errorlevel 1 (
-    echo ERROR: Gagal menginstall dependencies
-    pause
-    exit /b 1
-)
 
 echo ✅ Dependencies berhasil diinstall
 echo.
