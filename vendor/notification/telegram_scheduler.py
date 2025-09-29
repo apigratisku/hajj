@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Telegram Notification Scheduler for Hajj Dashboard
+Telegram Notification Scheduler dengan Timezone GMT+8
 Sistem notifikasi otomatis untuk jadwal kunjungan hajj
 """
 
@@ -12,17 +12,20 @@ import schedule
 import logging
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
-import sys
+import sys, io, logging
 import os
 from dataclasses import dataclass
+import pytz
 
 # Konfigurasi logging
+stdout_utf8 = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('telegram_scheduler.log'),
-        logging.StreamHandler(sys.stdout)
+        logging.FileHandler('telegram_scheduler.log', encoding='utf-8'),
+        logging.StreamHandler(stdout_utf8),
     ]
 )
 logger = logging.getLogger(__name__)
@@ -42,7 +45,7 @@ class HajjConfig:
     timeout: int = 30
 
 class TelegramNotifier:
-    """Class untuk mengirim notifikasi ke Telegram"""
+    """Class untuk mengirim notifikasi ke Telegram dengan timezone GMT+8"""
     
     def __init__(self, config: TelegramConfig):
         self.config = config
@@ -51,6 +54,17 @@ class TelegramNotifier:
             'Content-Type': 'application/json',
             'User-Agent': 'Hajj-Notification-Scheduler/1.0'
         })
+        
+        # Set timezone ke Asia/Hong_Kong (GMT+8)
+        self.timezone = pytz.timezone('Asia/Hong_Kong')
+    
+    def get_current_time(self):
+        """Mendapatkan waktu saat ini dalam timezone Asia/Jakarta"""
+        return datetime.now(self.timezone)
+    
+    def format_time(self, dt):
+        """Format waktu untuk display"""
+        return dt.strftime('%d %B %Y %H:%M')
     
     def send_message(self, message: str, parse_mode: str = 'HTML') -> bool:
         """Mengirim pesan ke Telegram"""
@@ -77,7 +91,7 @@ class TelegramNotifier:
             return False
     
     def send_schedule_alert(self, schedule_data: Dict[str, Any], alert_type: str) -> bool:
-        """Mengirim alert jadwal kunjungan"""
+        """Mengirim alert jadwal kunjungan dengan timezone GMT+8"""
         try:
             # Format pesan berdasarkan tipe alert
             if alert_type == "2_hours":
@@ -115,12 +129,17 @@ class TelegramNotifier:
             except:
                 tanggal_display = tanggal
             
+            # Waktu saat ini dalam timezone Asia/Jakarta
+            current_time = self.get_current_time()
+            
             message = f"""
-{emoji} <b>ALERT JADWAL KUNJUNGAN</b> {emoji}
+{emoji} <b>ALERT JADWAL KUNJUNGAN HAJJ</b> {emoji}
 
 ⏰ <b>Waktu Alert:</b> {time_text} sebelum jadwal
 📅 <b>Tanggal:</b> {tanggal_display}
 🕐 <b>Jam:</b> {jam_display}
+🌏 <b>Timezone:</b> Asia/Hong_Kong (GMT+8)
+🕐 <b>Waktu Server:</b> {self.format_time(current_time)}
 
 📊 <b>STATISTIK PESERTA:</b>
 👥 Total Peserta: <b>{total_peserta}</b>
@@ -139,7 +158,7 @@ class TelegramNotifier:
             return False
     
     def send_overdue_report(self, overdue_schedules: List[Dict[str, Any]]) -> bool:
-        """Mengirim laporan jadwal yang terlewat"""
+        """Mengirim laporan jadwal yang terlewat dengan timezone GMT+8"""
         try:
             if not overdue_schedules:
                 return True
@@ -147,10 +166,14 @@ class TelegramNotifier:
             total_overdue = len(overdue_schedules)
             total_no_barcode = sum(schedule.get('no_barcode_count', 0) for schedule in overdue_schedules)
             
+            # Waktu saat ini dalam timezone Asia/Jakarta
+            current_time = self.get_current_time()
+            
             message = f"""
 📋 <b>LAPORAN JADWAL TERLEWAT</b> 📋
 
-⏰ <b>Waktu Laporan:</b> {datetime.now().strftime('%d %B %Y %H:%M')}
+⏰ <b>Waktu Laporan:</b> {self.format_time(current_time)}
+🌏 <b>Timezone:</b> Asia/Hong_Kong (GMT+8)
 
 📊 <b>RINGKASAN:</b>
 📅 Total Jadwal Terlewat: <b>{total_overdue}</b>
@@ -165,6 +188,7 @@ class TelegramNotifier:
                 jam = schedule.get('jam', '')
                 total_peserta = schedule.get('total_count', 0)
                 tanpa_barcode = schedule.get('no_barcode_count', 0)
+                overdue_minutes = schedule.get('overdue_minutes', 0)
                 
                 try:
                     jam_display = datetime.strptime(jam, '%H:%M:%S').strftime('%H:%M')
@@ -176,6 +200,7 @@ class TelegramNotifier:
                 message += f"""
 {i}. 📅 {tanggal_display} 🕐 {jam_display}
    👥 Total: {total_peserta} | ❌ Tanpa Barcode: {tanpa_barcode}
+   ⏰ Terlewat: {overdue_minutes} menit
                 """.strip()
             
             if total_overdue > 10:
@@ -194,7 +219,7 @@ class TelegramNotifier:
             return False
 
 class HajjAPIClient:
-    """Client untuk mengakses API Hajj Dashboard"""
+    """Client untuk mengakses API Hajj Dashboard dengan timezone GMT+8"""
     
     def __init__(self, config: HajjConfig):
         self.config = config
@@ -203,12 +228,21 @@ class HajjAPIClient:
             'Content-Type': 'application/json',
             'User-Agent': 'Hajj-Notification-Scheduler/1.0'
         })
+        
+        # Set timezone ke Asia/Hong_Kong (GMT+8)
+        self.timezone = pytz.timezone('Asia/Hong_Kong')
+    
+    def get_current_time(self):
+        """Mendapatkan waktu saat ini dalam timezone Asia/Jakarta"""
+        return datetime.now(self.timezone)
     
     def get_schedule_data(self, hours_ahead: int = 2) -> List[Dict[str, Any]]:
-        """Mendapatkan data jadwal dari API"""
+        """Mendapatkan data jadwal dari API dengan timezone GMT+8"""
         try:
-            # Hitung waktu target
-            target_time = datetime.now() + timedelta(hours=hours_ahead)
+            # Hitung waktu target dalam timezone Asia/Jakarta
+            current_time = self.get_current_time()
+            target_time = current_time + timedelta(hours=hours_ahead)
+            
             target_date = target_time.strftime('%Y-%m-%d')
             target_hour = target_time.strftime('%H:%M:%S')
             
@@ -225,6 +259,7 @@ class HajjAPIClient:
             
             data = response.json()
             if data.get('success'):
+                logger.info(f"API Response - Timezone: {data.get('timezone', 'Unknown')}, Current Time: {data.get('current_time', 'Unknown')}")
                 return data.get('data', [])
             else:
                 logger.error(f"API error: {data.get('message', 'Unknown error')}")
@@ -238,7 +273,7 @@ class HajjAPIClient:
             return []
     
     def get_overdue_schedules(self) -> List[Dict[str, Any]]:
-        """Mendapatkan jadwal yang sudah terlewat"""
+        """Mendapatkan jadwal yang sudah terlewat dengan timezone GMT+8"""
         try:
             url = f"{self.config.base_url}/api/overdue_schedules"
             response = self.session.get(url, timeout=self.config.timeout)
@@ -246,6 +281,7 @@ class HajjAPIClient:
             
             data = response.json()
             if data.get('success'):
+                logger.info(f"Overdue API Response - Timezone: {data.get('timezone', 'Unknown')}, Current Time: {data.get('current_time', 'Unknown')}")
                 return data.get('data', [])
             else:
                 logger.error(f"API error: {data.get('message', 'Unknown error')}")
@@ -259,7 +295,7 @@ class HajjAPIClient:
             return []
 
 class NotificationScheduler:
-    """Scheduler untuk notifikasi otomatis"""
+    """Scheduler untuk notifikasi otomatis dengan timezone GMT+8"""
     
     def __init__(self):
         self.telegram_config = TelegramConfig()
@@ -267,8 +303,15 @@ class NotificationScheduler:
         self.telegram_notifier = TelegramNotifier(self.telegram_config)
         self.hajj_client = HajjAPIClient(self.hajj_config)
         
+        # Set timezone ke Asia/Hong_Kong (GMT+8)
+        self.timezone = pytz.timezone('Asia/Hong_Kong')
+        
         # Setup jadwal notifikasi
         self.setup_schedules()
+    
+    def get_current_time(self):
+        """Mendapatkan waktu saat ini dalam timezone Asia/Jakarta"""
+        return datetime.now(self.timezone)
     
     def setup_schedules(self):
         """Setup jadwal notifikasi"""
@@ -287,10 +330,10 @@ class NotificationScheduler:
         # Laporan jadwal terlewat (setiap jam)
         schedule.every().hour.do(self.check_overdue_schedules)
         
-        # Test notifikasi (setiap hari jam 08:00)
+        # Test notifikasi (setiap hari jam 08:00 WIB)
         schedule.every().day.at("08:00").do(self.send_daily_summary)
         
-        logger.info("Jadwal notifikasi telah disetup")
+        logger.info("Jadwal notifikasi telah disetup dengan timezone Asia/Hong_Kong (GMT+8)")
     
     def check_2_hours_alert(self):
         """Cek dan kirim alert 2 jam sebelum jadwal"""
@@ -346,13 +389,16 @@ class NotificationScheduler:
             logger.error(f"Error dalam check_overdue_schedules: {e}")
     
     def send_daily_summary(self):
-        """Kirim ringkasan harian"""
+        """Kirim ringkasan harian dengan timezone GMT+8"""
         try:
+            current_time = self.get_current_time()
+            
             message = f"""
-📊 <b>RINGKASAN HARIAN DASHBOARD</b> 📊
+📊 <b>RINGKASAN HARIAN HAJJ DASHBOARD</b> 📊
 
-📅 <b>Tanggal:</b> {datetime.now().strftime('%d %B %Y')}
-🕐 <b>Waktu:</b> {datetime.now().strftime('%H:%M')}
+📅 <b>Tanggal:</b> {current_time.strftime('%d %B %Y')}
+🕐 <b>Waktu:</b> {current_time.strftime('%H:%M')}
+🌏 <b>Timezone:</b> Asia/Hong_Kong (GMT+8)
 
 ✅ <b>Sistem notifikasi berjalan normal</b>
 🔔 <b>Alert aktif:</b> 2 jam, 1 jam, 30 menit, 10 menit sebelum jadwal
@@ -367,16 +413,20 @@ class NotificationScheduler:
     
     def run(self):
         """Jalankan scheduler"""
+        current_time = self.get_current_time()
         logger.info("🚀 Telegram Notification Scheduler dimulai...")
         logger.info(f"📡 Monitoring: {self.hajj_config.base_url}")
         logger.info(f"🤖 Bot Token: {self.telegram_config.bot_token[:10]}...")
         logger.info(f"💬 Chat ID: {self.telegram_config.chat_id}")
+        logger.info(f"🌏 Timezone: Asia/Hong_Kong (GMT+8)")
+        logger.info(f"🕐 Start Time: {current_time.strftime('%d %B %Y %H:%M:%S')}")
         
         # Test koneksi awal
         test_message = f"""
-🤖 <b>NOTIFICATION BOT AKTIF</b> 🤖
+🤖 <b>HAJJ NOTIFICATION BOT AKTIF</b> 🤖
 
-📅 <b>Waktu Start:</b> {datetime.now().strftime('%d %B %Y %H:%M:%S')}
+📅 <b>Waktu Start:</b> {current_time.strftime('%d %B %Y %H:%M:%S')}
+🌏 <b>Timezone:</b> Asia/Hong_Kong (GMT+8)
 ✅ <b>Status:</b> Bot berhasil terhubung
 🔔 <b>Notifikasi:</b> Siap mengirim alert jadwal
 

@@ -55,8 +55,8 @@ class Api extends CI_Controller {
             $target_date = date('Y-m-d', strtotime($target_datetime));
             $target_time = date('H:i:s', strtotime($target_datetime));
             
-            // Ambil data jadwal dari database
-            $schedules = $this->get_schedule_data($target_date, $target_time, $hours_ahead);
+            // Ambil data jadwal dari database dengan pencarian fleksibel
+            $schedules = $this->get_schedule_data_flexible($target_date, $target_time, $hours_ahead);
             
             $this->output
                 ->set_status_header(200)
@@ -113,7 +113,10 @@ class Api extends CI_Controller {
      * Mendapatkan data jadwal berdasarkan tanggal dan waktu
      */
     private function get_schedule_data($tanggal, $jam, $hours_ahead) {
-        // Query untuk mendapatkan data jadwal
+        // Debug: Log query parameters
+        log_message('debug', "API get_schedule_data - Tanggal: $tanggal, Jam: $jam, Hours ahead: $hours_ahead");
+        
+        // Query untuk mendapatkan data jadwal - lebih fleksibel
         $this->db->select('
             tanggal,
             jam,
@@ -121,17 +124,22 @@ class Api extends CI_Controller {
             SUM(CASE WHEN barcode IS NULL OR barcode = "" THEN 1 ELSE 0 END) as no_barcode_count,
             SUM(CASE WHEN barcode IS NOT NULL AND barcode != "" THEN 1 ELSE 0 END) as with_barcode_count,
             SUM(CASE WHEN gender = "L" THEN 1 ELSE 0 END) as male_count,
-            SUM(CASE WHEN gender = "P" THEN 1 ELSE 0 END) as female_count
+            SUM(CASE WHEN gender = "P" THEN 1 ELSE 0 END) as female_count,
+            GROUP_CONCAT(DISTINCT status) as status_list
         ');
         
         $this->db->from('peserta');
         $this->db->where('tanggal', $tanggal);
         $this->db->where('jam', $jam);
-        $this->db->where('status !=', '2'); // Exclude status "Done"
+        // Hapus filter status yang terlalu ketat - ambil semua data untuk notifikasi
         $this->db->group_by('tanggal, jam');
         
         $query = $this->db->get();
         $results = $query->result();
+        
+        // Debug: Log query dan hasil
+        log_message('debug', "API Query: " . $this->db->last_query());
+        log_message('debug', "API Results count: " . count($results));
         
         // Format data untuk response
         $schedules = [];
@@ -144,7 +152,173 @@ class Api extends CI_Controller {
                 'with_barcode_count' => (int)$row->with_barcode_count,
                 'male_count' => (int)$row->male_count,
                 'female_count' => (int)$row->female_count,
-                'hours_ahead' => $hours_ahead
+                'hours_ahead' => $hours_ahead,
+                'status_list' => $row->status_list // Debug info
+            ];
+        }
+        
+        return $schedules;
+    }
+    
+    /**
+     * Mendapatkan data jadwal dengan pencarian yang lebih fleksibel
+     */
+    private function get_schedule_data_flexible($tanggal, $jam, $hours_ahead) {
+        // Debug: Log query parameters
+        log_message('debug', "API get_schedule_data_flexible - Tanggal: $tanggal, Jam: $jam, Hours ahead: $hours_ahead");
+        
+        $schedules = [];
+        
+        // 1. Coba exact match dulu
+        $exact_results = $this->get_exact_schedule_data($tanggal, $jam, $hours_ahead);
+        if (!empty($exact_results)) {
+            $schedules = array_merge($schedules, $exact_results);
+        }
+        
+        // 2. Jika tidak ada, coba dengan format jam yang berbeda
+        if (empty($schedules)) {
+            $jam_variants = $this->get_jam_variants($jam);
+            foreach ($jam_variants as $jam_variant) {
+                $variant_results = $this->get_exact_schedule_data($tanggal, $jam_variant, $hours_ahead);
+                if (!empty($variant_results)) {
+                    $schedules = array_merge($schedules, $variant_results);
+                    break; // Ambil yang pertama ditemukan
+                }
+            }
+        }
+        
+        // 3. Jika masih tidak ada, cari dengan tanggal saja
+        if (empty($schedules)) {
+            $date_results = $this->get_schedule_by_date_only($tanggal, $hours_ahead);
+            if (!empty($date_results)) {
+                $schedules = array_merge($schedules, $date_results);
+            }
+        }
+        
+        return $schedules;
+    }
+    
+    /**
+     * Mendapatkan data jadwal dengan exact match
+     */
+    private function get_exact_schedule_data($tanggal, $jam, $hours_ahead) {
+        $this->db->select('
+            tanggal,
+            jam,
+            COUNT(*) as total_count,
+            SUM(CASE WHEN barcode IS NULL OR barcode = "" THEN 1 ELSE 0 END) as no_barcode_count,
+            SUM(CASE WHEN barcode IS NOT NULL AND barcode != "" THEN 1 ELSE 0 END) as with_barcode_count,
+            SUM(CASE WHEN gender = "L" THEN 1 ELSE 0 END) as male_count,
+            SUM(CASE WHEN gender = "P" THEN 1 ELSE 0 END) as female_count,
+            GROUP_CONCAT(DISTINCT status) as status_list
+        ');
+        
+        $this->db->from('peserta');
+        $this->db->where('tanggal', $tanggal);
+        $this->db->where('jam', $jam);
+        $this->db->group_by('tanggal, jam');
+        
+        $query = $this->db->get();
+        $results = $query->result();
+        
+        log_message('debug', "Exact match query: " . $this->db->last_query());
+        log_message('debug', "Exact match results: " . count($results));
+        
+        $schedules = [];
+        foreach ($results as $row) {
+            $schedules[] = [
+                'tanggal' => $row->tanggal,
+                'jam' => $row->jam,
+                'total_count' => (int)$row->total_count,
+                'no_barcode_count' => (int)$row->no_barcode_count,
+                'with_barcode_count' => (int)$row->with_barcode_count,
+                'male_count' => (int)$row->male_count,
+                'female_count' => (int)$row->female_count,
+                'hours_ahead' => $hours_ahead,
+                'status_list' => $row->status_list,
+                'match_type' => 'exact'
+            ];
+        }
+        
+        return $schedules;
+    }
+    
+    /**
+     * Mendapatkan variasi format jam
+     */
+    private function get_jam_variants($jam) {
+        $variants = [$jam]; // Original format
+        
+        // Coba format yang berbeda
+        if (strpos($jam, ':') !== false) {
+            $parts = explode(':', $jam);
+            if (count($parts) >= 2) {
+                // Format H:MM:SS -> HH:MM:SS
+                if (strlen($parts[0]) == 1) {
+                    $variants[] = '0' . $jam;
+                }
+                
+                // Format HH:MM:SS -> H:MM:SS
+                if (strlen($parts[0]) == 2 && $parts[0][0] == '0') {
+                    $variants[] = substr($jam, 1);
+                }
+                
+                // Format HH:MM:SS -> HH:MM
+                if (count($parts) == 3) {
+                    $variants[] = $parts[0] . ':' . $parts[1];
+                }
+                
+                // Format HH:MM -> HH:MM:SS
+                if (count($parts) == 2) {
+                    $variants[] = $jam . ':00';
+                }
+            }
+        }
+        
+        return array_unique($variants);
+    }
+    
+    /**
+     * Mendapatkan data jadwal berdasarkan tanggal saja
+     */
+    private function get_schedule_by_date_only($tanggal, $hours_ahead) {
+        $this->db->select('
+            tanggal,
+            jam,
+            COUNT(*) as total_count,
+            SUM(CASE WHEN barcode IS NULL OR barcode = "" THEN 1 ELSE 0 END) as no_barcode_count,
+            SUM(CASE WHEN barcode IS NOT NULL AND barcode != "" THEN 1 ELSE 0 END) as with_barcode_count,
+            SUM(CASE WHEN gender = "L" THEN 1 ELSE 0 END) as male_count,
+            SUM(CASE WHEN gender = "P" THEN 1 ELSE 0 END) as female_count,
+            GROUP_CONCAT(DISTINCT status) as status_list
+        ');
+        
+        $this->db->from('peserta');
+        $this->db->where('tanggal', $tanggal);
+        $this->db->where('jam IS NOT NULL');
+        $this->db->where('jam !=', '');
+        $this->db->group_by('tanggal, jam');
+        $this->db->order_by('jam', 'ASC');
+        
+        $query = $this->db->get();
+        $results = $query->result();
+        
+        log_message('debug', "Date only query: " . $this->db->last_query());
+        log_message('debug', "Date only results: " . count($results));
+        
+        $schedules = [];
+        foreach ($results as $row) {
+            $schedules[] = [
+                'tanggal' => $row->tanggal,
+                'jam' => $row->jam,
+                'total_count' => (int)$row->total_count,
+                'no_barcode_count' => (int)$row->no_barcode_count,
+                'with_barcode_count' => (int)$row->with_barcode_count,
+                'male_count' => (int)$row->male_count,
+                'female_count' => (int)$row->female_count,
+                'hours_ahead' => $hours_ahead,
+                'status_list' => $row->status_list,
+                'match_type' => 'date_only'
             ];
         }
         
@@ -248,6 +422,145 @@ class Api extends CI_Controller {
                 'timezone_abbr' => date('T'),
                 'daylight_saving' => date('I') ? 'Yes' : 'No'
             ]));
+    }
+    
+    /**
+     * API untuk test pencarian fleksibel
+     * GET /api/test_flexible_search?tanggal=2025-09-14&jam=02:40:00&hours_ahead=0
+     */
+    public function test_flexible_search() {
+        try {
+            $tanggal = $this->input->get('tanggal');
+            $jam = $this->input->get('jam');
+            $hours_ahead = $this->input->get('hours_ahead', 0);
+            
+            if (empty($tanggal) || empty($jam)) {
+                $this->output
+                    ->set_status_header(400)
+                    ->set_output(json_encode([
+                        'success' => false,
+                        'message' => 'Parameter tanggal dan jam diperlukan'
+                    ]));
+                return;
+            }
+            
+            // Test pencarian fleksibel
+            $schedules = $this->get_schedule_data_flexible($tanggal, $jam, $hours_ahead);
+            
+            // Test variasi jam
+            $jam_variants = $this->get_jam_variants($jam);
+            
+            // Test pencarian berdasarkan tanggal saja
+            $date_schedules = $this->get_schedule_by_date_only($tanggal, $hours_ahead);
+            
+            $this->output
+                ->set_status_header(200)
+                ->set_output(json_encode([
+                    'success' => true,
+                    'requested' => [
+                        'tanggal' => $tanggal,
+                        'jam' => $jam,
+                        'hours_ahead' => $hours_ahead
+                    ],
+                    'jam_variants' => $jam_variants,
+                    'flexible_search_results' => $schedules,
+                    'date_only_results' => $date_schedules,
+                    'timezone' => 'Asia/Hong_Kong (GMT+8)',
+                    'current_time' => date('Y-m-d H:i:s')
+                ]));
+                
+        } catch (Exception $e) {
+            $this->output
+                ->set_status_header(500)
+                ->set_output(json_encode([
+                    'success' => false,
+                    'message' => 'Test Error: ' . $e->getMessage()
+                ]));
+        }
+    }
+    
+    /**
+     * API untuk debugging database - melihat data yang tersedia
+     * GET /api/debug_database?tanggal=2025-09-29&jam=18:00:00
+     */
+    public function debug_database() {
+        try {
+            $tanggal = $this->input->get('tanggal');
+            $jam = $this->input->get('jam');
+            
+            $debug_info = [];
+            
+            // 1. Cek total data di tabel peserta
+            $total_peserta = $this->db->count_all('peserta');
+            $debug_info['total_peserta'] = $total_peserta;
+            
+            // 2. Cek data dengan tanggal dan jam yang diminta
+            if ($tanggal && $jam) {
+                $this->db->where('tanggal', $tanggal);
+                $this->db->where('jam', $jam);
+                $count_exact = $this->db->count_all_results('peserta');
+                $debug_info['count_exact_match'] = $count_exact;
+                
+                // 3. Cek data dengan tanggal saja
+                $this->db->where('tanggal', $tanggal);
+                $count_date = $this->db->count_all_results('peserta');
+                $debug_info['count_date_match'] = $count_date;
+                
+                // 4. Cek data dengan jam saja
+                $this->db->where('jam', $jam);
+                $count_time = $this->db->count_all_results('peserta');
+                $debug_info['count_time_match'] = $count_time;
+            }
+            
+            // 5. Cek data dengan tanggal dan jam yang ada
+            $this->db->select('tanggal, jam, COUNT(*) as count');
+            $this->db->from('peserta');
+            $this->db->where('tanggal IS NOT NULL');
+            $this->db->where('jam IS NOT NULL');
+            $this->db->where('tanggal !=', '');
+            $this->db->where('jam !=', '');
+            $this->db->group_by('tanggal, jam');
+            $this->db->order_by('tanggal DESC, jam DESC');
+            $this->db->limit(10);
+            $available_schedules = $this->db->get()->result();
+            $debug_info['available_schedules'] = $available_schedules;
+            
+            // 6. Cek status yang ada
+            $this->db->select('status, COUNT(*) as count');
+            $this->db->from('peserta');
+            $this->db->group_by('status');
+            $status_distribution = $this->db->get()->result();
+            $debug_info['status_distribution'] = $status_distribution;
+            
+            // 7. Cek data dengan barcode
+            $this->db->select('
+                COUNT(*) as total,
+                SUM(CASE WHEN barcode IS NULL OR barcode = "" THEN 1 ELSE 0 END) as no_barcode,
+                SUM(CASE WHEN barcode IS NOT NULL AND barcode != "" THEN 1 ELSE 0 END) as with_barcode
+            ');
+            $this->db->from('peserta');
+            $barcode_stats = $this->db->get()->row();
+            $debug_info['barcode_stats'] = $barcode_stats;
+            
+            $this->output
+                ->set_status_header(200)
+                ->set_output(json_encode([
+                    'success' => true,
+                    'debug_info' => $debug_info,
+                    'requested_date' => $tanggal,
+                    'requested_time' => $jam,
+                    'timezone' => 'Asia/Hong_Kong (GMT+8)',
+                    'current_time' => date('Y-m-d H:i:s')
+                ]));
+                
+        } catch (Exception $e) {
+            $this->output
+                ->set_status_header(500)
+                ->set_output(json_encode([
+                    'success' => false,
+                    'message' => 'Debug Error: ' . $e->getMessage()
+                ]));
+        }
     }
 }
 ?>

@@ -15,6 +15,8 @@ $route['telegram_bot/delete_webhook'] = 'telegram_bot/delete_webhook';
 $route['telegram_bot/get_webhook_info'] = 'telegram_bot/get_webhook_info';
 $route['api/test'] = 'api/test';
 $route['api/timezone_info'] = 'api/timezone_info';
+$route['api/test_flexible_search'] = 'api/test_flexible_search';
+$route['api/debug_database'] = 'api/debug_database';
 $route['api/schedule_notifications'] = 'api/schedule_notifications';
 $route['api/overdue_schedules'] = 'api/overdue_schedules';
 
