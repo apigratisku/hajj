@@ -15,6 +15,9 @@ class Api extends CI_Controller {
         $this->load->model('transaksi_model');
         $this->load->helper('url');
         
+        // Set timezone ke GMT +8 (Asia/Hong_Kong)
+        date_default_timezone_set('Asia/Hong_Kong');
+        
         // Set header untuk API response
         header('Content-Type: application/json');
         header('Access-Control-Allow-Origin: *');
@@ -61,7 +64,10 @@ class Api extends CI_Controller {
                     'success' => true,
                     'data' => $schedules,
                     'target_datetime' => $target_datetime,
-                    'hours_ahead' => $hours_ahead
+                    'hours_ahead' => $hours_ahead,
+                    'timezone' => 'Asia/Hong_Kong (GMT+8)',
+                    'current_time' => date('Y-m-d H:i:s'),
+                    'current_timestamp' => time()
                 ]));
                 
         } catch (Exception $e) {
@@ -87,7 +93,10 @@ class Api extends CI_Controller {
                 ->set_output(json_encode([
                     'success' => true,
                     'data' => $overdue_schedules,
-                    'total' => count($overdue_schedules)
+                    'total' => count($overdue_schedules),
+                    'timezone' => 'Asia/Hong_Kong (GMT+8)',
+                    'current_time' => date('Y-m-d H:i:s'),
+                    'current_timestamp' => time()
                 ]));
                 
         } catch (Exception $e) {
@@ -211,7 +220,33 @@ class Api extends CI_Controller {
                 'success' => true,
                 'message' => 'API Hajj Telegram Notification berjalan normal',
                 'timestamp' => date('Y-m-d H:i:s'),
-                'server_time' => time()
+                'server_time' => time(),
+                'timezone' => 'Asia/Jakarta (GMT+8)',
+                'timezone_offset' => '+08:00',
+                'current_time' => date('Y-m-d H:i:s'),
+                'current_timestamp' => time()
+            ]));
+    }
+    
+    /**
+     * API untuk mendapatkan informasi timezone dan waktu server
+     * GET /api/timezone_info
+     */
+    public function timezone_info() {
+        $this->output
+            ->set_status_header(200)
+            ->set_output(json_encode([
+                'success' => true,
+                'timezone' => date_default_timezone_get(),
+                'timezone_name' => 'Asia/Hong_Kong',
+                'timezone_offset' => '+08:00',
+                'current_time' => date('Y-m-d H:i:s'),
+                'current_timestamp' => time(),
+                'formatted_time' => date('l, d F Y H:i:s T'),
+                'utc_time' => gmdate('Y-m-d H:i:s'),
+                'utc_timestamp' => time(),
+                'timezone_abbr' => date('T'),
+                'daylight_saving' => date('I') ? 'Yes' : 'No'
             ]));
     }
 }
