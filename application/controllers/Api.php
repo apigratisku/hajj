@@ -144,9 +144,15 @@ class Api extends CI_Controller {
         // Format data untuk response
         $schedules = [];
         foreach ($results as $row) {
+            // Tambah 5 jam pada jam yang diambil dari data
+            $adjusted_time = date('H:i:s', strtotime($row->jam . ' +5 hours'));
+            $formatted_time = date('h:i A', strtotime($adjusted_time));
+            
             $schedules[] = [
                 'tanggal' => $row->tanggal,
                 'jam' => $row->jam,
+                'jam_formatted' => $formatted_time,
+                'jam_adjusted' => $adjusted_time,
                 'total_count' => (int)$row->total_count,
                 'no_barcode_count' => (int)$row->no_barcode_count,
                 'with_barcode_count' => (int)$row->with_barcode_count,
@@ -229,9 +235,15 @@ class Api extends CI_Controller {
         foreach ($results as $row) {
             // Hanya include jadwal yang masih ada peserta tanpa barcode
             if ($row->no_barcode_count > 0) {
+                // Tambah 5 jam pada jam yang diambil dari data
+                $adjusted_time = date('H:i:s', strtotime($row->jam . ' +5 hours'));
+                $formatted_time = date('h:i A', strtotime($adjusted_time));
+                
                 $schedules[] = [
                     'tanggal' => $row->tanggal,
                     'jam' => $row->jam,
+                    'jam_formatted' => $formatted_time,
+                    'jam_adjusted' => $adjusted_time,
                     'total_count' => (int)$row->total_count,
                     'no_barcode_count' => (int)$row->no_barcode_count,
                     'with_barcode_count' => (int)$row->with_barcode_count,
@@ -319,9 +331,15 @@ class Api extends CI_Controller {
         foreach ($results as $row) {
             // Hanya include jadwal yang masih ada peserta tanpa barcode
             if ($row->no_barcode_count > 0) {
+                // Tambah 5 jam pada jam yang diambil dari data
+                $adjusted_time = date('H:i:s', strtotime($row->jam . ' +5 hours'));
+                $formatted_time = date('h:i A', strtotime($adjusted_time));
+                
                 $schedules[] = [
                     'tanggal' => $row->tanggal,
                     'jam' => $row->jam,
+                    'jam_formatted' => $formatted_time,
+                    'jam_adjusted' => $adjusted_time,
                     'total_count' => (int)$row->total_count,
                     'no_barcode_count' => (int)$row->no_barcode_count,
                     'with_barcode_count' => (int)$row->with_barcode_count,
@@ -372,9 +390,15 @@ class Api extends CI_Controller {
         foreach ($results as $row) {
             // Hanya include jadwal yang masih ada peserta tanpa barcode
             if ($row->no_barcode_count > 0) {
+                // Tambah 5 jam pada jam yang diambil dari data
+                $adjusted_time = date('H:i:s', strtotime($row->jam . ' +5 hours'));
+                $formatted_time = date('h:i A', strtotime($adjusted_time));
+                
                 $overdue_schedules[] = [
                     'tanggal' => $row->tanggal,
                     'jam' => $row->jam,
+                    'jam_formatted' => $formatted_time,
+                    'jam_adjusted' => $adjusted_time,
                     'total_count' => (int)$row->total_count,
                     'no_barcode_count' => (int)$row->no_barcode_count,
                     'with_barcode_count' => (int)$row->with_barcode_count,
@@ -542,6 +566,10 @@ class Api extends CI_Controller {
                 $notification_needed = $no_barcode_count > 0;
                 $completion_percentage = $total_count > 0 ? round(($with_barcode_count / $total_count) * 100, 2) : 0;
                 
+                // Tambah 5 jam pada jam yang diambil dari data
+                $adjusted_time = date('H:i:s', strtotime($result->jam . ' +5 hours'));
+                $formatted_time = date('h:i A', strtotime($adjusted_time));
+                
                 $this->output
                     ->set_status_header(200)
                     ->set_output(json_encode([
@@ -549,6 +577,8 @@ class Api extends CI_Controller {
                         'schedule' => [
                             'tanggal' => $result->tanggal,
                             'jam' => $result->jam,
+                            'jam_formatted' => $formatted_time,
+                            'jam_adjusted' => $adjusted_time,
                             'total_count' => $total_count,
                             'no_barcode_count' => $no_barcode_count,
                             'with_barcode_count' => $with_barcode_count,
