@@ -204,7 +204,7 @@ class Api extends CI_Controller {
      * API untuk test koneksi
      * GET /api/test
      */
-    public function status() {
+    public function test() {
         $this->output
             ->set_status_header(200)
             ->set_output(json_encode([
