@@ -200,6 +200,7 @@ class Api extends CI_Controller {
     
     /**
      * Mendapatkan data jadwal dengan exact match
+     * Hanya return data jika masih ada barcode yang kosong
      */
     private function get_exact_schedule_data($tanggal, $jam, $hours_ahead) {
         $this->db->select('
@@ -226,18 +227,25 @@ class Api extends CI_Controller {
         
         $schedules = [];
         foreach ($results as $row) {
-            $schedules[] = [
-                'tanggal' => $row->tanggal,
-                'jam' => $row->jam,
-                'total_count' => (int)$row->total_count,
-                'no_barcode_count' => (int)$row->no_barcode_count,
-                'with_barcode_count' => (int)$row->with_barcode_count,
-                'male_count' => (int)$row->male_count,
-                'female_count' => (int)$row->female_count,
-                'hours_ahead' => $hours_ahead,
-                'status_list' => $row->status_list,
-                'match_type' => 'exact'
-            ];
+            // Hanya include jadwal yang masih ada peserta tanpa barcode
+            if ($row->no_barcode_count > 0) {
+                $schedules[] = [
+                    'tanggal' => $row->tanggal,
+                    'jam' => $row->jam,
+                    'total_count' => (int)$row->total_count,
+                    'no_barcode_count' => (int)$row->no_barcode_count,
+                    'with_barcode_count' => (int)$row->with_barcode_count,
+                    'male_count' => (int)$row->male_count,
+                    'female_count' => (int)$row->female_count,
+                    'hours_ahead' => $hours_ahead,
+                    'status_list' => $row->status_list,
+                    'match_type' => 'exact',
+                    'notification_needed' => true,
+                    'reason' => 'Ada ' . $row->no_barcode_count . ' peserta tanpa barcode'
+                ];
+            } else {
+                log_message('info', "Jadwal $tanggal $jam: Semua barcode sudah terisi, skip notifikasi");
+            }
         }
         
         return $schedules;
@@ -280,6 +288,7 @@ class Api extends CI_Controller {
     
     /**
      * Mendapatkan data jadwal berdasarkan tanggal saja
+     * Hanya return data jika masih ada barcode yang kosong
      */
     private function get_schedule_by_date_only($tanggal, $hours_ahead) {
         $this->db->select('
@@ -308,18 +317,25 @@ class Api extends CI_Controller {
         
         $schedules = [];
         foreach ($results as $row) {
-            $schedules[] = [
-                'tanggal' => $row->tanggal,
-                'jam' => $row->jam,
-                'total_count' => (int)$row->total_count,
-                'no_barcode_count' => (int)$row->no_barcode_count,
-                'with_barcode_count' => (int)$row->with_barcode_count,
-                'male_count' => (int)$row->male_count,
-                'female_count' => (int)$row->female_count,
-                'hours_ahead' => $hours_ahead,
-                'status_list' => $row->status_list,
-                'match_type' => 'date_only'
-            ];
+            // Hanya include jadwal yang masih ada peserta tanpa barcode
+            if ($row->no_barcode_count > 0) {
+                $schedules[] = [
+                    'tanggal' => $row->tanggal,
+                    'jam' => $row->jam,
+                    'total_count' => (int)$row->total_count,
+                    'no_barcode_count' => (int)$row->no_barcode_count,
+                    'with_barcode_count' => (int)$row->with_barcode_count,
+                    'male_count' => (int)$row->male_count,
+                    'female_count' => (int)$row->female_count,
+                    'hours_ahead' => $hours_ahead,
+                    'status_list' => $row->status_list,
+                    'match_type' => 'date_only',
+                    'notification_needed' => true,
+                    'reason' => 'Ada ' . $row->no_barcode_count . ' peserta tanpa barcode'
+                ];
+            } else {
+                log_message('info', "Jadwal $tanggal {$row->jam}: Semua barcode sudah terisi, skip notifikasi");
+            }
         }
         
         return $schedules;
@@ -475,6 +491,101 @@ class Api extends CI_Controller {
                 ->set_output(json_encode([
                     'success' => false,
                     'message' => 'Test Error: ' . $e->getMessage()
+                ]));
+        }
+    }
+    
+    /**
+     * API untuk mengecek status barcode pada jadwal tertentu
+     * GET /api/check_barcode_status?tanggal=2025-09-14&jam=02:40:00
+     */
+    public function check_barcode_status() {
+        try {
+            $tanggal = $this->input->get('tanggal');
+            $jam = $this->input->get('jam');
+            
+            if (empty($tanggal) || empty($jam)) {
+                $this->output
+                    ->set_status_header(400)
+                    ->set_output(json_encode([
+                        'success' => false,
+                        'message' => 'Parameter tanggal dan jam diperlukan'
+                    ]));
+                return;
+            }
+            
+            // Query untuk mengecek status barcode
+            $this->db->select('
+                tanggal,
+                jam,
+                COUNT(*) as total_count,
+                SUM(CASE WHEN barcode IS NULL OR barcode = "" THEN 1 ELSE 0 END) as no_barcode_count,
+                SUM(CASE WHEN barcode IS NOT NULL AND barcode != "" THEN 1 ELSE 0 END) as with_barcode_count,
+                SUM(CASE WHEN gender = "L" THEN 1 ELSE 0 END) as male_count,
+                SUM(CASE WHEN gender = "P" THEN 1 ELSE 0 END) as female_count,
+                GROUP_CONCAT(DISTINCT status) as status_list
+            ');
+            
+            $this->db->from('peserta');
+            $this->db->where('tanggal', $tanggal);
+            $this->db->where('jam', $jam);
+            $this->db->group_by('tanggal, jam');
+            
+            $query = $this->db->get();
+            $result = $query->row();
+            
+            if ($result) {
+                $no_barcode_count = (int)$result->no_barcode_count;
+                $with_barcode_count = (int)$result->with_barcode_count;
+                $total_count = (int)$result->total_count;
+                
+                $notification_needed = $no_barcode_count > 0;
+                $completion_percentage = $total_count > 0 ? round(($with_barcode_count / $total_count) * 100, 2) : 0;
+                
+                $this->output
+                    ->set_status_header(200)
+                    ->set_output(json_encode([
+                        'success' => true,
+                        'schedule' => [
+                            'tanggal' => $result->tanggal,
+                            'jam' => $result->jam,
+                            'total_count' => $total_count,
+                            'no_barcode_count' => $no_barcode_count,
+                            'with_barcode_count' => $with_barcode_count,
+                            'male_count' => (int)$result->male_count,
+                            'female_count' => (int)$result->female_count,
+                            'status_list' => $result->status_list
+                        ],
+                        'barcode_status' => [
+                            'notification_needed' => $notification_needed,
+                            'completion_percentage' => $completion_percentage,
+                            'all_barcodes_filled' => $no_barcode_count === 0,
+                            'reason' => $notification_needed ? 
+                                "Ada $no_barcode_count peserta tanpa barcode" : 
+                                "Semua barcode sudah terisi ($completion_percentage%)"
+                        ],
+                        'timezone' => 'Asia/Hong_Kong (GMT+8)',
+                        'current_time' => date('Y-m-d H:i:s')
+                    ]));
+            } else {
+                $this->output
+                    ->set_status_header(404)
+                    ->set_output(json_encode([
+                        'success' => false,
+                        'message' => 'Jadwal tidak ditemukan',
+                        'requested' => [
+                            'tanggal' => $tanggal,
+                            'jam' => $jam
+                        ]
+                    ]));
+            }
+                
+        } catch (Exception $e) {
+            $this->output
+                ->set_status_header(500)
+                ->set_output(json_encode([
+                    'success' => false,
+                    'message' => 'Error: ' . $e->getMessage()
                 ]));
         }
     }
