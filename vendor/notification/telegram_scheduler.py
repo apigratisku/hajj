@@ -147,7 +147,7 @@ class TelegramNotifier:
             f"🔔 <b>ALERT JADWAL • {alert_label}</b>\n"
             f"📅 <b>Tanggal:</b> {tanggal_display}\n"
             f"🕐 <b>Jam Sistem:</b> {jam_display}\n\n"
-            f"🕐 <b>Jam Mekkah:</b> {jam_api}\n\n"
+            f"🕐 <b>Jam Mekkah:</b> {jam}\n\n"
             f"📊 <b>STATISTIK PESERTA</b>\n"
             f"👥 Total: <b>{total_peserta}</b>\n"
             f"✅ Dengan Barcode: <b>{dengan_barcode}</b>\n"
@@ -425,7 +425,7 @@ class NotificationScheduler:
             message = (
                 "📊 <b>RINGKASAN HARIAN HAJJ DASHBOARD</b> 📊\n\n"
                 f"📅 <b>Tanggal:</b> {now.strftime('%d %B %Y')}\n"
-                f"🕐 <b>Waktu:</b> {now.strftime('%H:%M')}\n\n"
+                f"🕐 <b>Waktu Sistem:</b> {now.strftime('%H:%M')}\n\n"
                 "✅ <b>Sistem notifikasi berjalan normal</b>\n"
                 "🔔 <b>Alert aktif:</b> 2 jam, 1 jam, 30 menit, 10 menit sebelum jadwal\n"
                 "⏰ <b>Reminder:</b> Tiap 1 menit setelah T-10 sampai jam H\n"
