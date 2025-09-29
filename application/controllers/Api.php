@@ -148,19 +148,19 @@ class Api extends CI_Controller {
             $adjusted_time = date('H:i:s', strtotime($row->jam . ' +5 hours'));
             $formatted_time = date('h:i A', strtotime($adjusted_time));
             
-            $schedules[] = [
-                'tanggal' => $row->tanggal,
-                'jam' => $row->jam,
-                'jam_formatted' => $formatted_time,
-                'jam_adjusted' => $adjusted_time,
-                'total_count' => (int)$row->total_count,
-                'no_barcode_count' => (int)$row->no_barcode_count,
-                'with_barcode_count' => (int)$row->with_barcode_count,
-                'male_count' => (int)$row->male_count,
-                'female_count' => (int)$row->female_count,
-                'hours_ahead' => $hours_ahead,
-                'status_list' => $row->status_list // Debug info
-            ];
+                $schedules[] = [
+                    'tanggal' => $row->tanggal,
+                    'jam' => $formatted_time, // Gunakan format AM/PM untuk field jam
+                    'jam_formatted' => $formatted_time,
+                    'jam_adjusted' => $adjusted_time,
+                    'total_count' => (int)$row->total_count,
+                    'no_barcode_count' => (int)$row->no_barcode_count,
+                    'with_barcode_count' => (int)$row->with_barcode_count,
+                    'male_count' => (int)$row->male_count,
+                    'female_count' => (int)$row->female_count,
+                    'hours_ahead' => $hours_ahead,
+                    'status_list' => $row->status_list // Debug info
+                ];
         }
         
         return $schedules;
@@ -241,7 +241,7 @@ class Api extends CI_Controller {
                 
                 $schedules[] = [
                     'tanggal' => $row->tanggal,
-                    'jam' => $row->jam,
+                    'jam' => $formatted_time, // Gunakan format AM/PM untuk field jam
                     'jam_formatted' => $formatted_time,
                     'jam_adjusted' => $adjusted_time,
                     'total_count' => (int)$row->total_count,
@@ -337,7 +337,7 @@ class Api extends CI_Controller {
                 
                 $schedules[] = [
                     'tanggal' => $row->tanggal,
-                    'jam' => $row->jam,
+                    'jam' => $formatted_time, // Gunakan format AM/PM untuk field jam
                     'jam_formatted' => $formatted_time,
                     'jam_adjusted' => $adjusted_time,
                     'total_count' => (int)$row->total_count,
@@ -396,7 +396,7 @@ class Api extends CI_Controller {
                 
                 $overdue_schedules[] = [
                     'tanggal' => $row->tanggal,
-                    'jam' => $row->jam,
+                    'jam' => $formatted_time, // Gunakan format AM/PM untuk field jam
                     'jam_formatted' => $formatted_time,
                     'jam_adjusted' => $adjusted_time,
                     'total_count' => (int)$row->total_count,
@@ -576,7 +576,7 @@ class Api extends CI_Controller {
                         'success' => true,
                         'schedule' => [
                             'tanggal' => $result->tanggal,
-                            'jam' => $result->jam,
+                            'jam' => $formatted_time, // Gunakan format AM/PM untuk field jam
                             'jam_formatted' => $formatted_time,
                             'jam_adjusted' => $adjusted_time,
                             'total_count' => $total_count,

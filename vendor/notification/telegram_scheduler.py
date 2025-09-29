@@ -146,7 +146,8 @@ class TelegramNotifier:
         message = (
             f"🔔 <b>ALERT JADWAL • {alert_label}</b>\n"
             f"📅 <b>Tanggal:</b> {tanggal_display}\n"
-            f"🕐 <b>Jam:</b> {jam_display}\n\n"
+            f"🕐 <b>Jam Sistem:</b> {jam_display}\n\n"
+            f"🕐 <b>Jam Mekkah:</b> {jam_api}\n\n"
             f"📊 <b>STATISTIK PESERTA</b>\n"
             f"👥 Total: <b>{total_peserta}</b>\n"
             f"✅ Dengan Barcode: <b>{dengan_barcode}</b>\n"
@@ -445,7 +446,7 @@ class NotificationScheduler:
         logger.info(f"🕐 Start Time: {now.strftime('%d %B %Y %H:%M:%S')}")
 
         test_message = (
-            "🤖 <b>HAJJ NOTIFICATION BOT AKTIF</b>\n\n"
+            "🤖 <b>NOTIFICATION BOT AKTIF</b>\n\n"
             f"📅 <b>Waktu Start:</b> {now.strftime('%d %B %Y %H:%M:%S')}\n"
             "✅ <b>Status:</b> Bot terhubung\n"
             "🔔 <b>Notifikasi:</b> Siap mengirim alert & reminder"
