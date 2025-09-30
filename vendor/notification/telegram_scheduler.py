@@ -17,7 +17,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -54,10 +54,24 @@ class HajjConfig:
 logger = logging.getLogger(APP_NAME)
 logger.setLevel(logging.INFO)
 
+# Pastikan folder log ada (kalau LOG_FILE pakai path)
+try:
+    _abs_log_path = os.path.abspath(LOG_FILE)
+    _log_dir = os.path.dirname(_abs_log_path)
+    if _log_dir and not os.path.exists(_log_dir):
+        os.makedirs(_log_dir, exist_ok=True)
+except Exception:
+    pass
+
 # Rotating file handler (UTF-8)
-file_handler = RotatingFileHandler(LOG_FILE, maxBytes=LOG_MAX_BYTES, backupCount=LOG_BACKUPS, encoding="utf-8")
-file_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
-logger.addHandler(file_handler)
+try:
+    file_handler = RotatingFileHandler(LOG_FILE, maxBytes=LOG_MAX_BYTES, backupCount=LOG_BACKUPS, encoding="utf-8")
+    file_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+    logger.addHandler(file_handler)
+except Exception as e:
+    # Fallback ke basicConfig jika ada masalah handler
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+    logger.warning(f"Gagal inisialisasi RotatingFileHandler: {e}")
 
 # Console handler opsional (hanya jika ada TTY, agar tidak error di service)
 if sys.stdout and hasattr(sys.stdout, "isatty") and sys.stdout.isatty():
@@ -110,7 +124,8 @@ class TelegramNotifier:
             "disable_web_page_preview": True,
         }
         try:
-            resp = self.session.post(url, data=json.dumps(payload), timeout=15)
+            # kirim body sebagai JSON (lebih aman)
+            resp = self.session.post(url, json=payload, timeout=15)
             resp.raise_for_status()
             logger.info("Pesan berhasil dikirim ke Telegram")
             return True
@@ -129,15 +144,60 @@ class TelegramNotifier:
         tanpa_barcode = schedule_data.get('no_barcode_count', 0)
         dengan_barcode = schedule_data.get('with_barcode_count', 0)
 
-        # Gunakan jam_formatted jika tersedia, fallback ke jam biasa
+        # --- Pilih tampilan jam sistem (prioritas: jam_formatted -> jam HH:MM)
         if jam_formatted:
             jam_display = jam_formatted
         else:
             try:
                 jam_display = datetime.strptime(jam, '%H:%M:%S').strftime('%H:%M')
             except Exception:
-                jam_display = jam
-        
+                jam_display = jam  # fallback apa adanya
+
+        # --- Hitung Jam Mekkah = jam_display + 5 jam (robust parsing)
+        # gunakan tanggal sebagai anchor agar rollover hari terdeteksi
+        try:
+            base_date = datetime.strptime(tanggal, '%Y-%m-%d').date()
+        except Exception:
+            base_date = datetime.now().date()
+
+        parsed_dt: Optional[datetime] = None
+        # Coba parse jam_display dulu (AM/PM atau 24-jam)
+        for fmt in ('%I:%M %p', '%H:%M', '%H:%M:%S'):
+            try:
+                t = datetime.strptime(jam_display, fmt).time()
+                parsed_dt = datetime.combine(base_date, t)
+                break
+            except Exception:
+                pass
+
+        # Jika gagal, coba parse dari 'jam' mentah
+        if parsed_dt is None:
+            for fmt in ('%H:%M:%S', '%H:%M'):
+                try:
+                    t = datetime.strptime(jam, fmt).time()
+                    parsed_dt = datetime.combine(base_date, t)
+                    break
+                except Exception:
+                    pass
+
+        # Default tampilan Jam Mekkah (jika parsing gagal)
+        jam_mekkah_display = jam_display
+        if parsed_dt is not None:
+            mekkah_dt = parsed_dt + timedelta(hours=5)
+            # Ikuti gaya format jam_display (AM/PM vs 24-jam)
+            if 'AM' in jam_display.upper() or 'PM' in jam_display.upper():
+                jam_mekkah_display = mekkah_dt.strftime('%I:%M %p')
+            else:
+                jam_mekkah_display = mekkah_dt.strftime('%H:%M')
+
+            # Tambahkan penanda hari jika rollover
+            day_diff = (mekkah_dt.date() - base_date).days
+            if day_diff > 0:
+                jam_mekkah_display += ' (+1 hari)'
+            elif day_diff < 0:
+                jam_mekkah_display += ' (-1 hari)'
+
+        # --- Tanggal tampil
         try:
             tanggal_display = datetime.strptime(tanggal, '%Y-%m-%d').strftime('%d %B %Y')
         except Exception:
@@ -146,12 +206,12 @@ class TelegramNotifier:
         message = (
             f"🔔 <b>ALERT JADWAL • {alert_label}</b>\n"
             f"📅 <b>Tanggal:</b> {tanggal_display}\n"
-            f"🕐 <b>Jam Sistem:</b> {jam_display}\n\n"
-            f"🕐 <b>Jam Mekkah:</b> {jam}\n\n"
+            f"🕐 <b>Jam Sistem:</b> {jam_display}\n"
+            f"🕐 <b>Jam Mekkah:</b> {jam_mekkah_display}\n\n"
             f"📊 <b>STATISTIK PESERTA</b>\n"
             f"👥 Total: <b>{total_peserta}</b>\n"
             f"✅ Dengan Barcode: <b>{dengan_barcode}</b>\n"
-            f"❌ Tanpa Barcode: <b>{tanpa_barcode}</b>\n\n"
+            f"❌ Tanpa Barcode: <b>{tanpa_barcode}</b>\n"
         )
         return message
 
@@ -183,7 +243,7 @@ class TelegramNotifier:
             total_peserta = s.get('total_count', 0)
             tanpa_barcode = s.get('no_barcode_count', 0)
             overdue_minutes = s.get('overdue_minutes', 0)
-            
+
             # Gunakan jam_formatted jika tersedia, fallback ke jam biasa
             if jam_formatted:
                 jam_display = jam_formatted
@@ -192,7 +252,7 @@ class TelegramNotifier:
                     jam_display = datetime.strptime(jam, '%H:%M:%S').strftime('%H:%M')
                 except Exception:
                     jam_display = jam
-            
+
             try:
                 tanggal_display = datetime.strptime(tanggal, '%Y-%m-%d').strftime('%d/%m/%Y')
             except Exception:
@@ -216,7 +276,7 @@ class HajjAPIClient:
     def get_current_time(self) -> datetime:
         return datetime.now(self.timezone)
 
-    def _fetch(self, url: str, params: Dict[str, Any] | None = None) -> Dict[str, Any]:
+    def _fetch(self, url: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         resp = self.session.get(url, params=params, timeout=self.config.timeout)
         resp.raise_for_status()
         return resp.json()
@@ -423,7 +483,7 @@ class NotificationScheduler:
         try:
             now = self.get_current_time()
             message = (
-                "📊 <b>RINGKASAN HARIAN HAJJ DASHBOARD</b> 📊\n\n"
+                "📊 <b>RINGKASAN HARIAN DASHBOARD</b> 📊\n\n"
                 f"📅 <b>Tanggal:</b> {now.strftime('%d %B %Y')}\n"
                 f"🕐 <b>Waktu Sistem:</b> {now.strftime('%H:%M')}\n\n"
                 "✅ <b>Sistem notifikasi berjalan normal</b>\n"
