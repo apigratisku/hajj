@@ -144,23 +144,21 @@ class Api extends CI_Controller {
         // Format data untuk response
         $schedules = [];
         foreach ($results as $row) {
-            // Tambah 5 jam pada jam yang diambil dari data
-            $adjusted_time = date('H:i:s', strtotime($row->jam . ' +5 hours'));
-            $formatted_time = date('h:i A', strtotime($adjusted_time));
+            // Format jam langsung ke AM/PM tanpa penambahan 5 jam
+            $formatted_time = date('h:i A', strtotime($row->jam));
             
-                $schedules[] = [
-                    'tanggal' => $row->tanggal,
-                    'jam' => $formatted_time, // Gunakan format AM/PM untuk field jam
-                    'jam_formatted' => $formatted_time,
-                    'jam_adjusted' => $adjusted_time,
-                    'total_count' => (int)$row->total_count,
-                    'no_barcode_count' => (int)$row->no_barcode_count,
-                    'with_barcode_count' => (int)$row->with_barcode_count,
-                    'male_count' => (int)$row->male_count,
-                    'female_count' => (int)$row->female_count,
-                    'hours_ahead' => $hours_ahead,
-                    'status_list' => $row->status_list // Debug info
-                ];
+            $schedules[] = [
+                'tanggal' => $row->tanggal,
+                'jam' => $formatted_time, // Gunakan format AM/PM untuk field jam
+                'jam_formatted' => $formatted_time,
+                'total_count' => (int)$row->total_count,
+                'no_barcode_count' => (int)$row->no_barcode_count,
+                'with_barcode_count' => (int)$row->with_barcode_count,
+                'male_count' => (int)$row->male_count,
+                'female_count' => (int)$row->female_count,
+                'hours_ahead' => $hours_ahead,
+                'status_list' => $row->status_list // Debug info
+            ];
         }
         
         return $schedules;
@@ -235,15 +233,13 @@ class Api extends CI_Controller {
         foreach ($results as $row) {
             // Hanya include jadwal yang masih ada peserta tanpa barcode
             if ($row->no_barcode_count > 0) {
-                // Tambah 5 jam pada jam yang diambil dari data
-                $adjusted_time = date('H:i:s', strtotime($row->jam . ' +5 hours'));
-                $formatted_time = date('h:i A', strtotime($adjusted_time));
+                // Format jam langsung ke AM/PM tanpa penambahan 5 jam
+                $formatted_time = date('h:i A', strtotime($row->jam));
                 
                 $schedules[] = [
                     'tanggal' => $row->tanggal,
                     'jam' => $formatted_time, // Gunakan format AM/PM untuk field jam
                     'jam_formatted' => $formatted_time,
-                    'jam_adjusted' => $adjusted_time,
                     'total_count' => (int)$row->total_count,
                     'no_barcode_count' => (int)$row->no_barcode_count,
                     'with_barcode_count' => (int)$row->with_barcode_count,
@@ -331,15 +327,13 @@ class Api extends CI_Controller {
         foreach ($results as $row) {
             // Hanya include jadwal yang masih ada peserta tanpa barcode
             if ($row->no_barcode_count > 0) {
-                // Tambah 5 jam pada jam yang diambil dari data
-                $adjusted_time = date('H:i:s', strtotime($row->jam . ' +5 hours'));
-                $formatted_time = date('h:i A', strtotime($adjusted_time));
+                // Format jam langsung ke AM/PM tanpa penambahan 5 jam
+                $formatted_time = date('h:i A', strtotime($row->jam));
                 
                 $schedules[] = [
                     'tanggal' => $row->tanggal,
                     'jam' => $formatted_time, // Gunakan format AM/PM untuk field jam
                     'jam_formatted' => $formatted_time,
-                    'jam_adjusted' => $adjusted_time,
                     'total_count' => (int)$row->total_count,
                     'no_barcode_count' => (int)$row->no_barcode_count,
                     'with_barcode_count' => (int)$row->with_barcode_count,
@@ -390,15 +384,13 @@ class Api extends CI_Controller {
         foreach ($results as $row) {
             // Hanya include jadwal yang masih ada peserta tanpa barcode
             if ($row->no_barcode_count > 0) {
-                // Tambah 5 jam pada jam yang diambil dari data
-                $adjusted_time = date('H:i:s', strtotime($row->jam . ' +5 hours'));
-                $formatted_time = date('h:i A', strtotime($adjusted_time));
+                // Format jam langsung ke AM/PM tanpa penambahan 5 jam
+                $formatted_time = date('h:i A', strtotime($row->jam));
                 
                 $overdue_schedules[] = [
                     'tanggal' => $row->tanggal,
                     'jam' => $formatted_time, // Gunakan format AM/PM untuk field jam
                     'jam_formatted' => $formatted_time,
-                    'jam_adjusted' => $adjusted_time,
                     'total_count' => (int)$row->total_count,
                     'no_barcode_count' => (int)$row->no_barcode_count,
                     'with_barcode_count' => (int)$row->with_barcode_count,
@@ -566,9 +558,8 @@ class Api extends CI_Controller {
                 $notification_needed = $no_barcode_count > 0;
                 $completion_percentage = $total_count > 0 ? round(($with_barcode_count / $total_count) * 100, 2) : 0;
                 
-                // Tambah 5 jam pada jam yang diambil dari data
-                $adjusted_time = date('H:i:s', strtotime($result->jam . ' +5 hours'));
-                $formatted_time = date('h:i A', strtotime($adjusted_time));
+                // Format jam langsung ke AM/PM tanpa penambahan 5 jam
+                $formatted_time = date('h:i A', strtotime($result->jam));
                 
                 $this->output
                     ->set_status_header(200)
@@ -578,7 +569,6 @@ class Api extends CI_Controller {
                             'tanggal' => $result->tanggal,
                             'jam' => $formatted_time, // Gunakan format AM/PM untuk field jam
                             'jam_formatted' => $formatted_time,
-                            'jam_adjusted' => $adjusted_time,
                             'total_count' => $total_count,
                             'no_barcode_count' => $no_barcode_count,
                             'with_barcode_count' => $with_barcode_count,
