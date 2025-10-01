@@ -1,697 +1,401 @@
 <?php
-/**
- * API Endpoints untuk Telegram Notification Scheduler
- * Tambahkan endpoint ini ke aplikasi hajj Anda
- */
-
-// Tambahkan route ini di application/config/routes.php
-// $route['api/schedule_notifications'] = 'api/schedule_notifications';
-// $route['api/overdue_schedules'] = 'api/overdue_schedules';
+defined('BASEPATH') OR exit('No direct script access allowed');
 
 class Api extends CI_Controller {
     
     public function __construct() {
         parent::__construct();
         $this->load->model('transaksi_model');
-        $this->load->helper('url');
         
-        // Set timezone ke GMT +8 (Asia/Hong_Kong)
-        date_default_timezone_set('Asia/Hong_Kong');
-        
-        // Set header untuk API response
-        header('Content-Type: application/json');
-        header('Access-Control-Allow-Origin: *');
-        header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-        header('Access-Control-Allow-Headers: Content-Type');
-        
-        // Handle preflight request
-        if ($this->input->method() === 'options') {
-            exit();
-        }
+        // Set JSON header
+        $this->output->set_content_type('application/json');
     }
-    
+
     /**
-     * API untuk mendapatkan data jadwal notifikasi
-     * GET /api/schedule_notifications?tanggal=2025-01-20&jam=10:00:00&hours_ahead=2
+     * Get schedule data for specific date
+     * GET /api/schedule?tanggal=YYYY-MM-DD
      */
-    public function schedule_notifications() {
+    public function schedule() {
         try {
             $tanggal = $this->input->get('tanggal');
-            $jam = $this->input->get('jam');
-            $hours_ahead = $this->input->get('hours_ahead', 2);
             
-            if (empty($tanggal) || empty($jam)) {
+            if (!$tanggal) {
+                $tanggal = date('Y-m-d');
+            }
+            
+            // Validate date format
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggal)) {
                 $this->output
                     ->set_status_header(400)
                     ->set_output(json_encode([
-                        'success' => false,
-                        'message' => 'Parameter tanggal dan jam diperlukan'
+                        'status' => 'error',
+                        'message' => 'Format tanggal tidak valid. Gunakan YYYY-MM-DD'
                     ]));
                 return;
             }
             
-            // Hitung waktu target berdasarkan hours_ahead
-            $target_datetime = date('Y-m-d H:i:s', strtotime("$tanggal $jam - $hours_ahead hours"));
-            $target_date = date('Y-m-d', strtotime($target_datetime));
-            $target_time = date('H:i:s', strtotime($target_datetime));
+            $data = $this->transaksi_model->get_schedule_for_api($tanggal);
             
-            // Ambil data jadwal dari database dengan pencarian fleksibel
-            $schedules = $this->get_schedule_data_flexible($target_date, $target_time, $hours_ahead);
+            $this->output->set_output(json_encode([
+                'status' => 'success',
+                'data' => $data,
+                'tanggal' => $tanggal
+            ]));
             
+        } catch (Exception $e) {
             $this->output
-                ->set_status_header(200)
+                ->set_status_header(500)
                 ->set_output(json_encode([
-                    'success' => true,
-                    'data' => $schedules,
-                    'target_datetime' => $target_datetime,
-                    'hours_ahead' => $hours_ahead,
-                    'timezone' => 'Asia/Hong_Kong (GMT+8)',
-                    'current_time' => date('Y-m-d H:i:s'),
-                    'current_timestamp' => time()
+                    'status' => 'error',
+                    'message' => 'Internal server error: ' . $e->getMessage()
+                ]));
+        }
+    }
+    
+    /**
+     * Get pending barcode data for specific schedule
+     * GET /api/pending-barcode?tanggal=YYYY-MM-DD&jam=HH:MM:SS
+     */
+    public function pending_barcode() {
+        try {
+            $tanggal = $this->input->get('tanggal');
+            $jam = $this->input->get('jam');
+            
+            if (!$tanggal || !$jam) {
+                $this->output
+                    ->set_status_header(400)
+                    ->set_output(json_encode([
+                        'status' => 'error',
+                        'message' => 'Tanggal dan jam harus diisi'
+                    ]));
+                return;
+            }
+            
+            // Validate date format
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggal)) {
+                $this->output
+                    ->set_status_header(400)
+                    ->set_output(json_encode([
+                        'status' => 'error',
+                        'message' => 'Format tanggal tidak valid. Gunakan YYYY-MM-DD'
+                    ]));
+                return;
+            }
+            
+            // Validate time format - accept both HH:MM and HH:MM:SS
+            if (!preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $jam)) {
+                $this->output
+                    ->set_status_header(400)
+                    ->set_output(json_encode([
+                        'status' => 'error',
+                        'message' => 'Format jam tidak valid. Gunakan HH:MM atau HH:MM:SS'
+                    ]));
+                return;
+            }
+            
+            // Normalize jam format
+            if (strlen($jam) == 5) {
+                $jam = $jam . ':00'; // Add seconds if missing
+            }
+            
+            // Get data from model - try flexible method first
+            $data = $this->transaksi_model->get_data_flexible_time($tanggal, $jam);
+            
+            // If no data found, try the original method
+            if (empty($data)) {
+                $data = $this->transaksi_model->get_pending_barcode_for_api($tanggal, $jam);
+            }
+            
+            // Debug: Log query for troubleshooting
+            log_message('debug', 'API pending_barcode - Tanggal: ' . $tanggal . ', Jam: ' . $jam);
+            log_message('debug', 'API pending_barcode - Data count: ' . count($data));
+            log_message('debug', 'API pending_barcode - Last query: ' . $this->db->last_query());
+            log_message('debug', 'API pending_barcode - Raw data: ' . json_encode($data));
+            
+            // Format jam ke AM/PM
+            $jam_sistem = date('h:i A', strtotime($jam));
+            $jam_mekkah = date('h:i A', strtotime($jam . ' +5 hours'));
+            
+            // Count statistics
+            $count_total = count($data);
+            $count_barcode_lengkap = 0;
+            $count_tidak_ada_barcode = 0;
+            
+            foreach ($data as $item) {
+                if (!empty($item['barcode']) && $item['barcode'] !== '') {
+                    $count_barcode_lengkap++;
+                } else {
+                    $count_tidak_ada_barcode++;
+                }
+            }
+            
+            $this->output->set_output(json_encode([
+                'status' => 'success',
+                'data' => $data,
+                'tanggal' => $tanggal,
+                'jam_sistem' => $jam_sistem,
+                'jam_mekkah' => $jam_mekkah,
+                'count_total' => $count_total,
+                'count_barcode_lengkap' => $count_barcode_lengkap,
+                'count_tidak_ada_barcode' => $count_tidak_ada_barcode
                 ]));
                 
         } catch (Exception $e) {
             $this->output
                 ->set_status_header(500)
                 ->set_output(json_encode([
-                    'success' => false,
-                    'message' => 'Error: ' . $e->getMessage()
+                    'status' => 'error',
+                    'message' => 'Internal server error: ' . $e->getMessage()
                 ]));
         }
     }
     
     /**
-     * API untuk mendapatkan jadwal yang sudah terlewat
-     * GET /api/overdue_schedules
+     * Get overdue schedules
+     * GET /api/overdue-schedules
      */
     public function overdue_schedules() {
         try {
-            $overdue_schedules = $this->get_overdue_schedule_data();
+            $data = $this->transaksi_model->get_overdue_schedules_for_api();
             
-            $this->output
-                ->set_status_header(200)
-                ->set_output(json_encode([
-                    'success' => true,
-                    'data' => $overdue_schedules,
-                    'total' => count($overdue_schedules),
-                    'timezone' => 'Asia/Hong_Kong (GMT+8)',
-                    'current_time' => date('Y-m-d H:i:s'),
-                    'current_timestamp' => time()
+            $this->output->set_output(json_encode([
+                'status' => 'success',
+                'data' => $data,
+                'count' => count($data)
                 ]));
                 
         } catch (Exception $e) {
             $this->output
                 ->set_status_header(500)
                 ->set_output(json_encode([
-                    'success' => false,
-                    'message' => 'Error: ' . $e->getMessage()
+                    'status' => 'error',
+                    'message' => 'Internal server error: ' . $e->getMessage()
                 ]));
         }
     }
     
     /**
-     * Mendapatkan data jadwal berdasarkan tanggal dan waktu
+     * Get all pending barcode data for today and tomorrow
+     * GET /api/pending-barcode-all
      */
-    private function get_schedule_data($tanggal, $jam, $hours_ahead) {
-        // Debug: Log query parameters
-        log_message('debug', "API get_schedule_data - Tanggal: $tanggal, Jam: $jam, Hours ahead: $hours_ahead");
-        
-        // Query untuk mendapatkan data jadwal - lebih fleksibel
-        $this->db->select('
-            tanggal,
-            jam,
-            COUNT(*) as total_count,
-            SUM(CASE WHEN barcode IS NULL OR barcode = "" THEN 1 ELSE 0 END) as no_barcode_count,
-            SUM(CASE WHEN barcode IS NOT NULL AND barcode != "" THEN 1 ELSE 0 END) as with_barcode_count,
-            SUM(CASE WHEN gender = "L" THEN 1 ELSE 0 END) as male_count,
-            SUM(CASE WHEN gender = "P" THEN 1 ELSE 0 END) as female_count,
-            GROUP_CONCAT(DISTINCT status) as status_list
-        ');
-        
-        $this->db->from('peserta');
-        $this->db->where('tanggal', $tanggal);
-        $this->db->where('jam', $jam);
-        // Hapus filter status yang terlalu ketat - ambil semua data untuk notifikasi
-        $this->db->group_by('tanggal, jam');
-        
-        $query = $this->db->get();
-        $results = $query->result();
-        
-        // Debug: Log query dan hasil
-        log_message('debug', "API Query: " . $this->db->last_query());
-        log_message('debug', "API Results count: " . count($results));
-        
-        // Format data untuk response
-        $schedules = [];
-        foreach ($results as $row) {
-            // Format jam langsung ke AM/PM tanpa penambahan 5 jam
-            $formatted_time = date('h:i A', strtotime($row->jam));
-            
-            $schedules[] = [
-                'tanggal' => $row->tanggal,
-                'jam' => $formatted_time, // Gunakan format AM/PM untuk field jam
-                'jam_formatted' => $formatted_time,
-                'total_count' => (int)$row->total_count,
-                'no_barcode_count' => (int)$row->no_barcode_count,
-                'with_barcode_count' => (int)$row->with_barcode_count,
-                'male_count' => (int)$row->male_count,
-                'female_count' => (int)$row->female_count,
-                'hours_ahead' => $hours_ahead,
-                'status_list' => $row->status_list // Debug info
-            ];
-        }
-        
-        return $schedules;
-    }
-    
-    /**
-     * Mendapatkan data jadwal dengan pencarian yang lebih fleksibel
-     */
-    private function get_schedule_data_flexible($tanggal, $jam, $hours_ahead) {
-        // Debug: Log query parameters
-        log_message('debug', "API get_schedule_data_flexible - Tanggal: $tanggal, Jam: $jam, Hours ahead: $hours_ahead");
-        
-        $schedules = [];
-        
-        // 1. Coba exact match dulu
-        $exact_results = $this->get_exact_schedule_data($tanggal, $jam, $hours_ahead);
-        if (!empty($exact_results)) {
-            $schedules = array_merge($schedules, $exact_results);
-        }
-        
-        // 2. Jika tidak ada, coba dengan format jam yang berbeda
-        if (empty($schedules)) {
-            $jam_variants = $this->get_jam_variants($jam);
-            foreach ($jam_variants as $jam_variant) {
-                $variant_results = $this->get_exact_schedule_data($tanggal, $jam_variant, $hours_ahead);
-                if (!empty($variant_results)) {
-                    $schedules = array_merge($schedules, $variant_results);
-                    break; // Ambil yang pertama ditemukan
-                }
-            }
-        }
-        
-        // 3. Jika masih tidak ada, cari dengan tanggal saja
-        if (empty($schedules)) {
-            $date_results = $this->get_schedule_by_date_only($tanggal, $hours_ahead);
-            if (!empty($date_results)) {
-                $schedules = array_merge($schedules, $date_results);
-            }
-        }
-        
-        return $schedules;
-    }
-    
-    /**
-     * Mendapatkan data jadwal dengan exact match
-     * Hanya return data jika masih ada barcode yang kosong
-     */
-    private function get_exact_schedule_data($tanggal, $jam, $hours_ahead) {
-        $this->db->select('
-            tanggal,
-            jam,
-            COUNT(*) as total_count,
-            SUM(CASE WHEN barcode IS NULL OR barcode = "" THEN 1 ELSE 0 END) as no_barcode_count,
-            SUM(CASE WHEN barcode IS NOT NULL AND barcode != "" THEN 1 ELSE 0 END) as with_barcode_count,
-            SUM(CASE WHEN gender = "L" THEN 1 ELSE 0 END) as male_count,
-            SUM(CASE WHEN gender = "P" THEN 1 ELSE 0 END) as female_count,
-            GROUP_CONCAT(DISTINCT status) as status_list
-        ');
-        
-        $this->db->from('peserta');
-        $this->db->where('tanggal', $tanggal);
-        $this->db->where('jam', $jam);
-        $this->db->group_by('tanggal, jam');
-        
-        $query = $this->db->get();
-        $results = $query->result();
-        
-        log_message('debug', "Exact match query: " . $this->db->last_query());
-        log_message('debug', "Exact match results: " . count($results));
-        
-        $schedules = [];
-        foreach ($results as $row) {
-            // Hanya include jadwal yang masih ada peserta tanpa barcode
-            if ($row->no_barcode_count > 0) {
-                // Format jam langsung ke AM/PM tanpa penambahan 5 jam
-                $formatted_time = date('h:i A', strtotime($row->jam));
-                
-                $schedules[] = [
-                    'tanggal' => $row->tanggal,
-                    'jam' => $formatted_time, // Gunakan format AM/PM untuk field jam
-                    'jam_formatted' => $formatted_time,
-                    'total_count' => (int)$row->total_count,
-                    'no_barcode_count' => (int)$row->no_barcode_count,
-                    'with_barcode_count' => (int)$row->with_barcode_count,
-                    'male_count' => (int)$row->male_count,
-                    'female_count' => (int)$row->female_count,
-                    'hours_ahead' => $hours_ahead,
-                    'status_list' => $row->status_list,
-                    'match_type' => 'exact',
-                    'notification_needed' => true,
-                    'reason' => 'Ada ' . $row->no_barcode_count . ' peserta tanpa barcode'
-                ];
-            } else {
-                log_message('info', "Jadwal $tanggal $jam: Semua barcode sudah terisi, skip notifikasi");
-            }
-        }
-        
-        return $schedules;
-    }
-    
-    /**
-     * Mendapatkan variasi format jam
-     */
-    private function get_jam_variants($jam) {
-        $variants = [$jam]; // Original format
-        
-        // Coba format yang berbeda
-        if (strpos($jam, ':') !== false) {
-            $parts = explode(':', $jam);
-            if (count($parts) >= 2) {
-                // Format H:MM:SS -> HH:MM:SS
-                if (strlen($parts[0]) == 1) {
-                    $variants[] = '0' . $jam;
-                }
-                
-                // Format HH:MM:SS -> H:MM:SS
-                if (strlen($parts[0]) == 2 && $parts[0][0] == '0') {
-                    $variants[] = substr($jam, 1);
-                }
-                
-                // Format HH:MM:SS -> HH:MM
-                if (count($parts) == 3) {
-                    $variants[] = $parts[0] . ':' . $parts[1];
-                }
-                
-                // Format HH:MM -> HH:MM:SS
-                if (count($parts) == 2) {
-                    $variants[] = $jam . ':00';
-                }
-            }
-        }
-        
-        return array_unique($variants);
-    }
-    
-    /**
-     * Mendapatkan data jadwal berdasarkan tanggal saja
-     * Hanya return data jika masih ada barcode yang kosong
-     */
-    private function get_schedule_by_date_only($tanggal, $hours_ahead) {
-        $this->db->select('
-            tanggal,
-            jam,
-            COUNT(*) as total_count,
-            SUM(CASE WHEN barcode IS NULL OR barcode = "" THEN 1 ELSE 0 END) as no_barcode_count,
-            SUM(CASE WHEN barcode IS NOT NULL AND barcode != "" THEN 1 ELSE 0 END) as with_barcode_count,
-            SUM(CASE WHEN gender = "L" THEN 1 ELSE 0 END) as male_count,
-            SUM(CASE WHEN gender = "P" THEN 1 ELSE 0 END) as female_count,
-            GROUP_CONCAT(DISTINCT status) as status_list
-        ');
-        
-        $this->db->from('peserta');
-        $this->db->where('tanggal', $tanggal);
-        $this->db->where('jam IS NOT NULL');
-        $this->db->where('jam !=', '');
-        $this->db->group_by('tanggal, jam');
-        $this->db->order_by('jam', 'ASC');
-        
-        $query = $this->db->get();
-        $results = $query->result();
-        
-        log_message('debug', "Date only query: " . $this->db->last_query());
-        log_message('debug', "Date only results: " . count($results));
-        
-        $schedules = [];
-        foreach ($results as $row) {
-            // Hanya include jadwal yang masih ada peserta tanpa barcode
-            if ($row->no_barcode_count > 0) {
-                // Format jam langsung ke AM/PM tanpa penambahan 5 jam
-                $formatted_time = date('h:i A', strtotime($row->jam));
-                
-                $schedules[] = [
-                    'tanggal' => $row->tanggal,
-                    'jam' => $formatted_time, // Gunakan format AM/PM untuk field jam
-                    'jam_formatted' => $formatted_time,
-                    'total_count' => (int)$row->total_count,
-                    'no_barcode_count' => (int)$row->no_barcode_count,
-                    'with_barcode_count' => (int)$row->with_barcode_count,
-                    'male_count' => (int)$row->male_count,
-                    'female_count' => (int)$row->female_count,
-                    'hours_ahead' => $hours_ahead,
-                    'status_list' => $row->status_list,
-                    'match_type' => 'date_only',
-                    'notification_needed' => true,
-                    'reason' => 'Ada ' . $row->no_barcode_count . ' peserta tanpa barcode'
-                ];
-            } else {
-                log_message('info', "Jadwal $tanggal {$row->jam}: Semua barcode sudah terisi, skip notifikasi");
-            }
-        }
-        
-        return $schedules;
-    }
-    
-    /**
-     * Mendapatkan data jadwal yang sudah terlewat
-     */
-    private function get_overdue_schedule_data() {
-        $current_datetime = date('Y-m-d H:i:s');
-        
-        // Query untuk mendapatkan jadwal yang sudah terlewat
-        $this->db->select('
-            tanggal,
-            jam,
-            COUNT(*) as total_count,
-            SUM(CASE WHEN barcode IS NULL OR barcode = "" THEN 1 ELSE 0 END) as no_barcode_count,
-            SUM(CASE WHEN barcode IS NOT NULL AND barcode != "" THEN 1 ELSE 0 END) as with_barcode_count,
-            SUM(CASE WHEN gender = "L" THEN 1 ELSE 0 END) as male_count,
-            SUM(CASE WHEN gender = "P" THEN 1 ELSE 0 END) as female_count
-        ');
-        
-        $this->db->from('peserta');
-        $this->db->where("CONCAT(tanggal, ' ', jam) <", $current_datetime);
-        $this->db->where('status !=', '2'); // Exclude status "Done"
-        $this->db->group_by('tanggal, jam');
-        $this->db->order_by('tanggal ASC, jam ASC');
-        
-        $query = $this->db->get();
-        $results = $query->result();
-        
-        // Format data untuk response
-        $overdue_schedules = [];
-        foreach ($results as $row) {
-            // Hanya include jadwal yang masih ada peserta tanpa barcode
-            if ($row->no_barcode_count > 0) {
-                // Format jam langsung ke AM/PM tanpa penambahan 5 jam
-                $formatted_time = date('h:i A', strtotime($row->jam));
-                
-                $overdue_schedules[] = [
-                    'tanggal' => $row->tanggal,
-                    'jam' => $formatted_time, // Gunakan format AM/PM untuk field jam
-                    'jam_formatted' => $formatted_time,
-                    'total_count' => (int)$row->total_count,
-                    'no_barcode_count' => (int)$row->no_barcode_count,
-                    'with_barcode_count' => (int)$row->with_barcode_count,
-                    'male_count' => (int)$row->male_count,
-                    'female_count' => (int)$row->female_count,
-                    'overdue_minutes' => $this->calculate_overdue_minutes($row->tanggal, $row->jam)
-                ];
-            }
-        }
-        
-        return $overdue_schedules;
-    }
-    
-    /**
-     * Menghitung berapa menit jadwal sudah terlewat
-     */
-    private function calculate_overdue_minutes($tanggal, $jam) {
-        $schedule_datetime = strtotime("$tanggal $jam");
-        $current_datetime = time();
-        
-        $diff_minutes = ($current_datetime - $schedule_datetime) / 60;
-        return max(0, round($diff_minutes));
-    }
-    
-    /**
-     * API untuk test koneksi
-     * GET /api/test
-     */
-    public function test() {
-        $this->output
-            ->set_status_header(200)
-            ->set_output(json_encode([
-                'success' => true,
-                'message' => 'API Hajj Telegram Notification berjalan normal',
-                'timestamp' => date('Y-m-d H:i:s'),
-                'server_time' => time(),
-                'timezone' => 'Asia/Jakarta (GMT+8)',
-                'timezone_offset' => '+08:00',
-                'current_time' => date('Y-m-d H:i:s'),
-                'current_timestamp' => time()
-            ]));
-    }
-    
-    /**
-     * API untuk mendapatkan informasi timezone dan waktu server
-     * GET /api/timezone_info
-     */
-    public function timezone_info() {
-        $this->output
-            ->set_status_header(200)
-            ->set_output(json_encode([
-                'success' => true,
-                'timezone' => date_default_timezone_get(),
-                'timezone_name' => 'Asia/Hong_Kong',
-                'timezone_offset' => '+08:00',
-                'current_time' => date('Y-m-d H:i:s'),
-                'current_timestamp' => time(),
-                'formatted_time' => date('l, d F Y H:i:s T'),
-                'utc_time' => gmdate('Y-m-d H:i:s'),
-                'utc_timestamp' => time(),
-                'timezone_abbr' => date('T'),
-                'daylight_saving' => date('I') ? 'Yes' : 'No'
-            ]));
-    }
-    
-    /**
-     * API untuk test pencarian fleksibel
-     * GET /api/test_flexible_search?tanggal=2025-09-14&jam=02:40:00&hours_ahead=0
-     */
-    public function test_flexible_search() {
+    public function pending_barcode_all() {
         try {
-            $tanggal = $this->input->get('tanggal');
-            $jam = $this->input->get('jam');
-            $hours_ahead = $this->input->get('hours_ahead', 0);
+            $today = date('Y-m-d');
+            $tomorrow = date('Y-m-d', strtotime('+1 day'));
             
-            if (empty($tanggal) || empty($jam)) {
-                $this->output
-                    ->set_status_header(400)
-                    ->set_output(json_encode([
-                        'success' => false,
-                        'message' => 'Parameter tanggal dan jam diperlukan'
-                    ]));
-                return;
+            $data = [];
+            
+            // Get today's data
+            $today_data = $this->transaksi_model->get_pending_barcode_all_for_api($today);
+            if (!empty($today_data)) {
+                $data = array_merge($data, $today_data);
             }
             
-            // Test pencarian fleksibel
-            $schedules = $this->get_schedule_data_flexible($tanggal, $jam, $hours_ahead);
+            // Get tomorrow's data
+            $tomorrow_data = $this->transaksi_model->get_pending_barcode_all_for_api($tomorrow);
+            if (!empty($tomorrow_data)) {
+                $data = array_merge($data, $tomorrow_data);
+            }
             
-            // Test variasi jam
-            $jam_variants = $this->get_jam_variants($jam);
+            $this->output->set_output(json_encode([
+                'status' => 'success',
+                'data' => $data,
+                'count' => count($data),
+                'date_range' => [$today, $tomorrow]
+            ]));
             
-            // Test pencarian berdasarkan tanggal saja
-            $date_schedules = $this->get_schedule_by_date_only($tanggal, $hours_ahead);
-            
-            $this->output
-                ->set_status_header(200)
-                ->set_output(json_encode([
-                    'success' => true,
-                    'requested' => [
-                        'tanggal' => $tanggal,
-                        'jam' => $jam,
-                        'hours_ahead' => $hours_ahead
-                    ],
-                    'jam_variants' => $jam_variants,
-                    'flexible_search_results' => $schedules,
-                    'date_only_results' => $date_schedules,
-                    'timezone' => 'Asia/Hong_Kong (GMT+8)',
-                    'current_time' => date('Y-m-d H:i:s')
-                ]));
-                
         } catch (Exception $e) {
             $this->output
                 ->set_status_header(500)
                 ->set_output(json_encode([
-                    'success' => false,
-                    'message' => 'Test Error: ' . $e->getMessage()
+                    'status' => 'error',
+                    'message' => 'Internal server error: ' . $e->getMessage()
+                ]));
+        }
+    }
+
+    /**
+     * Test Telegram notification endpoint
+     * POST /api/test-telegram
+     */
+    public function test_telegram() {
+        try {
+            $message = $this->input->post('message');
+            $tanggal = $this->input->post('tanggal');
+            $jam = $this->input->post('jam');
+            
+            if (!$message) {
+                $message = "Test notification dari API Hajj - " . date('Y-m-d H:i:s');
+            }
+            
+            // Format jam ke AM/PM jika ada
+            $jam_formatted = '';
+            if ($jam) {
+                $jam_formatted = date('h:i A', strtotime($jam));
+            }
+            
+            // Build test message
+            $test_message = "🧪 <b>TEST NOTIFICATION</b>\n\n";
+            $test_message .= "📅 Tanggal: " . ($tanggal ?: date('Y-m-d')) . "\n";
+            if ($jam_formatted) {
+                $test_message .= "🕐 Jam Sistem: " . $jam_formatted . "\n";
+                $test_message .= "🕐 Jam Mekkah: " . date('h:i A', strtotime($jam . ' +5 hours')) . "\n";
+            }
+            $test_message .= "💬 Pesan: " . $message . "\n";
+            $test_message .= "⏰ Waktu Test: " . date('d F Y H:i:s') . "\n";
+            $test_message .= "🔗 API Endpoint: " . base_url('api/test-telegram');
+            
+            // Send to Telegram using Python script
+            $result = $this->send_telegram_via_python($test_message);
+            
+            if ($result) {
+                $this->output->set_output(json_encode([
+                    'status' => 'success',
+                    'message' => 'Test notification sent successfully',
+                    'telegram_message' => $test_message,
+                    'timestamp' => date('Y-m-d H:i:s')
+                ]));
+            } else {
+                $this->output
+                    ->set_status_header(500)
+                    ->set_output(json_encode([
+                        'status' => 'error',
+                        'message' => 'Failed to send test notification',
+                        'timestamp' => date('Y-m-d H:i:s')
+                    ]));
+            }
+            
+        } catch (Exception $e) {
+            $this->output
+                ->set_status_header(500)
+                ->set_output(json_encode([
+                    'status' => 'error',
+                    'message' => 'Test notification failed: ' . $e->getMessage(),
+                    'timestamp' => date('Y-m-d H:i:s')
                 ]));
         }
     }
     
     /**
-     * API untuk mengecek status barcode pada jadwal tertentu
-     * GET /api/check_barcode_status?tanggal=2025-09-14&jam=02:40:00
+     * Send Telegram message via Python script
      */
-    public function check_barcode_status() {
+    private function send_telegram_via_python($message) {
+        try {
+            // Path to Python script
+            $python_script = FCPATH . 'vendor/notification/telegram_scheduler.py';
+            
+            // Escape message for command line
+            $escaped_message = escapeshellarg($message);
+            
+            // Execute Python script with test flag
+            $command = "python \"$python_script\" --test $escaped_message 2>&1";
+            $output = shell_exec($command);
+            
+            // Check if successful (Python script returns "SUCCESS" on success)
+            return strpos($output, 'SUCCESS') !== false;
+            
+        } catch (Exception $e) {
+            log_message('error', 'Failed to send Telegram via Python: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Debug endpoint untuk troubleshooting
+     * GET /api/debug?tanggal=YYYY-MM-DD&jam=HH:MM:SS
+     */
+    public function debug() {
         try {
             $tanggal = $this->input->get('tanggal');
             $jam = $this->input->get('jam');
             
-            if (empty($tanggal) || empty($jam)) {
+            if (!$tanggal || !$jam) {
                 $this->output
                     ->set_status_header(400)
                     ->set_output(json_encode([
-                        'success' => false,
+                        'status' => 'error',
                         'message' => 'Parameter tanggal dan jam diperlukan'
                     ]));
                 return;
             }
             
-            // Query untuk mengecek status barcode
-            $this->db->select('
-                tanggal,
-                jam,
-                COUNT(*) as total_count,
-                SUM(CASE WHEN barcode IS NULL OR barcode = "" THEN 1 ELSE 0 END) as no_barcode_count,
-                SUM(CASE WHEN barcode IS NOT NULL AND barcode != "" THEN 1 ELSE 0 END) as with_barcode_count,
-                SUM(CASE WHEN gender = "L" THEN 1 ELSE 0 END) as male_count,
-                SUM(CASE WHEN gender = "P" THEN 1 ELSE 0 END) as female_count,
-                GROUP_CONCAT(DISTINCT status) as status_list
-            ');
+            // Normalize jam format
+            if (strlen($jam) == 5) {
+                $jam = $jam . ':00'; // Add seconds if missing
+            }
             
+            // Test query langsung
+            $this->db->select('*');
             $this->db->from('peserta');
             $this->db->where('tanggal', $tanggal);
             $this->db->where('jam', $jam);
-            $this->db->group_by('tanggal, jam');
+            $this->db->limit(5);
+            $raw_data = $this->db->get()->result_array();
             
-            $query = $this->db->get();
-            $result = $query->row();
+            // Test dengan filter yang lebih longgar
+            $this->db->select('*');
+            $this->db->from('peserta');
+            $this->db->where('tanggal', $tanggal);
+            $this->db->where('jam', $jam);
+            $this->db->where('tanggal IS NOT NULL');
+            $this->db->where('jam IS NOT NULL');
+            $this->db->limit(5);
+            $filtered_data = $this->db->get()->result_array();
             
-            if ($result) {
-                $no_barcode_count = (int)$result->no_barcode_count;
-                $with_barcode_count = (int)$result->with_barcode_count;
-                $total_count = (int)$result->total_count;
-                
-                $notification_needed = $no_barcode_count > 0;
-                $completion_percentage = $total_count > 0 ? round(($with_barcode_count / $total_count) * 100, 2) : 0;
-                
-                // Format jam langsung ke AM/PM tanpa penambahan 5 jam
-                $formatted_time = date('h:i A', strtotime($result->jam));
-                
-                $this->output
-                    ->set_status_header(200)
-                    ->set_output(json_encode([
-                        'success' => true,
-                        'schedule' => [
-                            'tanggal' => $result->tanggal,
-                            'jam' => $formatted_time, // Gunakan format AM/PM untuk field jam
-                            'jam_formatted' => $formatted_time,
-                            'total_count' => $total_count,
-                            'no_barcode_count' => $no_barcode_count,
-                            'with_barcode_count' => $with_barcode_count,
-                            'male_count' => (int)$result->male_count,
-                            'female_count' => (int)$result->female_count,
-                            'status_list' => $result->status_list
-                        ],
-                        'barcode_status' => [
-                            'notification_needed' => $notification_needed,
-                            'completion_percentage' => $completion_percentage,
-                            'all_barcodes_filled' => $no_barcode_count === 0,
-                            'reason' => $notification_needed ? 
-                                "Ada $no_barcode_count peserta tanpa barcode" : 
-                                "Semua barcode sudah terisi ($completion_percentage%)"
-                        ],
-                        'timezone' => 'Asia/Hong_Kong (GMT+8)',
-                        'current_time' => date('Y-m-d H:i:s')
-                    ]));
-            } else {
-                $this->output
-                    ->set_status_header(404)
-                    ->set_output(json_encode([
-                        'success' => false,
-                        'message' => 'Jadwal tidak ditemukan',
-                        'requested' => [
-                            'tanggal' => $tanggal,
-                            'jam' => $jam
-                        ]
-                    ]));
-            }
-                
+            // Test count total
+            $this->db->from('peserta');
+            $this->db->where('tanggal', $tanggal);
+            $this->db->where('jam', $jam);
+            $total_count = $this->db->count_all_results();
+            
+            $this->output->set_output(json_encode([
+                'status' => 'success',
+                'debug_info' => [
+                    'tanggal' => $tanggal,
+                    'jam' => $jam,
+                    'total_count' => $total_count,
+                    'raw_data_count' => count($raw_data),
+                    'filtered_data_count' => count($filtered_data),
+                    'last_query' => $this->db->last_query(),
+                    'raw_data_sample' => $raw_data,
+                    'filtered_data_sample' => $filtered_data
+                ]
+            ]));
+            
         } catch (Exception $e) {
-            $this->output
+        $this->output
                 ->set_status_header(500)
-                ->set_output(json_encode([
-                    'success' => false,
-                    'message' => 'Error: ' . $e->getMessage()
+            ->set_output(json_encode([
+                    'status' => 'error',
+                    'message' => 'Debug failed: ' . $e->getMessage()
                 ]));
         }
     }
-    
+
     /**
-     * API untuk debugging database - melihat data yang tersedia
-     * GET /api/debug_database?tanggal=2025-09-29&jam=18:00:00
+     * Health check endpoint
+     * GET /api/health
      */
-    public function debug_database() {
+    public function health() {
         try {
-            $tanggal = $this->input->get('tanggal');
-            $jam = $this->input->get('jam');
+            // Test database connection
+            $this->db->simple_query('SELECT 1');
             
-            $debug_info = [];
+            $this->output->set_output(json_encode([
+                'status' => 'success',
+                'message' => 'API is healthy',
+                'timestamp' => date('Y-m-d H:i:s'),
+                'database' => 'connected'
+            ]));
             
-            // 1. Cek total data di tabel peserta
-            $total_peserta = $this->db->count_all('peserta');
-            $debug_info['total_peserta'] = $total_peserta;
-            
-            // 2. Cek data dengan tanggal dan jam yang diminta
-            if ($tanggal && $jam) {
-                $this->db->where('tanggal', $tanggal);
-                $this->db->where('jam', $jam);
-                $count_exact = $this->db->count_all_results('peserta');
-                $debug_info['count_exact_match'] = $count_exact;
-                
-                // 3. Cek data dengan tanggal saja
-                $this->db->where('tanggal', $tanggal);
-                $count_date = $this->db->count_all_results('peserta');
-                $debug_info['count_date_match'] = $count_date;
-                
-                // 4. Cek data dengan jam saja
-                $this->db->where('jam', $jam);
-                $count_time = $this->db->count_all_results('peserta');
-                $debug_info['count_time_match'] = $count_time;
-            }
-            
-            // 5. Cek data dengan tanggal dan jam yang ada
-            $this->db->select('tanggal, jam, COUNT(*) as count');
-            $this->db->from('peserta');
-            $this->db->where('tanggal IS NOT NULL');
-            $this->db->where('jam IS NOT NULL');
-            $this->db->where('tanggal !=', '');
-            $this->db->where('jam !=', '');
-            $this->db->group_by('tanggal, jam');
-            $this->db->order_by('tanggal DESC, jam DESC');
-            $this->db->limit(10);
-            $available_schedules = $this->db->get()->result();
-            $debug_info['available_schedules'] = $available_schedules;
-            
-            // 6. Cek status yang ada
-            $this->db->select('status, COUNT(*) as count');
-            $this->db->from('peserta');
-            $this->db->group_by('status');
-            $status_distribution = $this->db->get()->result();
-            $debug_info['status_distribution'] = $status_distribution;
-            
-            // 7. Cek data dengan barcode
-            $this->db->select('
-                COUNT(*) as total,
-                SUM(CASE WHEN barcode IS NULL OR barcode = "" THEN 1 ELSE 0 END) as no_barcode,
-                SUM(CASE WHEN barcode IS NOT NULL AND barcode != "" THEN 1 ELSE 0 END) as with_barcode
-            ');
-            $this->db->from('peserta');
-            $barcode_stats = $this->db->get()->row();
-            $debug_info['barcode_stats'] = $barcode_stats;
-            
-            $this->output
-                ->set_status_header(200)
-                ->set_output(json_encode([
-                    'success' => true,
-                    'debug_info' => $debug_info,
-                    'requested_date' => $tanggal,
-                    'requested_time' => $jam,
-                    'timezone' => 'Asia/Hong_Kong (GMT+8)',
-                    'current_time' => date('Y-m-d H:i:s')
-                ]));
-                
         } catch (Exception $e) {
             $this->output
                 ->set_status_header(500)
                 ->set_output(json_encode([
-                    'success' => false,
-                    'message' => 'Debug Error: ' . $e->getMessage()
+                    'status' => 'error',
+                    'message' => 'API health check failed: ' . $e->getMessage(),
+                    'timestamp' => date('Y-m-d H:i:s')
                 ]));
         }
     }
 }
-?>

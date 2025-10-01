@@ -1428,4 +1428,185 @@ class Transaksi_model extends CI_Model {
         
         return $this->db->get()->result();
     }
+
+    /**
+     * Get schedule data for API
+     * @param string $tanggal Date in YYYY-MM-DD format
+     * @return array
+     */
+    public function get_schedule_for_api($tanggal) {
+        $this->db->select('tanggal, jam, COUNT(*) as total_peserta, flag_doc');
+        $this->db->from($this->table);
+        $this->db->where('tanggal', $tanggal);
+        $this->db->where('tanggal IS NOT NULL');
+        $this->db->where('tanggal !=', '');
+        $this->db->where('status', 2);
+        $this->db->where('jam IS NOT NULL');
+        $this->db->where('jam !=', '');
+        $this->db->group_by('tanggal, jam, flag_doc');
+        $this->db->order_by('jam', 'ASC');
+        
+        $result = $this->db->get();
+        return $result->result_array();
+    }
+
+    /**
+     * Get pending barcode data for specific schedule
+     * @param string $tanggal Date in YYYY-MM-DD format
+     * @param string $jam Time in HH:MM:SS format
+     * @return array
+     */
+    public function get_pending_barcode_for_api($tanggal, $jam) {
+        // Normalize jam format - handle both HH:MM and HH:MM:SS
+        if (strlen($jam) == 5) {
+            $jam = $jam . ':00'; // Add seconds if missing
+        }
+        
+        $this->db->select('id, nama, tanggal, jam, nomor_paspor, flag_doc, barcode, gender, no_visa, nama_travel, status');
+        $this->db->from($this->table);
+        $this->db->where('tanggal', $tanggal);
+        $this->db->where('jam', $jam);
+        $this->db->where('tanggal IS NOT NULL');
+        $this->db->where('tanggal !=', '');
+        $this->db->where('jam IS NOT NULL');
+        $this->db->where('jam !=', '');
+        $this->db->order_by('nama', 'ASC');
+        
+        $result = $this->db->get();
+        return $result->result_array();
+    }
+
+    /**
+     * Get all pending barcode data for a specific date
+     * @param string $tanggal Date in YYYY-MM-DD format
+     * @return array
+     */
+    public function get_pending_barcode_all_for_api($tanggal) {
+        $this->db->select('id, nama, tanggal, jam, nomor_paspor, flag_doc');
+        $this->db->from($this->table);
+        $this->db->where('tanggal', $tanggal);
+        $this->db->where('status', '0'); // Hanya yang belum selesai
+        $this->db->where('(barcode IS NULL OR barcode = "")'); // Belum upload barcode
+        $this->db->order_by('jam ASC, nama ASC');
+        
+        $result = $this->db->get();
+        return $result->result_array();
+    }
+
+    /**
+     * Get overdue schedules
+     * @return array
+     */
+    public function get_overdue_schedules_for_api() {
+        $current_datetime = date('Y-m-d H:i:s');
+        
+        $this->db->select('tanggal, jam, COUNT(*) as count, 
+                          TIMESTAMPDIFF(HOUR, CONCAT(tanggal, " ", jam), NOW()) as overdue_hours');
+        $this->db->from($this->table);
+        $this->db->where('CONCAT(tanggal, " ", jam) <', $current_datetime);
+        $this->db->where('status', '0'); // Hanya yang belum selesai
+        $this->db->where('(barcode IS NULL OR barcode = "")'); // Belum upload barcode
+        $this->db->group_by('tanggal, jam');
+        $this->db->order_by('tanggal DESC, jam DESC');
+        $this->db->limit(50); // Limit untuk performa
+        
+        $result = $this->db->get();
+        return $result->result_array();
+    }
+
+    /**
+     * Get schedule data with pending barcode count
+     * @param string $tanggal Date in YYYY-MM-DD format
+     * @return array
+     */
+    public function get_schedule_with_pending_count_for_api($tanggal) {
+        $this->db->select('tanggal, jam, 
+                          COUNT(*) as total_peserta,
+                          SUM(CASE WHEN (barcode IS NULL OR barcode = "") THEN 1 ELSE 0 END) as pending_barcode,
+                          flag_doc');
+        $this->db->from($this->table);
+        $this->db->where('tanggal', $tanggal);
+        $this->db->where('tanggal IS NOT NULL');
+        $this->db->where('tanggal !=', '');
+        $this->db->where('jam IS NOT NULL');
+        $this->db->where('jam !=', '');
+        $this->db->group_by('tanggal, jam, flag_doc');
+        $this->db->order_by('jam', 'ASC');
+        
+        $result = $this->db->get();
+        return $result->result_array();
+    }
+
+    /**
+     * Get all data for specific date and time (for debugging)
+     * @param string $tanggal Date in YYYY-MM-DD format
+     * @param string $jam Time in HH:MM:SS format
+     * @return array
+     */
+    public function get_all_data_for_debug($tanggal, $jam) {
+        $this->db->select('*');
+        $this->db->from($this->table);
+        $this->db->where('tanggal', $tanggal);
+        $this->db->where('jam', $jam);
+        $this->db->order_by('id', 'ASC');
+        
+        $result = $this->db->get();
+        return $result->result_array();
+    }
+
+    /**
+     * Get data with flexible time matching (for API)
+     * @param string $tanggal Date in YYYY-MM-DD format
+     * @param string $jam Time in HH:MM or HH:MM:SS format
+     * @return array
+     */
+    public function get_data_flexible_time($tanggal, $jam) {
+        // Try exact match first
+        $this->db->select('*');
+        $this->db->from($this->table);
+        $this->db->where('tanggal', $tanggal);
+        $this->db->where('jam', $jam);
+        $result = $this->db->get();
+        
+        if ($result->num_rows() > 0) {
+            return $result->result_array();
+        }
+        
+        // Try with seconds added
+        if (strlen($jam) == 5) {
+            $jam_with_seconds = $jam . ':00';
+            $this->db->select('*');
+            $this->db->from($this->table);
+            $this->db->where('tanggal', $tanggal);
+            $this->db->where('jam', $jam_with_seconds);
+            $result = $this->db->get();
+            
+            if ($result->num_rows() > 0) {
+                return $result->result_array();
+            }
+        }
+        
+        // Try with seconds removed
+        if (strlen($jam) == 8) {
+            $jam_without_seconds = substr($jam, 0, 5);
+            $this->db->select('*');
+            $this->db->from($this->table);
+            $this->db->where('tanggal', $tanggal);
+            $this->db->where('jam', $jam_without_seconds);
+            $result = $this->db->get();
+            
+            if ($result->num_rows() > 0) {
+                return $result->result_array();
+            }
+        }
+        
+        // Try LIKE match for partial time
+        $this->db->select('*');
+        $this->db->from($this->table);
+        $this->db->where('tanggal', $tanggal);
+        $this->db->like('jam', $jam);
+        $result = $this->db->get();
+        
+        return $result->result_array();
+    }
 } 

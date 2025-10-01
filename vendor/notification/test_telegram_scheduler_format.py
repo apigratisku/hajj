@@ -21,19 +21,16 @@ def test_api_response_format():
     """Test apakah API mengembalikan field jam_formatted"""
     print("🧪 Testing API Response Format...")
     
-    # Test API endpoint - gunakan localhost untuk testing
-    base_url = "http://localhost/hajj"
+    # Test API endpoint
+    base_url = "https://menfins.site/hajj"
     test_url = f"{base_url}/api/schedule_notifications"
     
-    # Test parameters - gunakan data yang ada di database
+    # Test parameters
     test_params = {
         "tanggal": "2025-09-14",
         "jam": "02:40:00",
         "hours_ahead": 0
     }
-    
-    print(f"🔗 Testing URL: {test_url}")
-    print(f"📋 Test Parameters: {test_params}")
     
     try:
         response = requests.get(test_url, params=test_params, timeout=30)
@@ -42,8 +39,6 @@ def test_api_response_format():
         
         print(f"✅ API Response Status: {response.status_code}")
         print(f"📊 API Success: {data.get('success', False)}")
-        print(f"📊 Data Array Length: {len(data.get('data', []))}")
-        print(f"📊 Full Response: {json.dumps(data, indent=2)}")
         
         if data.get('success') and data.get('data'):
             schedule = data['data'][0]
@@ -124,9 +119,8 @@ def test_hajj_api_client():
     """Test apakah HajjAPIClient dapat membaca jam_formatted"""
     print("\n🧪 Testing HajjAPIClient...")
     
-    # Create HajjAPIClient instance dengan localhost
+    # Create HajjAPIClient instance
     config = HajjConfig()
-    config.base_url = "http://localhost/hajj"  # Override untuk testing lokal
     client = HajjAPIClient(config, "Asia/Hong_Kong")
     
     try:

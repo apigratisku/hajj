@@ -4,6 +4,15 @@ $route['default_controller'] = 'auth';
 $route['404_override'] = '';
 $route['translate_uri_dashes'] = FALSE;
 
+// API Routes for Telegram Notification Scheduler
+$route['api/schedule'] = 'api/schedule';
+$route['api/pending-barcode'] = 'api/pending_barcode';
+$route['api/overdue-schedules'] = 'api/overdue_schedules';
+$route['api/pending-barcode-all'] = 'api/pending_barcode_all';
+$route['api/test-telegram'] = 'api/test_telegram';
+$route['api/debug'] = 'api/debug';
+$route['api/health'] = 'api/health';
+
 // Auth routes
 $route['login'] = 'auth/login';
 $route['logout'] = 'auth/logout';
@@ -13,11 +22,7 @@ $route['telegram_bot/webhook'] = 'telegram_bot/webhook';
 $route['telegram_bot/set_webhook'] = 'telegram_bot/set_webhook';
 $route['telegram_bot/delete_webhook'] = 'telegram_bot/delete_webhook';
 $route['telegram_bot/get_webhook_info'] = 'telegram_bot/get_webhook_info';
-$route['api/test'] = 'api/test';
-$route['api/timezone_info'] = 'api/timezone_info';
-$route['api/test_flexible_search'] = 'api/test_flexible_search';
-$route['api/check_barcode_status'] = 'api/check_barcode_status';
-$route['api/debug_database'] = 'api/debug_database';
+$route['api/status'] = 'api/status';
 $route['api/schedule_notifications'] = 'api/schedule_notifications';
 $route['api/overdue_schedules'] = 'api/overdue_schedules';
 

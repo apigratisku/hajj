@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug API Data - Hajj Notification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #8B4513;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        button {
+            background: #8B4513;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #654321;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .api-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .api-section h3 {
+            color: #8B4513;
+            margin-top: 0;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            border-left: 4px solid #8B4513;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #8B4513;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Debug API Data - Hajj Notification</h1>
+        
+        <!-- Debug Form -->
+        <div class="api-section">
+            <h3>📊 Debug Data API</h3>
+            <div class="form-group">
+                <label for="tanggal">Tanggal (YYYY-MM-DD):</label>
+                <input type="date" id="tanggal" value="2025-09-15">
+            </div>
+            <div class="form-group">
+                <label for="jam">Jam (HH:MM:SS):</label>
+                <input type="time" id="jam" value="16:20">
+            </div>
+            <button onclick="debugData()">Debug Data</button>
+            <button onclick="testPendingBarcode()">Test Pending Barcode</button>
+            <button onclick="testSchedule()">Test Schedule</button>
+            <button onclick="testAll()">Test All APIs</button>
+            <div id="debugResult" class="result" style="display: none;"></div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="api-section">
+            <h3>📈 Statistics</h3>
+            <div class="stats" id="statsContainer">
+                <!-- Stats will be populated here -->
+            </div>
+        </div>
+
+        <!-- Raw Data -->
+        <div class="api-section">
+            <h3>📋 Raw Data</h3>
+            <div id="rawDataResult" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost/hajj/api';
+
+        function showResult(elementId, data, isSuccess = true) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = `result ${isSuccess ? 'success' : 'error'}`;
+            element.textContent = JSON.stringify(data, null, 2);
+        }
+
+        async function debugData() {
+            const tanggal = document.getElementById('tanggal').value;
+            const jam = document.getElementById('jam').value + ':00';
+            
+            try {
+                const response = await fetch(`${API_BASE}/debug?tanggal=${tanggal}&jam=${jam}`);
+                const data = await response.json();
+                showResult('debugResult', data, response.ok);
+                
+                if (response.ok && data.debug_info) {
+                    updateStats(data.debug_info);
+                    showRawData(data.debug_info);
+                }
+            } catch (error) {
+                showResult('debugResult', { error: error.message }, false);
+            }
+        }
+
+        async function testPendingBarcode() {
+            const tanggal = document.getElementById('tanggal').value;
+            const jam = document.getElementById('jam').value + ':00';
+            
+            try {
+                const response = await fetch(`${API_BASE}/pending-barcode?tanggal=${tanggal}&jam=${jam}`);
+                const data = await response.json();
+                showResult('debugResult', data, response.ok);
+            } catch (error) {
+                showResult('debugResult', { error: error.message }, false);
+            }
+        }
+
+        async function testSchedule() {
+            const tanggal = document.getElementById('tanggal').value;
+            
+            try {
+                const response = await fetch(`${API_BASE}/schedule?tanggal=${tanggal}`);
+                const data = await response.json();
+                showResult('debugResult', data, response.ok);
+            } catch (error) {
+                showResult('debugResult', { error: error.message }, false);
+            }
+        }
+
+        async function testAll() {
+            const tanggal = document.getElementById('tanggal').value;
+            const jam = document.getElementById('jam').value + ':00';
+            
+            const results = {};
+            
+            try {
+                // Test Health
+                const healthResponse = await fetch(`${API_BASE}/health`);
+                results.health = await healthResponse.json();
+                
+                // Test Schedule
+                const scheduleResponse = await fetch(`${API_BASE}/schedule?tanggal=${tanggal}`);
+                results.schedule = await scheduleResponse.json();
+                
+                // Test Pending Barcode
+                const pendingResponse = await fetch(`${API_BASE}/pending-barcode?tanggal=${tanggal}&jam=${jam}`);
+                results.pending_barcode = await pendingResponse.json();
+                
+                // Test Debug
+                const debugResponse = await fetch(`${API_BASE}/debug?tanggal=${tanggal}&jam=${jam}`);
+                results.debug = await debugResponse.json();
+                
+                showResult('debugResult', results, true);
+                
+            } catch (error) {
+                showResult('debugResult', { error: error.message }, false);
+            }
+        }
+
+        function updateStats(debugInfo) {
+            const statsContainer = document.getElementById('statsContainer');
+            statsContainer.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-number">${debugInfo.total_count || 0}</div>
+                    <div class="stat-label">Total Records</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${debugInfo.raw_data_count || 0}</div>
+                    <div class="stat-label">Raw Data Count</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${debugInfo.filtered_data_count || 0}</div>
+                    <div class="stat-label">Filtered Data Count</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${debugInfo.tanggal}</div>
+                    <div class="stat-label">Tanggal</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${debugInfo.jam}</div>
+                    <div class="stat-label">Jam</div>
+                </div>
+            `;
+        }
+
+        function showRawData(debugInfo) {
+            const rawDataElement = document.getElementById('rawDataResult');
+            rawDataElement.style.display = 'block';
+            rawDataElement.className = 'result info';
+            rawDataElement.textContent = JSON.stringify({
+                last_query: debugInfo.last_query,
+                raw_data_sample: debugInfo.raw_data_sample,
+                filtered_data_sample: debugInfo.filtered_data_sample
+            }, null, 2);
+        }
+
+        // Set default date to today
+        document.getElementById('tanggal').value = new Date().toISOString().split('T')[0];
+    </script>
+</body>
+</html>
