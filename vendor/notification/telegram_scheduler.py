@@ -15,9 +15,9 @@ import json
 import signal
 import logging
 from logging.handlers import RotatingFileHandler
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -44,9 +44,17 @@ class TelegramConfig:
 
 @dataclass
 class HajjConfig:
-    base_url: str = os.getenv("HAJJ_BASE_URL", "http://localhost/hajj")
+    base_url: str = os.getenv("HAJJ_BASE_URL", "https://menfins.site/hajj/")
     api_endpoint: str = os.getenv("HAJJ_API_ENDPOINT", "/api/schedule")
     timeout: int = int(os.getenv("HTTP_TIMEOUT", "30"))
+
+# AFTER milestones (menit setelah jadwal)
+AFTER_MILESTONES: List[Tuple[int, str]] = [
+    (180, "3 jam setelah jadwal"),
+    (240, "4 jam setelah jadwal"),
+    (270, "4 jam 30 menit setelah jadwal"),
+    (290, "4 jam 50 menit setelah jadwal"),
+]
 
 # =========================
 # Logging (aman untuk service)
@@ -110,7 +118,7 @@ class TelegramNotifier:
             "disable_web_page_preview": True,
         }
         try:
-            resp = self.session.post(url, data=json.dumps(payload), timeout=15)
+            resp = self.session.post(url, json=payload, timeout=15)  # kirim sebagai JSON
             resp.raise_for_status()
             logger.info("Pesan berhasil dikirim ke Telegram")
             return True
@@ -140,20 +148,19 @@ class TelegramNotifier:
             tanggal_display = tanggal
 
         message = (
-            f"🔔 <b>ALERT JADWAL • {alert_label}</b>\n"
+            f"🔔 <b>PENGINGAT • {alert_label}</b>\n"
             f"📅 <b>Tanggal:</b> {tanggal_display}\n"
             f"🕐 <b>Jam Sistem:</b> {jam_sistem or jam_display}\n"
             f"🕐 <b>Jam Mekkah:</b> {jam_mekkah}\n\n"
             f"📊 <b>STATISTIK PESERTA</b>\n"
             f"👥 Total: <b>{total_peserta}</b>\n"
             f"✅ Dengan Barcode: <b>{dengan_barcode}</b>\n"
-            f"❌ Tanpa Barcode: <b>{tanpa_barcode}</b>\n\n"
+            f"❌ Tanpa Barcode: <b>{tanpa_barcode}</b>\n"
         )
-        
-        # Tambahkan detail peserta jika ada yang belum upload barcode
+
         if tanpa_barcode > 0:
-            message += f"⚠️ <b>PERHATIAN:</b> Ada {tanpa_barcode} peserta yang belum upload barcode!\n\n"
-        
+            message += "⚠️ <b>PERHATIAN:</b> Masih ada peserta yang belum upload barcode!\n"
+
         return message
 
     def send_schedule_alert(self, schedule_data: Dict[str, Any], alert_label: str) -> bool:
@@ -207,7 +214,7 @@ class HajjAPIClient:
     def get_current_time(self) -> datetime:
         return datetime.now(self.timezone)
 
-    def _fetch(self, url: str, params: Dict[str, Any] | None = None) -> Dict[str, Any]:
+    def _fetch(self, url: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         resp = self.session.get(url, params=params, timeout=self.config.timeout)
         resp.raise_for_status()
         return resp.json()
@@ -215,16 +222,12 @@ class HajjAPIClient:
     def get_schedule_data(self, hours_ahead: float) -> List[Dict[str, Any]]:
         now = self.get_current_time()
         target = now + timedelta(hours=hours_ahead)
-        params = {
-            "tanggal": target.strftime("%Y-%m-%d"),
-        }
+        params = {"tanggal": target.strftime("%Y-%m-%d")}
         try:
             url = f"{self.config.base_url}{self.config.api_endpoint}"
             data = self._fetch(url, params)
             if data.get("status") == "success":
-                logger.info(
-                    f"API OK (ahead={hours_ahead}) tanggal={target.strftime('%Y-%m-%d')}"
-                )
+                logger.info(f"API OK (ahead={hours_ahead}) tanggal={target.strftime('%Y-%m-%d')}")
                 return data.get("data", [])
             logger.error(f"API error: {data.get('message', 'Unknown error')}")
         except Exception as e:
@@ -247,9 +250,7 @@ class HajjAPIClient:
         """Mengambil data jadwal untuk tanggal tertentu"""
         try:
             url = f"{self.config.base_url}/api/schedule"
-            params = {
-                "tanggal": tanggal
-            }
+            params = {"tanggal": tanggal}
             data = self._fetch(url, params)
             if data.get("status") == "success":
                 logger.info(f"Schedule API OK - {tanggal}")
@@ -263,14 +264,12 @@ class HajjAPIClient:
         """Mengambil data pending barcode untuk jadwal tertentu"""
         try:
             url = f"{self.config.base_url}/api/pending-barcode"
-            params = {
-                "tanggal": tanggal,
-                "jam": jam
-            }
+            params = {"tanggal": tanggal, "jam": jam}
             data = self._fetch(url, params)
             if data.get("status") == "success":
                 logger.info(f"Pending barcode API OK - {tanggal} {jam}")
-                return data
+                # Kembalikan payload data inti agar cocok dengan build_alert_message
+                return data.get("data", {}) or {}
             logger.error(f"API error: {data.get('message', 'Unknown error')}")
         except Exception as e:
             logger.error(f"Error saat mengakses API pending barcode: {e}")
@@ -281,6 +280,7 @@ class HajjAPIClient:
 # =========================
 @dataclass
 class ScheduleFlags:
+    # flag lama dibiarkan (tidak dipakai lagi untuk before)
     sent_2h: bool = False
     sent_1h: bool = False
     sent_30m: bool = False
@@ -288,6 +288,8 @@ class ScheduleFlags:
     reminder_active: bool = False
     last_reminder_minute: int = -1
     completed: bool = False
+    # penanda terkirim milestone AFTER (key=menit, value=True jika sudah terkirim)
+    after_sent_map: Dict[int, bool] = field(default_factory=dict)
 
 class NotificationState:
     def __init__(self):
@@ -340,88 +342,66 @@ class NotificationScheduler:
         schedule.every().day.at("08:00").do(self.send_daily_summary).tag("daily")
         logger.info(f"Jadwal notifikasi aktif (TZ={self.timezone_name})")
 
-    # Core logic alert & reminder
+    # Core logic (AFTER-only)
     def check_alert_window(self):
         now = self.get_current_time()
 
-        # Cek jadwal untuk hari ini dan besok
-        for days_ahead in (0, 1):
-            target_date = now + timedelta(days=days_ahead)
+        # Penting: cek kemarin, hari ini, besok
+        # agar jadwal lewat tengah malam tetap terjangkau untuk T+290
+        for days_offset in (-1, 0, 1):
+            target_date = now + timedelta(days=days_offset)
             tanggal = target_date.strftime("%Y-%m-%d")
-            
+
             try:
-                # Ambil data jadwal untuk tanggal tertentu
                 schedule_data = self.hajj_client.get_schedule_data_for_date(tanggal)
-                
+
                 for sched in schedule_data:
                     tgl = sched.get("tanggal", "")
                     jam = sched.get("jam", "")
-                    
                     if not tgl or not jam:
                         continue
-                        
-                    if self.state.is_completed(tgl, jam):
+
+                    flags = self.state.get(tgl, jam)
+                    if flags.completed:
                         continue
 
                     try:
                         sched_dt = self.parse_schedule_dt(tgl, jam)
                     except Exception:
                         logger.error(f"Format tanggal/jam tidak valid: {tgl} {jam}")
+                        # tandai completed supaya tidak diproses terus-menerus
+                        flags.completed = True
                         continue
 
                     mins = self.minutes_to_schedule(sched_dt, now)
-                    flags = self.state.get(tgl, jam)
 
-                    if mins <= 0:
-                        flags.completed = True
-                        logger.info(f"⏱️ Jadwal {tgl} {jam} sudah lewat. Notifikasi dihentikan.")
+                    # Hanya proses SETELAH jadwal (AFTER-only)
+                    if mins > 0:
+                        # sebelum jadwal: lewati (tidak ada alert T-)
                         continue
 
+                    minutes_after = -mins  # menit sejak H lewat (positif)
                     # Ambil data pending barcode untuk jadwal ini
                     pending_data = self.hajj_client.get_pending_barcode_data(tgl, jam)
                     no_barcode = pending_data.get("count_tidak_ada_barcode", 0) > 0
 
-                    def in_window(target_min: float) -> bool:
-                        return (target_min - 1) <= mins < (target_min + 1)
+                    def in_window_after(target: float) -> bool:
+                        return (target - 1) <= minutes_after < (target + 1)
 
-                    # Alert 3 jam sebelum (180 menit)
-                    if no_barcode and (in_window(180) or (mins < 180 and not flags.sent_2h)):
-                        if not flags.sent_2h and self.telegram_notifier.send_schedule_alert(pending_data, "3 jam"):
-                            flags.sent_2h = True
+                    if no_barcode:
+                        # Kirim setiap milestone AFTER hanya sekali
+                        for target, label in AFTER_MILESTONES:
+                            already = flags.after_sent_map.get(target, False)
+                            if in_window_after(target) or (minutes_after > target and not already):
+                                if self.telegram_notifier.send_schedule_alert(pending_data, label):
+                                    flags.after_sent_map[target] = True
 
-                    # Alert 4 jam sebelum (240 menit)
-                    if no_barcode and (in_window(240) or (mins < 240 and not flags.sent_1h and flags.sent_2h)):
-                        if not flags.sent_1h and self.telegram_notifier.send_schedule_alert(pending_data, "4 jam"):
-                            flags.sent_1h = True
+                    # Selesaikan jadwal jika semua sudah upload, atau semua milestone sudah lewat
+                    last_after = AFTER_MILESTONES[-1][0] if AFTER_MILESTONES else 0
+                    if (not no_barcode) or (minutes_after > last_after + 2):
+                        flags.completed = True
+                        logger.info(f"✅ Fase setelah-jadwal selesai untuk {tgl} {jam} (minutes_after={minutes_after:.1f}).")
 
-                    # Alert 4 jam 30 menit sebelum (270 menit)
-                    if no_barcode and (in_window(270) or (mins < 270 and not flags.sent_30m and flags.sent_1h)):
-                        if not flags.sent_30m and self.telegram_notifier.send_schedule_alert(pending_data, "4 jam 30 menit"):
-                            flags.sent_30m = True
-
-                    # Alert 4 jam 40 menit sebelum (280 menit)
-                    if no_barcode and (in_window(280) or (mins < 280 and not flags.sent_10m and flags.sent_30m)):
-                        if not flags.sent_10m and self.telegram_notifier.send_schedule_alert(pending_data, "4 jam 40 menit"):
-                            flags.sent_10m = True
-                            flags.reminder_active = True
-
-                    # Alert 4 jam 50 menit sebelum (290 menit)
-                    if no_barcode and (in_window(290) or (mins < 290 and not flags.sent_10m and flags.sent_30m)):
-                        if not flags.sent_10m and self.telegram_notifier.send_schedule_alert(pending_data, "4 jam 50 menit"):
-                            flags.sent_10m = True
-                            flags.reminder_active = True
-
-                    # Reminder setiap menit setelah T-10 sampai jam H
-                    if no_barcode and flags.reminder_active and mins <= 10:
-                        current_minute = int(now.strftime("%Y%m%d%H%M"))
-                        if flags.last_reminder_minute != current_minute:
-                            self.telegram_notifier.send_schedule_alert(pending_data, "pengingat")
-                            flags.last_reminder_minute = current_minute
-
-                    if (not no_barcode) and flags.reminder_active:
-                        logger.info(f"✅ Semua peserta {tgl} {jam} sudah upload barcode. Reminder dihentikan.")
-                        flags.reminder_active = False
-                        
             except Exception as e:
                 logger.error(f"Error mengambil data jadwal untuk {tanggal}: {e}")
 
@@ -442,8 +422,7 @@ class NotificationScheduler:
                 f"🕐 <b>Waktu:</b> {now.strftime('%H:%M')}\n"
                 f"🌏 <b>Timezone:</b> {self.timezone_name}\n\n"
                 "✅ <b>Sistem notifikasi berjalan normal</b>\n"
-                "🔔 <b>Alert aktif:</b> 3 jam, 4 jam, 4 jam 30 menit, 4 jam 40 menit, 4 jam 50 menit\n"
-                "⏰ <b>Reminder:</b> Tiap 1 menit setelah T-10 sampai jam H\n"
+                "🔔 <b>Pengingat aktif (SETELAH jadwal):</b> 3 jam, 4 jam, 4 jam 30 menit, 4 jam 50 menit\n"
                 "📋 <b>Laporan terlewat:</b> Setiap jam\n"
                 f"📡 <b>API Base:</b> {self.hajj_config.base_url}"
             )
@@ -467,21 +446,18 @@ class NotificationScheduler:
             f"🌏 <b>Timezone:</b> {self.timezone_name}\n"
             f"📡 <b>API Base:</b> {self.hajj_config.base_url}\n"
             "✅ <b>Status:</b> Bot terhubung\n"
-            "🔔 <b>Alert:</b> 3 jam, 4 jam, 4 jam 30 menit, 4 jam 40 menit, 4 jam 50 menit\n"
-            "⏰ <b>Reminder:</b> Setiap menit setelah T-10 sampai jam H\n"
+            "🔔 <b>Pengingat (SETELAH jadwal):</b> 3 jam, 4 jam, 4 jam 30 menit, 4 jam 50 menit\n"
             "📋 <b>Laporan:</b> Jadwal terlewat setiap jam"
         )
         self.telegram_notifier.send_message(test_message)
 
-        # Loop utama – cek setiap 5 detik agar jadwal per-menit tidak miss
+        # Loop utama – cek setiap 5 detik agar akurat
         while not self.stop_event.is_set():
             try:
                 schedule.run_pending()
-                # Tunggu 5 detik atau sampai diminta berhenti
                 self.stop_event.wait(timeout=5.0)
             except Exception as e:
                 logger.error(f"Error dalam main loop: {e}")
-                # cooldown 5 detik supaya tidak spin
                 self.stop_event.wait(timeout=5.0)
 
 # =========================
@@ -501,21 +477,17 @@ def send_test_message(message: str) -> bool:
 # Entrypoint dengan graceful shutdown
 # =========================
 def main():
-    # Check if this is a test call from API
+    # Mode test cepat: python script.py --test "pesan"
     if len(sys.argv) > 1 and sys.argv[1] == "--test":
         if len(sys.argv) > 2:
             message = sys.argv[2]
             success = send_test_message(message)
-            if success:
-                print("SUCCESS")
-                sys.exit(0)
-            else:
-                print("ERROR")
-                sys.exit(1)
+            print("SUCCESS" if success else "ERROR")
+            sys.exit(0 if success else 1)
         else:
             print("ERROR: No message provided for test")
             sys.exit(1)
-    
+
     stop_event = threading.Event()
 
     def _handle_stop(signum, frame):
