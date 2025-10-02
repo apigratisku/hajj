@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Telegram Notification Scheduler – Service-safe (NSSM/Windows)
+- AFTER-only reminders: T+3h, T+4h, T+4h30m, T+4h50m
 - Rotating log file (UTF-8)
 - Graceful shutdown via SIGTERM/SIGINT
 - Robust requests with retries
@@ -62,10 +63,23 @@ AFTER_MILESTONES: List[Tuple[int, str]] = [
 logger = logging.getLogger(APP_NAME)
 logger.setLevel(logging.INFO)
 
+# Pastikan folder log ada jika LOG_FILE mengandung path
+try:
+    _abs_log_path = os.path.abspath(LOG_FILE)
+    _log_dir = os.path.dirname(_abs_log_path)
+    if _log_dir and not os.path.exists(_log_dir):
+        os.makedirs(_log_dir, exist_ok=True)
+except Exception:
+    pass
+
 # Rotating file handler (UTF-8)
-file_handler = RotatingFileHandler(LOG_FILE, maxBytes=LOG_MAX_BYTES, backupCount=LOG_BACKUPS, encoding="utf-8")
-file_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
-logger.addHandler(file_handler)
+try:
+    file_handler = RotatingFileHandler(LOG_FILE, maxBytes=LOG_MAX_BYTES, backupCount=LOG_BACKUPS, encoding="utf-8")
+    file_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+    logger.addHandler(file_handler)
+except Exception as e:
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+    logger.warning(f"Gagal inisialisasi RotatingFileHandler: {e}")
 
 # Console handler opsional (hanya jika ada TTY, agar tidak error di service)
 if sys.stdout and hasattr(sys.stdout, "isatty") and sys.stdout.isatty():
@@ -138,10 +152,43 @@ class TelegramNotifier:
         jam_sistem = schedule_data.get('jam_sistem', '')
         jam_mekkah = schedule_data.get('jam_mekkah', '')
 
-        try:
-            jam_display = datetime.strptime(jam, '%H:%M:%S').strftime('%H:%M')
-        except Exception:
-            jam_display = jam
+        # Format jam ke AM/PM seperti di API PHP
+        def format_time_ampm(time_str: str) -> str:
+            """Convert time string to AM/PM format like PHP date('h:i A')"""
+            try:
+                # Handle both HH:MM:SS and HH:MM formats
+                if len(time_str) == 8:  # HH:MM:SS
+                    dt = datetime.strptime(time_str, '%H:%M:%S')
+                elif len(time_str) == 5:  # HH:MM
+                    dt = datetime.strptime(time_str, '%H:%M')
+                else:
+                    return time_str
+                
+                # Format to 12-hour with AM/PM (like PHP date('h:i A'))
+                return dt.strftime('%I:%M %p').replace('AM', 'AM').replace('PM', 'PM')
+            except Exception:
+                return time_str
+
+        # Calculate jam_mekkah if not provided (jam_sistem + 5 hours)
+        if not jam_mekkah and jam:
+            try:
+                if len(jam) == 8:  # HH:MM:SS
+                    dt = datetime.strptime(jam, '%H:%M:%S')
+                elif len(jam) == 5:  # HH:MM
+                    dt = datetime.strptime(jam, '%H:%M')
+                else:
+                    dt = datetime.strptime(jam, '%H:%M:%S')
+                
+                # Add 5 hours for Mecca time
+                mecca_dt = dt + timedelta(hours=5)
+                jam_mekkah = mecca_dt.strftime('%I:%M %p').replace('AM', 'AM').replace('PM', 'PM')
+            except Exception:
+                jam_mekkah = format_time_ampm(jam)
+
+        # Use provided jam_sistem or format from jam
+        if not jam_sistem:
+            jam_sistem = format_time_ampm(jam)
+
         try:
             tanggal_display = datetime.strptime(tanggal, '%Y-%m-%d').strftime('%d %B %Y')
         except Exception:
@@ -150,7 +197,7 @@ class TelegramNotifier:
         message = (
             f"🔔 <b>PENGINGAT • {alert_label}</b>\n"
             f"📅 <b>Tanggal:</b> {tanggal_display}\n"
-            f"🕐 <b>Jam Sistem:</b> {jam_sistem or jam_display}\n"
+            f"🕐 <b>Jam Sistem:</b> {jam_sistem}\n"
             f"🕐 <b>Jam Mekkah:</b> {jam_mekkah}\n\n"
             f"📊 <b>STATISTIK PESERTA</b>\n"
             f"👥 Total: <b>{total_peserta}</b>\n"
@@ -261,26 +308,154 @@ class HajjAPIClient:
         return []
 
     def get_pending_barcode_data(self, tanggal: str, jam: str) -> Dict[str, Any]:
-        """Mengambil data pending barcode untuk jadwal tertentu"""
+        """
+        Mengambil data pending barcode untuk jadwal tertentu dan MENORMALKAN
+        output ke dict ringkas agar caller bisa selalu pakai .get(...)
+        """
         try:
             url = f"{self.config.base_url}/api/pending-barcode"
             params = {"tanggal": tanggal, "jam": jam}
             data = self._fetch(url, params)
             if data.get("status") == "success":
                 logger.info(f"Pending barcode API OK - {tanggal} {jam}")
-                # Kembalikan payload data inti agar cocok dengan build_alert_message
-                return data.get("data", {}) or {}
+                payload = data.get("data", {})
+
+                # Jika API sudah mengembalikan ringkasan dict, pastikan key penting ada
+                if isinstance(payload, dict):
+                    payload.setdefault("tanggal", tanggal)
+                    payload.setdefault("jam", jam)
+                    payload.setdefault("count_total", payload.get("count_total", 0))
+                    payload.setdefault("count_tidak_ada_barcode", payload.get("count_tidak_ada_barcode", 0))
+                    payload.setdefault("count_barcode_lengkap", payload.get("count_barcode_lengkap", 0))
+                    # opsional: jam_sistem / jam_mekkah jika tersedia dari API
+                    payload.setdefault("jam_sistem", payload.get("jam_sistem", ""))
+                    payload.setdefault("jam_mekkah", payload.get("jam_mekkah", ""))
+                    return payload
+
+                # Jika API mengembalikan LIST, rangkum jadi dict ringkas
+                if isinstance(payload, list):
+                    total = len(payload)
+                    tanpa = 0
+                    lengkap = 0
+                    for item in payload:
+                        if isinstance(item, dict):
+                            has_barcode = bool(
+                                item.get("barcode") or
+                                item.get("barcode_url") or
+                                item.get("has_barcode")
+                            )
+                            if has_barcode:
+                                lengkap += 1
+                            else:
+                                tanpa += 1
+                        else:
+                            # item bukan dict → anggap belum barcode
+                            tanpa += 1
+
+                    # Format jam ke AM/PM seperti di API PHP
+                    def format_time_ampm(time_str: str) -> str:
+                        """Convert time string to AM/PM format like PHP date('h:i A')"""
+                        try:
+                            if len(time_str) == 8:  # HH:MM:SS
+                                dt = datetime.strptime(time_str, '%H:%M:%S')
+                            elif len(time_str) == 5:  # HH:MM
+                                dt = datetime.strptime(time_str, '%H:%M')
+                            else:
+                                return time_str
+                            
+                            return dt.strftime('%I:%M %p').replace('AM', 'AM').replace('PM', 'PM')
+                        except Exception:
+                            return time_str
+
+                    # Calculate jam_mekkah (jam_sistem + 5 hours)
+                    jam_mekkah = ""
+                    try:
+                        if len(jam) == 8:  # HH:MM:SS
+                            dt = datetime.strptime(jam, '%H:%M:%S')
+                        elif len(jam) == 5:  # HH:MM
+                            dt = datetime.strptime(jam, '%H:%M')
+                        else:
+                            dt = datetime.strptime(jam, '%H:%M:%S')
+                        
+                        # Add 5 hours for Mecca time
+                        mecca_dt = dt + timedelta(hours=5)
+                        jam_mekkah = mecca_dt.strftime('%I:%M %p').replace('AM', 'AM').replace('PM', 'PM')
+                    except Exception:
+                        jam_mekkah = format_time_ampm(jam)
+
+                    return {
+                        "tanggal": tanggal,
+                        "jam": jam,
+                        "count_total": total,
+                        "count_tidak_ada_barcode": tanpa,
+                        "count_barcode_lengkap": lengkap,
+                        "jam_sistem": format_time_ampm(jam),
+                        "jam_mekkah": jam_mekkah,
+                        "raw_list": payload,  # opsional untuk debugging
+                    }
+
+                # Bentuk tidak dikenali → kembalikan dict kosong standar
+                return {
+                    "tanggal": tanggal,
+                    "jam": jam,
+                    "count_total": 0,
+                    "count_tidak_ada_barcode": 0,
+                    "count_barcode_lengkap": 0,
+                    "jam_sistem": "",
+                    "jam_mekkah": "",
+                }
+
             logger.error(f"API error: {data.get('message', 'Unknown error')}")
         except Exception as e:
             logger.error(f"Error saat mengakses API pending barcode: {e}")
-        return {}
+
+        # Fallback kalau error - format jam ke AM/PM
+        def format_time_ampm(time_str: str) -> str:
+            """Convert time string to AM/PM format like PHP date('h:i A')"""
+            try:
+                if len(time_str) == 8:  # HH:MM:SS
+                    dt = datetime.strptime(time_str, '%H:%M:%S')
+                elif len(time_str) == 5:  # HH:MM
+                    dt = datetime.strptime(time_str, '%H:%M')
+                else:
+                    return time_str
+                
+                return dt.strftime('%I:%M %p').replace('AM', 'AM').replace('PM', 'PM')
+            except Exception:
+                return time_str
+
+        # Calculate jam_mekkah (jam_sistem + 5 hours)
+        jam_mekkah = ""
+        try:
+            if len(jam) == 8:  # HH:MM:SS
+                dt = datetime.strptime(jam, '%H:%M:%S')
+            elif len(jam) == 5:  # HH:MM
+                dt = datetime.strptime(jam, '%H:%M')
+            else:
+                dt = datetime.strptime(jam, '%H:%M:%S')
+            
+            # Add 5 hours for Mecca time
+            mecca_dt = dt + timedelta(hours=5)
+            jam_mekkah = mecca_dt.strftime('%I:%M %p').replace('AM', 'AM').replace('PM', 'PM')
+        except Exception:
+            jam_mekkah = format_time_ampm(jam)
+
+        return {
+            "tanggal": tanggal,
+            "jam": jam,
+            "count_total": 0,
+            "count_tidak_ada_barcode": 0,
+            "count_barcode_lengkap": 0,
+            "jam_sistem": format_time_ampm(jam),
+            "jam_mekkah": jam_mekkah,
+        }
 
 # =========================
 # State Anti-Duplikat & Reminder
 # =========================
 @dataclass
 class ScheduleFlags:
-    # flag lama dibiarkan (tidak dipakai lagi untuk before)
+    # flag legacy (tidak dipakai untuk BEFORE)
     sent_2h: bool = False
     sent_1h: bool = False
     sent_30m: bool = False
@@ -288,7 +463,7 @@ class ScheduleFlags:
     reminder_active: bool = False
     last_reminder_minute: int = -1
     completed: bool = False
-    # penanda terkirim milestone AFTER (key=menit, value=True jika sudah terkirim)
+    # penanda terkirim milestone AFTER (key=menit)
     after_sent_map: Dict[int, bool] = field(default_factory=dict)
 
 class NotificationState:
@@ -308,7 +483,7 @@ class NotificationState:
         return self.get(tanggal, jam).completed
 
 # =========================
-# Scheduler Utama
+# Scheduler Utama (AFTER-only)
 # =========================
 class NotificationScheduler:
     def __init__(self, stop_event: threading.Event):
@@ -342,12 +517,11 @@ class NotificationScheduler:
         schedule.every().day.at("08:00").do(self.send_daily_summary).tag("daily")
         logger.info(f"Jadwal notifikasi aktif (TZ={self.timezone_name})")
 
-    # Core logic (AFTER-only)
+    # Core logic AFTER-only
     def check_alert_window(self):
         now = self.get_current_time()
 
-        # Penting: cek kemarin, hari ini, besok
-        # agar jadwal lewat tengah malam tetap terjangkau untuk T+290
+        # Cek kemarin, hari ini, besok agar T+290 bisa ter-cover lintas hari
         for days_offset in (-1, 0, 1):
             target_date = now + timedelta(days=days_offset)
             tanggal = target_date.strftime("%Y-%m-%d")
@@ -369,19 +543,18 @@ class NotificationScheduler:
                         sched_dt = self.parse_schedule_dt(tgl, jam)
                     except Exception:
                         logger.error(f"Format tanggal/jam tidak valid: {tgl} {jam}")
-                        # tandai completed supaya tidak diproses terus-menerus
                         flags.completed = True
                         continue
 
                     mins = self.minutes_to_schedule(sched_dt, now)
 
-                    # Hanya proses SETELAH jadwal (AFTER-only)
+                    # AFTER-only: hanya proses kalau sudah lewat (mins <= 0)
                     if mins > 0:
-                        # sebelum jadwal: lewati (tidak ada alert T-)
                         continue
 
                     minutes_after = -mins  # menit sejak H lewat (positif)
-                    # Ambil data pending barcode untuk jadwal ini
+
+                    # Ambil ringkasan pending barcode (sudah dinormalisasi ke dict)
                     pending_data = self.hajj_client.get_pending_barcode_data(tgl, jam)
                     no_barcode = pending_data.get("count_tidak_ada_barcode", 0) > 0
 
