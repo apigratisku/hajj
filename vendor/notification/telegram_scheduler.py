@@ -197,8 +197,7 @@ class TelegramNotifier:
         message = (
             f"🔔 <b>PENGINGAT • {alert_label}</b>\n"
             f"📅 <b>Tanggal:</b> {tanggal_display}\n"
-            f"🕐 <b>Jam Sistem:</b> {jam_sistem}\n"
-            f"🕐 <b>Jam Mekkah:</b> {jam_mekkah}\n\n"
+            f"🕐 <b>Jam Penjadwalan:</b> {jam_sistem}\n"
             f"📊 <b>STATISTIK PESERTA</b>\n"
             f"👥 Total: <b>{total_peserta}</b>\n"
             f"✅ Dengan Barcode: <b>{dengan_barcode}</b>\n"
