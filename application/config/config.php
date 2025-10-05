@@ -23,7 +23,11 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 | a PHP script and you can easily do that on your own.
 |
 */
+<<<<<<< HEAD
 if ($_SERVER['HTTP_HOST'] === 'localhost' || $_SERVER['HTTP_HOST'] === '127.0.0.1' || $_SERVER['HTTP_HOST'] === '10.10.10.17' || $_SERVER['HTTP_HOST'] === '10.10.252.170' || $_SERVER['HTTP_HOST'] === '192.168.11.173' || $_SERVER['HTTP_HOST'] === '10.10.252.5') {
+=======
+if ($_SERVER['HTTP_HOST'] === 'localhost' || $_SERVER['HTTP_HOST'] === '127.0.0.1' || $_SERVER['HTTP_HOST'] === '10.10.10.17' || $_SERVER['HTTP_HOST'] === '10.10.10.20' || $_SERVER['HTTP_HOST'] === '10.10.252.170' || $_SERVER['HTTP_HOST'] === '192.168.223.224' || $_SERVER['HTTP_HOST'] === '192.168.223.226') {
+>>>>>>> 76d9ab062728ba99f36c4a784e65cba7559e1b5e
     $config['base_url'] = 'http://' . $_SERVER['HTTP_HOST'] . '/hajj/';
 } else {
     $config['base_url'] = 'https://' . $_SERVER['HTTP_HOST'] . '/hajj/';
