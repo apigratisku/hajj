@@ -448,7 +448,7 @@
                                                 <div class="mobile-barcode-preview" style="display: none;">
                                                     <img class="barcode-preview-img" src="" alt="Preview" style="max-width: 60px; max-height: 45px;">
                                                 </div>
-                                                <button type="button" class="mobile-table-btn mobile-table-btn-danger barcode-remove-btn" style="display: none;">
+                                                <button type="button" class="mobile-table-btn mobile-table-btn-danger barcode-remove-btn" style="display: none;" onclick="removeBarcodeImage(this)">
                                                         <i class="fas fa-trash"></i>
                                                     </button>
                                             </div>
@@ -517,6 +517,9 @@
                                             <td class="col-aksi">
                                                 <button class="mobile-table-btn mobile-table-btn-edit btn-edit" onclick="toggleEditMobileTable(this)">
                                                     <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="mobile-table-btn mobile-table-btn-warning btn-remove-schedule" onclick="removeSchedule(<?= $p->id ?>)" title="Remove Tanggal & Jam">
+                                                    <i class="fas fa-calendar-times"></i>
                                                 </button>
                                                 <button class="mobile-table-btn mobile-table-btn-save btn-save" style="display:none;" onclick="saveRowMobileTable(this)">
                                                     <i class="fas fa-save"></i>
@@ -634,7 +637,7 @@
                                             <div class="barcode-preview mt-2" style="display: none;">
                                                 <img class="barcode-preview-img img-thumbnail" src="" alt="Preview" style="max-width: 100px; max-height: 75px;">
                                             </div>
-                                            <button type="button" class="btn btn-sm btn-danger mt-1 barcode-remove-btn" style="display: none;">
+                                            <button type="button" class="btn btn-sm btn-danger mt-1 barcode-remove-btn" style="display: none;" onclick="removeBarcodeImage(this)">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                         </div>
@@ -701,6 +704,9 @@
                                         <td class="text-center aksi"  style="white-space: nowrap;width: auto;">
                                             <button class="btn btn-sm btn-brown btn-edit" data-bs-toggle="tooltip" title="Edit" onclick="toggleEdit(this)">
                                                 <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-warning btn-remove-schedule" data-bs-toggle="tooltip" title="Remove Tanggal & Jam" onclick="removeSchedule(<?= $p->id ?>)">
+                                                <i class="fas fa-calendar-times"></i>
                                             </button>
                                             <button class="btn btn-sm btn-success btn-save" data-bs-toggle="tooltip" title="Simpan" style="display:none;" onclick="saveRow(this)">
                                                 <i class="fas fa-save"></i>
@@ -1381,6 +1387,11 @@
 
 .mobile-table-btn-delete {
     background: var(--danger-color);
+    color: white;
+}
+
+.mobile-table-btn-warning {
+    background: var(--warning-color);
     color: white;
 }
 
@@ -3994,6 +4005,41 @@ function deleteData(id) {
             
             // Perform delete with redirect
             window.location.href = '<?= base_url('database/delete/') ?>' + id + '?redirect=' + encodeURIComponent(redirectUrl);
+        }
+    }
+}
+
+// Remove schedule (tanggal & jam) function
+function removeSchedule(id) {
+    if (confirm('Apakah Anda yakin ingin menghapus tanggal dan jam untuk data ini?')) {
+        // Get current filters from URL
+        const currentUrl = new URL(window.location.href);
+        const params = new URLSearchParams(currentUrl.search);
+        
+        // Build redirect URL with current filters
+        let redirectUrl = '<?= base_url('database/index') ?>';
+        const queryParams = [];
+        
+        // Add all current filters
+        ['nama', 'nomor_paspor', 'no_visa', 'flag_doc', 'tanggaljam', 'status', 'gender', 'page'].forEach(param => {
+            if (params.has(param) && params.get(param)) {
+                queryParams.push(`${param}=${encodeURIComponent(params.get(param))}`);
+            }
+        });
+        
+        if (queryParams.length > 0) {
+            redirectUrl += '?' + queryParams.join('&');
+        }
+        
+        // Show loading state
+        const button = event.target.closest('button');
+        if (button) {
+            const originalHTML = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            
+            // Perform remove schedule with redirect
+            window.location.href = '<?= base_url('database/remove_schedule/') ?>' + id + '?redirect=' + encodeURIComponent(redirectUrl);
         }
     }
 }

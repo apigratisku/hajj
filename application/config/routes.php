@@ -65,6 +65,7 @@ $route['database/download_rejected_data'] = 'database/download_rejected_data';
 $route['database/download_failed_import'] = 'database/download_failed_import';
 $route['database/clear_rejected_data'] = 'database/clear_rejected_data';
 $route['database/delete_rejected/(:num)'] = 'database/delete_rejected/$1';
+$route['database/remove_schedule/(:num)'] = 'database/remove_schedule/$1';
 $route['database/download_barcode_attachments'] = 'database/download_barcode_attachments';
 $route['todo'] = 'todo';
 

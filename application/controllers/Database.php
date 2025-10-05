@@ -410,6 +410,55 @@ class Database extends CI_Controller {
         redirect($redirect_url);
     }   
     
+    public function remove_schedule($id) {
+        // Get peserta data before update
+        $peserta = $this->transaksi_model->get_by_id($id);
+        
+        if ($peserta) {
+            // Update tanggal and jam to NULL
+            $data = array(
+                'tanggal' => NULL,
+                'jam' => NULL,
+                'updated_at' => date('Y-m-d H:i:s'),
+                'history_update' => $this->session->userdata('user_id') ?: null
+            );
+            
+            $result = $this->transaksi_model->update($id, $data);
+            
+            if ($result) {
+                // Log activity
+                log_peserta_activity($id, 'update', 'Menghapus tanggal dan jam jadwal: ' . $peserta->nama, (array)$peserta, $data);
+                
+                // Kirim notifikasi Telegram untuk remove schedule
+                if($this->session->userdata('username') != 'adhit'):
+                    $this->telegram_notification->peserta_crud_notification('update', $peserta->nama, 'ID: ' . $id . ' (Remove Schedule)');
+                endif;
+                
+                $this->session->set_flashdata('success', 'Tanggal dan jam jadwal berhasil dihapus');
+            } else {
+                $this->session->set_flashdata('error', 'Gagal menghapus tanggal dan jam jadwal');
+            }
+        } else {
+            $this->session->set_flashdata('error', 'Data peserta tidak ditemukan');
+        }
+        
+        // Check if redirect URL is provided
+        $redirect_url = $this->input->get('redirect');
+        if ($redirect_url) {
+            // Decode the redirect URL
+            $redirect_url = urldecode($redirect_url);
+            
+            // Validate that the redirect URL is safe (only allow redirect to our own domain)
+            if (strpos($redirect_url, base_url()) === 0 || strpos($redirect_url, '/database/') === 0) {
+                redirect($redirect_url);
+            }
+        }
+        
+        // Fallback: Redirect back to previous page with filters
+        $redirect_url = $this->get_redirect_url_with_filters();
+        redirect($redirect_url);
+    }
+    
     
 
     public function edit($id) {
