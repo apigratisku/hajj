@@ -23,21 +23,47 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 | a PHP script and you can easily do that on your own.
 |
 */
-if (
-    $_SERVER['HTTP_HOST'] === 'localhost' ||
-    $_SERVER['HTTP_HOST'] === '127.0.0.1' ||
-    $_SERVER['HTTP_HOST'] === '10.10.10.17' ||
-    $_SERVER['HTTP_HOST'] === '10.10.10.20' ||
-    $_SERVER['HTTP_HOST'] === '10.10.252.170' ||
-    $_SERVER['HTTP_HOST'] === '192.168.223.224' ||
-    $_SERVER['HTTP_HOST'] === '192.168.223.226' ||
-    $_SERVER['HTTP_HOST'] === '192.168.11.173' ||
-    $_SERVER['HTTP_HOST'] === '10.10.252.5'
+// ================== BASE URL DINAMIS (CI3) ==================
+$scheme = 'http';
+if ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+    || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443)
+    || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && ($_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https'))
 ) {
-    $config['base_url'] = 'http://' . $_SERVER['HTTP_HOST'] . '/hajj/';
-} else {
-    $config['base_url'] = 'https://' . $_SERVER['HTTP_HOST'] . '/hajj/';
+    $scheme = 'https';
 }
+
+// Tentukan host (utamakan header proxy jika ada)
+if (!empty($_SERVER['HTTP_X_FORWARDED_HOST'])) {
+    $host = $_SERVER['HTTP_X_FORWARDED_HOST'];
+} elseif (!empty($_SERVER['HTTP_HOST'])) {
+    $host = $_SERVER['HTTP_HOST'];
+} elseif (!empty($_SERVER['SERVER_NAME'])) {
+    $host = $_SERVER['SERVER_NAME'];
+} else {
+    $host = 'localhost'; // fallback CLI
+}
+
+// Sertakan port jika non-standar
+$port = '';
+if (!empty($_SERVER['HTTP_X_FORWARDED_PORT'])) {
+    $fwd_port = (string)$_SERVER['HTTP_X_FORWARDED_PORT'];
+    if (!(($scheme === 'http' && $fwd_port === '80') || ($scheme === 'https' && $fwd_port === '443'))) {
+        $port = ':' . $fwd_port;
+    }
+} elseif (!empty($_SERVER['SERVER_PORT'])) {
+    $srv_port = (string)$_SERVER['SERVER_PORT'];
+    if (!(($scheme === 'http' && $srv_port === '80') || ($scheme === 'https' && $srv_port === '443'))) {
+        $port = ':' . $srv_port;
+    }
+}
+
+// Dapatkan path aplikasi (subfolder)
+$script_name = isset($_SERVER['SCRIPT_NAME']) ? $_SERVER['SCRIPT_NAME'] : '';
+$path = rtrim(str_replace(basename($script_name), '', $script_name), '/');
+
+// Gabungkan & pastikan slash di akhir
+$config['base_url'] = $scheme . '://' . $host . $port . $path . '/';
+// ============================================================
 
 /*
 |--------------------------------------------------------------------------

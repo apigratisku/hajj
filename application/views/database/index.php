@@ -3986,7 +3986,7 @@ function deleteData(id) {
         const queryParams = [];
         
         // Add all current filters
-        ['nama', 'nomor_paspor', 'no_visa', 'flag_doc', 'tanggaljam', 'status', 'gender', 'page'].forEach(param => {
+        ['nama', 'nomor_paspor', 'no_visa', 'flag_doc', 'tanggaljam', 'status', 'gender', 'page', 'status_jadwal', 'tanggal_pengerjaan', 'history_done', 'nama_travel', 'sortir_waktu_start', 'sortir_waktu_end', 'startDate', 'endDate', 'has_barcode'].forEach(param => {
             if (params.has(param) && params.get(param)) {
                 queryParams.push(`${param}=${encodeURIComponent(params.get(param))}`);
             }
@@ -4021,7 +4021,7 @@ function removeSchedule(id) {
         const queryParams = [];
         
         // Add all current filters
-        ['nama', 'nomor_paspor', 'no_visa', 'flag_doc', 'tanggaljam', 'status', 'gender', 'page'].forEach(param => {
+        ['nama', 'nomor_paspor', 'no_visa', 'flag_doc', 'tanggaljam', 'status', 'gender', 'page', 'status_jadwal', 'tanggal_pengerjaan', 'history_done', 'nama_travel', 'sortir_waktu_start', 'sortir_waktu_end', 'startDate', 'endDate', 'has_barcode'].forEach(param => {
             if (params.has(param) && params.get(param)) {
                 queryParams.push(`${param}=${encodeURIComponent(params.get(param))}`);
             }
