@@ -2249,11 +2249,14 @@ class Database extends CI_Controller {
                     $status_value = 2;
                 }else{
                     $status_value = 0;
-                }
+                }   
+                //Set Waktu Import
+                $now = new DateTime('now', new DateTimeZone('Asia/Hong_Kong'));
+                $waktu_import = $now->format('Y-m-d');
                 // Ambil tanggal & jam dari kolom Excel (misal index 8 & 9)
                 $tanggal_excel = trim($sheet->getCellByColumnAndRow(9, $row)->getValue());
                 $jam_excel = trim($sheet->getCellByColumnAndRow(10, $row)->getValue());
-                $flag_doc = trim($sheet->getCellByColumnAndRow(11, $row)->getValue());
+                $flag_doc = trim($sheet->getCellByColumnAndRow(11, $row)->getValue()).' - '.$waktu_import;
                 $nama_travel = trim($sheet->getCellByColumnAndRow(12, $row)->getValue());
                 
                 // Skip empty rows
@@ -4748,6 +4751,26 @@ class Database extends CI_Controller {
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
             ]);
+        }
+    }
+
+    public function get_flag_doc_by_travel() {
+        // Simple and clean approach for Database (Menu Peserta)
+        $this->output->set_content_type('application/json');
+        
+        $travel = $this->input->get('travel');
+        
+        if (empty($travel)) {
+            echo json_encode(['success' => true, 'data' => []]);
+            return;
+        }
+        
+        try {
+            // Get flag_doc options filtered by travel (all status for Database menu)
+            $flag_doc_list = $this->transaksi_model->get_flag_doc_by_travel_all_status($travel);
+            echo json_encode(['success' => true, 'data' => $flag_doc_list]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }
     }
 } 

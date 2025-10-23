@@ -1170,6 +1170,69 @@ class Todo extends CI_Controller {
     /**
      * Delete multiple peserta records
      */
+    public function search_flag_doc() {
+        // Check if user is logged in
+        if (!$this->session->userdata('logged_in')) {
+            $this->output->set_status_header(401);
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            return;
+        }
+        
+        // Check if it's an AJAX request
+        if (!$this->input->is_ajax_request()) {
+            $this->output->set_status_header(400);
+            echo json_encode(['success' => false, 'message' => 'Invalid request']);
+            return;
+        }
+        
+        $search_term = $this->input->get('q');
+        
+        if (empty($search_term)) {
+            $this->output->set_content_type('application/json');
+            echo json_encode(['success' => true, 'data' => []]);
+            return;
+        }
+        
+        try {
+            // Get filtered flag_doc options
+            $flag_doc_list = $this->transaksi_model->search_flag_doc($search_term);
+            
+            $this->output->set_content_type('application/json');
+            echo json_encode([
+                'success' => true,
+                'data' => $flag_doc_list
+            ]);
+            
+        } catch (Exception $e) {
+            log_message('error', 'Error in Todo search_flag_doc: ' . $e->getMessage());
+            $this->output->set_status_header(500);
+            $this->output->set_content_type('application/json');
+            echo json_encode([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat mencari flag dokumen: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    public function get_flag_doc_by_travel() {
+        // Simple and clean approach
+        $this->output->set_content_type('application/json');
+        
+        $travel = $this->input->get('travel');
+        
+        if (empty($travel)) {
+            echo json_encode(['success' => true, 'data' => []]);
+            return;
+        }
+        
+        try {
+            $flag_doc_list = $this->transaksi_model->get_flag_doc_by_travel($travel);
+            echo json_encode(['success' => true, 'data' => $flag_doc_list]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
+    }
+
     public function delete_multiple() {
         // Check if user is logged in
         if (!$this->session->userdata('logged_in')) {

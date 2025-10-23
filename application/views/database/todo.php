@@ -24,15 +24,20 @@
                                     </div>
                                     
                                     <div class="form-group">
-                                        <select name="flag_doc" class="form-select mobile-input">
-                                            <option value="">Semua Flag Dokumen</option>
-                                            <option value="null" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === 'null') ? 'selected' : '' ?>>Tanpa Flag Dokumen</option>
-                                            <?php if (!empty($flag_doc_list)): foreach ($flag_doc_list as $flag): ?>
-                                                <option value="<?= htmlspecialchars($flag->flag_doc) ?>" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === $flag->flag_doc) ? 'selected' : '' ?>>
-                                                    <?= htmlspecialchars($flag->flag_doc) ?>
-                                                </option>
-                                            <?php endforeach; endif; ?>
-                                        </select>
+                                        <div class="searchable-select-wrapper" style="position: relative;">
+                                            <select name="flag_doc" id="flag_doc_mobile_todo" class="form-select mobile-input searchable-select">
+                                                <option value="">Semua Flag Dokumen</option>
+                                                <option value="null" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === 'null') ? 'selected' : '' ?>>Tanpa Flag Dokumen</option>
+                                                <?php if (!empty($flag_doc_list)): foreach ($flag_doc_list as $flag): ?>
+                                                    <option value="<?= htmlspecialchars($flag->flag_doc) ?>" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === $flag->flag_doc) ? 'selected' : '' ?>>
+                                                        <?= htmlspecialchars($flag->flag_doc) ?>
+                                                    </option>
+                                                <?php endforeach; endif; ?>
+                                            </select>
+                                            <button type="button" class="btn-clear-flag-doc" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #666; font-size: 16px; cursor: pointer; z-index: 10; display: none;" title="Clear">
+                                                ×
+                                            </button>
+                                        </div>
                                     </div>
                                     <div class="form-group">
                                         <input type="text" name="nama" class="form-control mobile-input" placeholder="Nama Peserta">
@@ -70,15 +75,20 @@
                                 </div>
                                 
                                 <div class="col-md-1">
-                                    <select name="flag_doc" class="form-select form-control-sm">
-                                        <option value="">Semua Flag Dokumen</option>
-                                        <option value="null" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === 'null') ? 'selected' : '' ?>>Tanpa Flag Dokumen</option>
-                                        <?php if (!empty($flag_doc_list)): foreach ($flag_doc_list as $flag): ?>
-                                            <option value="<?= htmlspecialchars($flag->flag_doc) ?>" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === $flag->flag_doc) ? 'selected' : '' ?>>
-                                                <?= htmlspecialchars($flag->flag_doc) ?>
-                                            </option>
-                                        <?php endforeach; endif; ?>
-                                    </select>
+                                    <div class="searchable-select-wrapper" style="position: relative;">
+                                        <select name="flag_doc" id="flag_doc_desktop_todo" class="form-select form-control-sm searchable-select">
+                                            <option value="">Semua Flag Dokumen</option>
+                                            <option value="null" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === 'null') ? 'selected' : '' ?>>Tanpa Flag Dokumen</option>
+                                            <?php if (!empty($flag_doc_list)): foreach ($flag_doc_list as $flag): ?>
+                                                <option value="<?= htmlspecialchars($flag->flag_doc) ?>" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === $flag->flag_doc) ? 'selected' : '' ?>>
+                                                    <?= htmlspecialchars($flag->flag_doc) ?>
+                                                </option>
+                                            <?php endforeach; endif; ?>
+                                        </select>
+                                        <button type="button" class="btn-clear-flag-doc" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #666; font-size: 14px; cursor: pointer; z-index: 10; display: none;" title="Clear">
+                                            ×
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="col-md-1">
                                     <input type="text" name="nama" class="form-control form-control-sm" placeholder="Nama Peserta">
@@ -1390,6 +1400,117 @@
     /* Searchable select styles */
     .flag-doc-select {
         position: relative;
+    }
+    
+    /* Searchable Select Styles */
+    .searchable-select {
+        position: relative;
+    }
+    
+    .searchable-select-wrapper {
+        position: relative;
+        display: inline-block;
+        width: 100%;
+    }
+    
+    .btn-clear-flag-doc {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: #666;
+        font-size: 16px;
+        cursor: pointer;
+        z-index: 10;
+        display: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-clear-flag-doc:hover {
+        background-color: #f8f9fa;
+        color: #dc3545;
+        transform: translateY(-50%) scale(1.1);
+    }
+    
+    .searchable-select-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 0.375rem;
+        background: white;
+        font-size: 0.875rem;
+        outline: none;
+    }
+    
+    .searchable-select-input:focus {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+    
+    .searchable-select-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #ced4da;
+        border-top: none;
+        border-radius: 0 0 0.375rem 0.375rem;
+        max-height: 400px;
+        overflow-y: auto;
+        overflow-x: visible;
+        white-space: normal;
+        z-index: 1000;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        display: none;
+        min-width: max-content;
+        width: auto;
+    }
+    
+    .searchable-select-option {
+        padding: 8px 12px;
+        cursor: pointer;
+        border-bottom: 1px solid #f0f0f0;
+        transition: background-color 0.2s;
+        font-size: 0.875rem;
+        white-space: normal;
+        word-wrap: break-word;
+        word-break: break-word;
+        overflow: visible;
+        text-overflow: unset;
+        min-width: max-content;
+        width: 100%;
+    }
+    
+    .searchable-select-option:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .searchable-select-option:last-child {
+        border-bottom: none;
+    }
+    
+    .searchable-select-option.highlighted {
+        background-color: #e3f2fd;
+    }
+    
+    .searchable-select-option.hidden {
+        display: none;
+    }
+    
+    .searchable-select-option.no-results {
+        color: #6c757d;
+        font-style: italic;
+        cursor: default;
+    }
+    
+    .searchable-select-option.no-results:hover {
+        background-color: transparent;
     }
     
     .flag-doc-select option {
@@ -2873,5 +2994,339 @@ function deleteMultipleRecords() {
 // Initialize delete button state on page load
 document.addEventListener('DOMContentLoaded', function() {
     updateDeleteButton();
+    initializeFlagDocSearchTodo();
 });
+
+// Searchable Select Functions for Todo
+function initializeFlagDocSearchTodo() {
+    const desktopSelect = document.getElementById('flag_doc_desktop_todo');
+    const mobileSelect = document.getElementById('flag_doc_mobile_todo');
+    
+    if (desktopSelect) {
+        setupSearchableSelectTodo(desktopSelect);
+    }
+    
+    if (mobileSelect) {
+        setupSearchableSelectTodo(mobileSelect);
+    }
+}
+
+function setupSearchableSelectTodo(selectElement) {
+    // Create wrapper
+    const wrapper = document.createElement('div');
+    wrapper.className = 'searchable-select-wrapper';
+    
+    // Create input
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'searchable-select-input';
+    input.placeholder = 'Cari Flag Dokumen...';
+    input.autocomplete = 'off';
+    
+    // Create dropdown
+    const dropdown = document.createElement('div');
+    dropdown.className = 'searchable-select-dropdown';
+    
+    // Create clear button
+    const clearButton = document.createElement('button');
+    clearButton.type = 'button';
+    clearButton.className = 'btn-clear-flag-doc';
+    clearButton.innerHTML = '×';
+    clearButton.title = 'Clear';
+    clearButton.style.cssText = 'position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #666; font-size: 16px; cursor: pointer; z-index: 10; display: none;';
+    
+    // Get current value
+    const currentValue = selectElement.value;
+    const currentText = selectElement.options[selectElement.selectedIndex]?.text || '';
+    
+    // Set initial input value
+    if (currentValue && currentValue !== '') {
+        input.value = currentText.trim();
+        clearButton.style.display = 'block';
+    }
+    
+    // Insert wrapper after select
+    selectElement.parentNode.insertBefore(wrapper, selectElement.nextSibling);
+    wrapper.appendChild(input);
+    wrapper.appendChild(dropdown);
+    wrapper.appendChild(clearButton);
+    
+    // Hide original select
+    selectElement.style.display = 'none';
+    
+    // Store original options for restoration
+    const originalOptions = Array.from(selectElement.options).map(option => ({
+        value: option.value,
+        text: option.textContent
+    }));
+    
+    // Function to update flag_doc options based on travel selection
+    function updateFlagDocOptions() {
+        // Try to find both mobile and desktop travel selects
+        const travelSelectMobile = document.querySelector('.mobile-form select[name="nama_travel"]');
+        const travelSelectDesktop = document.querySelector('.desktop-form select[name="nama_travel"]');
+        
+        // Get the active travel select (the one that's visible)
+        const travelSelect = travelSelectMobile && travelSelectMobile.offsetParent !== null ? travelSelectMobile : travelSelectDesktop;
+        const selectedTravel = travelSelect ? travelSelect.value : '';
+        
+        console.log('Mobile travel select found:', !!travelSelectMobile); // Debug log
+        console.log('Desktop travel select found:', !!travelSelectDesktop); // Debug log
+        console.log('Active travel select found:', !!travelSelect); // Debug log
+        console.log('Travel changed to:', selectedTravel); // Debug log
+        
+        // Clear existing options except first two (Semua Flag Dokumen and Tanpa Flag Dokumen)
+        while (selectElement.children.length > 2) {
+            selectElement.removeChild(selectElement.lastChild);
+        }
+        
+        // Reset input value
+        input.value = '';
+        selectElement.value = '';
+        
+        // Add travel-specific flag_doc options via AJAX
+        if (selectedTravel && selectedTravel !== '') {
+            console.log('🔄 Step 1: Travel selected:', selectedTravel);
+            console.log('📋 Menu: Todo - Status 0 Only');
+            
+            // Step 2: AJAX call
+            fetch(`<?= base_url('todo/get_flag_doc_by_travel') ?>?travel=${encodeURIComponent(selectedTravel)}`)
+            .then(response => {
+                console.log('🔄 Step 2: AJAX response status:', response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('🔄 Step 3: Response data:', data);
+                
+                if (data.success && data.data && data.data.length > 0) {
+                    // Step 3: Update dropdown
+                    data.data.forEach(flag => {
+                        const option = document.createElement('option');
+                        option.value = flag.flag_doc;
+                        option.textContent = flag.flag_doc;
+                        selectElement.appendChild(option);
+                    });
+                    console.log('✅ Step 3: Added', data.data.length, 'flag_doc options (Status 0 Only)');
+                } else {
+                    console.log('⚠️ Step 3: No flag_doc data found for travel:', selectedTravel);
+                }
+                
+                // Always refresh dropdown
+                populateDropdownTodo(input.value.trim());
+            })
+            .catch(error => {
+                console.error('❌ AJAX Error:', error.message);
+                // Still refresh dropdown
+                populateDropdownTodo(input.value.trim());
+            });
+        } else {
+            console.log('🔄 Step 1: No travel selected, restoring all options');
+            // Restore all original options
+            originalOptions.forEach(optionData => {
+                if (optionData.value !== '' && optionData.value !== 'null') {
+                    const option = document.createElement('option');
+                    option.value = optionData.value;
+                    option.textContent = optionData.text;
+                    selectElement.appendChild(option);
+                }
+            });
+            populateDropdownTodo(input.value.trim());
+        }
+    }
+    
+    // Populate dropdown with options
+    function populateDropdownTodo(searchTerm = '') {
+        dropdown.innerHTML = '';
+        const options = Array.from(selectElement.options);
+        let visibleOptions = 0;
+        
+        options.forEach(option => {
+            const optionText = option.textContent;
+            const optionValue = option.value;
+            
+            // Skip if doesn't match search term
+            if (searchTerm && !optionText.toLowerCase().includes(searchTerm.toLowerCase())) {
+                return;
+            }
+            
+            const optionElement = document.createElement('div');
+            optionElement.className = 'searchable-select-option';
+            optionElement.textContent = optionText;
+            optionElement.dataset.value = optionValue;
+            
+            // Highlight current selection
+            if (optionValue === selectElement.value) {
+                optionElement.classList.add('highlighted');
+            }
+            
+            optionElement.addEventListener('click', () => {
+                selectElement.value = optionValue;
+                input.value = optionText.trim(); // Remove leading/trailing spaces
+                dropdown.style.display = 'none';
+                currentHighlight = -1;
+                
+                // Trigger change event
+                selectElement.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+            
+            dropdown.appendChild(optionElement);
+            visibleOptions++;
+        });
+        
+        // Show "no results" if no options match
+        if (visibleOptions === 0 && searchTerm) {
+            const noResults = document.createElement('div');
+            noResults.className = 'searchable-select-option no-results';
+            noResults.textContent = 'Tidak ada hasil';
+            dropdown.appendChild(noResults);
+        }
+    }
+    
+    let currentHighlight = -1;
+    let searchTimeout;
+    
+    // Input event handler
+    input.addEventListener('input', function() {
+        const query = this.value.trim();
+        
+        // Show/hide clear button based on input value
+        if (query.length > 0) {
+            clearButton.style.display = 'block';
+        } else {
+            clearButton.style.display = 'none';
+        }
+        
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            populateDropdownTodo(query);
+            dropdown.style.display = 'block';
+            currentHighlight = -1;
+        }, 150);
+    });
+    
+    // Focus event handler
+    input.addEventListener('focus', function() {
+        populateDropdownTodo(this.value.trim());
+        dropdown.style.display = 'block';
+        currentHighlight = -1;
+    });
+    
+    // Blur event handler
+    input.addEventListener('blur', function() {
+        setTimeout(() => {
+            dropdown.style.display = 'none';
+            currentHighlight = -1;
+        }, 200);
+    });
+    
+    // Keyboard navigation
+    input.addEventListener('keydown', function(e) {
+        const options = dropdown.querySelectorAll('.searchable-select-option:not(.no-results)');
+        
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            currentHighlight = Math.min(currentHighlight + 1, options.length - 1);
+            updateHighlightTodo(options);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            currentHighlight = Math.max(currentHighlight - 1, -1);
+            updateHighlightTodo(options);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (currentHighlight >= 0 && options[currentHighlight]) {
+                options[currentHighlight].click();
+            }
+        } else if (e.key === 'Escape') {
+            dropdown.style.display = 'none';
+            currentHighlight = -1;
+        }
+    });
+    
+    // Clear button event handler
+    clearButton.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Clear input and select
+        input.value = '';
+        selectElement.value = '';
+        
+        // Hide clear button
+        clearButton.style.display = 'none';
+        
+        // Reset dropdown
+        dropdown.style.display = 'none';
+        currentHighlight = -1;
+        
+        // Restore all original options
+        selectElement.innerHTML = '';
+        originalOptions.forEach(optionData => {
+            const option = document.createElement('option');
+            option.value = optionData.value;
+            option.textContent = optionData.text;
+            selectElement.appendChild(option);
+        });
+        
+        // Trigger change event
+        selectElement.dispatchEvent(new Event('change'));
+        
+        console.log('✅ Flag doc cleared (Todo)');
+    });
+    
+    // Update highlight
+    function updateHighlightTodo(options) {
+        options.forEach((option, index) => {
+            option.classList.toggle('highlighted', index === currentHighlight);
+        });
+    }
+    
+    // Click outside to close
+    document.addEventListener('click', function(e) {
+        if (!wrapper.contains(e.target)) {
+            dropdown.style.display = 'none';
+            currentHighlight = -1;
+        }
+    });
+    
+    // Listen for travel selection changes - use event delegation for better reliability
+    document.addEventListener('change', function(e) {
+        if (e.target.name === 'nama_travel') {
+            console.log('🔄 Step 1: Travel select changed via event delegation');
+            console.log('🔄 Step 1: Selected travel value:', e.target.value);
+            updateFlagDocOptions();
+        }
+    });
+    
+    // Also try direct listeners for both mobile and desktop as backup
+    const travelSelectMobile = document.querySelector('.mobile-form select[name="nama_travel"]');
+    const travelSelectDesktop = document.querySelector('.desktop-form select[name="nama_travel"]');
+    
+    if (travelSelectMobile) {
+        console.log('Mobile travel select found, adding direct event listener'); // Debug log
+        travelSelectMobile.addEventListener('change', function() {
+            console.log('Mobile travel select changed via direct listener'); // Debug log
+            console.log('Mobile travel value:', this.value); // Debug log
+            updateFlagDocOptions();
+        });
+    }
+    
+    if (travelSelectDesktop) {
+        console.log('Desktop travel select found, adding direct event listener'); // Debug log
+        travelSelectDesktop.addEventListener('change', function() {
+            console.log('Desktop travel select changed via direct listener'); // Debug log
+            console.log('Desktop travel value:', this.value); // Debug log
+            updateFlagDocOptions();
+        });
+    }
+    
+    if (!travelSelectMobile && !travelSelectDesktop) {
+        console.log('No travel selects found'); // Debug log
+    }
+    
+    // Initialize dropdown
+    populateDropdownTodo();
+}
 </script>

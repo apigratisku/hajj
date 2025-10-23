@@ -507,6 +507,46 @@ class Transaksi_model extends CI_Model {
         return $this->db->get()->result();
     }
     
+    public function search_flag_doc($search_term) {
+        $this->db->select('flag_doc, MAX(created_at) as created_at');
+        $this->db->from($this->table);
+        $this->db->where('flag_doc IS NOT NULL');
+        $this->db->where('flag_doc !=', '');
+        $this->db->where('status', 0);
+        $this->db->like('flag_doc', $search_term, 'both');
+        $this->db->group_by('flag_doc');
+        $this->db->order_by('created_at', 'DESC');
+        $this->db->limit(10); // Limit results to 10 for better performance
+        return $this->db->get()->result();
+    }
+    
+    public function get_flag_doc_by_travel($travel) {
+        // For Todo menu - only status = 0
+        $this->db->select('flag_doc');
+        $this->db->from($this->table);
+        $this->db->where('flag_doc IS NOT NULL');
+        $this->db->where('flag_doc !=', '');
+        $this->db->where('status', 0);
+        $this->db->where('nama_travel', $travel);
+        $this->db->group_by('flag_doc');
+        $this->db->order_by('flag_doc', 'ASC');
+        
+        return $this->db->get()->result();
+    }
+    
+    public function get_flag_doc_by_travel_all_status($travel) {
+        // For Database menu - all status (0, 1, 2)
+        $this->db->select('flag_doc');
+        $this->db->from($this->table);
+        $this->db->where('flag_doc IS NOT NULL');
+        $this->db->where('flag_doc !=', '');
+        $this->db->where('nama_travel', $travel);
+        $this->db->group_by('flag_doc');
+        $this->db->order_by('flag_doc', 'ASC');
+        
+        return $this->db->get()->result();
+    }
+    
     public function get_unique_tanggaljam() {
         $this->db->select("nama, CONCAT(tanggal, ' ', jam) AS tanggaljam");
         $this->db->from($this->table);
