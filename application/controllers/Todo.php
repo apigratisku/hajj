@@ -86,12 +86,12 @@ class Todo extends CI_Controller {
            
         }
         
-        // Provide flag_doc options for filter select
+        // Provide flag_doc options for filter select (only status = 0)
         $data['flag_doc_list'] = $this->transaksi_model->get_unique_flag_doc_todo();
         $data['tanggaljam_list'] = $this->transaksi_model->get_unique_tanggaljam();
         
-        // Get all unique nama_travel values for dropdown
-        $data['travel_list'] = $this->transaksi_model->get_unique_nama_travel();
+        // Get unique nama_travel values that have data with status = 0 for dropdown
+        $data['travel_list'] = $this->transaksi_model->get_unique_nama_travel_todo();
         
         // Get total count for pagination
         $total_rows = $this->transaksi_model->count_filtered_todo($filters);
@@ -1215,7 +1215,7 @@ class Todo extends CI_Controller {
     }
 
     public function get_flag_doc_by_travel() {
-        // Simple and clean approach
+        // Simple and clean approach for Todo menu
         $this->output->set_content_type('application/json');
         
         $travel = $this->input->get('travel');
@@ -1226,8 +1226,19 @@ class Todo extends CI_Controller {
         }
         
         try {
-            $flag_doc_list = $this->transaksi_model->get_flag_doc_by_travel($travel);
-            echo json_encode(['success' => true, 'data' => $flag_doc_list]);
+            // Simple query without complex error handling
+            $this->db->select('flag_doc');
+            $this->db->from('peserta');
+            $this->db->where('flag_doc IS NOT NULL');
+            $this->db->where('flag_doc !=', '');
+            $this->db->where('status', 0);
+            $this->db->where('nama_travel', $travel);
+            $this->db->group_by('flag_doc');
+            $this->db->order_by('flag_doc', 'ASC');
+            
+            $result = $this->db->get()->result();
+            echo json_encode(['success' => true, 'data' => $result]);
+            
         } catch (Exception $e) {
             echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }

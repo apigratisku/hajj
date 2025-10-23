@@ -522,6 +522,40 @@ class Transaksi_model extends CI_Model {
     
     public function get_flag_doc_by_travel($travel) {
         // For Todo menu - only status = 0
+        log_message('debug', 'get_flag_doc_by_travel called with travel: ' . $travel);
+        
+        // First, let's check what data exists for this travel
+        $this->db->select('nama_travel, status, flag_doc, COUNT(*) as count');
+        $this->db->from($this->table);
+        $this->db->where('nama_travel', $travel);
+        $this->db->where('flag_doc IS NOT NULL');
+        $this->db->where('flag_doc !=', '');
+        $this->db->group_by('nama_travel, status, flag_doc');
+        $debug_result = $this->db->get()->result();
+        log_message('debug', 'Debug - All data for travel ' . $travel . ': ' . json_encode($debug_result));
+        
+        // Now get the actual result for status = 0
+        $this->db->select('flag_doc');
+        $this->db->from($this->table);
+        $this->db->where('flag_doc IS NOT NULL');
+        $this->db->where('flag_doc !=', '');
+        $this->db->where('status', 0);
+        $this->db->where('nama_travel', $travel);
+        $this->db->group_by('flag_doc');
+        $this->db->order_by('flag_doc', 'ASC');
+        
+        $query = $this->db->get_compiled_select();
+        log_message('debug', 'get_flag_doc_by_travel query: ' . $query);
+        
+        $result = $this->db->get()->result();
+        log_message('debug', 'get_flag_doc_by_travel result count: ' . count($result));
+        log_message('debug', 'get_flag_doc_by_travel result: ' . json_encode($result));
+        
+        return $result;
+    }
+    
+    public function get_flag_doc_by_travel_todo($travel) {
+        // Simple function for Todo menu - only status = 0
         $this->db->select('flag_doc');
         $this->db->from($this->table);
         $this->db->where('flag_doc IS NOT NULL');
@@ -533,6 +567,20 @@ class Transaksi_model extends CI_Model {
         
         return $this->db->get()->result();
     }
+    
+    public function get_unique_nama_travel_todo() {
+        // Get unique nama_travel that have data with status = 0
+        $this->db->select('nama_travel');
+        $this->db->from($this->table);
+        $this->db->where('nama_travel IS NOT NULL');
+        $this->db->where('nama_travel !=', '');
+        $this->db->where('status', 0);
+        $this->db->group_by('nama_travel');
+        $this->db->order_by('nama_travel', 'ASC');
+        
+        return $this->db->get()->result();
+    }
+    
     
     public function get_flag_doc_by_travel_all_status($travel) {
         // For Database menu - all status (0, 1, 2)
