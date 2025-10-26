@@ -33,6 +33,25 @@
                         </select>
                         <div class="form-text">Pilih format file yang akan di-export</div>
                     </div>
+
+                    <!-- Filter Tanggal Updated -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="export_startDate" class="form-label">
+                                <i class="fas fa-calendar"></i> Sortir Mulai
+                            </label>
+                            <input type="date" class="form-control" id="export_startDate" name="startDate">
+                            <div class="form-text">Filter data berdasarkan tanggal mulai updated_at</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="export_endDate" class="form-label">
+                                <i class="fas fa-calendar"></i> Sortir Akhir
+                            </label>
+                            <input type="date" class="form-control" id="export_endDate" name="endDate">
+                            <div class="form-text">Filter data berdasarkan tanggal akhir updated_at</div>
+                        </div>
+                    </div>
+
                     <div class="mb-3">
                         <label for="export_nama_travel" class="form-label">
                             <i class="fas fa-plane"></i> Pilih Nama Travel
@@ -47,8 +66,8 @@
                         </select>
                         <div class="form-text">
                             <i class="fas fa-info-circle"></i> 
-                            Pilih nama travel untuk mengexport semua flag dokumen dari travel tersebut. 
-                            Jika dipilih, semua flag dokumen dengan nama travel yang sama akan diexport.
+                            Pilih nama travel untuk memfilter flag dokumen yang tersedia. 
+                            Flag dokumen akan diperbarui secara dinamis berdasarkan travel yang dipilih.
                         </div>
                     </div>
                     <div class="mb-3">
@@ -111,23 +130,7 @@
                         </div>
                     </div>
                     
-                    <!-- Filter Tanggal Updated -->
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="export_startDate" class="form-label">
-                                <i class="fas fa-calendar"></i> Sortir Mulai
-                            </label>
-                            <input type="date" class="form-control" id="export_startDate" name="startDate">
-                            <div class="form-text">Filter data berdasarkan tanggal mulai updated_at</div>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="export_endDate" class="form-label">
-                                <i class="fas fa-calendar"></i> Sortir Akhir
-                            </label>
-                            <input type="date" class="form-control" id="export_endDate" name="endDate">
-                            <div class="form-text">Filter data berdasarkan tanggal akhir updated_at</div>
-                        </div>
-                    </div>
+                    
                     
                     <div class="mb-3">
                         <label for="export_status" class="form-label">
@@ -502,4 +505,189 @@ function resetFlagDocSelections() {
         noResultsDiv.style.display = 'none';
     }
 }
+
+// Travel selection change handler
+function handleTravelChange() {
+    const travelSelect = document.getElementById('export_nama_travel');
+    const flagDocContainer = document.querySelector('.flag-doc-container');
+    
+    if (!travelSelect || !flagDocContainer) return;
+    
+    const selectedTravel = travelSelect.value;
+    
+    // Clear existing selections
+    resetFlagDocSelections();
+    
+    if (selectedTravel && selectedTravel !== '') {
+        console.log('🔄 Travel selected:', selectedTravel);
+        
+        // Show loading state
+        flagDocContainer.innerHTML = `
+            <div class="text-center py-3">
+                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <div class="mt-2 text-muted">Memuat flag dokumen...</div>
+            </div>
+        `;
+        
+        // AJAX call to get flag_doc by travel
+        fetch(`<?= base_url('database/get_flag_doc_by_travel') ?>?travel=${encodeURIComponent(selectedTravel)}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('🔄 Flag doc data received:', data);
+            
+            if (data.success && data.data && data.data.length > 0) {
+                // Update flag doc options
+                updateFlagDocOptions(data.data);
+            } else {
+                // No data found
+                flagDocContainer.innerHTML = `
+                    <div class="text-center py-3 text-muted">
+                        <i class="fas fa-info-circle"></i>
+                        <div class="mt-2">Tidak ada flag dokumen untuk travel "${selectedTravel}"</div>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('❌ Error fetching flag doc:', error);
+            flagDocContainer.innerHTML = `
+                <div class="text-center py-3 text-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <div class="mt-2">Error memuat flag dokumen</div>
+                </div>
+            `;
+        });
+    } else {
+        // Restore all original options
+        restoreAllFlagDocOptions();
+    }
+}
+
+// Update flag doc options based on travel selection
+function updateFlagDocOptions(flagDocData) {
+    const flagDocContainer = document.querySelector('.flag-doc-container');
+    
+    let html = `
+        <!-- Select All option -->
+        <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="selectAllFlagDoc">
+            <label class="form-check-label fw-bold" for="selectAllFlagDoc">
+                <i class="fas fa-check-double"></i> Pilih Semua Flag Dokumen
+            </label>
+        </div>
+        
+        <hr class="my-2">
+        
+        <!-- Individual flag dokumen options -->
+        <div class="form-check mb-1">
+            <input class="form-check-input flag-doc-checkbox" type="checkbox" name="flag_doc[]" value="" id="flag_doc_all">
+            <label class="form-check-label" for="flag_doc_all">
+                <i class="fas fa-database"></i> Semua Data
+            </label>
+        </div>
+        
+        <div class="form-check mb-1">
+            <input class="form-check-input flag-doc-checkbox" type="checkbox" name="flag_doc[]" value="null" id="flag_doc_null">
+            <label class="form-check-label" for="flag_doc_null">
+                <i class="fas fa-minus-circle"></i> Tanpa Flag Dokumen
+            </label>
+        </div>
+    `;
+    
+    // Add flag doc options from AJAX data
+    flagDocData.forEach(flag => {
+        const safeId = 'flag_doc_' + flag.flag_doc.replace(/[^a-zA-Z0-9]/g, '_');
+        html += `
+            <div class="form-check mb-1 flag-doc-item">
+                <input class="form-check-input flag-doc-checkbox" type="checkbox" name="flag_doc[]" value="${flag.flag_doc}" id="${safeId}">
+                <label class="form-check-label" for="${safeId}">
+                    <i class="fas fa-file-alt"></i> ${flag.flag_doc}
+                </label>
+            </div>
+        `;
+    });
+    
+    html += `
+        <!-- No results message -->
+        <div id="noFlagDocResults" class="text-muted text-center py-3" style="display: none;">
+            <i class="fas fa-search"></i> Tidak ada flag dokumen yang cocok
+        </div>
+    `;
+    
+    flagDocContainer.innerHTML = html;
+    
+    // Reinitialize flag doc functionality
+    initializeFlagDocFunctionality();
+}
+
+// Restore all original flag doc options
+function restoreAllFlagDocOptions() {
+    const flagDocContainer = document.querySelector('.flag-doc-container');
+    
+    let html = `
+        <!-- Select All option -->
+        <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="selectAllFlagDoc">
+            <label class="form-check-label fw-bold" for="selectAllFlagDoc">
+                <i class="fas fa-check-double"></i> Pilih Semua Flag Dokumen
+            </label>
+        </div>
+        
+        <hr class="my-2">
+        
+        <!-- Individual flag dokumen options -->
+        <div class="form-check mb-1">
+            <input class="form-check-input flag-doc-checkbox" type="checkbox" name="flag_doc[]" value="" id="flag_doc_all">
+            <label class="form-check-label" for="flag_doc_all">
+                <i class="fas fa-database"></i> Semua Data
+            </label>
+        </div>
+        
+        <div class="form-check mb-1">
+            <input class="form-check-input flag-doc-checkbox" type="checkbox" name="flag_doc[]" value="null" id="flag_doc_null">
+            <label class="form-check-label" for="flag_doc_null">
+                <i class="fas fa-minus-circle"></i> Tanpa Flag Dokumen
+            </label>
+        </div>
+    `;
+    
+    // Add original flag doc options
+    <?php if (!empty($flag_doc_list_export)): foreach ($flag_doc_list_export as $flag): ?>
+        html += `
+            <div class="form-check mb-1 flag-doc-item">
+                <input class="form-check-input flag-doc-checkbox" type="checkbox" name="flag_doc[]" value="<?= htmlspecialchars($flag->flag_doc) ?>" id="flag_doc_<?= md5($flag->flag_doc) ?>">
+                <label class="form-check-label" for="flag_doc_<?= md5($flag->flag_doc) ?>">
+                    <i class="fas fa-file-alt"></i> <?= htmlspecialchars($flag->flag_doc) ?>
+                </label>
+            </div>
+        `;
+    <?php endforeach; endif; ?>
+    
+    html += `
+        <!-- No results message -->
+        <div id="noFlagDocResults" class="text-muted text-center py-3" style="display: none;">
+            <i class="fas fa-search"></i> Tidak ada flag dokumen yang cocok
+        </div>
+    `;
+    
+    flagDocContainer.innerHTML = html;
+    
+    // Reinitialize flag doc functionality
+    initializeFlagDocFunctionality();
+}
+
+// Initialize travel change listener
+document.addEventListener('DOMContentLoaded', function() {
+    const travelSelect = document.getElementById('export_nama_travel');
+    if (travelSelect) {
+        travelSelect.addEventListener('change', handleTravelChange);
+    }
+});
 </script>

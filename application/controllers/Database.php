@@ -984,23 +984,28 @@ class Database extends CI_Controller {
             log_message('debug', 'Export method - Initial filters: ' . json_encode($filters));
             
             // Handle flag_doc array from GET parameters
-            if ($this->input->get('flag_doc[]')) {
-                $flag_doc_array = $this->input->get('flag_doc[]');
+            $flag_doc_array = $this->input->get('flag_doc[]');
+            if ($flag_doc_array) {
                 log_message('debug', 'Export method - Raw flag_doc[]: ' . json_encode($flag_doc_array));
                 
-                // Decode URL-encoded values to handle special characters
-                if (is_array($flag_doc_array)) {
-                    foreach ($flag_doc_array as $key => $value) {
-                        // Use rawurldecode to handle all special characters including :, /, ?, etc.
-                        $flag_doc_array[$key] = rawurldecode($value);
-                    }
+                // Ensure it's an array
+                if (!is_array($flag_doc_array)) {
+                    $flag_doc_array = [$flag_doc_array];
                 }
+                
+                // Decode URL-encoded values to handle special characters
+                foreach ($flag_doc_array as $key => $value) {
+                    // Use rawurldecode to handle all special characters including :, /, ?, etc.
+                    $flag_doc_array[$key] = rawurldecode($value);
+                }
+                
                 $filters['flag_doc'] = $flag_doc_array;
                 log_message('debug', 'Export method - Processed flag_doc[]: ' . json_encode($flag_doc_array));
             }
             
             // Handle nama_travel filter - if selected, get all flag_doc for that travel
-            if (!empty($filters['nama_travel'])) {
+            // Only apply this if no specific flag_doc[] is already selected
+            if (!empty($filters['nama_travel']) && !isset($filters['flag_doc'])) {
                 log_message('debug', 'Export method - Processing nama_travel filter: ' . $filters['nama_travel']);
                 try {
                     // Get all flag_doc for the selected travel using raw SQL
@@ -1041,48 +1046,56 @@ class Database extends CI_Controller {
             log_message('debug', 'REQUEST parameters: ' . json_encode($_REQUEST));
             log_message('debug', 'Decoded flag_doc array: ' . json_encode(isset($filters['flag_doc']) ? $filters['flag_doc'] : 'not set'));
         
-        // Handle multiple flag_doc selection
+        // Handle multiple flag_doc selection - ensure proper array handling
         if (isset($filters['flag_doc'])) {
             if (is_array($filters['flag_doc'])) {
-                // Multiple flag_doc selected
+                // Multiple flag_doc selected - clean and validate the array
                 $flag_docs = [];
                 $has_empty = false;
                 $has_null = false;
                 
                 foreach ($filters['flag_doc'] as $value) {
+                    // Trim whitespace and handle different null representations
+                    $value = trim($value);
+                    
                     if ($value === '' || $value === null) {
                         $has_empty = true;
-                    } elseif ($value === 'null') {
+                    } elseif ($value === 'null' || $value === 'NULL') {
                         $has_null = true;
                     } else {
+                        // Only add non-empty, non-null values
                         $flag_docs[] = $value;
                     }
                 }
                 
-                // If only empty/null values are selected, handle them properly
-                if (empty($flag_docs) && ($has_empty || $has_null)) {
-                    if ($has_null) {
-                        $filters['flag_doc'] = null;
-                    } else {
-                        $filters['flag_doc'] = [''];
-                    }
-                } elseif (!empty($flag_docs)) {
-                    $filters['flag_doc'] = $flag_docs;
-                    if ($has_null) {
-                        $filters['flag_doc'][] = null;
-                    }
-                    if ($has_empty) {
-                        $filters['flag_doc'][] = '';
-                    }
+                // Rebuild the filter array based on what was selected
+                $final_flag_docs = [];
+                
+                if ($has_empty) {
+                    $final_flag_docs[] = '';
+                }
+                if ($has_null) {
+                    $final_flag_docs[] = null;
+                }
+                if (!empty($flag_docs)) {
+                    $final_flag_docs = array_merge($final_flag_docs, $flag_docs);
+                }
+                
+                if (!empty($final_flag_docs)) {
+                    $filters['flag_doc'] = $final_flag_docs;
+                    log_message('debug', 'Export method - Final flag_doc array: ' . json_encode($final_flag_docs));
                 } else {
                     unset($filters['flag_doc']);
                 }
             } else {
                 // Single flag_doc (backward compatibility)
-                if ($filters['flag_doc'] === 'null') {
+                $value = trim($filters['flag_doc']);
+                if ($value === 'null' || $value === 'NULL') {
                     $filters['flag_doc'] = null;
-                } elseif ($filters['flag_doc'] === '') {
+                } elseif ($value === '') {
                     $filters['flag_doc'] = '';
+                } else {
+                    $filters['flag_doc'] = $value;
                 }
             }
         }

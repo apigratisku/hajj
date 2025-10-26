@@ -26,14 +26,14 @@
                                     <div class="form-group">
                                         <div class="searchable-select-wrapper" style="position: relative;">
                                             <select name="flag_doc" id="flag_doc_mobile_todo" class="form-select mobile-input searchable-select">
-                                                <option value="">Semua Flag Dokumen</option>
-                                                <option value="null" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === 'null') ? 'selected' : '' ?>>Tanpa Flag Dokumen</option>
-                                                <?php if (!empty($flag_doc_list)): foreach ($flag_doc_list as $flag): ?>
-                                                    <option value="<?= htmlspecialchars($flag->flag_doc) ?>" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === $flag->flag_doc) ? 'selected' : '' ?>>
-                                                        <?= htmlspecialchars($flag->flag_doc) ?>
-                                                    </option>
-                                                <?php endforeach; endif; ?>
-                                            </select>
+                                            <option value="">Semua Flag Dokumen</option>
+                                            <option value="null" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === 'null') ? 'selected' : '' ?>>Tanpa Flag Dokumen</option>
+                                            <?php if (!empty($flag_doc_list)): foreach ($flag_doc_list as $flag): ?>
+                                                <option value="<?= htmlspecialchars($flag->flag_doc) ?>" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === $flag->flag_doc) ? 'selected' : '' ?>>
+                                                    <?= htmlspecialchars($flag->flag_doc) ?>
+                                                </option>
+                                            <?php endforeach; endif; ?>
+                                        </select>
                                             <button type="button" class="btn-clear-flag-doc" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #666; font-size: 16px; cursor: pointer; z-index: 10; display: none;" title="Clear">
                                                 ×
                                             </button>
@@ -77,14 +77,14 @@
                                 <div class="col-md-1">
                                     <div class="searchable-select-wrapper" style="position: relative;">
                                         <select name="flag_doc" id="flag_doc_desktop_todo" class="form-select form-control-sm searchable-select">
-                                            <option value="">Semua Flag Dokumen</option>
-                                            <option value="null" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === 'null') ? 'selected' : '' ?>>Tanpa Flag Dokumen</option>
-                                            <?php if (!empty($flag_doc_list)): foreach ($flag_doc_list as $flag): ?>
-                                                <option value="<?= htmlspecialchars($flag->flag_doc) ?>" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === $flag->flag_doc) ? 'selected' : '' ?>>
-                                                    <?= htmlspecialchars($flag->flag_doc) ?>
-                                                </option>
-                                            <?php endforeach; endif; ?>
-                                        </select>
+                                        <option value="">Semua Flag Dokumen</option>
+                                        <option value="null" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === 'null') ? 'selected' : '' ?>>Tanpa Flag Dokumen</option>
+                                        <?php if (!empty($flag_doc_list)): foreach ($flag_doc_list as $flag): ?>
+                                            <option value="<?= htmlspecialchars($flag->flag_doc) ?>" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === $flag->flag_doc) ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($flag->flag_doc) ?>
+                                            </option>
+                                        <?php endforeach; endif; ?>
+                                    </select>
                                         <button type="button" class="btn-clear-flag-doc" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #666; font-size: 14px; cursor: pointer; z-index: 10; display: none;" title="Clear">
                                             ×
                                         </button>
@@ -3020,7 +3020,7 @@ function setupSearchableSelectTodo(selectElement) {
     const input = document.createElement('input');
     input.type = 'text';
     input.className = 'searchable-select-input';
-    input.placeholder = 'Cari Flag Dokumen...';
+    input.placeholder = '🔍 Cari flag dokumen...';
     input.autocomplete = 'off';
     
     // Create dropdown
