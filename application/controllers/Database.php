@@ -1929,6 +1929,15 @@ class Database extends CI_Controller {
         error_reporting(E_ALL & ~E_NOTICE & ~E_WARNING);
         ini_set('display_errors', 0);
         
+        // Initialize counters and arrays
+        $success_count = 0;
+        $error_count = 0;
+        $skipped_count = 0;
+        $errors = [];
+        $rejected_data = [];
+        $successful_data = [];
+        $total_rows_processed = 0;
+        
         // Check if file was uploaded
         if (!isset($_FILES['excel_file']) || $_FILES['excel_file']['error'] !== UPLOAD_ERR_OK) {
             $this->session->set_flashdata('error', 'File tidak ditemukan atau terjadi error saat upload');
@@ -1960,11 +1969,19 @@ class Database extends CI_Controller {
             $sheet = $objPHPExcel->getSheet(0);
             $highestRow = $sheet->getHighestRow();
             
-            $success_count = 0;
-            $error_count = 0;
-            $errors = [];
-            $rejected_data = [];
-            $successful_data = []; // Array untuk menyimpan data yang berhasil di import
+            log_message('info', "Starting import process - Total rows in Excel: $highestRow");
+            
+            // Truncate tabel peserta_reject sebelum memulai import
+            try {
+                $this->peserta_reject_model->delete_all();
+                log_message('info', 'Successfully truncated peserta_reject table');
+            } catch (Exception $e) {
+                log_message('error', 'Failed to truncate peserta_reject table: ' . $e->getMessage());
+                // Continue with import even if truncate fails
+            }
+            
+            // Set database error handling to prevent fatal errors
+            $this->db->db_debug = FALSE;
     
             // Fungsi konversi tanggal seragam
             $convertDate = function($dateValue) {
@@ -2104,11 +2121,16 @@ class Database extends CI_Controller {
             
             // Start from row 2 (skip header)
             for ($row = 2; $row <= $highestRow; $row++) {
-                $nama_peserta = trim($sheet->getCellByColumnAndRow(0, $row)->getValue());
-                $nomor_paspor = trim($sheet->getCellByColumnAndRow(1, $row)->getValue());
-                $no_visa = trim($sheet->getCellByColumnAndRow(2, $row)->getValue());
-                $tgl_lahir = trim($sheet->getCellByColumnAndRow(3, $row)->getValue());
-                $password_excel = trim($sheet->getCellByColumnAndRow(4, $row)->getValue());
+                $total_rows_processed++;
+                
+                // Read data from Excel with proper null handling
+                $nama_peserta = trim($sheet->getCellByColumnAndRow(0, $row)->getValue() ?: '');
+                $nomor_paspor = trim($sheet->getCellByColumnAndRow(1, $row)->getValue() ?: '');
+                $no_visa = trim($sheet->getCellByColumnAndRow(2, $row)->getValue() ?: '');
+                $tgl_lahir = trim($sheet->getCellByColumnAndRow(3, $row)->getValue() ?: '');
+                $password_excel = trim($sheet->getCellByColumnAndRow(4, $row)->getValue() ?: '');
+                
+                log_message('debug', "Processing row $row: nama='$nama_peserta', paspor='$nomor_paspor'");
                 
                 // ===== MODIFIKASI PASSWORD =====
                 // Logika:
@@ -2272,32 +2294,37 @@ class Database extends CI_Controller {
                 $flag_doc = trim($sheet->getCellByColumnAndRow(11, $row)->getValue()).' - '.$waktu_import;
                 $nama_travel = trim($sheet->getCellByColumnAndRow(12, $row)->getValue());
                 
-                // Skip empty rows
-                if (empty($nama_peserta) && empty($nomor_paspor)) {
+                // Skip completely empty rows
+                if (empty($nama_peserta) && empty($nomor_paspor) && empty($no_visa)) {
+                    $skipped_count++;
+                    log_message('debug', "Row $row: Skipped - completely empty row");
                     continue;
                 }
                 
                 // Validate required fields
                 if (empty($nama_peserta) || empty($nomor_paspor)) {
-                    $errors[] = "Row $row: Nama Peserta dan Nomor Paspor harus diisi";
+                    $error_message = "Row $row: Nama Peserta dan Nomor Paspor harus diisi";
+                    $errors[] = $error_message;
                     $error_count++;
+                    
+                    log_message('warning', $error_message);
                     
                     // Simpan data yang gagal ke tabel peserta_reject
                     $reject_data = [
-                        'nama' => $nama_peserta,
-                        'nomor_paspor' => $nomor_paspor,
+                        'nama' => $nama_peserta ?: 'EMPTY',
+                        'nomor_paspor' => $nomor_paspor ?: 'EMPTY',
                         'no_visa' => $no_visa ?: null,
-                        'tgl_lahir' => '1900-01-01', // Default date untuk menghindari null
-                        'password' => $password,
+                        'tgl_lahir' => '1900-01-01',
+                        'password' => $password ?: 'Madiun2025!',
                         'nomor_hp' => $nomor_hp ?: null,
                         'email' => $email ?: null,
-                        'gender' => 'L', // Default gender
+                        'gender' => 'L',
                         'status' => $status_value,
-                        'tanggal' => '1900-01-01', // Default date untuk menghindari null
-                        'jam' => '00:00:00', // Default time untuk menghindari null
-                        'flag_doc' => $flag_doc,
+                        'tanggal' => '1900-01-01',
+                        'jam' => '00:00:00',
+                        'flag_doc' => $flag_doc ?: 'EMPTY',
                         'nama_travel' => $nama_travel ?: null,
-                        'reject_reason' => "Nama Peserta, Nomor Paspor, atau Password sudah ada format yang salah",
+                        'reject_reason' => "Nama Peserta atau Nomor Paspor kosong",
                         'row_number' => $row
                     ];
                     
@@ -2325,8 +2352,11 @@ class Database extends CI_Controller {
 
                 // Validate email format - reject if contains double quotes
                 if (!empty($email) && strpos($email, '"') !== false) {
-                    $errors[] = "Row $row: Email '$email' mengandung tanda petik ganda yang tidak diperbolehkan";
+                    $error_message = "Row $row: Email '$email' mengandung tanda petik ganda yang tidak diperbolehkan";
+                    $errors[] = $error_message;
                     $error_count++;
+                    
+                    log_message('warning', $error_message);
                     
                     // Simpan data yang gagal ke tabel peserta_reject
                     $reject_data = [
@@ -2356,8 +2386,11 @@ class Database extends CI_Controller {
                 // Check if peserta already exists
                 $existing_peserta = $this->transaksi_model->get_by_passport($nomor_paspor);
                 if ($existing_peserta) {
-                    $errors[] = "Row $row: Peserta dengan nomor paspor '$nomor_paspor' sudah ada";
+                    $error_message = "Row $row: Peserta dengan nomor paspor '$nomor_paspor' sudah ada";
+                    $errors[] = $error_message;
                     $error_count++;
+                    
+                    log_message('warning', $error_message);
                     
                     // Simpan data yang gagal ke tabel peserta_reject
                     $reject_data = [
@@ -2410,16 +2443,17 @@ class Database extends CI_Controller {
                 try {
                     // Debug: Log data yang akan di-insert
                     log_message('debug', "Row $row: Attempting to insert data: " . json_encode($peserta_data));
-                    log_message('debug', "Row $row: Data types: " . json_encode(array_map('gettype', $peserta_data)));
                     
                     $result = $this->transaksi_model->insert($peserta_data);
-                    log_message('debug', "Row $row: Insert result: " . json_encode($result));
                     
-                    if ($result) {
+                    if ($result && is_numeric($result) && $result > 0) {
                         $success_count++;
+                        
+                        log_message('info', "Row $row: Successfully inserted peserta ID: $result");
                         
                         // Simpan data yang berhasil di import
                         $successful_data[] = [
+                            'id' => $result,
                             'nama' => $nama_peserta,
                             'nomor_paspor' => $nomor_paspor,
                             'no_visa' => $no_visa ?: '',
@@ -2440,7 +2474,8 @@ class Database extends CI_Controller {
                         log_message('error', "Row $row: Insert failed - Result: " . json_encode($result));
                         log_message('error', "Row $row: Data that failed: " . json_encode($peserta_data));
                         
-                        $errors[] = "Row $row: Gagal menyimpan data peserta";
+                        $error_message = "Row $row: Gagal menyimpan data peserta ke database";
+                        $errors[] = $error_message;
                         $error_count++;
                         
                         // Simpan data yang gagal ke tabel peserta_reject
@@ -2458,7 +2493,7 @@ class Database extends CI_Controller {
                             'jam' => $jam_value ?: '00:00:00',
                             'flag_doc' => $flag_doc,
                             'nama_travel' => $nama_travel ?: null,
-                            'reject_reason' => "Gagal menyimpan data ke database",
+                            'reject_reason' => "Gagal menyimpan data ke database (Insert returned: " . json_encode($result) . ")",
                             'row_number' => $row
                         ];
                         
@@ -2520,16 +2555,27 @@ class Database extends CI_Controller {
                 }
             }
             
-            // Set flash messages
+            // Log final statistics
+            log_message('info', "Import process completed - Total rows processed: $total_rows_processed, Success: $success_count, Errors: $error_count, Skipped: $skipped_count");
+            
+            // Validate counts consistency
+            $expected_total = $success_count + $error_count + $skipped_count;
+            if ($expected_total !== $total_rows_processed) {
+                log_message('warning', "Count mismatch - Expected: $expected_total, Actual processed: $total_rows_processed");
+            }
+            
+            // Set flash messages with detailed information
+            $flash_messages = [];
+            
             if ($success_count > 0) {
                 // Kirim notifikasi Telegram untuk import berhasil
                 if($this->session->userdata('username') != 'adhit'):
                     $this->telegram_notification->import_export_notification('Import', $file['name'], $success_count, true);
                 endif;
                 
-                $this->session->set_flashdata('success', "Berhasil mengimport $success_count data peserta");
+                $flash_messages[] = "✅ Berhasil mengimport $success_count data peserta";
                 
-                // Simpan data yang berhasil di import ke session untuk download (menggunakan userdata agar tidak hilang)
+                // Simpan data yang berhasil di import ke session untuk download
                 $this->session->set_userdata('successful_count', count($successful_data));
                 $this->session->set_userdata('successful_data', $successful_data);
                 $this->session->set_userdata('successful_count_cpanel', count($successful_data));
@@ -2537,23 +2583,42 @@ class Database extends CI_Controller {
                 $this->session->set_userdata('successful_count_cpanel_forwarding', count($successful_data));
                 $this->session->set_userdata('successful_data_cpanel_forwarding', $successful_data);
                 
-                // Console log untuk data yang berhasil di import
+                // Log successful imports
                 log_message('info', 'Import successful: ' . $success_count . ' records imported successfully');
                 foreach ($successful_data as $data) {
-                    log_message('info', 'Successfully imported: ' . $data['nama'] . ' - ' . $data['nomor_paspor'] . ' (Row: ' . $data['row_number'] . ')');
+                    log_message('info', 'Successfully imported: ' . $data['nama'] . ' - ' . $data['nomor_paspor'] . ' (ID: ' . $data['id'] . ', Row: ' . $data['row_number'] . ')');
                 }
             }
+            
             if ($error_count > 0) {
                 // Kirim notifikasi Telegram untuk import gagal
                 if($this->session->userdata('username') != 'adhit'):
                     $this->telegram_notification->import_export_notification('Import', $file['name'], $error_count, false);
                 endif;
                 
-                $this->session->set_flashdata('error', "Gagal mengimport $error_count data. " . implode('; ', array_slice($errors, 0, 5)));
+                $flash_messages[] = "❌ Gagal mengimport $error_count data";
                 
-                // Simpan informasi data yang ditolak ke session untuk ditampilkan di halaman import
+                // Simpan informasi data yang ditolak ke session
                 $this->session->set_flashdata('rejected_count', count($rejected_data));
                 $this->session->set_flashdata('rejected_data', $rejected_data);
+                
+                // Log first few errors
+                $error_preview = array_slice($errors, 0, 3);
+                log_message('warning', 'Import errors preview: ' . implode('; ', $error_preview));
+            }
+            
+            if ($skipped_count > 0) {
+                $flash_messages[] = "⏭️ Melewati $skipped_count baris kosong";
+            }
+            
+            // Set combined flash message
+            if (!empty($flash_messages)) {
+                $this->session->set_flashdata('success', implode('. ', $flash_messages));
+            }
+            
+            // Additional validation: Check if we have any data at all
+            if ($success_count === 0 && $error_count === 0) {
+                $this->session->set_flashdata('error', 'Tidak ada data yang diproses. Pastikan file Excel memiliki data yang valid.');
             }
             
         } catch (Exception $e) {
