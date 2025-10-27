@@ -207,7 +207,7 @@
                                             <td><?= date('H:i:s', strtotime($log->jam)) ?></td>
                                             <td>
                                                 <div class="activity-text" style="max-width: 300px;">
-                                                    <?= htmlspecialchars($log->aktivitas) ?>
+                                                    <?= htmlspecialchars(trim($log->aktivitas)) ?>
                                                 </div>
                                             </td>
                                             <td><?= date('d/m/Y H:i:s', strtotime($log->created_at)) ?></td>
@@ -331,7 +331,7 @@
                                                     <tr>
                                                         <td>
                                                             <div class="activity-text" style="max-width: 200px; font-size: 0.85rem;">
-                                                                <?= htmlspecialchars($activity->aktivitas) ?>
+                                                                <?= htmlspecialchars(trim($activity->aktivitas)) ?>
                                                             </div>
                                                         </td>
                                                         <td><span class="badge bg-success"><?= $activity->total_count ?></span></td>

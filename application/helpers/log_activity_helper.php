@@ -46,7 +46,8 @@ if (!function_exists('log_user_activity')) {
             $jam = date('H:i:s');
         }
         
-        // Truncate aktivitas if too long (max 255 characters)
+        // Truncate aktivitas if too long (max 255 characters) and trim whitespace
+        $aktivitas = trim($aktivitas);
         if (strlen($aktivitas) > 255) {
             $aktivitas = substr($aktivitas, 0, 252) . '...';
         }

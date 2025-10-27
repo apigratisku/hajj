@@ -104,7 +104,7 @@
                                             <td><?= date('H:i:s', strtotime($log->jam)) ?></td>
                                             <td>
                                                 <div class="activity-text" style="max-width: 400px;">
-                                                    <?= htmlspecialchars($log->aktivitas) ?>
+                                                    <?= htmlspecialchars(trim($log->aktivitas)) ?>
                                                 </div>
                                             </td>
                                             <td><?= date('d/m/Y H:i:s', strtotime($log->created_at)) ?></td>
