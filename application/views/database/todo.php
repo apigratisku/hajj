@@ -1393,6 +1393,58 @@
     transform: scale(1.1);
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
+
+/* Highlight untuk copyable text yang dipilih - Warna Merah */
+.copyable-text.selected {
+    background-color: #ffebee !important;
+    border: 2px solid #f44336 !important;
+    border-radius: 4px;
+    padding: 2px 4px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    color: #d32f2f !important;
+    box-shadow: 0 2px 4px rgba(244, 67, 54, 0.3);
+}
+
+.copyable-text.selected::after {
+    content: " ✓";
+    color: #f44336;
+    font-weight: bold;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+/* Highlight untuk row yang sedang dipilih - Warna Merah */
+tr.row-selected {
+    background-color: #ffebee !important;
+    box-shadow: inset 0 0 0 3px #f44336;
+    transition: all 0.3s ease;
+    border-left: 5px solid #f44336 !important;
+}
+
+tr.row-selected td {
+    background-color: transparent !important;
+    border-color: #ffcdd2 !important;
+}
+
+/* Tambahan untuk mobile table */
+.mobile-excel-table tr.row-selected {
+    background-color: #ffebee !important;
+    box-shadow: inset 0 0 0 3px #f44336;
+    border-left: 5px solid #f44336 !important;
+}
+
+.mobile-excel-table tr.row-selected td {
+    background-color: transparent !important;
+    border-color: #ffcdd2 !important;
+}
+
+/* Highlight untuk copyable text di mobile */
+.mobile-excel-table .copyable-text.selected {
+    background-color: #ffebee !important;
+    border: 2px solid #f44336 !important;
+    color: #d32f2f !important;
+    box-shadow: 0 2px 4px rgba(244, 67, 54, 0.3);
+}
 </style>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
@@ -1540,7 +1592,7 @@
     }
     </style>
     <script>
-// Copy to clipboard function (unchanged)
+// Copy to clipboard function dengan visual indicator
 function copyToClipboard(text, fieldName) {
     // Handle empty or dash values
     if (!text || text === '-' || text === '') {
@@ -1548,8 +1600,22 @@ function copyToClipboard(text, fieldName) {
         return;
     }
     
-    // Add loading state
+    // Remove previous selections
+    clearAllSelections();
+    
+    // Add visual indicator
     const clickedElement = event.target;
+    const row = clickedElement.closest('tr');
+    
+    // Highlight the clicked element
+    clickedElement.classList.add('selected');
+    
+    // Highlight the entire row
+    if (row) {
+        row.classList.add('row-selected');
+    }
+    
+    // Add loading state
     const removeLoading = addCopyLoadingState(clickedElement);
     
     // Try to use the modern Clipboard API first
@@ -1557,6 +1623,10 @@ function copyToClipboard(text, fieldName) {
         navigator.clipboard.writeText(text).then(() => {
             removeLoading();
             showCopySuccess(fieldName, text);
+            // Keep selection for 3 seconds to show success
+            setTimeout(() => {
+                clearAllSelections();
+            }, 300000);
         }).catch(err => {
             console.error('Clipboard API failed:', err);
             removeLoading();
@@ -1569,7 +1639,7 @@ function copyToClipboard(text, fieldName) {
     }
 }
 
-// Fallback copy function for older browsers (unchanged)
+// Fallback copy function for older browsers dengan visual indicator
 function fallbackCopyTextToClipboard(text, fieldName) {
     const textArea = document.createElement('textarea');
     textArea.value = text;
@@ -1588,6 +1658,10 @@ function fallbackCopyTextToClipboard(text, fieldName) {
         const successful = document.execCommand('copy');
         if (successful) {
             showCopySuccess(fieldName, text);
+            // Keep selection for 3 seconds to show success
+            setTimeout(() => {
+                clearAllSelections();
+            }, 300000);
         } /*else {
             showAlert('Gagal copy teks ke clipboard', 'error');
         }*/
@@ -1619,6 +1693,21 @@ function showCopySuccess(fieldName, text) {
         clickedElement.style.color = '';
         clickedElement.style.fontWeight = '';
     }, 1000);
+}
+
+// Function untuk menghapus semua selection
+function clearAllSelections() {
+    // Remove selected class from all copyable text elements
+    const selectedElements = document.querySelectorAll('.copyable-text.selected');
+    selectedElements.forEach(element => {
+        element.classList.remove('selected');
+    });
+    
+    // Remove row-selected class from all rows
+    const selectedRows = document.querySelectorAll('tr.row-selected');
+    selectedRows.forEach(row => {
+        row.classList.remove('row-selected');
+    });
 }
 
 // Add loading state to copy function (unchanged)
