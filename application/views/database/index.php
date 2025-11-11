@@ -2007,10 +2007,7 @@
                                     <th class="text-center" style="width: 10%;">Done</th>
                                     <th class="text-center" style="width: 10%;">Already</th>
                                     <th class="text-center" style="width: 10%;">Total</th>
-                                    <th class="text-center" style="width: 10%;">Hari Ini</th>
-                                    <th class="text-center" style="width: 10%;">Minggu Ini</th>
-                                    <th class="text-center" style="width: 10%;">Bulan Ini</th>
-                                    <th class="text-center" style="width: 15%;">Terakhir</th>
+
                                 </tr>
                             </thead>
                             <tbody id="operatorStatsTableBody">
@@ -4002,30 +3999,7 @@ function displayOperatorStatistics(data, filters = {}) {
             <td class="text-center">
                 <span class="badge bg-primary">${operator.total_processed || 0}</span>
             </td>
-            <td class="text-center">
-                <small>
-                    <div class="text-success">${operator.today_done || 0}</div>
-                    <div class="text-warning">${operator.today_already || 0}</div>
-                    <div class="text-primary"><strong>${operator.today_total || 0}</strong></div>
-                </small>
-            </td>
-            <td class="text-center">
-                <small>
-                    <div class="text-success">${operator.week_done || 0}</div>
-                    <div class="text-warning">${operator.week_already || 0}</div>
-                    <div class="text-primary"><strong>Total: ${operator.week_total || 0}</strong></div>
-                </small>
-            </td>
-            <td class="text-center">
-                <small>
-                    <div class="text-success">${operator.month_done || 0}</div>
-                    <div class="text-warning">${operator.month_already || 0}</div>
-                    <div class="text-primary"><strong>${operator.month_total || 0}</strong></div>
-                </small>
-            </td>
-            <td class="text-center">
-                <small>${lastActivity}</small>
-            </td>
+            
         `;
         
         tableBody.appendChild(row);
@@ -4054,30 +4028,6 @@ function displayOperatorStatistics(data, filters = {}) {
                 <div class="card-body text-center py-2">
                     <h5 class="card-title mb-1">${totalProcessed}</h5>
                     <p class="card-text mb-0 small">Total Diproses</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card bg-info text-white">
-                <div class="card-body text-center py-2">
-                    <h5 class="card-title mb-1">${totalToday}</h5>
-                    <p class="card-text mb-0 small">Hari Ini</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card bg-secondary text-white">
-                <div class="card-body text-center py-2">
-                    <h5 class="card-title mb-1">${totalWeek}</h5>
-                    <p class="card-text mb-0 small">Minggu Ini</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card bg-dark text-white">
-                <div class="card-body text-center py-2">
-                    <h5 class="card-title mb-1">${totalMonth}</h5>
-                    <p class="card-text mb-0 small">Bulan Ini</p>
                 </div>
             </div>
         </div>
