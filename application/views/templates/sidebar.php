@@ -93,6 +93,11 @@
             </a>
         </li>
         <?php endif; ?>
+        <li class="nav-item">
+            <a href="<?= base_url('sync-production') ?>" <?= ($this->uri->segment(1) == 'sync-production' || $this->uri->segment(1) == 'syncproduction') ? 'class="active"' : '' ?>>
+                <i class="fas fa-sync-alt"></i> <span>Sync Production</span>
+            </a>
+        </li>
         <?php endif; ?>
         <!-- Log Aktifitas -->
         <?php if ($this->session->userdata('role') == 'admin'): ?>

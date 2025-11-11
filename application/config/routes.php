@@ -93,6 +93,10 @@ $route['settings/download_backup/(:any)'] = 'settings/download_backup/$1';
 $route['settings/delete_backup/(:any)'] = 'settings/delete_backup/$1';
 $route['settings/get_backup_files'] = 'settings/get_backup_files';
 
+// Sync Production routes
+$route['sync-production'] = 'syncproduction/index';
+$route['sync-production/run'] = 'syncproduction/run';
+
 // Email Management routes
 $route['email'] = 'email/index';
 $route['email/create'] = 'email/create';

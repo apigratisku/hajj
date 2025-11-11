@@ -1960,12 +1960,12 @@
                 <!-- Date Range Filter -->
                 <div class="row mb-3">
                     <div class="col-md-5">
-                        <label for="startDate" class="form-label"><i class="fas fa-calendar"></i> Tanggal Mulai</label>
-                        <input type="date" class="form-control" id="startDate" name="startDate">
+                        <label for="operatorStartDate" class="form-label"><i class="fas fa-calendar"></i> Tanggal Mulai</label>
+                        <input type="date" class="form-control" id="operatorStartDate" name="startDate">
                     </div>
                     <div class="col-md-5">
-                        <label for="endDate" class="form-label"><i class="fas fa-calendar"></i> Tanggal Akhir</label>
-                        <input type="date" class="form-control" id="endDate" name="endDate">
+                        <label for="operatorEndDate" class="form-label"><i class="fas fa-calendar"></i> Tanggal Akhir</label>
+                        <input type="date" class="form-control" id="operatorEndDate" name="endDate">
                     </div>
                     <div class="col-md-2 d-flex align-items-end">
                         <div class="d-flex gap-1 w-100">
@@ -3864,8 +3864,8 @@ function loadOperatorStatistics(filters = {}) {
 }
 
 function filterOperatorStatistics() {
-    const startDate = document.getElementById('startDate').value;
-    const endDate = document.getElementById('endDate').value;
+    const startDate = document.getElementById('operatorStartDate').value;
+    const endDate = document.getElementById('operatorEndDate').value;
     
     // Validate dates
     if (startDate && endDate && startDate > endDate) {
@@ -3881,8 +3881,8 @@ function filterOperatorStatistics() {
 }
 
 function resetDateFilter() {
-    document.getElementById('startDate').value = '';
-    document.getElementById('endDate').value = '';
+    document.getElementById('operatorStartDate').value = '';
+    document.getElementById('operatorEndDate').value = '';
     loadOperatorStatistics();
 }
 
@@ -3896,8 +3896,8 @@ function formatDate(dateString) {
 }
 
 function refreshOperatorStatistics() {
-    const startDate = document.getElementById('startDate').value;
-    const endDate = document.getElementById('endDate').value;
+    const startDate = document.getElementById('operatorStartDate').value;
+    const endDate = document.getElementById('operatorEndDate').value;
     
     const filters = {};
     if (startDate) filters.start_date = startDate;
@@ -3907,8 +3907,8 @@ function refreshOperatorStatistics() {
 }
 
 function exportOperatorStatistics() {
-    const startDate = document.getElementById('startDate').value;
-    const endDate = document.getElementById('endDate').value;
+    const startDate = document.getElementById('operatorStartDate').value;
+    const endDate = document.getElementById('operatorEndDate').value;
     
     // Build export URL with filters
     let exportUrl = '<?= base_url('database/export_operator_statistics') ?>';
