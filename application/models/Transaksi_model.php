@@ -278,7 +278,11 @@ class Transaksi_model extends CI_Model {
         // Urut berdasarkan abjad nama
         $this->db->order_by('peserta.flag_doc', 'DESC');
         $this->db->order_by('peserta.id', 'DESC');
-        $this->db->limit($limit, $offset);
+
+        if ($limit !== null) {
+            $this->db->limit($limit, isset($offset) ? $offset : 0);
+        }
+
         return $this->db->get()->result();
     }
 

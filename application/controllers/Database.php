@@ -1113,7 +1113,54 @@ class Database extends CI_Controller {
             }
         } else {
             // Export regular peserta data
-            $peserta = $this->transaksi_model->get_paginated_filtered(1000, 0, $filters);
+            $hasStartDateFilter = !empty($filters['startDate']);
+            $hasEndDateFilter = !empty($filters['endDate']);
+            $rawNamaTravelInput = $this->input->get('nama_travel');
+            $hasNamaTravelFilter = $rawNamaTravelInput !== null && trim($rawNamaTravelInput) !== '';
+            $rawStatusInput = $this->input->get('status');
+            $hasStatusFilter = $rawStatusInput !== null && $rawStatusInput !== '';
+
+            $hasFlagDocFilter = false;
+            $rawFlagDocArray = $this->input->get('flag_doc[]');
+
+            if ($rawFlagDocArray !== null) {
+                $rawFlagDocValues = is_array($rawFlagDocArray) ? $rawFlagDocArray : [$rawFlagDocArray];
+                foreach ($rawFlagDocValues as $flagValue) {
+                    $decodedValue = rawurldecode($flagValue);
+                    if ($decodedValue === '') {
+                        continue;
+                    }
+                    $hasFlagDocFilter = true;
+                    break;
+                }
+            } elseif ($this->input->get('flag_doc') !== null) {
+                $decodedValue = rawurldecode($this->input->get('flag_doc'));
+                if ($decodedValue !== '') {
+                    $hasFlagDocFilter = true;
+                }
+            } elseif (isset($filters['flag_doc'])) {
+                $flagDocValues = is_array($filters['flag_doc']) ? $filters['flag_doc'] : [$filters['flag_doc']];
+                foreach ($flagDocValues as $flagValue) {
+                    if ($flagValue === '') {
+                        continue;
+                    }
+                    if ($flagValue === null || $flagValue === 'null' || $flagValue === 'NULL') {
+                        $hasFlagDocFilter = true;
+                        break;
+                    }
+                    $hasFlagDocFilter = true;
+                    break;
+                }
+            }
+
+            $shouldFetchAll = !$hasStartDateFilter
+                && !$hasEndDateFilter
+                && !$hasNamaTravelFilter
+                && !$hasStatusFilter
+                && !$hasFlagDocFilter;
+
+            $limit = $shouldFetchAll ? null : 1000;
+            $peserta = $this->transaksi_model->get_paginated_filtered($limit, 0, $filters);
             
             if ($format === 'pdf') {
                 $this->export_pdf($peserta, $filters);
