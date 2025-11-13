@@ -214,6 +214,11 @@ class Email extends CI_Controller {
             // Check if force refresh is requested
             $force_refresh = $this->input->get('force_refresh') ? true : false;
             
+            // Filter parameters
+            $search_term = trim($this->input->get('search'));
+            $status_filter = $this->input->get('status');
+            $quota_filter = $this->input->get('quota');
+            
             if ($force_refresh) {
                 log_message('info', 'Email check_accounts - Force refresh requested, performing fresh login');
                 if (!$this->cpanel_new->forceLogin()) {
@@ -240,6 +245,9 @@ class Email extends CI_Controller {
             // Pagination parameters
             $per_page = 25;
             $page = $this->input->get('page') ? intval($this->input->get('page')) : 1;
+            if ($page < 1) {
+                $page = 1;
+            }
             $offset = ($page - 1) * $per_page;
             
             // Get email accounts
@@ -263,9 +271,52 @@ class Email extends CI_Controller {
                 return;
             }
             
-            $total_accounts = count($all_accounts);
-            $total_pages = ceil($total_accounts / $per_page);
-            $accounts = array_slice($all_accounts, $offset, $per_page);
+            if (!is_array($all_accounts)) {
+                $all_accounts = [];
+            }
+            
+            $filtered_accounts = $all_accounts;
+            $search_term_lower = strtolower($search_term);
+            
+            if ($search_term !== '') {
+                $filtered_accounts = array_filter($filtered_accounts, function($account) use ($search_term_lower) {
+                    return isset($account['email']) && stripos($account['email'], $search_term_lower) !== false;
+                });
+            }
+            
+            if ($status_filter === 'active') {
+                $filtered_accounts = array_filter($filtered_accounts, function($account) {
+                    return empty($account['suspended']);
+                });
+            } elseif ($status_filter === 'suspended') {
+                $filtered_accounts = array_filter($filtered_accounts, function($account) {
+                    return !empty($account['suspended']);
+                });
+            }
+            
+            if ($quota_filter) {
+                $filtered_accounts = array_filter($filtered_accounts, function($account) use ($quota_filter) {
+                    $quota = isset($account['quota']) ? (int)$account['quota'] : 0;
+                    switch ($quota_filter) {
+                        case 'small':
+                            return $quota < 100;
+                        case 'medium':
+                            return $quota >= 100 && $quota <= 500;
+                        case 'large':
+                            return $quota > 500;
+                        default:
+                            return true;
+                    }
+                });
+            }
+            
+            $filtered_accounts = array_values($filtered_accounts);
+            
+            $total_accounts = count($filtered_accounts);
+            $total_pages = $total_accounts > 0 ? ceil($total_accounts / $per_page) : 1;
+            $page = min($page, $total_pages);
+            $offset = ($page - 1) * $per_page;
+            $accounts = array_slice($filtered_accounts, $offset, $per_page);
             
             $debug_info = [
                 'total_accounts' => $total_accounts,
@@ -276,7 +327,12 @@ class Email extends CI_Controller {
                 'cpanel_host' => $this->cpanel_config['host'],
                 'auth_method' => $this->cpanel_new->getAuthMethod(),
                 'session_token' => $this->cpanel_new->getSessionToken(),
-                'timestamp' => date('Y-m-d H:i:s')
+                'timestamp' => date('Y-m-d H:i:s'),
+                'filters' => [
+                    'search' => $search_term,
+                    'status' => $status_filter,
+                    'quota' => $quota_filter
+                ]
             ];
             
             log_message('info', 'Email check_accounts - Debug info: ' . json_encode($debug_info));

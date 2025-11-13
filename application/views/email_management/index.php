@@ -220,11 +220,11 @@
                     
                     <!-- Pagination -->
                     <?php if (isset($total_pages) && $total_pages > 1): ?>
-                        <div class="d-flex justify-content-between align-items-center mt-3">
+                        <div id="serverPagination" class="d-flex justify-content-between align-items-center mt-3">
                             <div class="text-muted">
                                 Menampilkan <?= $offset + 1 ?> - <?= min($offset + $per_page, $total_accounts) ?> dari <?= $total_accounts ?> akun email
                             </div>
-                            <nav aria-label="Email pagination">
+                            <nav id="serverPaginationNav" aria-label="Email pagination">
                                 <ul class="pagination pagination-sm mb-0">
                                     <!-- Previous Page -->
                                     <?php if ($current_page > 1): ?>
@@ -501,8 +501,21 @@
 // Global variables
 // Global variable for delete email address
 window.deleteEmailAddress = '';
-// Global variable to store all email accounts for filtering
-window.allEmailAccounts = [];
+// Global variable to store all email accounts untuk kebutuhan filter
+window.allEmailAccounts = <?php
+$emailAccounts = isset($email_accounts) && is_array($email_accounts) ? $email_accounts : [];
+echo json_encode($emailAccounts, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+?>;
+// Salinan data yang sedang ditampilkan sekarang
+window.displayedEmailAccounts = Array.isArray(window.allEmailAccounts)
+    ? [...window.allEmailAccounts]
+    : [];
+// Status filter aktif terakhir yang dikirim ke server
+window.emailFilterState = {
+    search: '',
+    status: '',
+    quota: ''
+};
 // Global variables for email inbox
 window.currentEmailAccount = '';
 window.currentFolder = 'INBOX';
@@ -523,71 +536,78 @@ function getValidEmails(checkboxes) {
         .filter(email => isValidEmail(email));
 }
 
-// Email filtering and search functions
-function filterEmails() {
-    const searchTerm = document.getElementById('emailSearchInput').value.toLowerCase();
-    const statusFilter = document.getElementById('statusFilter').value;
-    const quotaFilter = document.getElementById('quotaFilter').value;
+function hasActiveFilters() {
+    const state = window.emailFilterState || {};
+    return Boolean((state.search && state.search.trim()) || state.status || state.quota);
+}
+
+function toggleServerPagination(isVisible) {
+    const serverPagination = document.getElementById('serverPagination');
+    if (serverPagination) {
+        serverPagination.style.display = isVisible ? '' : 'none';
+    }
+}
+
+function getFilterParams() {
+    const searchInput = document.getElementById('emailSearchInput');
+    const statusSelect = document.getElementById('statusFilter');
+    const quotaSelect = document.getElementById('quotaFilter');
+    
+    return {
+        search: searchInput ? searchInput.value.trim() : '',
+        status: statusSelect ? statusSelect.value : '',
+        quota: quotaSelect ? quotaSelect.value : ''
+    };
+}
+
+function updateSearchResultsInfo(metadata, filtersActive) {
     const searchResultsInfo = document.getElementById('searchResultsInfo');
     const searchResultsText = document.getElementById('searchResultsText');
     
-    if (!window.allEmailAccounts || window.allEmailAccounts.length === 0) {
-        console.log('No accounts to filter');
+    if (!searchResultsInfo || !searchResultsText) {
         return;
     }
     
-    let filteredAccounts = window.allEmailAccounts.filter(account => {
-        // Search filter
-        const matchesSearch = !searchTerm || 
-            account.email.toLowerCase().includes(searchTerm);
-        
-        // Status filter
-        const matchesStatus = !statusFilter || 
-            (statusFilter === 'active' && !account.suspended) ||
-            (statusFilter === 'suspended' && account.suspended);
-        
-        // Quota filter
-        let matchesQuota = true;
-        if (quotaFilter) {
-            const quota = parseInt(account.quota) || 0;
-            switch(quotaFilter) {
-                case 'small':
-                    matchesQuota = quota < 100;
-                    break;
-                case 'medium':
-                    matchesQuota = quota >= 100 && quota <= 500;
-                    break;
-                case 'large':
-                    matchesQuota = quota > 500;
-                    break;
-            }
-        }
-        
-        return matchesSearch && matchesStatus && matchesQuota;
-    });
-    
-    // Update search results info
-    const totalAccounts = window.allEmailAccounts.length;
-    const filteredCount = filteredAccounts.length;
-    
-    if (searchTerm || statusFilter || quotaFilter) {
-        searchResultsInfo.style.display = 'block';
-        searchResultsText.textContent = `Menampilkan ${filteredCount} dari ${totalAccounts} akun email`;
-    } else {
+    if (!filtersActive || !metadata) {
         searchResultsInfo.style.display = 'none';
+        searchResultsText.textContent = '';
+        return;
     }
     
-    // Update table with filtered results
-    updateEmailTable(filteredAccounts);
+    const totalAccounts = metadata.total_accounts || 0;
+    if (totalAccounts === 0) {
+        searchResultsInfo.style.display = 'block';
+        searchResultsText.textContent = 'Tidak ada akun email yang cocok dengan filter saat ini';
+        return;
+    }
     
-    console.log(`Filtered ${filteredCount} accounts from ${totalAccounts} total accounts`);
+    const startItem = ((metadata.current_page - 1) * metadata.per_page) + 1;
+    const endItem = Math.min(metadata.current_page * metadata.per_page, totalAccounts);
+    
+    searchResultsInfo.style.display = 'block';
+    searchResultsText.textContent = `Menampilkan ${startItem} - ${endItem} dari ${totalAccounts} akun email (hasil filter)`;
+}
+
+// Email filtering and search functions
+function filterEmails() {
+    const filters = getFilterParams();
+    window.emailFilterState = { ...filters };
+    updateSearchResultsInfo(null, false);
+    checkAccounts(1);
 }
 
 function clearSearch() {
-    document.getElementById('emailSearchInput').value = '';
-    document.getElementById('statusFilter').value = '';
-    document.getElementById('quotaFilter').value = '';
-    filterEmails();
+    const searchInput = document.getElementById('emailSearchInput');
+    const statusSelect = document.getElementById('statusFilter');
+    const quotaSelect = document.getElementById('quotaFilter');
+    
+    if (searchInput) searchInput.value = '';
+    if (statusSelect) statusSelect.value = '';
+    if (quotaSelect) quotaSelect.value = '';
+    
+    window.emailFilterState = { search: '', status: '', quota: '' };
+    updateSearchResultsInfo(null, false);
+    checkAccounts(1);
 }
 
 function debounce(func, wait) {
@@ -604,6 +624,9 @@ function debounce(func, wait) {
 
 // Debounced search function
 const debouncedFilterEmails = debounce(filterEmails, 300);
+
+// Sinkronisasi state filter awal dengan nilai input form
+window.emailFilterState = getFilterParams();
 
 // Email Inbox Functions
 function openEmailInbox(email) {
@@ -941,8 +964,12 @@ function refreshQuotaInfo(email) {
                 window.allEmailAccounts[accountIndex].suspended = info.suspended;
             }
             
-            // Update the table display
-            updateEmailTable(window.allEmailAccounts);
+            // Update the table display sesuai filter aktif
+            if (hasActiveFilters()) {
+                filterEmails();
+            } else {
+                updateEmailTable(window.allEmailAccounts, null, { updateMaster: false });
+            }
             
             // Show success message
             showAlert('success', `Quota info berhasil diupdate: ${info.usage_formatted} dari ${info.quota_formatted} (${info.usage_percentage}%)`);
@@ -1570,10 +1597,23 @@ function checkAccounts(page = 1) {
     
     tbody.innerHTML = loadingRow;
     
-    console.log('=== EMAIL CHECK ACCOUNTS ===');
-    console.log('Requesting URL:', '<?= base_url('email/check_accounts') ?>?page=' + page);
+    const params = new URLSearchParams();
+    params.append('page', page);
     
-    fetch('<?= base_url('email/check_accounts') ?>?page=' + page, {
+    const filtersActive = hasActiveFilters();
+    if (filtersActive) {
+        const { search, status, quota } = window.emailFilterState || {};
+        if (search) params.append('search', search);
+        if (status) params.append('status', status);
+        if (quota) params.append('quota', quota);
+    }
+    
+    const requestUrl = '<?= base_url('email/check_accounts') ?>?' + params.toString();
+    
+    console.log('=== EMAIL CHECK ACCOUNTS ===');
+    console.log('Requesting URL:', requestUrl);
+    
+    fetch(requestUrl, {
         method: 'GET',
         headers: {
             'X-Requested-With': 'XMLHttpRequest'
@@ -1597,7 +1637,11 @@ function checkAccounts(page = 1) {
             console.log('Parsed JSON:', jsonData);
             
             if (jsonData.success) {
-                updateEmailTable(jsonData.accounts, jsonData.pagination);
+                const accounts = Array.isArray(jsonData.accounts) ? jsonData.accounts : [];
+                window.allEmailAccounts = [...accounts];
+                updateEmailTable(accounts, jsonData.pagination, { updateMaster: true });
+                updateSearchResultsInfo(jsonData.pagination, filtersActive);
+                
                 console.log('Debug info:', jsonData.debug_info);
                 console.log('Pagination info:', jsonData.pagination);
             } else {
@@ -1661,8 +1705,25 @@ function forceRefresh() {
     console.log('=== EMAIL FORCE REFRESH ===');
     console.log('Performing force refresh with fresh login');
     
+    const params = new URLSearchParams();
+    params.append('force_refresh', '1');
+    params.append('page', '1');
+    
+    const filtersActive = hasActiveFilters();
+    if (filtersActive) {
+        const { search, status, quota } = window.emailFilterState || {};
+        if (search) params.append('search', search);
+        if (status) params.append('status', status);
+        if (quota) params.append('quota', quota);
+    }
+    
+    const requestUrl = '<?= base_url('email/check_accounts') ?>?' + params.toString();
+    
+    console.log('=== EMAIL FORCE REFRESH ===');
+    console.log('Requesting URL:', requestUrl);
+    
     // Lakukan force refresh dengan parameter khusus
-    fetch('<?= base_url('email/check_accounts') ?>?force_refresh=1', {
+    fetch(requestUrl, {
         method: 'GET',
         headers: {
             'X-Requested-With': 'XMLHttpRequest'
@@ -1678,7 +1739,10 @@ function forceRefresh() {
         try {
             const jsonData = JSON.parse(data);
             if (jsonData.success) {
-                updateEmailTable(jsonData.accounts, jsonData.pagination);
+                const accounts = Array.isArray(jsonData.accounts) ? jsonData.accounts : [];
+                window.allEmailAccounts = [...accounts];
+                updateEmailTable(accounts, jsonData.pagination, { updateMaster: true });
+                updateSearchResultsInfo(jsonData.pagination, filtersActive);
                 showAlert('success', 'Force refresh berhasil! Data diperbarui dengan fresh login.');
             } else {
                 showAlert('error', 'Force refresh gagal: ' + jsonData.message);
@@ -1700,7 +1764,7 @@ function forceRefresh() {
 }
 
 // Update email table with new data
-function updateEmailTable(accounts, pagination = null) {
+function updateEmailTable(accounts, pagination = null, options = {}) {
     const tbody = document.getElementById('email-tbody');
     if (!tbody) {
         console.error('Email tbody element not found');
@@ -1710,11 +1774,6 @@ function updateEmailTable(accounts, pagination = null) {
     console.log('=== EMAIL UPDATE TABLE ===');
     console.log('Updating table with accounts:', accounts);
     console.log('Pagination data:', pagination);
-    
-    // Store all accounts in global variable for filtering
-    if (Array.isArray(accounts)) {
-        window.allEmailAccounts = accounts;
-    }
     
     if (!Array.isArray(accounts)) {
         console.error('Accounts is not an array:', accounts);
@@ -1728,6 +1787,15 @@ function updateEmailTable(accounts, pagination = null) {
         `;
         return;
     }
+    
+    const { updateMaster = true } = options;
+    
+    if (updateMaster) {
+        window.allEmailAccounts = [...accounts];
+    }
+    window.displayedEmailAccounts = [...accounts];
+    
+    toggleServerPagination(true);
     
     if (accounts.length === 0) {
         console.log('No accounts found');
@@ -1744,7 +1812,7 @@ function updateEmailTable(accounts, pagination = null) {
     }
     
     let html = '';
-    accounts.forEach((account, index) => {
+    window.displayedEmailAccounts.forEach((account, index) => {
         console.log('Processing account:', account);
         
         const statusBadge = account.suspended ? 
@@ -1822,6 +1890,11 @@ function updateEmailTable(accounts, pagination = null) {
     // Update pagination if provided
     if (pagination) {
         updatePagination(pagination);
+    } else {
+        const paginationContainer = document.querySelector('.pagination-container');
+        if (paginationContainer) {
+            paginationContainer.style.display = 'none';
+        }
     }
 }
 
