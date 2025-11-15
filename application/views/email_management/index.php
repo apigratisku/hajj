@@ -48,8 +48,8 @@
                     <?php endif; ?>
 
                     <!-- Search and Filter Section -->
-                    <div class="row mb-3">
-                        <div class="col-md-6">
+                    <div class="row mb-3 g-2 g-md-3">
+                        <div class="col-12 col-lg-5">
                             <div class="input-group">
                                 <span class="input-group-text">
                                     <i class="fas fa-search"></i>
@@ -62,20 +62,28 @@
                                 </button>
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-6 col-lg-2">
                             <select class="form-select" id="statusFilter" onchange="filterEmails()">
                                 <option value="">Semua Status</option>
                                 <option value="active">Active</option>
                                 <option value="suspended">Suspended</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-6 col-lg-2">
                             <select class="form-select" id="quotaFilter" onchange="filterEmails()">
                                 <option value="">Semua Quota</option>
                                 <option value="small">Kecil (< 100MB)</option>
                                 <option value="medium">Sedang (100MB - 500MB)</option>
                                 <option value="large">Besar (> 500MB)</option>
                             </select>
+                        </div>
+                        <div class="col-12 col-lg-3">
+                            <div class="form-check form-switch mt-2 mt-lg-0">
+                                <input class="form-check-input" type="checkbox" id="pesertaFilter" onchange="filterEmails()">
+                                <label class="form-check-label" for="pesertaFilter">
+                                    Hanya email peserta (Already)
+                                </label>
+                            </div>
                         </div>
                     </div>
 
@@ -118,7 +126,7 @@
                                                                         <th class="text-center" style="width: 50px;">
                                         <input type="checkbox" id="selectAll" onchange="toggleSelectAll()" title="Pilih Semua">
                                     </th>
-                                   
+                                    
                                     <th>Email Address</th>
                                     <th class="text-center">Quota</th>
                                     <th class="text-center">Usage</th>
@@ -139,6 +147,7 @@
                                 <?php else: ?>
                                     <?php $no = 1; foreach ($email_accounts as $account): ?>
                                         <tr>
+                                            
                                                                                         <td class="text-center">
                                                 <?php $emailValue = htmlspecialchars($account['email']); $isEmailValid = !empty($emailValue); ?>
                                                 <input type="checkbox" class="email-checkbox" value="<?= $emailValue ?>" onchange="updateBulkDeleteButton()" <?= !$isEmailValid ? 'disabled' : '' ?>>
@@ -514,7 +523,8 @@ window.displayedEmailAccounts = Array.isArray(window.allEmailAccounts)
 window.emailFilterState = {
     search: '',
     status: '',
-    quota: ''
+    quota: '',
+    peserta_only: false
 };
 // Global variables for email inbox
 window.currentEmailAccount = '';
@@ -538,7 +548,7 @@ function getValidEmails(checkboxes) {
 
 function hasActiveFilters() {
     const state = window.emailFilterState || {};
-    return Boolean((state.search && state.search.trim()) || state.status || state.quota);
+    return Boolean((state.search && state.search.trim()) || state.status || state.quota || state.peserta_only);
 }
 
 function toggleServerPagination(isVisible) {
@@ -552,15 +562,17 @@ function getFilterParams() {
     const searchInput = document.getElementById('emailSearchInput');
     const statusSelect = document.getElementById('statusFilter');
     const quotaSelect = document.getElementById('quotaFilter');
+    const pesertaCheckbox = document.getElementById('pesertaFilter');
     
     return {
         search: searchInput ? searchInput.value.trim() : '',
         status: statusSelect ? statusSelect.value : '',
-        quota: quotaSelect ? quotaSelect.value : ''
+        quota: quotaSelect ? quotaSelect.value : '',
+        peserta_only: pesertaCheckbox ? pesertaCheckbox.checked : false
     };
 }
 
-function updateSearchResultsInfo(metadata, filtersActive) {
+function updateSearchResultsInfo(metadata, filtersActive, responseFilters = {}) {
     const searchResultsInfo = document.getElementById('searchResultsInfo');
     const searchResultsText = document.getElementById('searchResultsText');
     
@@ -575,9 +587,12 @@ function updateSearchResultsInfo(metadata, filtersActive) {
     }
     
     const totalAccounts = metadata.total_accounts || 0;
+    const pesertaFilterActive = Boolean(responseFilters.peserta_only || (window.emailFilterState && window.emailFilterState.peserta_only));
     if (totalAccounts === 0) {
         searchResultsInfo.style.display = 'block';
-        searchResultsText.textContent = 'Tidak ada akun email yang cocok dengan filter saat ini';
+        searchResultsText.textContent = pesertaFilterActive
+            ? 'Tidak ada email peserta (status Already) yang cocok dengan filter saat ini'
+            : 'Tidak ada akun email yang cocok dengan filter saat ini';
         return;
     }
     
@@ -585,7 +600,11 @@ function updateSearchResultsInfo(metadata, filtersActive) {
     const endItem = Math.min(metadata.current_page * metadata.per_page, totalAccounts);
     
     searchResultsInfo.style.display = 'block';
-    searchResultsText.textContent = `Menampilkan ${startItem} - ${endItem} dari ${totalAccounts} akun email (hasil filter)`;
+    let infoText = `Menampilkan ${startItem} - ${endItem} dari ${totalAccounts} akun email (hasil filter)`;
+    if (pesertaFilterActive) {
+        infoText += ' | Filter peserta status Already aktif';
+    }
+    searchResultsText.textContent = infoText;
 }
 
 // Email filtering and search functions
@@ -600,12 +619,14 @@ function clearSearch() {
     const searchInput = document.getElementById('emailSearchInput');
     const statusSelect = document.getElementById('statusFilter');
     const quotaSelect = document.getElementById('quotaFilter');
+    const pesertaCheckbox = document.getElementById('pesertaFilter');
     
     if (searchInput) searchInput.value = '';
     if (statusSelect) statusSelect.value = '';
     if (quotaSelect) quotaSelect.value = '';
+    if (pesertaCheckbox) pesertaCheckbox.checked = false;
     
-    window.emailFilterState = { search: '', status: '', quota: '' };
+    window.emailFilterState = { search: '', status: '', quota: '', peserta_only: false };
     updateSearchResultsInfo(null, false);
     checkAccounts(1);
 }
@@ -968,7 +989,7 @@ function refreshQuotaInfo(email) {
             if (hasActiveFilters()) {
                 filterEmails();
             } else {
-                updateEmailTable(window.allEmailAccounts, null, { updateMaster: false });
+                updateEmailTable(window.allEmailAccounts, null, { updateMaster: false, filtersActive: false });
             }
             
             // Show success message
@@ -1602,10 +1623,11 @@ function checkAccounts(page = 1) {
     
     const filtersActive = hasActiveFilters();
     if (filtersActive) {
-        const { search, status, quota } = window.emailFilterState || {};
+        const { search, status, quota, peserta_only } = window.emailFilterState || {};
         if (search) params.append('search', search);
         if (status) params.append('status', status);
         if (quota) params.append('quota', quota);
+        if (peserta_only) params.append('peserta_only', '1');
     }
     
     const requestUrl = '<?= base_url('email/check_accounts') ?>?' + params.toString();
@@ -1639,8 +1661,8 @@ function checkAccounts(page = 1) {
             if (jsonData.success) {
                 const accounts = Array.isArray(jsonData.accounts) ? jsonData.accounts : [];
                 window.allEmailAccounts = [...accounts];
-                updateEmailTable(accounts, jsonData.pagination, { updateMaster: true });
-                updateSearchResultsInfo(jsonData.pagination, filtersActive);
+                updateEmailTable(accounts, jsonData.pagination, { updateMaster: true, filtersActive });
+                updateSearchResultsInfo(jsonData.pagination, filtersActive, jsonData.filters || {});
                 
                 console.log('Debug info:', jsonData.debug_info);
                 console.log('Pagination info:', jsonData.pagination);
@@ -1711,10 +1733,11 @@ function forceRefresh() {
     
     const filtersActive = hasActiveFilters();
     if (filtersActive) {
-        const { search, status, quota } = window.emailFilterState || {};
+        const { search, status, quota, peserta_only } = window.emailFilterState || {};
         if (search) params.append('search', search);
         if (status) params.append('status', status);
         if (quota) params.append('quota', quota);
+        if (peserta_only) params.append('peserta_only', '1');
     }
     
     const requestUrl = '<?= base_url('email/check_accounts') ?>?' + params.toString();
@@ -1741,8 +1764,8 @@ function forceRefresh() {
             if (jsonData.success) {
                 const accounts = Array.isArray(jsonData.accounts) ? jsonData.accounts : [];
                 window.allEmailAccounts = [...accounts];
-                updateEmailTable(accounts, jsonData.pagination, { updateMaster: true });
-                updateSearchResultsInfo(jsonData.pagination, filtersActive);
+                updateEmailTable(accounts, jsonData.pagination, { updateMaster: true, filtersActive });
+                updateSearchResultsInfo(jsonData.pagination, filtersActive, jsonData.filters || {});
                 showAlert('success', 'Force refresh berhasil! Data diperbarui dengan fresh login.');
             } else {
                 showAlert('error', 'Force refresh gagal: ' + jsonData.message);
@@ -1788,7 +1811,19 @@ function updateEmailTable(accounts, pagination = null, options = {}) {
         return;
     }
     
-    const { updateMaster = true } = options;
+    const {
+        updateMaster = true,
+        filtersActive = false
+    } = options;
+    const hideServerPagination = options.hideServerPagination !== undefined
+        ? options.hideServerPagination
+        : Boolean(pagination);
+
+    if (hideServerPagination) {
+        toggleServerPagination(false);
+    } else {
+        toggleServerPagination(true);
+    }
     
     if (updateMaster) {
         window.allEmailAccounts = [...accounts];
@@ -1827,7 +1862,6 @@ function updateEmailTable(accounts, pagination = null, options = {}) {
                 <td class="text-center">
                     <input type="checkbox" class="email-checkbox" value="${emailValue}" onchange="updateBulkDeleteButton()" ${!emailIsValid ? 'disabled' : ''}>
                 </td>
-                <td class="text-center">${index + 1}</td>
                 <td>
                     <i class="fas fa-envelope me-2 text-primary"></i>
                     <strong>${emailIsValid ? emailValue : 'N/A'}</strong>
@@ -1889,7 +1923,7 @@ function updateEmailTable(accounts, pagination = null, options = {}) {
     
     // Update pagination if provided
     if (pagination) {
-        updatePagination(pagination);
+        updatePagination(pagination, { filtersActive });
     } else {
         const paginationContainer = document.querySelector('.pagination-container');
         if (paginationContainer) {
@@ -1899,9 +1933,10 @@ function updateEmailTable(accounts, pagination = null, options = {}) {
 }
 
 // Update pagination controls
-function updatePagination(pagination) {
+function updatePagination(pagination, options = {}) {
     console.log('=== EMAIL UPDATE PAGINATION ===');
     console.log('Updating pagination with:', pagination);
+    const { filtersActive = false } = options;
     
     // Find existing pagination container
     let paginationContainer = document.querySelector('.pagination-container');
@@ -1932,9 +1967,13 @@ function updatePagination(pagination) {
     const startItem = (pagination.current_page - 1) * pagination.per_page + 1;
     const endItem = Math.min(pagination.current_page * pagination.per_page, pagination.total_accounts);
     
+    const totalInfoText = filtersActive
+        ? `Menampilkan ${startItem} - ${endItem} dari ${pagination.total_accounts} akun email (hasil filter)`
+        : `Menampilkan ${startItem} - ${endItem} dari ${pagination.total_accounts} akun email`;
+
     let html = `
         <div class="text-muted">
-            Menampilkan ${startItem} - ${endItem} dari ${pagination.total_accounts} akun email
+            ${totalInfoText}
         </div>
         <nav aria-label="Email pagination">
             <ul class="pagination pagination-sm mb-0">

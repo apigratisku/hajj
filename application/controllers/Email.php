@@ -9,6 +9,7 @@ class Email extends CI_Controller {
         parent::__construct();
         $this->load->library('session');
         $this->load->helper('url');
+        $this->load->database();
         
         // Check if user is logged in
         if (!$this->session->userdata('logged_in')) {
@@ -218,6 +219,8 @@ class Email extends CI_Controller {
             $search_term = trim($this->input->get('search'));
             $status_filter = $this->input->get('status');
             $quota_filter = $this->input->get('quota');
+            $peserta_only = $this->input->get('peserta_only');
+            $filter_peserta_only = in_array($peserta_only, ['1', 1, true, 'true'], true);
             
             if ($force_refresh) {
                 log_message('info', 'Email check_accounts - Force refresh requested, performing fresh login');
@@ -310,6 +313,19 @@ class Email extends CI_Controller {
                 });
             }
             
+            if ($filter_peserta_only) {
+                $peserta_emails = $this->get_peserta_emails_by_status(1);
+                $filtered_accounts = array_filter($filtered_accounts, function($account) use ($peserta_emails) {
+                    if (empty($account['email'])) {
+                        return false;
+                    }
+                    $email = strtolower(trim($account['email']));
+                    return isset($peserta_emails[$email]);
+                });
+            } else {
+                $peserta_emails = [];
+            }
+
             $filtered_accounts = array_values($filtered_accounts);
             
             $total_accounts = count($filtered_accounts);
@@ -331,9 +347,13 @@ class Email extends CI_Controller {
                 'filters' => [
                     'search' => $search_term,
                     'status' => $status_filter,
-                    'quota' => $quota_filter
+                    'quota' => $quota_filter,
+                    'peserta_only' => $filter_peserta_only
                 ]
             ];
+            if ($filter_peserta_only) {
+                $debug_info['peserta_email_count'] = count($peserta_emails);
+            }
             
             log_message('info', 'Email check_accounts - Debug info: ' . json_encode($debug_info));
             
@@ -349,7 +369,13 @@ class Email extends CI_Controller {
                     'has_prev' => $page > 1,
                     'has_next' => $page < $total_pages
                 ],
-                'debug_info' => $debug_info
+                'debug_info' => $debug_info,
+                'filters' => [
+                    'search' => $search_term,
+                    'status' => $status_filter,
+                    'quota' => $quota_filter,
+                    'peserta_only' => $filter_peserta_only
+                ]
             ]));
         } catch (Exception $e) {
             log_message('error', 'Error in Email check_accounts: ' . $e->getMessage());
@@ -871,6 +897,40 @@ class Email extends CI_Controller {
             return 'caution';
         } else {
             return 'good';
+        }
+    }
+
+    /**
+     * Ambil daftar email peserta berdasarkan status tertentu (default: Already / 1)
+     *
+     * @param int $status
+     * @return array associative array untuk lookup cepat
+     */
+    private function get_peserta_emails_by_status($status = 1) {
+        try {
+            $query = $this->db->select('email')
+                ->from('peserta')
+                ->where('status', (int)$status)
+                ->where('email IS NOT NULL', null, false)
+                ->where('email !=', '')
+                ->get();
+
+            if (!$query) {
+                log_message('error', 'Email get_peserta_emails_by_status - Query failed: ' . $this->db->last_query());
+                return [];
+            }
+
+            $emails = [];
+            foreach ($query->result_array() as $row) {
+                $email = isset($row['email']) ? strtolower(trim($row['email'])) : '';
+                if ($email && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    $emails[$email] = true;
+                }
+            }
+            return $emails;
+        } catch (Exception $e) {
+            log_message('error', 'Error in get_peserta_emails_by_status: ' . $e->getMessage());
+            return [];
         }
     }
 
