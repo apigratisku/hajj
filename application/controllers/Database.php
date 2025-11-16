@@ -3453,7 +3453,7 @@ class Database extends CI_Controller {
             $row_num = $row + 2; // Start from row 2 (after header)
             
             $sheet->setCellValue('A' . $row_num, $data['email']);
-            $sheet->setCellValue('B' . $row_num, "alhakimlanda@gmail.com");
+            $sheet->setCellValue('B' . $row_num, "mailbox@choco.web.id");
 
         }
 
