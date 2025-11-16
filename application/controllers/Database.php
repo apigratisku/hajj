@@ -2306,16 +2306,16 @@ class Database extends CI_Controller {
                 // ===== END MODIFIKASI NOMOR HP =====
                 
                 // ===== MODIFIKASI EMAIL =====
-                // Logika: Email dibuat dari no_visa@menfins.site
+                // Logika: Email dibuat dari no_visa@choco.web.id
                 $email = null;
                 
                 if (!empty($no_visa)) {
-                    // Buat email dari no_visa@menfins.site
-                    $email = $no_visa . '@menfins.site';
+                    // Buat email dari no_visa@choco.web.id
+                    $email = $no_visa . '@choco.web.id';
                     log_message('info', "Row $row: Email dibuat dari no_visa: $email");
                 } else {
-                    // Jika no_visa kosong, gunakan nomor_paspor@menfins.site
-                    $email = $nomor_paspor . '@menfins.site';
+                    // Jika no_visa kosong, gunakan nomor_paspor@choco.web.id
+                    $email = $nomor_paspor . '@choco.web.id';
                     log_message('info', "Row $row: Email dibuat dari nomor_paspor (no_visa kosong): $email");
                 }
                 // ===== END MODIFIKASI EMAIL =====
