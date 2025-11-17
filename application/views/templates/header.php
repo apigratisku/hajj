@@ -18,14 +18,16 @@
     <!-- Custom CSS -->
     <style>
         :root {
-            --primary-color: #8B4513;
-            --secondary-color: #654321;
-            --accent-color: #D2691E;
-            --dark-brown: #3E2723;
-            --light-brown: #D7CCC8;
-            --gold: #DAA520;
+            --primary-color: #1e3a5f;
+            --secondary-color: #2c5282;
+            --accent-color: #3b82f6;
+            --dark-blue: #1e3a5f;
+            --light-blue: #e0f2fe;
+            --white: #ffffff;
             --black: #1a1a1a;
-            --cream: #F5F5DC;
+            --blue-medium: #3b82f6;
+            --blue-light: #60a5fa;
+            --blue-dark: #1e40af;
             --success-color: #198754;
             --info-color: #0dcaf0;
             --warning-color: #ffc107;
@@ -37,13 +39,13 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
             min-height: 100vh;
-            background: linear-gradient(135deg, rgba(139, 69, 19, 0.1), rgba(62, 39, 35, 0.1));
+            background: linear-gradient(135deg, rgba(30, 58, 95, 0.1), rgba(44, 82, 130, 0.1));
         }
         
         /* Sidebar styles - Ultra Compact */
         .sidebar {
             width: 280px;
-            background: linear-gradient(to bottom, var(--dark-brown), var(--secondary-color));
+            background: linear-gradient(to bottom, var(--dark-blue), var(--secondary-color));
             color: white;
             position: fixed;
             height: 100vh;
@@ -51,20 +53,20 @@
             transition: all 0.3s;
             display: flex;
             flex-direction: column;
-            border-right: 2px solid var(--gold);
+            border-right: 2px solid var(--accent-color);
         }
         
         .sidebar .sidebar-header {
             padding: 15px; /* Reduced from 20px */
             background: rgba(0, 0, 0, 0.3);
             text-align: center;
-            border-bottom: 1px solid rgba(218, 165, 32, 0.3);
+            border-bottom: 1px solid rgba(59, 130, 246, 0.3);
         }
         
         .sidebar .sidebar-header h3 {
             margin: 0;
             font-size: 1.3rem; /* Reduced from 1.5rem */
-            color: var(--gold);
+            color: var(--white);
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
         }
         
@@ -98,9 +100,9 @@
         
         .sidebar ul li a:hover,
         .sidebar ul li a.active {
-            color: var(--gold);
-            background: rgba(218, 165, 32, 0.2);
-            border-left: 3px solid var(--gold);
+            color: var(--white);
+            background: rgba(59, 130, 246, 0.2);
+            border-left: 3px solid var(--accent-color);
             transform: translateX(5px);
         }
         
@@ -149,7 +151,7 @@
             margin-right: 10px;
             width: 20px;
             text-align: center;
-            color: var(--gold);
+            color: var(--white);
         }
         
         .sidebar ul.submenu {
@@ -172,7 +174,7 @@
         
         .nav-section-divider {
             height: 1px;
-            background: rgba(218, 165, 32, 0.3);
+            background: rgba(59, 130, 246, 0.3);
             margin: 12px 15px; /* Reduced from 15px 20px */
         }
         
@@ -181,8 +183,8 @@
             padding: 12px; /* Reduced from 15px */
             background: rgba(0, 0, 0, 0.3);
             font-size: 0.7rem; /* Reduced from 0.75rem */
-            color: rgba(218, 165, 32, 0.7);
-            border-top: 1px solid rgba(218, 165, 32, 0.3);
+            color: rgba(255, 255, 255, 0.7);
+            border-top: 1px solid rgba(59, 130, 246, 0.3);
         }
         
         /* Content styles - Ultra Compact */
@@ -199,13 +201,13 @@
             border-radius: 8px; /* Reduced from 10px */
             margin-bottom: 15px; /* Reduced from 20px */
             box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1); /* Reduced shadow */
-            border: 1px solid var(--light-brown);
+            border: 1px solid var(--light-blue);
         }
         
         .content-header h1 {
             margin: 0;
             font-size: 1.5rem; /* Reduced from 1.8rem */
-            color: var(--dark-brown);
+            color: var(--dark-blue);
             font-weight: bold;
         }
         
@@ -214,7 +216,7 @@
             padding: 15px; /* Reduced from 20px */
             border-radius: 8px; /* Reduced from 10px */
             box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1); /* Reduced shadow */
-            border: 1px solid var(--light-brown);
+            border: 1px solid var(--light-blue);
         }
         
         /* Card styles for dashboard - Ultra Compact */
@@ -224,7 +226,7 @@
             padding: 15px; /* Reduced from 20px */
             margin-bottom: 15px; /* Reduced from 20px */
             transition: all 0.3s;
-            border-left: 4px solid var(--gold); /* Reduced from 5px */
+            border-left: 4px solid var(--accent-color); /* Reduced from 5px */
             background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 249, 250, 0.95));
         }
         
@@ -235,13 +237,13 @@
         
         .dashboard-card .icon {
             font-size: 2.5rem; /* Reduced from 3rem */
-            color: var(--gold);
+            color: var(--accent-color);
         }
         
         .dashboard-card .count {
             font-size: 2rem; /* Reduced from 2.5rem */
             font-weight: bold;
-            color: var(--dark-brown);
+            color: var(--dark-blue);
         }
         
         .dashboard-card .title {
@@ -262,13 +264,13 @@
         .table thead th {
             background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
             color: white;
-            border-bottom: 2px solid var(--gold);
+            border-bottom: 2px solid var(--accent-color);
             font-weight: 600;
             vertical-align: middle;
         }
         
         .table tbody tr:hover {
-            background-color: rgba(218, 165, 32, 0.1);
+            background-color: rgba(59, 130, 246, 0.1);
         }
         
         /* Form styling */
@@ -292,13 +294,13 @@
         .alert-success {
             background: rgba(25, 135, 84, 0.1);
             border-left: 3px solid var(--success-color); /* Reduced from 4px */
-            color: var(--dark-brown);
+            color: var(--dark-blue);
         }
         
         .alert-danger {
             background: rgba(220, 53, 69, 0.1);
             border-left: 3px solid var(--danger-color); /* Reduced from 4px */
-            color: var(--dark-brown);
+            color: var(--dark-blue);
         }
         
         /* Mobile Sidebar Toggle */
@@ -559,7 +561,7 @@
                 </div>
                 <div class="col-md-6 text-end">
                     <span class="text-secondary">
-                        <i class="fas fa-user me-1" style="color: var(--gold);"></i> 
+                        <i class="fas fa-user me-1" style="color: var(--accent-color);"></i> 
                         <?= function_exists('get_instance') && get_instance()->session ? get_instance()->session->userdata('nama_lengkap') : '' ?> 
                         (<?= function_exists('get_instance') && get_instance()->session ? get_instance()->session->userdata('role') : '' ?>)
                     </span>

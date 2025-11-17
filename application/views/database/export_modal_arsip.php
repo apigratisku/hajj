@@ -188,7 +188,7 @@
 
 .form-select:focus, .form-control:focus {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.2rem rgba(139, 69, 19, 0.25);
+    box-shadow: 0 0 0 0.2rem rgba(30, 58, 95, 0.25);
 }
 
 .form-text {
@@ -200,7 +200,7 @@
 /* Flag Dokumen Checkbox Styles */
 .flag-doc-container {
     scrollbar-width: thin;
-    scrollbar-color: #8B4513 #f8f9fa;
+    scrollbar-color: #1e3a5f #f8f9fa;
 }
 
 .flag-doc-container::-webkit-scrollbar {
@@ -213,22 +213,22 @@
 }
 
 .flag-doc-container::-webkit-scrollbar-thumb {
-    background: #8B4513;
+    background: #1e3a5f;
     border-radius: 3px;
 }
 
 .flag-doc-container::-webkit-scrollbar-thumb:hover {
-    background: #6d3410;
+    background: #1e40af;
 }
 
 .form-check-input:checked {
-    background-color: #8B4513;
-    border-color: #8B4513;
+    background-color: #1e3a5f;
+    border-color: #1e3a5f;
 }
 
 .form-check-input:focus {
-    border-color: #8B4513;
-    box-shadow: 0 0 0 0.2rem rgba(139, 69, 19, 0.25);
+    border-color: #1e3a5f;
+    box-shadow: 0 0 0 0.2rem rgba(30, 58, 95, 0.25);
 }
 
 .form-check-label {

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Sistem Pendataan Kunjungan Peserta Haji dan Umrah</title>
+    <title>Login - Sistem Admin</title>
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -12,22 +12,22 @@
     <link rel="icon" href="<?= base_url('assets/img/hajj_logo.png') ?>" type="image/x-icon">
     <style>
         :root {
-            --primary-color: #A0522D;
-            --secondary-color: #8B7355;
-            --accent-color: #CD853F;
-            --dark-brown: #654321;
-            --light-brown: #F5E6D3;
-            --gold: #DAA520;
+            --primary-color: #1e3a5f;
+            --secondary-color: #2c5282;
+            --accent-color: #3b82f6;
+            --dark-blue: #1e3a5f;
+            --light-blue: #e0f2fe;
+            --white: #ffffff;
             --black: #2F2F2F;
-            --cream: #FDF5E6;
-            --soft-brown: #DEB887;
-            --warm-brown: #D2B48C;
+            --blue-medium: #3b82f6;
+            --blue-light: #60a5fa;
+            --blue-dark: #1e40af;
         }
 
         body {
             margin: 0;
             padding: 0;
-            background: linear-gradient(135deg, rgba(160, 82, 45, 0.3), rgba(139, 115, 85, 0.4));
+            background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 50%, #ffffff 100%);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -37,7 +37,7 @@
             overflow: hidden;
         }
 
-        /* Background Images with Overlay */
+        /* Background Gradient Overlay */
         body::before {
             content: '';
             position: fixed;
@@ -45,14 +45,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: 
-                linear-gradient(135deg, 
-                    rgba(160, 82, 45, 0.4), 
-                    rgba(139, 115, 85, 0.5)
-                ),
-                url('https://awsimages.detik.net.id/community/media/visual/2020/11/06/ilustrasi-ibadah-haji-dan-umrah-1.jpeg?w=600&q=90');
-            background-size: cover;
-            background-position: center;
+            background: linear-gradient(135deg, rgba(30, 58, 95, 0.8), rgba(44, 82, 130, 0.6), rgba(255, 255, 255, 0.3));
             z-index: -1;
             animation: backgroundShift 20s ease-in-out infinite;
         }
@@ -66,8 +59,8 @@
             width: 100%;
             height: 100%;
             background: 
-                radial-gradient(circle at 30% 70%, rgba(218, 165, 32, 0.05) 0%, transparent 50%),
-                radial-gradient(circle at 70% 30%, rgba(160, 82, 45, 0.05) 0%, transparent 50%);
+                radial-gradient(circle at 30% 70%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 70% 30%, rgba(30, 58, 95, 0.1) 0%, transparent 50%);
             z-index: -1;
             pointer-events: none;
         }
@@ -75,12 +68,7 @@
         /* Alternative background for better performance */
         @media (max-width: 768px) {
             body::before {
-                background: 
-                    linear-gradient(135deg, 
-                        rgba(160, 82, 45, 0.5), 
-                        rgba(139, 115, 85, 0.6)
-                    ),
-                    url('https://images.unsplash.com/photo-1542810634-71277d95dcbb?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80');
+                background: linear-gradient(135deg, rgba(30, 58, 95, 0.9), rgba(44, 82, 130, 0.7), rgba(255, 255, 255, 0.4));
             }
         }
 
@@ -89,65 +77,12 @@
             50% { transform: scale(1.05) rotate(1deg); }
         }
 
-        /* Floating Elements Effect */
-        .floating-elements {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: -1;
-        }
-
-        .floating-element {
-            position: absolute;
-            opacity: 0.1;
-            animation: float 15s ease-in-out infinite;
-        }
-
-        .floating-element:nth-child(1) {
-            top: 10%;
-            left: 10%;
-            font-size: 3rem;
-            color: var(--gold);
-            animation-delay: 0s;
-        }
-
-        .floating-element:nth-child(2) {
-            top: 20%;
-            right: 15%;
-            font-size: 2.5rem;
-            color: var(--gold);
-            animation-delay: 3s;
-        }
-
-        .floating-element:nth-child(3) {
-            bottom: 30%;
-            left: 20%;
-            font-size: 2rem;
-            color: var(--gold);
-            animation-delay: 6s;
-        }
-
-        .floating-element:nth-child(4) {
-            bottom: 20%;
-            right: 10%;
-            font-size: 2.5rem;
-            color: var(--gold);
-            animation-delay: 9s;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0px) rotate(0deg); }
-            50% { transform: translateY(-20px) rotate(180deg); }
-        }
         
         .login-container {
             max-width: 400px;
             width: 100%;
             padding: 30px;
-            background: rgba(62, 39, 35, 0.95);
+            background: rgba(30, 58, 95, 0.95);
             border-radius: 20px;
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
             backdrop-filter: blur(10px);
@@ -155,7 +90,7 @@
             z-index: 1;
             transform: translateY(0);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
-            border: 2px solid var(--gold);
+            border: 2px solid var(--accent-color);
         }
 
         .login-container:hover {
@@ -169,35 +104,35 @@
             position: relative;
         }
         
-        .hajj-logo {
+        .admin-logo {
             width: 120px;
             height: 120px;
-            background: linear-gradient(135deg, var(--gold), var(--accent-color));
+            background: linear-gradient(135deg, var(--accent-color), var(--secondary-color));
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto 15px;
-            box-shadow: 0 10px 25px rgba(218, 165, 32, 0.4);
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
             position: relative;
             animation: logoGlow 3s ease-in-out infinite;
             overflow: hidden;
         }
 
-        .hajj-logo::before {
+        .admin-logo::before {
             content: '';
             position: absolute;
             top: -5px;
             left: -5px;
             right: -5px;
             bottom: -5px;
-            background: linear-gradient(135deg, var(--gold), var(--accent-color), var(--gold));
+            background: linear-gradient(135deg, var(--accent-color), var(--secondary-color), var(--accent-color));
             border-radius: 50%;
             z-index: -1;
             animation: logoRotate 4s linear infinite;
         }
 
-        .hajj-logo::after {
+        .admin-logo::after {
             content: '';
             position: absolute;
             top: 50%;
@@ -211,8 +146,8 @@
         }
 
         @keyframes logoGlow {
-            0%, 100% { box-shadow: 0 10px 25px rgba(218, 165, 32, 0.4); }
-            50% { box-shadow: 0 15px 35px rgba(218, 165, 32, 0.7); }
+            0%, 100% { box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4); }
+            50% { box-shadow: 0 15px 35px rgba(59, 130, 246, 0.7); }
         }
 
         @keyframes logoRotate {
@@ -220,9 +155,9 @@
             100% { transform: rotate(360deg); }
         }
 
-        .hajj-logo i {
+        .admin-logo i {
             font-size: 3rem;
-            color: var(--dark-brown);
+            color: var(--white);
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
             z-index: 2;
             position: relative;
@@ -231,7 +166,7 @@
         .login-logo h2 {
             font-size: 1.8rem;
             margin-top: 15px;
-            color: var(--gold);
+            color: var(--white);
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
             font-weight: bold;
             letter-spacing: 1px;
@@ -242,26 +177,26 @@
             display: block;
             width: 60px;
             height: 2px;
-            background: linear-gradient(90deg, var(--gold), var(--accent-color));
+            background: linear-gradient(90deg, var(--accent-color), var(--secondary-color));
             margin: 10px auto 0;
             border-radius: 1px;
         }
         
         .login-form .form-control {
-            border: 2px solid var(--light-brown);
+            border: 2px solid var(--light-blue);
             border-radius: 10px;
             padding: 12px 15px;
             height: auto;
             margin-bottom: 20px;
             transition: all 0.3s ease;
             background: rgba(255, 255, 255, 0.9);
-            color: var(--dark-brown);
+            color: var(--dark-blue);
             font-weight: 500;
         }
 
         .login-form .form-control:focus {
-            border-color: var(--gold);
-            box-shadow: 0 0 0 0.2rem rgba(218, 165, 32, 0.25);
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
             transform: translateY(-2px);
             background: rgba(255, 255, 255, 1);
         }
@@ -273,7 +208,7 @@
             text-transform: uppercase;
             letter-spacing: 1px;
             background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
-            border: 2px solid var(--gold);
+            border: 2px solid var(--accent-color);
             color: white;
             transition: all 0.3s ease;
             position: relative;
@@ -297,7 +232,7 @@
 
         .login-form .btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(218, 165, 32, 0.4);
+            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
             background: linear-gradient(45deg, var(--secondary-color), var(--primary-color));
         }
         
@@ -305,14 +240,14 @@
             margin-bottom: 20px;
             border-radius: 10px;
             border: none;
-            background: rgba(62, 39, 35, 0.9);
+            background: rgba(30, 58, 95, 0.9);
             backdrop-filter: blur(5px);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
             color: white;
         }
 
         .alert-danger {
-            background: rgba(139, 69, 19, 0.9);
+            background: rgba(30, 58, 95, 0.9);
             border-left: 4px solid var(--accent-color);
         }
 
@@ -328,7 +263,7 @@
         /* Input placeholder animation */
         .form-control::placeholder {
             transition: opacity 0.3s ease, transform 0.3s ease;
-            color: var(--secondary-color);
+            color: var(--blue-medium);
         }
 
         .form-control:focus::placeholder {
@@ -342,7 +277,7 @@
         }
 
         ::-webkit-scrollbar-track {
-            background: var(--light-brown);
+            background: var(--light-blue);
         }
 
         ::-webkit-scrollbar-thumb {
@@ -361,81 +296,29 @@
                 padding: 20px;
             }
             
-            .hajj-logo {
+            .admin-logo {
                 width: 100px;
                 height: 100px;
             }
             
-            .hajj-logo i {
+            .admin-logo i {
                 font-size: 2.5rem;
             }
             
             .login-logo h2 {
                 font-size: 1.5rem;
             }
-            
-            .floating-elements {
-                display: none;
-            }
-            
-            .hajj-symbols {
-                top: 10px;
-                right: 10px;
-                font-size: 1.2rem;
-            }
         }
 
-        /* Additional Hajj-themed elements */
-        .hajj-symbols {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            font-size: 1.5rem;
-            color: var(--gold);
-            opacity: 0.7;
-        }
-
-        .hajj-symbols i {
-            margin-left: 10px;
-            animation: symbolPulse 2s ease-in-out infinite;
-        }
-
-        .hajj-symbols i:nth-child(2) {
-            animation-delay: 0.5s;
-        }
-
-        .hajj-symbols i:nth-child(3) {
-            animation-delay: 1s;
-        }
-
-        @keyframes symbolPulse {
-            0%, 100% { transform: scale(1); opacity: 0.7; }
-            50% { transform: scale(1.2); opacity: 1; }
-        }
     </style>
 </head>
 <body>
-    <!-- Floating Elements -->
-    <div class="floating-elements">
-        <div class="floating-element">🕋</div>
-        <div class="floating-element">☪️</div>
-        <div class="floating-element">🕋</div>
-        <div class="floating-element">☪️</div>
-    </div>
-
-    <!-- Hajj Symbols -->
-    <div class="hajj-symbols">
-        <i class="fas fa-kaaba"></i>
-        <i class="fas fa-star-and-crescent"></i>
-        <i class="fas fa-mosque"></i>
-    </div>
-
     <div class="login-container">
         <div class="login-logo">
-            <div class="hajj-logo">
-                <i class="fas fa-kaaba"></i>
+            <div class="admin-logo">
+                <i class="fas fa-user-shield"></i>
             </div>
-            <h2>Sistem Pendataan Kunjungan Peserta Haji dan Umrah</h2>
+            <h2>Sistem Admin</h2>
         </div>
         
         <?php if (validation_errors()): ?>

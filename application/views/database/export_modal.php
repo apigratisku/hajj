@@ -187,8 +187,8 @@
 }
 
 .form-select:focus, .form-control:focus {
-    border-color: #8B4513;
-    box-shadow: 0 0 0 0.2rem rgba(139, 69, 19, 0.25);
+    border-color: #1e3a5f;
+    box-shadow: 0 0 0 0.2rem rgba(30, 58, 95, 0.25);
 }
 
 .form-label {
@@ -201,7 +201,7 @@
 }
 
 .form-label i {
-    color: #8B4513;
+    color: #1e3a5f;
     width: 16px;
 }
 
@@ -218,7 +218,7 @@
 /* Flag Dokumen Checkbox Styles */
 .flag-doc-container {
     scrollbar-width: thin;
-    scrollbar-color: #8B4513 #f8f9fa;
+    scrollbar-color: #1e3a5f #f8f9fa;
 }
 
 .flag-doc-container::-webkit-scrollbar {
@@ -231,7 +231,7 @@
 }
 
 .flag-doc-container::-webkit-scrollbar-thumb {
-    background: #8B4513;
+    background: #1e3a5f;
     border-radius: 3px;
 }
 
@@ -241,12 +241,12 @@
 
 .form-check-input:checked {
     background-color: #8B4513;
-    border-color: #8B4513;
+    border-color: #1e3a5f;
 }
 
 .form-check-input:focus {
-    border-color: #8B4513;
-    box-shadow: 0 0 0 0.2rem rgba(139, 69, 19, 0.25);
+    border-color: #1e3a5f;
+    box-shadow: 0 0 0 0.2rem rgba(30, 58, 95, 0.25);
 }
 
 .form-check-label {
@@ -256,7 +256,7 @@
 }
 
 .form-check-label:hover {
-    color: #8B4513;
+    color: #1e3a5f;
 }
 
 .flag-doc-item {

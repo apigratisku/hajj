@@ -1,16 +1,16 @@
 <!-- Sidebar -->
 <div class="sidebar">
     <div class="sidebar-header">
-        <div class="hajj-logo-small">
-            <i class="fas fa-kaaba"></i>
+        <div class="admin-logo-small">
+            <i class="fas fa-user-shield"></i>
         </div>
-        <h3>Sistem Hajj</h3>
+        <h3>Sistem Admin</h3>
         <div class="user-info mt-2">
             <small class="d-block text-light">
                 <i class="fas fa-user"></i> 
                 <?= $this->session->userdata('nama_lengkap') ?>
             </small>
-            <small class="text-light badge" style="background: var(--gold); color: var(--dark-brown);" class="mt-1">
+            <small class="text-light badge" style="background: var(--accent-color); color: var(--white);" class="mt-1">
                 <?= ucfirst($this->session->userdata('role')) ?>
             </small>
         </div>
@@ -121,22 +121,22 @@
 </div>
 
 <style>
-.hajj-logo-small {
+.admin-logo-small {
     width: 60px;
     height: 60px;
-    background: linear-gradient(135deg, var(--gold), var(--accent-color));
+    background: linear-gradient(135deg, var(--accent-color), var(--secondary-color));
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     margin: 0 auto 15px;
-    box-shadow: 0 5px 15px rgba(218, 165, 32, 0.4);
+    box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
     position: relative;
 }
 
-.hajj-logo-small i {
+.admin-logo-small i {
     font-size: 1.5rem;
-    color: var(--dark-brown);
+    color: var(--white);
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 </style> 

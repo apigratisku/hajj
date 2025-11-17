@@ -206,23 +206,23 @@
 
 <style>
 .bg-brown {
-    background-color: #8B4513 !important;
+    background-color: #1e3a5f !important;
 }
 
 .btn-brown {
-    background-color: #8B4513 !important;
-    border-color: #8B4513 !important;
+    background-color: #1e3a5f !important;
+    border-color: #1e3a5f !important;
     color: white !important;
 }
 
 .btn-brown:hover {
-    background-color: #A0522D !important;
+    background-color: #2c5282 !important;
     border-color: #A0522D !important;
     color: white !important;
 }
 
 .card-header {
-    background-color: #8B4513 !important;
+    background-color: #1e3a5f !important;
     color: white !important;
 }
 

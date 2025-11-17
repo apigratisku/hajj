@@ -135,11 +135,11 @@
 <style>
 /* Android App-like Design Variables */
 :root {
-    --primary-color: #8B4513;
-    --primary-light: #A0522D;
-    --primary-dark: #654321;
-    --secondary-color: #D2691E;
-    --accent-color: #FF6B35;
+    --primary-color: #1e3a5f;
+    --primary-light: #2c5282;
+    --primary-dark: #1e40af;
+    --secondary-color: #2c5282;
+    --accent-color: #3b82f6;
     --success-color: #28a745;
     --danger-color: #dc3545;
     --warning-color: #ffc107;
