@@ -364,6 +364,17 @@
                                             <i class="fas fa-times-circle" style="color: red;" title="Tidak ada barcode"></i>
                                             <?php endif; ?>
                                             </span>
+                                            <?php if($this->session->userdata('role') == 'admin' && !empty($p->barcode)): ?>
+                                            <div class="barcode-action-buttons text-center">
+                                                <button type="button"
+                                                    class="barcode-delete-btn barcode-single-delete"
+                                                    title="Hapus barcode"
+                                                    data-id="<?= $p->id ?>"
+                                                    onclick="deleteSingleBarcode(<?= $p->id ?>)">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            </div>
+                                            <?php endif; ?>
                                             <div class="mobile-edit-field" style="display:none;">
                                                 <div class="mobile-barcode-edit-container">
                                                     <input type="text" class="mobile-table-edit-field" value="<?= $p->barcode ?>" placeholder="Barcode atau upload">
@@ -511,6 +522,17 @@
                                         <i class="fas fa-times-circle" style="color: red;" title="Tidak ada barcode"></i>
                                         <?php endif; ?>
                                         </span>
+                                        <?php if($this->session->userdata('role') == 'admin' && !empty($p->barcode)): ?>
+                                        <div class="barcode-action-buttons">
+                                            <button type="button"
+                                                class="barcode-delete-btn barcode-single-delete"
+                                                title="Hapus barcode"
+                                                data-id="<?= $p->id ?>"
+                                                onclick="deleteSingleBarcode(<?= $p->id ?>)">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </div>
+                                        <?php endif; ?>
                                         
                                         <div class="edit-field" style="display:none;">
                                             <div class="barcode-edit-container">
@@ -719,6 +741,29 @@
     color: white !important;
     transform: translateY(-2px);
     box-shadow: var(--shadow-hover);
+}
+
+.barcode-delete-btn {
+    border: none;
+    background: transparent;
+    color: var(--danger-color);
+    padding: 2px 6px;
+    border-radius: 50%;
+    transition: var(--transition);
+}
+
+.barcode-delete-btn:disabled {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.barcode-delete-btn:hover {
+    color: #b02a37;
+    transform: scale(1.1);
+}
+
+.barcode-action-buttons {
+    margin-top: 4px;
 }
 
 .btn-brown {
@@ -4270,5 +4315,112 @@ function resetMassDeleteModal() {
         submitBtn.disabled = false;
         submitBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Hapus Barcode';
     }
+}
+
+// Single barcode delete functions
+function deleteSingleBarcode(rowId) {
+    if (!rowId) {
+        showAlert('ID data tidak valid.', 'error');
+        return;
+    }
+
+    const confirmationText = prompt('Ketik "HAPUS" untuk menghapus barcode pada data ini.');
+    if (confirmationText === null) {
+        return;
+    }
+
+    if (confirmationText.trim().toUpperCase() !== 'HAPUS') {
+        showAlert('Konfirmasi tidak sesuai. Ketik "HAPUS" untuk melanjutkan.', 'warning');
+        return;
+    }
+
+    toggleSingleBarcodeButtons(rowId, true);
+
+    fetch('<?= base_url('database/delete_barcode_single/') ?>' + rowId, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({ confirmation: 'HAPUS' })
+    })
+    .then(async response => {
+        let result = null;
+        try {
+            result = await response.json();
+        } catch (error) {
+            // ignore parse error to handle generically
+        }
+
+        if (!response.ok || !result) {
+            const errorMessage = result && result.message ? result.message : 'Gagal menghapus barcode.';
+            throw new Error(errorMessage);
+        }
+
+        if (!result.success) {
+            throw new Error(result.message || 'Gagal menghapus barcode.');
+        }
+
+        showAlert('Barcode berhasil dihapus.', 'success');
+        refreshBarcodeDisplayAfterDelete(rowId);
+    })
+    .catch(error => {
+        console.error('deleteSingleBarcode error:', error);
+        showAlert(error.message || 'Terjadi kesalahan saat menghapus barcode.', 'error');
+    })
+    .finally(() => {
+        toggleSingleBarcodeButtons(rowId, false);
+    });
+}
+
+function toggleSingleBarcodeButtons(rowId, isLoading) {
+    const buttons = document.querySelectorAll(`.barcode-single-delete[data-id="${rowId}"]`);
+    buttons.forEach(btn => {
+        if (isLoading) {
+            btn.dataset.originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        } else {
+            btn.disabled = false;
+            if (btn.dataset.originalHtml) {
+                btn.innerHTML = btn.dataset.originalHtml;
+                delete btn.dataset.originalHtml;
+            } else {
+                btn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+            }
+        }
+    });
+}
+
+function refreshBarcodeDisplayAfterDelete(rowId) {
+    const desktopRow = document.querySelector(`#transaksi-table tr[data-id="${rowId}"]`);
+    const mobileRow = document.querySelector(`#mobile-table tr[data-id="${rowId}"]`);
+
+    const emptyIcon = '<i class="fas fa-times-circle" style="color: red;" title="Tidak ada barcode"></i>';
+
+    if (desktopRow) {
+        const barcodeCell = desktopRow.querySelector('[data-field="barcode"]');
+        if (barcodeCell) {
+            barcodeCell.setAttribute('data-value', '');
+            const displayValue = barcodeCell.querySelector('.display-value');
+            if (displayValue) {
+                displayValue.innerHTML = emptyIcon;
+            }
+        }
+    }
+
+    if (mobileRow) {
+        const barcodeCell = mobileRow.querySelector('[data-field="barcode"]');
+        if (barcodeCell) {
+            barcodeCell.setAttribute('data-value', '');
+            const valueSpan = barcodeCell.querySelector('.value');
+            if (valueSpan) {
+                valueSpan.innerHTML = emptyIcon;
+            }
+        }
+    }
+
+    const buttons = document.querySelectorAll(`.barcode-single-delete[data-id="${rowId}"]`);
+    buttons.forEach(btn => btn.remove());
 }
 </script>

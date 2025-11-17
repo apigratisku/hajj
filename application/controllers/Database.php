@@ -12,6 +12,35 @@ class Database extends CI_Controller {
         return $this->input->get('export_data') || $this->input->get('debug');
     }
 
+    /**
+     * Delete barcode file from storage with validation and logging
+     */
+    private function delete_barcode_file($filename) {
+        if (empty($filename)) {
+            return false;
+        }
+
+        if (!preg_match('/^[a-zA-Z0-9._-]+$/', $filename)) {
+            log_message('error', 'Invalid barcode filename detected during delete attempt: ' . $filename);
+            return false;
+        }
+
+        $file_path = FCPATH . 'assets/uploads/barcode/' . $filename;
+
+        if (!file_exists($file_path)) {
+            log_message('info', 'Barcode file not found during delete attempt: ' . $file_path);
+            return false;
+        }
+
+        if (@unlink($file_path)) {
+            log_message('info', 'Barcode file deleted: ' . $filename);
+            return true;
+        }
+
+        log_message('error', 'Failed to delete barcode file: ' . $filename);
+        return false;
+    }
+
     public function __construct() {
         parent::__construct();
         $this->load->model('transaksi_model');
@@ -3607,36 +3636,6 @@ class Database extends CI_Controller {
     }
     
     /**
-     * Delete barcode file from uploads directory
-     */
-    private function delete_barcode_file($filename) {
-        if (empty($filename)) {
-            return false;
-        }
-        
-        // Validate filename for security
-        if (!preg_match('/^[a-zA-Z0-9._-]+$/', $filename)) {
-            log_message('error', 'Invalid filename for deletion: ' . $filename);
-            return false;
-        }
-        
-        $file_path = FCPATH . 'assets/uploads/barcode/' . $filename;
-        
-        if (file_exists($file_path)) {
-            if (unlink($file_path)) {
-                log_message('info', 'Barcode file deleted: ' . $filename);
-                return true;
-            } else {
-                log_message('error', 'Failed to delete barcode file: ' . $filename);
-                return false;
-            }
-        } else {
-            log_message('info', 'Barcode file not found for deletion: ' . $filename);
-            return false;
-        }
-    }
-    
-    /**
      * Get redirect URL with current filters and pagination
      */
     private function get_redirect_url_with_filters() {
@@ -4548,14 +4547,23 @@ class Database extends CI_Controller {
         $this->load->model('transaksi_model');
         $historyUserId = $this->session->userdata('user_id') ?: null;
 
-        $deleted_count = $this->transaksi_model->clear_barcode_by_range($startDate, $endDate, $historyUserId);
+        $delete_result = $this->transaksi_model->clear_barcode_by_range($startDate, $endDate, $historyUserId);
 
-        if ($deleted_count === false) {
+        if ($delete_result === false) {
             $this->output->set_status_header(500);
             $this->output
                 ->set_content_type('application/json')
                 ->set_output(json_encode(['success' => false, 'message' => 'Gagal menghapus barcode. Silakan coba lagi.']));
             return;
+        }
+
+        $deleted_count = isset($delete_result['affected_rows']) ? $delete_result['affected_rows'] : 0;
+        $deleted_files = isset($delete_result['barcodes']) ? $delete_result['barcodes'] : [];
+
+        if (!empty($deleted_files)) {
+            foreach ($deleted_files as $filename) {
+                $this->delete_barcode_file($filename);
+            }
         }
 
         log_message('info', sprintf(
@@ -4577,6 +4585,103 @@ class Database extends CI_Controller {
                     'end' => $endDate
                 ]
             ]));
+    }
+
+    /**
+     * Delete barcode for single peserta
+     */
+    public function delete_barcode_single($id = null) {
+        if (!$this->session->userdata('logged_in')) {
+            $this->output->set_status_header(401);
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode(['success' => false, 'message' => 'Unauthorized']));
+            return;
+        }
+
+        if ($this->session->userdata('role') !== 'admin') {
+            $this->output->set_status_header(403);
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode(['success' => false, 'message' => 'Akses ditolak. Hanya admin yang dapat menghapus barcode.']));
+            return;
+        }
+
+        if (!$this->input->is_ajax_request()) {
+            $this->output->set_status_header(400);
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode(['success' => false, 'message' => 'Invalid request']));
+            return;
+        }
+
+        if (empty($id) || !ctype_digit((string)$id)) {
+            $this->output->set_status_header(400);
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode(['success' => false, 'message' => 'ID tidak valid']));
+            return;
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        $confirmation = isset($input['confirmation']) ? strtoupper(trim($input['confirmation'])) : '';
+
+        if ($confirmation !== 'HAPUS') {
+            $this->output->set_status_header(422);
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode(['success' => false, 'message' => 'Konfirmasi harus berupa kata HAPUS']));
+            return;
+        }
+
+        $this->load->model('transaksi_model');
+        $peserta = $this->transaksi_model->get_by_id($id);
+
+        if (!$peserta) {
+            $this->output->set_status_header(404);
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode(['success' => false, 'message' => 'Data peserta tidak ditemukan']));
+            return;
+        }
+
+        if (empty($peserta->barcode)) {
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode(['success' => false, 'message' => 'Data ini tidak memiliki barcode untuk dihapus']));
+            return;
+        }
+
+        $barcodeFilename = $peserta->barcode;
+
+        $update_data = [
+            'barcode' => null,
+            'updated_at' => date('Y-m-d H:i:s'),
+            'history_update' => $this->session->userdata('user_id') ?: null
+        ];
+
+        $result = $this->transaksi_model->update($id, $update_data);
+
+        if (!$result) {
+            $this->output->set_status_header(500);
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode(['success' => false, 'message' => 'Gagal menghapus barcode. Silakan coba lagi.']));
+            return;
+        }
+
+        log_message('info', sprintf(
+            'Single barcode delete executed by %s (%s) for peserta ID %s',
+            $this->session->userdata('username'),
+            $this->session->userdata('user_id'),
+            $id
+        ));
+
+        $this->delete_barcode_file($barcodeFilename);
+
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode(['success' => true, 'message' => 'Barcode berhasil dihapus']));
     }
 
     /**

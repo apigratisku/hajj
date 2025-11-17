@@ -159,6 +159,34 @@ class Transaksi_model extends CI_Model {
         }
 
         try {
+            // Get list of barcode files before clearing
+            $this->db->select('id, barcode');
+            $this->db->from($this->table);
+            $this->db->where('tanggal >=', $startDate);
+            $this->db->where('tanggal <=', $endDate);
+            $this->db->group_start();
+            $this->db->where('barcode IS NOT NULL', null, false);
+            $this->db->where('barcode !=', '');
+            $this->db->group_end();
+            $records = $this->db->get()->result();
+
+            $barcodeFiles = [];
+            if (!empty($records)) {
+                foreach ($records as $record) {
+                    if (!empty($record->barcode)) {
+                        $barcodeFiles[] = $record->barcode;
+                    }
+                }
+            }
+
+            if (empty($barcodeFiles)) {
+                return [
+                    'affected_rows' => 0,
+                    'barcodes' => []
+                ];
+            }
+
+            // Clear builder and run update with same conditions
             $this->db->where('tanggal >=', $startDate);
             $this->db->where('tanggal <=', $endDate);
             $this->db->group_start();
@@ -185,7 +213,10 @@ class Transaksi_model extends CI_Model {
                 return false;
             }
 
-            return $this->db->affected_rows();
+            return [
+                'affected_rows' => $this->db->affected_rows(),
+                'barcodes' => $barcodeFiles
+            ];
         } catch (Exception $e) {
             log_message('error', 'Exception in clear_barcode_by_range: ' . $e->getMessage());
             return false;
