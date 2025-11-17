@@ -144,6 +144,53 @@ class Transaksi_model extends CI_Model {
         $this->db->where('flag_doc', $flag_doc);
         return $this->db->count_all_results();
     }
+
+    /**
+     * Clear barcode values within a date range (based on field `tanggal`)
+     *
+     * @param string $startDate format Y-m-d
+     * @param string $endDate format Y-m-d
+     * @param int|null $historyUserId user id for audit
+     * @return int|false affected rows or false on failure
+     */
+    public function clear_barcode_by_range($startDate, $endDate, $historyUserId = null) {
+        if (empty($startDate) || empty($endDate)) {
+            return false;
+        }
+
+        try {
+            $this->db->where('tanggal >=', $startDate);
+            $this->db->where('tanggal <=', $endDate);
+            $this->db->group_start();
+            $this->db->where('barcode IS NOT NULL', null, false);
+            $this->db->where('barcode !=', '');
+            $this->db->group_end();
+
+            $update_data = [
+                'barcode' => null,
+                'updated_at' => date('Y-m-d H:i:s')
+            ];
+
+            if (!empty($historyUserId)) {
+                $update_data['history_update'] = $historyUserId;
+            }
+
+            $this->db->set($update_data);
+            $this->db->update($this->table);
+
+            $dbError = $this->db->error();
+            if (!empty($dbError['code'])) {
+                log_message('error', 'clear_barcode_by_range DB error: ' . json_encode($dbError));
+                log_message('error', 'clear_barcode_by_range last query: ' . $this->db->last_query());
+                return false;
+            }
+
+            return $this->db->affected_rows();
+        } catch (Exception $e) {
+            log_message('error', 'Exception in clear_barcode_by_range: ' . $e->getMessage());
+            return false;
+        }
+    }
     
     
 

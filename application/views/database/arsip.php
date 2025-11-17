@@ -25,6 +25,9 @@
                         <button type="button" class="btn btn-sm btn-export" data-bs-toggle="modal" data-bs-target="#exportModal">
                             <i class="fas fa-file-export"></i> <span class="d-none d-sm-inline">Export</span>
                         </button>
+                        <button type="button" class="btn btn-sm btn-delete-barcode" data-bs-toggle="modal" data-bs-target="#massDeleteBarcodeModal">
+                            <i class="fas fa-barcode"></i> <span class="d-none d-sm-inline">Hapus Barcode</span>
+                        </button>
                     </div>
                 </div>
                 <div class="card-body p-0">
@@ -698,6 +701,22 @@
     background-color: #e0a800 !important;
     border-color: #e0a800 !important;
     color: #212529 !important;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+
+.btn-delete-barcode {
+    background-color: var(--danger-color) !important;
+    border-color: var(--danger-color) !important;
+    color: white !important;
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+}
+
+.btn-delete-barcode:hover {
+    background-color: #c82333 !important;
+    border-color: #c82333 !important;
+    color: white !important;
     transform: translateY(-2px);
     box-shadow: var(--shadow-hover);
 }
@@ -1661,6 +1680,51 @@
 </style>
 
 <?php $this->load->view('database/export_modal_arsip'); ?>
+
+<!-- Mass Delete Barcode Modal -->
+<div class="modal fade" id="massDeleteBarcodeModal" tabindex="-1" aria-labelledby="massDeleteBarcodeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="massDeleteBarcodeModalLabel"><i class="fas fa-barcode"></i> Hapus Barcode Massal</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <strong>Perhatian!</strong> Tindakan ini akan mengosongkan data barcode sesuai pilihan Anda. Data yang sudah dihapus tidak dapat dikembalikan.
+                </div>
+                <form id="massDeleteBarcodeForm">
+                    <div class="mb-3">
+                        <label for="massDeleteScope" class="form-label">Mode Penghapusan</label>
+                        <select class="form-select" id="massDeleteScope" name="massDeleteScope">
+                            <option value="date">Per Tanggal</option>
+                            <option value="month">Per Bulan</option>
+                        </select>
+                    </div>
+                    <div class="mb-3 scope-input" data-scope-section="date">
+                        <label for="massDeleteDate" class="form-label">Pilih Tanggal</label>
+                        <input type="date" class="form-control" id="massDeleteDate" name="massDeleteDate">
+                    </div>
+                    <div class="mb-3 scope-input d-none" data-scope-section="month">
+                        <label for="massDeleteMonth" class="form-label">Pilih Bulan</label>
+                        <input type="month" class="form-control" id="massDeleteMonth" name="massDeleteMonth">
+                    </div>
+                    <div class="mb-3">
+                        <label for="massDeleteConfirmInput" class="form-label">Konfirmasi</label>
+                        <input type="text" class="form-control" id="massDeleteConfirmInput" placeholder='Ketik "HAPUS" untuk melanjutkan'>
+                        <div class="form-text">Tulis <strong>HAPUS</strong> dengan huruf kapital untuk mengaktifkan tombol penghapusan.</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBarcodeBtn" onclick="submitMassDeleteBarcode()">
+                    <i class="fas fa-trash-alt"></i> Hapus Barcode
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <style>
@@ -4036,5 +4100,175 @@ function initializeFlagDocSearchable() {
     setTimeout(() => {
         makeFlagDocSelectsSearchable();
     }, 100);
+}
+
+// Mass delete barcode modal logic
+document.addEventListener('DOMContentLoaded', function() {
+    initMassDeleteBarcodeModal();
+});
+
+function initMassDeleteBarcodeModal() {
+    const modalElement = document.getElementById('massDeleteBarcodeModal');
+    const scopeSelect = document.getElementById('massDeleteScope');
+    const form = document.getElementById('massDeleteBarcodeForm');
+
+    if (!modalElement || !scopeSelect || !form) {
+        return;
+    }
+
+    scopeSelect.addEventListener('change', handleMassDeleteScopeChange);
+    handleMassDeleteScopeChange();
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        submitMassDeleteBarcode();
+    });
+
+    modalElement.addEventListener('hidden.bs.modal', function() {
+        resetMassDeleteModal();
+    });
+}
+
+function handleMassDeleteScopeChange() {
+    const scopeSelect = document.getElementById('massDeleteScope');
+    const sections = document.querySelectorAll('.scope-input');
+
+    if (!scopeSelect || !sections) {
+        return;
+    }
+
+    const activeScope = scopeSelect.value;
+    sections.forEach(section => {
+        const sectionScope = section.getAttribute('data-scope-section');
+        if (sectionScope === activeScope) {
+            section.classList.remove('d-none');
+        } else {
+            section.classList.add('d-none');
+        }
+    });
+}
+
+function submitMassDeleteBarcode() {
+    const scopeSelect = document.getElementById('massDeleteScope');
+    const dateInput = document.getElementById('massDeleteDate');
+    const monthInput = document.getElementById('massDeleteMonth');
+    const confirmInput = document.getElementById('massDeleteConfirmInput');
+    const submitBtn = document.getElementById('confirmDeleteBarcodeBtn');
+
+    if (!scopeSelect || !confirmInput || !submitBtn) {
+        showAlert('Form penghapusan tidak siap. Silakan muat ulang halaman.', 'error');
+        return;
+    }
+
+    const scope = scopeSelect.value;
+    const confirmation = (confirmInput.value || '').trim().toUpperCase();
+
+    if (confirmation !== 'HAPUS') {
+        showAlert('Ketik HAPUS untuk mengonfirmasi penghapusan barcode.', 'warning');
+        confirmInput.focus();
+        return;
+    }
+
+    const payload = {
+        delete_scope: scope,
+        confirmation: confirmation
+    };
+
+    if (scope === 'date') {
+        if (!dateInput || !dateInput.value) {
+            showAlert('Silakan pilih tanggal terlebih dahulu.', 'warning');
+            if (dateInput) {
+                dateInput.focus();
+            }
+            return;
+        }
+        payload.target_date = dateInput.value;
+    } else if (scope === 'month') {
+        if (!monthInput || !monthInput.value) {
+            showAlert('Silakan pilih bulan terlebih dahulu.', 'warning');
+            if (monthInput) {
+                monthInput.focus();
+            }
+            return;
+        }
+        payload.target_month = monthInput.value;
+    }
+
+    const originalButtonText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menghapus...';
+
+    fetch('<?= base_url('database/delete_barcode_bulk') ?>', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(async response => {
+        let data = null;
+        try {
+            data = await response.json();
+        } catch (error) {
+            // ignore parse error to handle below
+        }
+
+        if (!response.ok) {
+            const errorMessage = data && data.message ? data.message : 'Gagal menghapus barcode.';
+            throw new Error(errorMessage);
+        }
+
+        if (!data || !data.success) {
+            throw new Error(data && data.message ? data.message : 'Gagal menghapus barcode.');
+        }
+
+        return data;
+    })
+    .then(result => {
+        const deletedCount = result.deleted_count ?? 0;
+        const infoText = deletedCount > 0 
+            ? `Berhasil menghapus barcode dari ${deletedCount} data.`
+            : 'Tidak ada barcode yang dihapus pada rentang tersebut.';
+        showAlert(infoText, deletedCount > 0 ? 'success' : 'info');
+
+        const modalElement = document.getElementById('massDeleteBarcodeModal');
+        if (modalElement) {
+            const modalInstance = bootstrap.Modal.getInstance(modalElement);
+            if (modalInstance) {
+                modalInstance.hide();
+            }
+        }
+
+        setTimeout(() => {
+            window.location.reload();
+        }, 1200);
+    })
+    .catch(error => {
+        console.error('Mass delete barcode error:', error);
+        showAlert(error.message || 'Terjadi kesalahan saat menghapus barcode.', 'error');
+    })
+    .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalButtonText;
+    });
+}
+
+function resetMassDeleteModal() {
+    const form = document.getElementById('massDeleteBarcodeForm');
+    const scopeSelect = document.getElementById('massDeleteScope');
+    const submitBtn = document.getElementById('confirmDeleteBarcodeBtn');
+
+    if (form) {
+        form.reset();
+    }
+    if (scopeSelect) {
+        scopeSelect.value = 'date';
+        handleMassDeleteScopeChange();
+    }
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Hapus Barcode';
+    }
 }
 </script>

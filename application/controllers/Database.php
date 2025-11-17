@@ -4466,6 +4466,120 @@ class Database extends CI_Controller {
     }
 
     /**
+     * Mass delete barcode data by date or month
+     */
+    public function delete_barcode_bulk() {
+        if (!$this->session->userdata('logged_in')) {
+            $this->output->set_status_header(401);
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode(['success' => false, 'message' => 'Unauthorized']));
+            return;
+        }
+
+        if ($this->session->userdata('role') !== 'admin') {
+            $this->output->set_status_header(403);
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode(['success' => false, 'message' => 'Akses ditolak. Hanya admin yang dapat menghapus barcode massal.']));
+            return;
+        }
+
+        if (!$this->input->is_ajax_request()) {
+            $this->output->set_status_header(400);
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode(['success' => false, 'message' => 'Invalid request']));
+            return;
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (!$input) {
+            $this->output->set_status_header(400);
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode(['success' => false, 'message' => 'Payload tidak valid']));
+            return;
+        }
+
+        $confirmation = isset($input['confirmation']) ? strtoupper(trim($input['confirmation'])) : '';
+        if ($confirmation !== 'HAPUS') {
+            $this->output->set_status_header(422);
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode(['success' => false, 'message' => 'Konfirmasi harus berupa kata HAPUS']));
+            return;
+        }
+
+        $delete_scope = isset($input['delete_scope']) ? $input['delete_scope'] : 'date';
+        $startDate = null;
+        $endDate = null;
+
+        if ($delete_scope === 'date') {
+            $target_date = isset($input['target_date']) ? $input['target_date'] : null;
+            if (!$target_date || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $target_date)) {
+                $this->output->set_status_header(422);
+                $this->output
+                    ->set_content_type('application/json')
+                    ->set_output(json_encode(['success' => false, 'message' => 'Format tanggal tidak valid']));
+                return;
+            }
+            $startDate = $target_date;
+            $endDate = $target_date;
+        } elseif ($delete_scope === 'month') {
+            $target_month = isset($input['target_month']) ? $input['target_month'] : null;
+            if (!$target_month || !preg_match('/^\d{4}-\d{2}$/', $target_month)) {
+                $this->output->set_status_header(422);
+                $this->output
+                    ->set_content_type('application/json')
+                    ->set_output(json_encode(['success' => false, 'message' => 'Format bulan tidak valid']));
+                return;
+            }
+            $startDate = $target_month . '-01';
+            $endDate = date('Y-m-t', strtotime($startDate));
+        } else {
+            $this->output->set_status_header(422);
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode(['success' => false, 'message' => 'Mode penghapusan tidak dikenali']));
+            return;
+        }
+
+        $this->load->model('transaksi_model');
+        $historyUserId = $this->session->userdata('user_id') ?: null;
+
+        $deleted_count = $this->transaksi_model->clear_barcode_by_range($startDate, $endDate, $historyUserId);
+
+        if ($deleted_count === false) {
+            $this->output->set_status_header(500);
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode(['success' => false, 'message' => 'Gagal menghapus barcode. Silakan coba lagi.']));
+            return;
+        }
+
+        log_message('info', sprintf(
+            'Mass barcode delete executed by %s (%s) for range %s - %s. Deleted: %s',
+            $this->session->userdata('username'),
+            $this->session->userdata('user_id'),
+            $startDate,
+            $endDate,
+            $deleted_count
+        ));
+
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode([
+                'success' => true,
+                'deleted_count' => $deleted_count,
+                'range' => [
+                    'start' => $startDate,
+                    'end' => $endDate
+                ]
+            ]));
+    }
+
+    /**
      * Get operator statistics for popup modal
      */
     public function get_operator_statistics() {
