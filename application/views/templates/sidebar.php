@@ -33,6 +33,7 @@
                 <i class="fas fa-user-friends"></i> <span>Data Peserta</span>
             </a>
         </li>
+        
        
         <!-- <li class="nav-item">
             <a href="<?= base_url('database/rejected_data') ?>" <?= $this->uri->segment(1) == 'database' && $this->uri->segment(2) == 'rejected_data' ? 'class="active"' : '' ?>>
@@ -54,6 +55,11 @@
             </a>
         </li>
         <?php endif; ?>
+        <li class="nav-item">
+            <a href="<?= base_url('laporan') ?>" <?= $this->uri->segment(1) == 'laporan' ? 'class="active"' : '' ?>>
+                <i class="fas fa-chart-bar"></i> <span>Laporan</span>
+            </a>
+        </li>
         <div class="nav-section-divider"></div>
         
       

@@ -4,6 +4,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 class Transaksi_model extends CI_Model {
 
     private $table = 'peserta';
+    private $laporan_table = 'laporan_flag_doc';
     
     public function __construct() {
         // Suppress all PHP errors and warnings to prevent HTML output
@@ -553,6 +554,171 @@ class Transaksi_model extends CI_Model {
         $this->db->where('flag_doc !=', '');
         $this->db->group_by('flag_doc');
         $this->db->order_by('created_at', 'DESC');
+        return $this->db->get()->result();
+    }
+
+    /**
+     * Summary data per flag_doc grouped by upload date.
+     *
+     * @param array $filters ['start_date' => Y-m-d, 'end_date' => Y-m-d, 'flag_doc' => string, 'nama_travel' => string|array]
+     * @return array
+     */
+    public function get_flagdoc_summary($filters = []) {
+        $start_date = isset($filters['start_date']) && !empty($filters['start_date'])
+            ? date('Y-m-d', strtotime($filters['start_date']))
+            : null;
+        $end_date = isset($filters['end_date']) && !empty($filters['end_date'])
+            ? date('Y-m-d', strtotime($filters['end_date']))
+            : null;
+        $flag_doc = isset($filters['flag_doc']) ? trim($filters['flag_doc']) : null;
+        
+        // Handle nama_travel as string or array
+        $nama_travel = null;
+        if (isset($filters['nama_travel'])) {
+            if (is_array($filters['nama_travel'])) {
+                $nama_travel = array_filter($filters['nama_travel']); // Remove empty values
+                if (empty($nama_travel)) {
+                    $nama_travel = null;
+                }
+            } else {
+                $nama_travel = trim($filters['nama_travel']);
+                if (empty($nama_travel)) {
+                    $nama_travel = null;
+                }
+            }
+        }
+
+        $this->db->select('
+            DATE(created_at) as tanggal_upload,
+            flag_doc,
+            COALESCE(nama_travel, \'\') as nama_travel,
+            COUNT(*) as total,
+            SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) as todo_count,
+            SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as already_count,
+            SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) as done_count
+        ');
+        $this->db->from($this->table);
+        $this->db->where('flag_doc IS NOT NULL');
+        $this->db->where('flag_doc !=', '');
+
+        if ($start_date) {
+            $this->db->where('DATE(created_at) >=', $start_date);
+        }
+
+        if ($end_date) {
+            $this->db->where('DATE(created_at) <=', $end_date);
+        }
+
+        if ($flag_doc) {
+            $this->db->where('flag_doc', $flag_doc);
+        }
+
+        if ($nama_travel) {
+            if (is_array($nama_travel)) {
+                // Handle multiple travel selection
+                $has_null = in_array('null', $nama_travel) || in_array('', $nama_travel);
+                $travels = array_filter($nama_travel, function($t) {
+                    return $t !== 'null' && $t !== '';
+                });
+                
+                if (!empty($travels) && $has_null) {
+                    // Both specific travels and null values
+                    $this->db->group_start();
+                    $this->db->where_in('nama_travel', $travels);
+                    $this->db->or_group_start();
+                    $this->db->where('nama_travel IS NULL', null, false);
+                    $this->db->or_where('nama_travel', '');
+                    $this->db->group_end();
+                    $this->db->group_end();
+                } elseif (!empty($travels)) {
+                    // Only specific travels
+                    $this->db->where_in('nama_travel', $travels);
+                } elseif ($has_null) {
+                    // Only null values
+                    $this->db->group_start();
+                    $this->db->where('nama_travel IS NULL', null, false);
+                    $this->db->or_where('nama_travel', '');
+                    $this->db->group_end();
+                }
+            } else {
+                // Single travel (backward compatibility)
+                if ($nama_travel === 'null' || strtolower($nama_travel) === 'tanpa travel') {
+                    $this->db->group_start();
+                    $this->db->where('nama_travel IS NULL', null, false);
+                    $this->db->or_where('nama_travel', '');
+                    $this->db->group_end();
+                } else {
+                    $this->db->where('nama_travel', $nama_travel);
+                }
+            }
+        }
+
+        $this->db->group_by('DATE(created_at)');
+        $this->db->group_by('flag_doc');
+        $this->db->group_by('nama_travel');
+        $this->db->order_by('nama_travel', 'ASC');
+        $this->db->order_by('DATE(created_at)', 'DESC');
+        $this->db->order_by('flag_doc', 'ASC');
+
+        return $this->db->get()->result();
+    }
+
+    /**
+     * Summary data for a single flag_doc (used for export).
+     *
+     * @param string $flag_doc
+     * @param array $filters
+     * @return array
+     */
+    public function get_flagdoc_summary_by_flag($flag_doc, $filters = []) {
+        if (empty($flag_doc)) {
+            return [];
+        }
+
+        $filters['flag_doc'] = $flag_doc;
+        return $this->get_flagdoc_summary($filters);
+    }
+
+    /**
+     * Insert metadata laporan flag doc secara batch.
+     *
+     * @param array $records
+     * @return bool
+     */
+    public function insert_laporan_flag_doc_batch($records = []) {
+        if (empty($records)) {
+            return false;
+        }
+
+        return $this->db->insert_batch($this->laporan_table, $records);
+    }
+
+    /**
+     * Utility mendapatkan data laporan terakhir berdasarkan filter.
+     *
+     * @param array $filters
+     * @return array
+     */
+    public function get_laporan_flag_doc($filters = []) {
+        $this->db->from($this->laporan_table);
+
+        if (!empty($filters['flag_doc'])) {
+            $this->db->where('flag_doc', $filters['flag_doc']);
+        }
+        if (!empty($filters['nama_travel'])) {
+            $this->db->where('nama_travel', $filters['nama_travel']);
+        }
+        if (!empty($filters['tanggal_upload'])) {
+            $this->db->where('tanggal_upload', $filters['tanggal_upload']);
+        }
+        if (!empty($filters['periode_start'])) {
+            $this->db->where('periode_start', $filters['periode_start']);
+        }
+        if (!empty($filters['periode_end'])) {
+            $this->db->where('periode_end', $filters['periode_end']);
+        }
+
+        $this->db->order_by('reported_at', 'DESC');
         return $this->db->get()->result();
     }
     
@@ -1778,5 +1944,80 @@ class Transaksi_model extends CI_Model {
         $result = $this->db->get();
         
         return $result->result_array();
+    }
+
+    /**
+     * Update field sudah_report untuk semua peserta dengan kombinasi flag_doc + nama_travel + tanggal_upload
+     *
+     * @param string $flag_doc
+     * @param string $nama_travel (bisa null atau empty untuk "Tanpa Travel")
+     * @param string $tanggal_upload (format: Y-m-d)
+     * @param int $value (1 atau 0)
+     * @return bool|int affected rows
+     */
+    public function update_sudah_report($flag_doc, $nama_travel, $tanggal_upload, $value) {
+        if (empty($flag_doc) || empty($tanggal_upload)) {
+            return false;
+        }
+
+        $this->db->where('flag_doc', $flag_doc);
+        $this->db->where('DATE(created_at)', $tanggal_upload);
+
+        // Handle nama_travel
+        if (empty($nama_travel) || $nama_travel === 'null' || strtolower($nama_travel) === 'tanpa travel') {
+            $this->db->group_start();
+            $this->db->where('nama_travel IS NULL', null, false);
+            $this->db->or_where('nama_travel', '');
+            $this->db->group_end();
+        } else {
+            $this->db->where('nama_travel', $nama_travel);
+        }
+
+        $data = [
+            'sudah_report' => (int) $value,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ];
+
+        $this->db->update($this->table, $data);
+        return $this->db->affected_rows();
+    }
+
+    /**
+     * Get status sudah_report untuk kombinasi flag_doc + nama_travel + tanggal_upload
+     * Return 1 jika semua peserta sudah report, 0 jika belum, atau -1 jika tidak ada data
+     *
+     * @param string $flag_doc
+     * @param string $nama_travel
+     * @param string $tanggal_upload
+     * @return int 1, 0, atau -1
+     */
+    public function get_sudah_report_status($flag_doc, $nama_travel, $tanggal_upload) {
+        if (empty($flag_doc) || empty($tanggal_upload)) {
+            return -1;
+        }
+
+        $this->db->select('COUNT(*) as total, SUM(CASE WHEN sudah_report = 1 THEN 1 ELSE 0 END) as sudah_report_count');
+        $this->db->from($this->table);
+        $this->db->where('flag_doc', $flag_doc);
+        $this->db->where('DATE(created_at)', $tanggal_upload);
+
+        // Handle nama_travel
+        if (empty($nama_travel) || $nama_travel === 'null' || strtolower($nama_travel) === 'tanpa travel') {
+            $this->db->group_start();
+            $this->db->where('nama_travel IS NULL', null, false);
+            $this->db->or_where('nama_travel', '');
+            $this->db->group_end();
+        } else {
+            $this->db->where('nama_travel', $nama_travel);
+        }
+
+        $result = $this->db->get()->row();
+
+        if (!$result || (int) $result->total === 0) {
+            return -1; // Tidak ada data
+        }
+
+        // Return 1 jika semua sudah report, 0 jika belum
+        return ((int) $result->sudah_report_count === (int) $result->total) ? 1 : 0;
     }
 } 

@@ -46,6 +46,10 @@ $route['update-database'] = 'install/update';
 // Dashboard routes
 $route['dashboard'] = 'dashboard';
 
+// Laporan routes
+$route['laporan'] = 'laporan/index';
+$route['laporan/export'] = 'laporan/export';
+
 // Agent routes (formerly master/kapal routes)
 $route['master'] = 'master';
 $route['master/tambah'] = 'master/tambah';
