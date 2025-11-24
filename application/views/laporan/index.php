@@ -168,7 +168,7 @@
                                         <tr>
                                             <th class="text-center" width="60">No</th>
                                             <th class="text-center">Tanggal Upload</th>
-                                            <th class="text-center">Flag Doc</th>
+                                            <th class="text-center"> <?= html_escape($travel_name) ?></th>
                                             <th class="text-center">Todo</th>
                                             <th class="text-center">Already</th>
                                             <th class="text-center">Done</th>
@@ -192,7 +192,7 @@
                                                     <td class="text-center">
                                                         <?= date('d/m/Y', strtotime($row->tanggal_upload)) ?>
                                                     </td>
-                                                    <td class="text-center"><?= html_escape($row->flag_doc) ?></td>
+                                                    <td class="text-left"><?= html_escape($row->flag_doc) ?></td>
                                                     <td class="text-center text-primary"><?= (int) $row->todo_count ?></td>
                                                     <td class="text-center text-warning"><?= (int) $row->already_count ?></td>
                                                     <td class="text-center text-success"><?= (int) $row->done_count ?></td>
@@ -216,7 +216,7 @@
                                                 </tr>
                                             <?php endforeach; ?>
                                             <tr class="table-info fw-bold">
-                                                <td colspan="3" class="text-end">Total <?= html_escape($travel_name) ?>:</td>
+                                                <td colspan="3" class="text-end">Total </td>
                                                 <td class="text-center text-primary"><?= number_format($travel_data['totals']['todo']) ?></td>
                                                 <td class="text-center text-warning"><?= number_format($travel_data['totals']['already']) ?></td>
                                                 <td class="text-center text-success"><?= number_format($travel_data['totals']['done']) ?></td>
