@@ -13,13 +13,13 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 $config['cpanel'] = array(
     // cPanel Username (biasanya sama dengan hosting username)
-    'user' => 'menb8295',
+    'user' => 'chocoweb',
     
     // cPanel Password (password hosting/cPanel)
-    'pass' => 'hrPG2nS6SZTk88',
+    'pass' => 'x80.UwL.l4kFQ2',
     
     // Domain cPanel (tanpa https://)
-    'host' => 'juwana.iixcp.rumahweb.net',
+    'host' => 'genuine.jagoanhosting.id',
     
     // Port cPanel (biasanya 2083 untuk SSL)
     'port' => 2083,
