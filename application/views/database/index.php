@@ -689,7 +689,7 @@
                                             </select>
                                             <input type="hidden" name="redirect_back" value="<?= current_url() ?: site_url(uri_string()) ?>">
                                         </td>
-                                        <?php if($this->session->userdata('role') == 'admin'): ?>
+                                        <?php //if($this->session->userdata('role') == 'admin'): ?>
                                         <td class="col-history text-center">
                                                 <?php 
                                                 $user = null;
@@ -699,8 +699,8 @@
                                                 ?>
                                                 <?= ($user && isset($user->nama_lengkap)) ? $user->nama_lengkap : '-' ?>
                                             </td>
-                                        <?php endif; ?>
-                                        <?php if($this->session->userdata('role') == 'admin'): ?>
+                                        <?php //endif; ?>
+                                        <?php //if($this->session->userdata('role') == 'admin'): ?>
                                         <td class="col-history-done text-center">
                                                 <?php 
                                                 $user = null;
@@ -710,7 +710,7 @@
                                                 ?>
                                                 <?= ($user && isset($user->nama_lengkap)) ? $user->nama_lengkap : '-' ?>
                                             </td>
-                                        <?php endif; ?>
+                                        <?php //endif; ?>
                                         <td class="text-center aksi"  style="white-space: nowrap;width: auto;">
                                             <button class="btn btn-sm btn-brown btn-edit" data-bs-toggle="tooltip" title="Edit" onclick="toggleEdit(this)">
                                                 <i class="fas fa-edit"></i>
