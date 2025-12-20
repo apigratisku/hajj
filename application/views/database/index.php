@@ -136,7 +136,7 @@
                                         <option value="1">Belum dijadwalkan</option>
                                     </select>
                                 </div>
-                                <?php if($this->session->userdata('role') == 'admin'): ?>
+                                <?php //if($this->session->userdata('role') == 'admin'): ?>
                                 <div class="form-group">
                                     <select name="history_done" class="form-select mobile-input">
                                     <option value="">Operator</option>
@@ -149,7 +149,7 @@
                                         <?php endforeach; endif; ?>
                                     </select>
                                 </div>
-                                <?php endif; ?>
+                                <?php //endif; ?>
                                 
                                 <!-- Filter Tanggal Updated untuk Mobile -->
                                 <div class="form-group">
@@ -276,7 +276,7 @@
                                         <option value="1" <?= (isset($_GET['status_jadwal']) && $_GET['status_jadwal'] === '1') ? 'selected' : '' ?>>Belum dijadwalkan</option>
                                     </select>
                                 </div>
-                                <?php if($this->session->userdata('role') == 'admin'): ?>
+                                <?php //if($this->session->userdata('role') == 'admin'): ?>
                                 <div class="col-md-1">
                                     <select name="history_done" class="form-select form-control-sm">
                                         <option value="">Operator</option>
@@ -289,7 +289,7 @@
                                         <?php endforeach; endif; ?>
                                     </select>
                                 </div>
-                                <?php endif; ?>
+                                <?php //endif; ?>
                                 
                             </div>
                             <div class="row g-2 align-items-center">
