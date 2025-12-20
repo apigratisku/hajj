@@ -386,10 +386,10 @@
                                             <th class="col-jam">Jam</th>
                                             <th class="col-status">Status</th>
                                             <th class="col-flag">Flag</th>
-                                            <?php if($this->session->userdata('role') == 'admin'): ?>
+                                            <?php //if($this->session->userdata('role') == 'admin'): ?>
                                             <th class="col-history">Update Terakhir</th>
                                             <th class="col-history-done">History Done</th>
-                                            <?php endif; ?>
+                                            <?php //endif; ?>
                                             <th class="col-aksi">Aksi</th>
                                         </tr>
                                     </thead>
@@ -502,7 +502,7 @@
                                             </select>
                                             <input type="hidden" name="redirect_back" value="<?= current_url() ?: site_url(uri_string()) ?>">
                                             </td>
-                                            <?php if($this->session->userdata('role') == 'admin'): ?>
+                                            <?php //if($this->session->userdata('role') == 'admin'): ?>
                                             <td class="col-history">
                                                 <?php 
                                                 $user = null;
@@ -512,8 +512,8 @@
                                                 ?>
                                                 <?= ($user && isset($user->nama_lengkap)) ? $user->nama_lengkap : '-' ?>
                                             </td>
-                                            <?php endif; ?>
-                                            <?php if($this->session->userdata('role') == 'admin'): ?>
+                                            <?php //endif; ?>
+                                            <?php //if($this->session->userdata('role') == 'admin'): ?>
                                             <td class="col-history-done">
                                                 <?php 
                                                 $user = null;
@@ -523,7 +523,7 @@
                                                 ?>
                                                 <?= ($user && isset($user->nama_lengkap)) ? $user->nama_lengkap : '-' ?>
                                             </td>
-                                            <?php endif; ?>
+                                            <?php //endif; ?>
                                             <td class="col-aksi">
                                                 <button class="mobile-table-btn mobile-table-btn-edit btn-edit" onclick="toggleEditMobileTable(this)">
                                                     <i class="fas fa-edit"></i>
@@ -575,10 +575,10 @@
                                         <th class="text-center">Jam</th>
                                         <th class="text-center">Status</th>
                                         <th class="text-center">Flag Dokumen</th>
-                                        <?php if($this->session->userdata('role') == 'admin'): ?>
+                                        <?php //if($this->session->userdata('role') == 'admin'): ?>
                                         <th class="text-center">Update Terakhir</th>
                                         <th class="text-center">History Done</th>
-                                        <?php endif; ?>
+                                        <?php //endif; ?>
                                         <th width="100" class="text-center">Aksi</th>
                                     </tr>
                                 </thead>
