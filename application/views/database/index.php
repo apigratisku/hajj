@@ -18,9 +18,9 @@
                     </div>
                    
                     <div class="d-flex flex-wrap gap-2">
-                    <a href="<?= base_url('database/download_schedule_pdf?' . http_build_query($_GET)) ?>" class="btn btn-danger" target="_blank">
+                    <!--<a href="<?= base_url('database/download_schedule_pdf?' . http_build_query($_GET)) ?>" class="btn btn-danger" target="_blank">
                                         <i class="fas fa-file-pdf"></i> <span class="d-none d-sm-inline">Download PDF</span>
-                        </a>
+                        </a>-->
                         <?php if($this->session->userdata('role') == 'admin'): ?>
                         <a href="<?= base_url('database/tambah') ?>" class="btn btn-sm btn-tambah">
                             <i class="fas fa-plus"></i> <span class="d-none d-sm-inline">Tambah</span>
