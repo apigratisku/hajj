@@ -1926,6 +1926,127 @@ class Database extends CI_Controller {
         }
     }
 
+    public function download_schedule_pdf() {
+        try {
+            $this->load->model('transaksi_model');
+            
+            // Get filters from GET parameters (same as index method)
+            $filters = [
+                'nama' => trim($this->input->get('nama')),
+                'nomor_paspor' => trim($this->input->get('nomor_paspor')),
+                'no_visa' => trim($this->input->get('no_visa')),
+                'flag_doc' => trim($this->input->get('flag_doc')),
+                'tanggaljam' => trim($this->input->get('tanggaljam')),
+                'tanggal_pengerjaan' => trim($this->input->get('tanggal_pengerjaan')),
+                'status' => trim($this->input->get('status')),
+                'gender' => trim($this->input->get('gender')),
+                'status_jadwal' => trim($this->input->get('status_jadwal')),
+                'history_done' => trim($this->input->get('history_done')),
+                'nama_travel' => trim($this->input->get('nama_travel')),
+                'sortir_waktu_start' => trim($this->input->get('sortir_waktu_start')),
+                'sortir_waktu_end' => trim($this->input->get('sortir_waktu_end')),
+                'startDate' => trim($this->input->get('startDate')),
+                'endDate' => trim($this->input->get('endDate')),
+                'has_barcode' => trim($this->input->get('has_barcode')),
+            ];
+            
+            // Remove empty filters
+            $filters = array_filter($filters, function($value) {
+                return $value !== '' && $value !== null;
+            });
+            
+            // Get all filtered data without pagination
+            $peserta = $this->transaksi_model->get_paginated_filtered(null, 0, $filters);
+            
+            // Load TCPDF library
+            $this->load->library('pdf');
+            
+            // Check if TCPDF is available
+            if (!class_exists('TCPDF')) {
+                throw new Exception('TCPDF library tidak tersedia. Silakan install TCPDF terlebih dahulu.');
+            }
+            
+            // Create new PDF document - Portrait A4
+            $pdf = new TCPDF('P', PDF_UNIT, 'A4', true, 'UTF-8', false);
+            
+            // Set document information
+            $pdf->SetCreator('Hajj System');
+            $pdf->SetAuthor('Hajj System');
+            $pdf->SetTitle('Jadwal Kunjungan');
+            $pdf->SetSubject('Data Peserta Jadwal Kunjungan');
+            $pdf->SetKeywords('hajj, peserta, jadwal, kunjungan');
+            
+            // Set default header data
+            $pdf->SetHeaderData('', 0, 'JADWAL KUNJUNGAN', 'Export Jadwal Kunjungan - ' . date('d/m/Y H:i:s'));
+            
+            // Set header and footer fonts
+            $pdf->setHeaderFont(Array(PDF_FONT_NAME_MAIN, '', PDF_FONT_SIZE_MAIN));
+            $pdf->setFooterFont(Array(PDF_FONT_NAME_DATA, '', PDF_FONT_SIZE_DATA));
+            
+            // Set default monospaced font
+            $pdf->SetDefaultMonospacedFont(PDF_FONT_MONOSPACED);
+            
+            // Set margins
+            $pdf->SetMargins(15, 25, 15);
+            $pdf->SetHeaderMargin(10);
+            $pdf->SetFooterMargin(10);
+            
+            // Set auto page breaks
+            $pdf->SetAutoPageBreak(TRUE, 15);
+            
+            // Set image scale factor
+            $pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
+            
+            // Add a page
+            $pdf->AddPage();
+            
+            // Set font
+            $pdf->SetFont('helvetica', '', 10);
+            
+            // Create table header
+            $html = '<table border="1" cellpadding="5" cellspacing="0" style="width: 100%;">
+                <thead>
+                    <tr style="background-color: #8B4513; color: white; font-weight: bold; text-align: center;">
+                        <th width="8%">No</th>
+                        <th width="35%">Nama Peserta</th>
+                        <th width="20%">No Passport</th>
+                        <th width="20%">No Visa</th>
+                        <th width="17%">Barcode</th>
+                    </tr>
+                </thead>
+                <tbody>';
+            
+            // Add data rows
+            $no = 1;
+            foreach ($peserta as $p) {
+                $html .= '<tr>
+                    <td style="text-align: center;">' . $no . '</td>
+                    <td>' . htmlspecialchars($p->nama) . '</td>
+                    <td>' . htmlspecialchars($p->nomor_paspor) . '</td>
+                    <td>' . htmlspecialchars($p->no_visa ?: '-') . '</td>
+                    <td style="text-align: center;">-</td>
+                </tr>';
+                $no++;
+            }
+            
+            $html .= '</tbody></table>';
+            
+            // Print text using writeHTML
+            $pdf->writeHTML($html, true, false, true, false, '');
+            
+            // Set filename
+            $filename = 'Jadwal_Kunjungan_' . date('Y-m-d_H-i-s') . '.pdf';
+            
+            // Output PDF
+            $pdf->Output($filename, 'D');
+            exit;
+            
+        } catch (Exception $e) {
+            $this->session->set_flashdata('error', 'Error saat download PDF: ' . $e->getMessage());
+            redirect('database');
+        }
+    }
+
     public function tambah() {
         $data['title'] = 'Tambah Data Peserta';
         

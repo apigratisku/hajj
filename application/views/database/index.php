@@ -18,6 +18,9 @@
                     </div>
                    
                     <div class="d-flex flex-wrap gap-2">
+                    <a href="<?= base_url('database/download_schedule_pdf?' . http_build_query($_GET)) ?>" class="btn btn-danger" target="_blank">
+                                        <i class="fas fa-file-pdf"></i> <span class="d-none d-sm-inline">Download PDF</span>
+                        </a>
                         <?php if($this->session->userdata('role') == 'admin'): ?>
                         <a href="<?= base_url('database/tambah') ?>" class="btn btn-sm btn-tambah">
                             <i class="fas fa-plus"></i> <span class="d-none d-sm-inline">Tambah</span>
@@ -174,6 +177,7 @@
                                     <a href="<?= base_url('database/index') ?>" class="btn btn-reset">
                                         <i class="fas fa-times"></i> Reset
                                     </a>
+                                    
                                     <?php if($this->session->userdata('role') == 'admin'): ?>
                                     <button type="button" class="btn btn-danger" id="deleteMultipleBtnMobile" style="display: none;" onclick="deleteMultipleRecords()">
                                         <i class="fas fa-trash"></i> Hapus Terpilih
@@ -308,13 +312,14 @@
                             </div> 
                             <br>
                             <div class="row g-2 align-items-center">
-                                <div class="col-md-2">
+                                <div class="col-md-3">
                                     <button type="submit" class="btn btn-brown btn-sm me-2">
                                         <i class="fas fa-search"></i> Cari
                                     </button>
-                                    <a href="<?= base_url('database/index') ?>" class="btn btn-brown-light btn-sm">
+                                    <a href="<?= base_url('database/index') ?>" class="btn btn-brown-light btn-sm me-2">
                                         <i class="fas fa-times"></i> Reset
                                     </a>
+                                    
                                 </div>             
                             </div>
                         </form>
