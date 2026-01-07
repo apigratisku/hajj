@@ -901,6 +901,20 @@ class Transaksi_model extends CI_Model {
         return $result ? $result->total_already : 0;
     }
     
+    public function get_dashboard_stats_register_ulang($flag_doc = null) {
+        $this->db->select('COUNT(*) as total_register_ulang');
+        $this->db->from($this->table);
+        $this->db->where_in('status', [1, 2]); // Only Already and Done status
+        $this->db->where('status_register_kembali', 'sudah');
+        
+        if ($flag_doc) {
+            $this->db->where('flag_doc', $flag_doc);
+        }
+        
+        $result = $this->db->get()->row();
+        return $result ? $result->total_register_ulang : 0;
+    }
+    
     /**
      * Get statistics for data updated on specific date
      */
@@ -1739,7 +1753,8 @@ class Transaksi_model extends CI_Model {
                 COUNT(*) as total_imported,
                 SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) as on_target,
                 SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as already,
-                SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) as done
+                SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) as done,
+                SUM(CASE WHEN status_register_kembali = "sudah" THEN 1 ELSE 0 END) as register_ulang
             ');
             $this->db->from($this->table);
             $this->db->where('created_at >=', date('Y-m-01', strtotime('-11 months')));
@@ -1754,7 +1769,8 @@ class Transaksi_model extends CI_Model {
                 COUNT(*) as total_imported,
                 SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) as on_target,
                 SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as already,
-                SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) as done
+                SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) as done,
+                SUM(CASE WHEN status_register_kembali = "sudah" THEN 1 ELSE 0 END) as register_ulang
             ');
             $this->db->from($this->table);
             $this->db->where('created_at >=', date('Y-m-01', strtotime('-11 months')));

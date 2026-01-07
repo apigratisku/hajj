@@ -488,7 +488,67 @@ class Database extends CI_Controller {
         redirect($redirect_url);
     }
     
-    
+    public function register_ulang($id) {
+        // Get peserta data before update
+        $peserta = $this->transaksi_model->get_by_id($id);
+        
+        if (!$peserta) {
+            $this->session->set_flashdata('error', 'Data peserta tidak ditemukan');
+            $redirect_url = $this->get_redirect_url_with_filters();
+            redirect($redirect_url);
+            return;
+        }
+        
+        // Validate that status is "already" (status = 1)
+        if ($peserta->status != '1' && $peserta->status != 1) {
+            $this->session->set_flashdata('error', 'Register ulang hanya dapat dilakukan untuk data dengan status Already');
+            $redirect_url = $this->get_redirect_url_with_filters();
+            redirect($redirect_url);
+            return;
+        }
+        
+        // Update status_register_kembali to 'sudah'
+        $data = array(
+            'status_register_kembali' => 'sudah',
+            'updated_at' => date('Y-m-d H:i:s'),
+            'history_update' => $this->session->userdata('user_id') ?: null
+        );
+        
+        $result = $this->transaksi_model->update($id, $data);
+        
+        if ($result) {
+            // Log activity
+            if (function_exists('log_peserta_activity')) {
+                log_peserta_activity($id, 'update', 'Register ulang: ' . $peserta->nama, (array)$peserta, $data);
+            }
+            
+            // Kirim notifikasi Telegram untuk register ulang
+            if($this->session->userdata('username') != 'adhit'):
+                $this->telegram_notification->peserta_crud_notification('update', $peserta->nama, 'ID: ' . $id . ' (Register Ulang)');
+            endif;
+            
+            $this->session->set_flashdata('success', 'Data peserta berhasil ditandai sebagai Register Ulang');
+        } else {
+            $this->session->set_flashdata('error', 'Gagal melakukan register ulang');
+        }
+        
+        // Check if redirect URL is provided
+        $redirect_url = $this->input->get('redirect');
+        if ($redirect_url) {
+            // Decode the redirect URL
+            $redirect_url = urldecode($redirect_url);
+            
+            // Validate that the redirect URL is safe (only allow redirect to our own domain)
+            if (strpos($redirect_url, base_url()) === 0 || strpos($redirect_url, '/database/') === 0) {
+                redirect($redirect_url);
+                return;
+            }
+        }
+        
+        // Fallback: Redirect back to previous page with filters
+        $redirect_url = $this->get_redirect_url_with_filters();
+        redirect($redirect_url);
+    }
 
     public function edit($id) {
         // Load required models

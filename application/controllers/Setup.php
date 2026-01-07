@@ -243,6 +243,7 @@ class Setup extends CI_Controller {
                 'tanggal' => array('type' => 'VARCHAR', 'constraint' => 200, 'null' => TRUE),
                 'jam' => array('type' => 'VARCHAR', 'constraint' => 200, 'null' => TRUE),
                 'status' => array('type' => 'VARCHAR', 'constraint' => 100),
+                'status_register_kembali' => array('type' => 'VARCHAR', 'constraint' => 50, 'null' => TRUE),
                 'barcode' => array('type' => 'VARCHAR', 'constraint' => 255),
                 'created_at' => array('type' => 'DATETIME', 'null' => TRUE),
                 'updated_at' => array('type' => 'DATETIME', 'null' => TRUE)

@@ -391,6 +391,7 @@
                                             <th class="col-jam">Jam</th>
                                             <th class="col-status">Status</th>
                                             <th class="col-flag">Flag</th>
+                                            <th class="col-register-ulang">Register Ulang</th>
                                             <?php //if($this->session->userdata('role') == 'admin'): ?>
                                             <th class="col-history">Update Terakhir</th>
                                             <th class="col-history-done">History Done</th>
@@ -507,6 +508,15 @@
                                             </select>
                                             <input type="hidden" name="redirect_back" value="<?= current_url() ?: site_url(uri_string()) ?>">
                                             </td>
+                                            <td class="col-register-ulang">
+                                                <?php if($p->status_register_kembali == 'sudah'): ?>
+                                                <span class="value" data-field="status_register_kembali" data-value="<?= $p->status_register_kembali ?>"><i class="fas fa-check-circle" style="color: green;"></i></span>
+                                                <?php elseif($p->status_register_kembali == 'belum'): ?>
+                                                <span class="value" data-field="status_register_kembali" data-value="<?= $p->status_register_kembali ?>"><i class="fas fa-times-circle" style="color: red;"></i></span>
+                                                <?php else: ?>
+                                                <span class="value" data-field="status_register_kembali" data-value="<?= $p->status_register_kembali ?>">-</span>
+                                                <?php endif; ?>
+                                            </td>
                                             <?php //if($this->session->userdata('role') == 'admin'): ?>
                                             <td class="col-history">
                                                 <?php 
@@ -536,6 +546,11 @@
                                                 <button class="mobile-table-btn mobile-table-btn-warning btn-remove-schedule" onclick="removeSchedule(<?= $p->id ?>)" title="Remove Tanggal & Jam">
                                                     <i class="fas fa-calendar-times"></i>
                                                 </button>
+                                                <?php if($p->status == 1): ?>
+                                                <button class="mobile-table-btn mobile-table-btn-info btn-register-ulang" onclick="registerUlang(<?= $p->id ?>)" title="Register Ulang">
+                                                    <i class="fas fa-redo"></i>
+                                                </button>
+                                                <?php endif; ?>
                                                 <button class="mobile-table-btn mobile-table-btn-save btn-save" style="display:none;" onclick="saveRowMobileTable(this)">
                                                     <i class="fas fa-save"></i>
                                                 </button>
@@ -580,6 +595,7 @@
                                         <th class="text-center">Jam</th>
                                         <th class="text-center">Status</th>
                                         <th class="text-center">Flag Dokumen</th>
+                                        <th class="text-center">Register Ulang</th>
                                         <?php //if($this->session->userdata('role') == 'admin'): ?>
                                         <th class="text-center">Update Terakhir</th>
                                         <th class="text-center">History Done</th>
@@ -694,6 +710,15 @@
                                             </select>
                                             <input type="hidden" name="redirect_back" value="<?= current_url() ?: site_url(uri_string()) ?>">
                                         </td>
+                                        <td class="col-register-ulang text-center">
+                                                <?php if($p->status_register_kembali == 'sudah'): ?>
+                                                <span class="value" data-field="status_register_kembali" data-value="<?= $p->status_register_kembali ?>"><i class="fas fa-check-circle" style="color: green;"></i></span>
+                                                <?php elseif($p->status_register_kembali == 'belum'): ?>
+                                                <span class="value" data-field="status_register_kembali" data-value="<?= $p->status_register_kembali ?>"><i class="fas fa-times-circle" style="color: red;"></i></span>
+                                                <?php else: ?>
+                                                <span class="value" data-field="status_register_kembali" data-value="<?= $p->status_register_kembali ?>">-</span>
+                                                <?php endif; ?>
+                                            </td>
                                         <?php //if($this->session->userdata('role') == 'admin'): ?>
                                         <td class="col-history text-center">
                                                 <?php 
@@ -723,6 +748,11 @@
                                             <button class="btn btn-sm btn-warning btn-remove-schedule" data-bs-toggle="tooltip" title="Remove Tanggal & Jam" onclick="removeSchedule(<?= $p->id ?>)">
                                                 <i class="fas fa-calendar-times"></i>
                                             </button>
+                                            <?php if($p->status == 1): ?>
+                                            <button class="btn btn-sm btn-info btn-register-ulang" data-bs-toggle="tooltip" title="Register Ulang" onclick="registerUlang(<?= $p->id ?>)">
+                                                <i class="fas fa-redo"></i>
+                                            </button>
+                                            <?php endif; ?>
                                             <button class="btn btn-sm btn-success btn-save" data-bs-toggle="tooltip" title="Simpan" style="display:none;" onclick="saveRow(this)">
                                                 <i class="fas fa-save"></i>
                                             </button>
@@ -1407,6 +1437,11 @@
 
 .mobile-table-btn-warning {
     background: var(--warning-color);
+    color: white;
+}
+
+.mobile-table-btn-info {
+    background: var(--info-color);
     color: white;
 }
 
@@ -4116,6 +4151,41 @@ function removeSchedule(id) {
             
             // Perform remove schedule with redirect
             window.location.href = '<?= base_url('database/remove_schedule/') ?>' + id + '?redirect=' + encodeURIComponent(redirectUrl);
+        }
+    }
+}
+
+// Register ulang function
+function registerUlang(id) {
+    if (confirm('Apakah Anda yakin ingin menandai data ini sebagai Register Ulang?')) {
+        // Get current filters from URL
+        const currentUrl = new URL(window.location.href);
+        const params = new URLSearchParams(currentUrl.search);
+        
+        // Build redirect URL with current filters
+        let redirectUrl = '<?= base_url('database/index') ?>';
+        const queryParams = [];
+        
+        // Add all current filters
+        ['nama', 'nomor_paspor', 'no_visa', 'flag_doc', 'tanggaljam', 'status', 'gender', 'page', 'status_jadwal', 'tanggal_pengerjaan', 'history_done', 'nama_travel', 'sortir_waktu_start', 'sortir_waktu_end', 'startDate', 'endDate', 'has_barcode'].forEach(param => {
+            if (params.has(param) && params.get(param)) {
+                queryParams.push(`${param}=${encodeURIComponent(params.get(param))}`);
+            }
+        });
+        
+        if (queryParams.length > 0) {
+            redirectUrl += '?' + queryParams.join('&');
+        }
+        
+        // Show loading state
+        const button = event.target.closest('button');
+        if (button) {
+            const originalHTML = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            
+            // Perform register ulang with redirect
+            window.location.href = '<?= base_url('database/register_ulang/') ?>' + id + '?redirect=' + encodeURIComponent(redirectUrl);
         }
     }
 }

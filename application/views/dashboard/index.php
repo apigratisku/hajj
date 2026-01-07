@@ -112,6 +112,125 @@
         </div>
     </div>
 
+
+    <!-- Statistics Cards Toggle Button - Ultra Compact -->
+    <div class="row mb-1">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                
+                <div class="toggle-buttons">
+                    <!-- Desktop Toggle -->
+                    <button class="btn btn-outline-primary btn-sm d-none d-md-inline-block toggle-stats-btn" 
+                            data-target="desktop-stats-register-ulang" 
+                            data-action="toggle">
+                        <i class="fas fa-eye-slash"></i> 
+                        <span class="toggle-text">Tampilkan</span> Statistik Register Ulang
+                    </button>
+                    <!-- Mobile Toggle -->
+                    <button class="btn btn-outline-primary btn-sm d-md-none toggle-stats-btn" 
+                            data-target="mobile-stats-register-ulang" 
+                            data-action="toggle">
+                        <i class="fas fa-eye-slash"></i> 
+                        <span class="toggle-text">Tampilkan</span> Statistik Register Ulang
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Statistics Cards -->
+    <div class="row mb-1 stats-container" id="desktop-stats-register-ulang" style="display: none;">
+        <div class="col-12">
+            <div class="stats-horizontal-container">
+                <div class="stats-item">
+                    <div class="stats-icon">
+                        <i class="fas fa-user-friends"></i>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-count"><?= $stats_already ?></div>
+                        <div class="stats-title">Total Peserta Already <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
+                    </div>
+                </div>
+                
+                <div class="stats-item">
+                    <div class="stats-icon">
+                        <i class="fas fa-redo"></i>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-count"><?= $stats_register_ulang ?></div>
+                        <div class="stats-title">Register Ulang <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
+                    </div>
+                </div>
+                
+                <div class="stats-item">
+                    <div class="stats-icon">
+                        <i class="fas fa-percentage"></i>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-count"><?= $stats_already > 0 ? number_format(($stats_register_ulang / $stats_already) * 100, 1) : '0' ?>%</div>
+                        <div class="stats-title">Persentase Register Ulang</div>
+                    </div>
+                </div>
+                
+                <div class="stats-item">
+                    <div class="stats-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-count"><?= $stats_already - $stats_register_ulang ?></div>
+                        <div class="stats-title">Belum Register Ulang</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Statistics Cards for Register Ulang -->
+    <div class="row mb-1 stats-container d-md-none" id="mobile-stats-register-ulang" style="display: none;">
+        <div class="col-12">
+            <div class="stats-horizontal-container mobile-stats-horizontal">
+                <div class="stats-item mobile-stats-item">
+                    <div class="stats-icon">
+                        <i class="fas fa-user-friends"></i>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-count"><?= $stats_already ?></div>
+                        <div class="stats-title">Total Peserta Already <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
+                    </div>
+                </div>
+                
+                <div class="stats-item mobile-stats-item">
+                    <div class="stats-icon">
+                        <i class="fas fa-redo"></i>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-count"><?= $stats_register_ulang ?></div>
+                        <div class="stats-title">Register Ulang <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
+                    </div>
+                </div>
+                
+                <div class="stats-item mobile-stats-item">
+                    <div class="stats-icon">
+                        <i class="fas fa-percentage"></i>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-count"><?= $stats_already > 0 ? number_format(($stats_register_ulang / $stats_already) * 100, 1) : '0' ?>%</div>
+                        <div class="stats-title">Persentase Register Ulang</div>
+                    </div>
+                </div>
+                
+                <div class="stats-item mobile-stats-item">
+                    <div class="stats-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-count"><?= $stats_already - $stats_register_ulang ?></div>
+                        <div class="stats-title">Belum Register Ulang</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Mobile Statistics Cards -->
     <div class="row mb-1 stats-container d-md-none" id="mobile-stats" style="display: none;">
         <div class="col-12">
@@ -234,6 +353,7 @@
                                             <th class="text-center">On Target</th>
                                             <th class="text-center">Already</th>
                                             <th class="text-center">Done</th>
+                                            <th class="text-center">Register Ulang</th>
                                         </tr>
                                     </thead>
                                     <tbody id="monthlyStatsTable">
@@ -1701,6 +1821,36 @@ document.addEventListener('DOMContentLoaded', function() {
                 mobileBtn.setAttribute('data-action', 'hide');
             }
         }
+        
+        // Check Register Ulang desktop state
+        var desktopStatsRegisterUlang = document.getElementById('desktop-stats-register-ulang');
+        var desktopBtnRegisterUlang = document.querySelector('[data-target="desktop-stats-register-ulang"]');
+        if (desktopStatsRegisterUlang && desktopBtnRegisterUlang) {
+            var desktopRegisterUlangVisible = localStorage.getItem('stats_desktop-stats-register-ulang_visible');
+            if (desktopRegisterUlangVisible === 'true') {
+                desktopStatsRegisterUlang.style.display = 'block';
+                desktopStatsRegisterUlang.classList.add('show');
+                desktopBtnRegisterUlang.classList.add('active');
+                desktopBtnRegisterUlang.querySelector('i').className = 'fas fa-eye';
+                desktopBtnRegisterUlang.querySelector('.toggle-text').textContent = 'Sembunyikan';
+                desktopBtnRegisterUlang.setAttribute('data-action', 'hide');
+            }
+        }
+        
+        // Check Register Ulang mobile state
+        var mobileStatsRegisterUlang = document.getElementById('mobile-stats-register-ulang');
+        var mobileBtnRegisterUlang = document.querySelector('[data-target="mobile-stats-register-ulang"]');
+        if (mobileStatsRegisterUlang && mobileBtnRegisterUlang) {
+            var mobileRegisterUlangVisible = localStorage.getItem('stats_mobile-stats-register-ulang_visible');
+            if (mobileRegisterUlangVisible === 'true') {
+                mobileStatsRegisterUlang.style.display = 'block';
+                mobileStatsRegisterUlang.classList.add('show');
+                mobileBtnRegisterUlang.classList.add('active');
+                mobileBtnRegisterUlang.querySelector('i').className = 'fas fa-eye';
+                mobileBtnRegisterUlang.querySelector('.toggle-text').textContent = 'Sembunyikan';
+                mobileBtnRegisterUlang.setAttribute('data-action', 'hide');
+            }
+        }
     }
 
     // Initialize stats state
@@ -1751,7 +1901,7 @@ function loadMonthlyStats() {
     const tableBody = document.getElementById('monthlyStatsTable');
     
     if (tableBody) {
-        tableBody.innerHTML = '<tr><td colspan="5" class="text-center">Loading...</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="6" class="text-center">Loading...</td></tr>';
     }
     
     // Fetch data
@@ -1770,14 +1920,14 @@ function loadMonthlyStats() {
         } else {
             console.error('Error loading monthly stats:', data.message);
             if (tableBody) {
-                tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error loading data</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error loading data</td></tr>';
             }
         }
     })
     .catch(error => {
         console.error('Error:', error);
         if (tableBody) {
-            tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error loading data</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error loading data</td></tr>';
         }
     });
 }
@@ -1810,7 +1960,7 @@ function updateMonthlyTable(data) {
     if (!tableBody) return;
     
     if (data.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Tidak ada data</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Tidak ada data</td></tr>';
         return;
     }
     
@@ -1826,6 +1976,7 @@ function updateMonthlyTable(data) {
                 <td class="text-center">${item.on_target}</td>
                 <td class="text-center">${item.already}</td>
                 <td class="text-center">${item.done}</td>
+                <td class="text-center">${item.register_ulang || 0}</td>
             </tr>
         `;
     });
