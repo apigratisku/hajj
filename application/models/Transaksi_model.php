@@ -1656,7 +1656,8 @@ class Transaksi_model extends CI_Model {
             u.username,
             SUM(CASE WHEN p.status = 2 THEN 1 ELSE 0 END) as done_count,
             SUM(CASE WHEN p.status = 1 THEN 1 ELSE 0 END) as already_count,
-            SUM(CASE WHEN p.status IN (1, 2) THEN 1 ELSE 0 END) as total_processed
+            SUM(CASE WHEN p.status IN (1, 2) THEN 1 ELSE 0 END) as total_processed,
+            SUM(CASE WHEN p.status IN (1, 2) AND p.status_register_kembali = \'sudah\' THEN 1 ELSE 0 END) as register_ulang_count
         ');
         $this->db->from('users u');
         $this->db->join('peserta p', 'u.id_user = p.history_done', 'left');

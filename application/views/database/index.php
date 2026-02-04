@@ -2047,7 +2047,8 @@
                                     <th class="text-center" style="width: 10%;">Done</th>
                                     <th class="text-center" style="width: 10%;">Already</th>
                                     <th class="text-center" style="width: 10%;">Total</th>
-
+                                    <th class="text-center" style="width: 10%;">Register Ulang</th>
+                                    <th class="text-center" style="width: 10%;">Total Register Ulang</th>
                                 </tr>
                             </thead>
                             <tbody id="operatorStatsTableBody">
@@ -3975,7 +3976,7 @@ function displayOperatorStatistics(data, filters = {}) {
     summaryContainer.innerHTML = '';
     
     if (!data || data.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="9" class="text-center">Tidak ada data operator yang ditemukan</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="7" class="text-center">Tidak ada data operator yang ditemukan</td></tr>';
         return;
     }
     
@@ -3983,9 +3984,7 @@ function displayOperatorStatistics(data, filters = {}) {
     let totalDone = 0;
     let totalAlready = 0;
     let totalProcessed = 0;
-    let totalToday = 0;
-    let totalWeek = 0;
-    let totalMonth = 0;
+    let totalRegisterUlang = 0;
     
     data.forEach((operator, index) => {
         const row = document.createElement('tr');
@@ -3994,21 +3993,7 @@ function displayOperatorStatistics(data, filters = {}) {
         totalDone += parseInt(operator.done_count) || 0;
         totalAlready += parseInt(operator.already_count) || 0;
         totalProcessed += parseInt(operator.total_processed) || 0;
-        totalToday += parseInt(operator.today_total) || 0;
-        totalWeek += parseInt(operator.week_total) || 0;
-        totalMonth += parseInt(operator.month_total) || 0;
-        
-        // Format last activity
-        const lastActivity = operator.last_activity ? 
-            new Date(operator.last_activity).toLocaleString('id-ID', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true
-            }) : 
-            'Belum ada aktivitas';
+        totalRegisterUlang += parseInt(operator.register_ulang_count) || 0;
         
         row.innerHTML = `
             <td class="text-center">${index + 1}</td>
@@ -4017,43 +4002,74 @@ function displayOperatorStatistics(data, filters = {}) {
                 <small class="text-muted">@${operator.username}</small>
             </td>
             <td class="text-center">
-                <span class="badge bg-success">${operator.done_count || 0}</span>
+                <span class="badge bg-success">${parseInt(operator.done_count) || 0}</span>
             </td>
             <td class="text-center">
-                <span class="badge bg-warning text-dark">${operator.already_count || 0}</span>
+                <span class="badge bg-warning text-dark">${parseInt(operator.already_count) || 0}</span>
             </td>
             <td class="text-center">
-                <span class="badge bg-primary">${operator.total_processed || 0}</span>
+                <span class="badge bg-primary">${parseInt(operator.total_processed) || 0}</span>
             </td>
-            
+            <td class="text-center">
+                <span class="badge bg-info">${parseInt(operator.register_ulang_count) || 0}</span>
+            </td>
+            <td class="text-center">
+                <span class="badge bg-secondary">${parseInt(operator.register_ulang_count) || 0}</span>
+            </td>
         `;
         
         tableBody.appendChild(row);
     });
     
+    // Show filter info or "Semua Data" message
+    let filterInfoHtml = '';
+    if (filters.start_date || filters.end_date) {
+        filterInfoHtml = '<div class="alert alert-info mb-3"><i class="fas fa-filter"></i> <strong>Filter Aktif:</strong> ';
+        if (filters.start_date && filters.end_date) {
+            filterInfoHtml += `Rentang tanggal: ${formatDate(filters.start_date)} - ${formatDate(filters.end_date)}`;
+        } else if (filters.start_date) {
+            filterInfoHtml += `Dari tanggal: ${formatDate(filters.start_date)}`;
+        } else if (filters.end_date) {
+            filterInfoHtml += `Sampai tanggal: ${formatDate(filters.end_date)}`;
+        }
+        filterInfoHtml += '</div>';
+    } else {
+        filterInfoHtml = '<div class="alert alert-info mb-3"><i class="fas fa-info-circle"></i> <strong>Menampilkan semua data</strong> (tanpa filter tanggal)</div>';
+    }
+    
     // Create summary cards
-    summaryContainer.innerHTML = `
-        <div class="col-md-4">
-            <div class="card bg-success text-white">
-                <div class="card-body text-center py-2">
-                    <h5 class="card-title mb-1">${totalDone}</h5>
-                    <p class="card-text mb-0 small">Total Done</p>
+    summaryContainer.innerHTML = filterInfoHtml + `
+        <div class="row mt-3">
+            <div class="col-md-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body text-center py-2">
+                        <h5 class="card-title mb-1">${totalDone.toLocaleString('id-ID')}</h5>
+                        <p class="card-text mb-0 small">Total Done</p>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card bg-warning text-dark">
-                <div class="card-body text-center py-2">
-                    <h5 class="card-title mb-1">${totalAlready}</h5>
-                    <p class="card-text mb-0 small">Total Already</p>
+            <div class="col-md-3">
+                <div class="card bg-warning text-dark">
+                    <div class="card-body text-center py-2">
+                        <h5 class="card-title mb-1">${totalAlready.toLocaleString('id-ID')}</h5>
+                        <p class="card-text mb-0 small">Total Already</p>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card bg-primary text-white">
-                <div class="card-body text-center py-2">
-                    <h5 class="card-title mb-1">${totalProcessed}</h5>
-                    <p class="card-text mb-0 small">Total Diproses</p>
+            <div class="col-md-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body text-center py-2">
+                        <h5 class="card-title mb-1">${totalProcessed.toLocaleString('id-ID')}</h5>
+                        <p class="card-text mb-0 small">Total Diproses</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-info text-white">
+                    <div class="card-body text-center py-2">
+                        <h5 class="card-title mb-1">${totalRegisterUlang.toLocaleString('id-ID')}</h5>
+                        <p class="card-text mb-0 small">Total Register Ulang</p>
+                    </div>
                 </div>
             </div>
         </div>
