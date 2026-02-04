@@ -4913,20 +4913,13 @@ class Database extends CI_Controller {
             // Get operator statistics from model with filters
             $operator_stats = $this->transaksi_model->get_operator_statistics($filters);
             
-            if ($operator_stats) {
-                $this->output->set_content_type('application/json');
-                echo json_encode([
-                    'success' => true,
-                    'data' => $operator_stats,
-                    'filters' => $filters
-                ]);
-            } else {
-                $this->output->set_content_type('application/json');
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Tidak ada data statistik operator untuk rentang tanggal yang dipilih'
-                ]);
-            }
+            // Always return success, even if data is empty (empty array is valid)
+            $this->output->set_content_type('application/json');
+            echo json_encode([
+                'success' => true,
+                'data' => $operator_stats ? $operator_stats : [],
+                'filters' => $filters
+            ]);
         } catch (Exception $e) {
             log_message('error', 'Error getting operator statistics: ' . $e->getMessage());
             $this->output->set_status_header(500);

@@ -3974,20 +3974,6 @@ function displayOperatorStatistics(data, filters = {}) {
     tableBody.innerHTML = '';
     summaryContainer.innerHTML = '';
     
-    // Show filter information if dates are set
-    if (filters.start_date || filters.end_date) {
-        let filterInfo = '<div class="alert alert-info mb-3"><i class="fas fa-filter"></i> <strong>Filter Aktif:</strong> ';
-        if (filters.start_date && filters.end_date) {
-            filterInfo += `Rentang tanggal: ${formatDate(filters.start_date)} - ${formatDate(filters.end_date)}`;
-        } else if (filters.start_date) {
-            filterInfo += `Dari tanggal: ${formatDate(filters.start_date)}`;
-        } else if (filters.end_date) {
-            filterInfo += `Sampai tanggal: ${formatDate(filters.end_date)}`;
-        }
-        filterInfo += '</div>';
-        summaryContainer.innerHTML = filterInfo;
-    }
-    
     if (!data || data.length === 0) {
         tableBody.innerHTML = '<tr><td colspan="9" class="text-center">Tidak ada data operator yang ditemukan</td></tr>';
         return;
@@ -4079,10 +4065,6 @@ function showOperatorStatisticsError(message) {
     document.getElementById('operatorStatsContent').style.display = 'none';
     document.getElementById('operatorStatsError').style.display = 'block';
     document.getElementById('operatorStatsErrorMessage').textContent = message;
-}
-
-function refreshOperatorStatistics() {
-    loadOperatorStatistics();
 }
 
 // Delete data function with filter preservation
