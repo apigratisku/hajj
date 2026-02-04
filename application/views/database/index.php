@@ -2048,7 +2048,7 @@
                                     <th class="text-center" style="width: 10%;">Already</th>
                                     <th class="text-center" style="width: 10%;">Total</th>
                                     <th class="text-center" style="width: 10%;">Register Ulang</th>
-                                    <th class="text-center" style="width: 10%;">Total Register Ulang</th>
+                                    
                                 </tr>
                             </thead>
                             <tbody id="operatorStatsTableBody">
@@ -4013,9 +4013,7 @@ function displayOperatorStatistics(data, filters = {}) {
             <td class="text-center">
                 <span class="badge bg-info">${parseInt(operator.register_ulang_count) || 0}</span>
             </td>
-            <td class="text-center">
-                <span class="badge bg-secondary">${parseInt(operator.register_ulang_count) || 0}</span>
-            </td>
+            
         `;
         
         tableBody.appendChild(row);
