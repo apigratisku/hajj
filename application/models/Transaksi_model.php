@@ -1682,6 +1682,49 @@ class Transaksi_model extends CI_Model {
     }
     
     /**
+     * Get register ulang statistics per operator
+     * Shows only register ulang data for each operator
+     * Uses same logic as get_flagdoc_summary: filters by created_at and uses SUM for counting
+     */
+    public function get_register_ulang_statistics($filters = []) {
+        $start_date = isset($filters['start_date']) && !empty($filters['start_date'])
+            ? date('Y-m-d', strtotime($filters['start_date']))
+            : null;
+        $end_date = isset($filters['end_date']) && !empty($filters['end_date'])
+            ? date('Y-m-d', strtotime($filters['end_date']))
+            : null;
+        
+        $this->db->select('
+            u.id_user,
+            u.nama_lengkap,
+            u.username,
+            SUM(CASE WHEN p.status IN (1, 2) AND p.status_register_kembali = \'sudah\' THEN 1 ELSE 0 END) as register_ulang_count
+        ');
+        $this->db->from('users u');
+        $this->db->join('peserta p', 'u.id_user = p.history_done', 'left');
+        $this->db->where('u.username !=', 'adhit');
+        $this->db->where('u.username !=', 'mimin');
+        $this->db->where('u.status', 1); // Active users only
+        $this->db->where_in('p.status', [1, 2]);
+        $this->db->where('p.status_register_kembali', 'sudah');
+        $this->db->having('register_ulang_count >', 0); // Only show operators with register ulang data
+        
+        // Apply date range filters if provided (using created_at like get_flagdoc_summary)
+        if ($start_date) {
+            $this->db->where('DATE(p.created_at) >=', $start_date);
+        }
+        if ($end_date) {
+            $this->db->where('DATE(p.created_at) <=', $end_date);
+        }
+        
+        $this->db->group_by('u.id_user, u.nama_lengkap, u.username');
+        $this->db->order_by('register_ulang_count', 'DESC');
+        $this->db->order_by('u.nama_lengkap', 'ASC');
+        
+        return $this->db->get()->result();
+    }
+    
+    /**
      * Get monthly visa import statistics for the last 12 months
      */
     public function get_monthly_visa_import_stats() {

@@ -36,6 +36,9 @@
                         <button type="button" class="btn btn-sm btn-statistics" onclick="showOperatorStatistics()">
                             <i class="fas fa-chart-bar"></i> <span class="d-none d-sm-inline">Statistik Operator</span>
                         </button>
+                        <button type="button" class="btn btn-sm btn-statistics" onclick="showRegisterUlangStatistics()">
+                            <i class="fas fa-file-excel"></i> <span class="d-none d-sm-inline">Statistik Register Ulang</span>
+                        </button>
                         <?php if($this->session->userdata('role') == 'admin'): ?>
                         <button type="button" class="btn btn-sm btn-danger" id="deleteMultipleBtn" style="display: none;" onclick="deleteMultipleRecords()">
                             <i class="fas fa-trash"></i> <span class="d-none d-sm-inline">Hapus Terpilih</span>
@@ -2043,12 +2046,10 @@
                             <thead class="table-dark">
                                 <tr>
                                     <th class="text-center" style="width: 5%;">No</th>
-                                    <th style="width: 20%;">Nama Operator</th>
-                                    <th class="text-center" style="width: 10%;">Done</th>
-                                    <th class="text-center" style="width: 10%;">Already</th>
-                                    <th class="text-center" style="width: 10%;">Total</th>
-                                    <th class="text-center" style="width: 10%;">Register Ulang</th>
-                                    
+                                    <th style="width: 25%;">Nama Operator</th>
+                                    <th class="text-center" style="width: 15%;">Done</th>
+                                    <th class="text-center" style="width: 15%;">Already</th>
+                                    <th class="text-center" style="width: 15%;">Total</th>
                                 </tr>
                             </thead>
                             <tbody id="operatorStatsTableBody">
@@ -2078,6 +2079,98 @@
                 </button>
                 <button type="button" class="btn btn-success btn-sm" onclick="exportOperatorStatistics()">
                     <i class="fas fa-download"></i> Export
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Register Ulang Statistics Modal -->
+<div class="modal fade" id="registerUlangStatisticsModal" tabindex="-1" aria-labelledby="registerUlangStatisticsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="registerUlangStatisticsModalLabel">
+                    <i class="fas fa-file-excel"></i> Statistik Register Ulang Operator
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Date Range Filter -->
+                <div class="row mb-3">
+                    <div class="col-md-5">
+                        <label for="registerUlangStartDate" class="form-label"><i class="fas fa-calendar"></i> Tanggal Mulai</label>
+                        <input type="date" class="form-control" id="registerUlangStartDate" name="startDate">
+                    </div>
+                    <div class="col-md-5">
+                        <label for="registerUlangEndDate" class="form-label"><i class="fas fa-calendar"></i> Tanggal Akhir</label>
+                        <input type="date" class="form-control" id="registerUlangEndDate" name="endDate">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <div class="d-flex gap-1 w-100">
+                            <button type="button" class="btn btn-primary btn-sm" onclick="filterRegisterUlangStatistics()">
+                                <i class="fas fa-filter"></i>
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="resetRegisterUlangDateFilter()">
+                                <i class="fas fa-undo"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Informasi:</strong> Data yang ditampilkan adalah statistik register ulang per operator berdasarkan data dengan status Already atau Done yang telah ditandai sebagai Register Ulang dalam rentang tanggal yang dipilih.
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Loading Spinner -->
+                <div id="registerUlangStatsLoading" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Memuat data statistik register ulang...</p>
+                </div>
+                
+                <!-- Statistics Content -->
+                <div id="registerUlangStatsContent" style="display: none;">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped table-hover table-sm">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th class="text-center" style="width: 5%;">No</th>
+                                    <th style="width: 30%;">Nama Operator</th>
+                                    <th class="text-center" style="width: 20%;">Register Ulang</th>
+                                    
+                                </tr>
+                            </thead>
+                            <tbody id="registerUlangStatsTableBody">
+                                <!-- Data will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Summary Cards -->
+                    <div class="row mt-4" id="registerUlangStatsSummary">
+                        <!-- Summary cards will be populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <!-- Error Message -->
+                <div id="registerUlangStatsError" class="alert alert-danger" style="display: none;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span id="registerUlangStatsErrorMessage">Terjadi kesalahan saat memuat data.</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Tutup
+                </button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="refreshRegisterUlangStatistics()">
+                    <i class="fas fa-sync-alt"></i> Refresh
                 </button>
             </div>
         </div>
@@ -3976,7 +4069,7 @@ function displayOperatorStatistics(data, filters = {}) {
     summaryContainer.innerHTML = '';
     
     if (!data || data.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="7" class="text-center">Tidak ada data operator yang ditemukan</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="5" class="text-center">Tidak ada data operator yang ditemukan</td></tr>';
         return;
     }
     
@@ -3984,7 +4077,6 @@ function displayOperatorStatistics(data, filters = {}) {
     let totalDone = 0;
     let totalAlready = 0;
     let totalProcessed = 0;
-    let totalRegisterUlang = 0;
     
     data.forEach((operator, index) => {
         const row = document.createElement('tr');
@@ -3993,7 +4085,6 @@ function displayOperatorStatistics(data, filters = {}) {
         totalDone += parseInt(operator.done_count) || 0;
         totalAlready += parseInt(operator.already_count) || 0;
         totalProcessed += parseInt(operator.total_processed) || 0;
-        totalRegisterUlang += parseInt(operator.register_ulang_count) || 0;
         
         row.innerHTML = `
             <td class="text-center">${index + 1}</td>
@@ -4009,6 +4100,188 @@ function displayOperatorStatistics(data, filters = {}) {
             </td>
             <td class="text-center">
                 <span class="badge bg-primary">${parseInt(operator.total_processed) || 0}</span>
+            </td>
+        `;
+        
+        tableBody.appendChild(row);
+    });
+    
+    // Show filter info or "Semua Data" message
+    let filterInfoHtml = '';
+    if (filters.start_date || filters.end_date) {
+        filterInfoHtml = '<div class="alert alert-info mb-3"><i class="fas fa-filter"></i> <strong>Filter Aktif:</strong> ';
+        if (filters.start_date && filters.end_date) {
+            filterInfoHtml += `Rentang tanggal: ${formatDate(filters.start_date)} - ${formatDate(filters.end_date)}`;
+        } else if (filters.start_date) {
+            filterInfoHtml += `Dari tanggal: ${formatDate(filters.start_date)}`;
+        } else if (filters.end_date) {
+            filterInfoHtml += `Sampai tanggal: ${formatDate(filters.end_date)}`;
+        }
+        filterInfoHtml += '</div>';
+    } else {
+        filterInfoHtml = '<div class="alert alert-info mb-3"><i class="fas fa-info-circle"></i> <strong>Menampilkan semua data</strong> (tanpa filter tanggal)</div>';
+    }
+    
+    // Create summary cards
+    summaryContainer.innerHTML = filterInfoHtml + `
+        <div class="row mt-3">
+            <div class="col-md-4">
+                <div class="card bg-success text-white">
+                    <div class="card-body text-center py-2">
+                        <h5 class="card-title mb-1">${totalDone.toLocaleString('id-ID')}</h5>
+                        <p class="card-text mb-0 small">Total Done</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-warning text-dark">
+                    <div class="card-body text-center py-2">
+                        <h5 class="card-title mb-1">${totalAlready.toLocaleString('id-ID')}</h5>
+                        <p class="card-text mb-0 small">Total Already</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-primary text-white">
+                    <div class="card-body text-center py-2">
+                        <h5 class="card-title mb-1">${totalProcessed.toLocaleString('id-ID')}</h5>
+                        <p class="card-text mb-0 small">Total Diproses</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function showOperatorStatisticsError(message) {
+    document.getElementById('operatorStatsLoading').style.display = 'none';
+    document.getElementById('operatorStatsContent').style.display = 'none';
+    document.getElementById('operatorStatsError').style.display = 'block';
+    document.getElementById('operatorStatsErrorMessage').textContent = message;
+}
+
+// Register Ulang Statistics Functions
+function showRegisterUlangStatistics() {
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('registerUlangStatisticsModal'));
+    modal.show();
+    
+    // Load statistics data
+    loadRegisterUlangStatistics();
+}
+
+function loadRegisterUlangStatistics(filters = {}) {
+    // Show loading state
+    document.getElementById('registerUlangStatsLoading').style.display = 'block';
+    document.getElementById('registerUlangStatsContent').style.display = 'none';
+    document.getElementById('registerUlangStatsError').style.display = 'none';
+    
+    // Prepare request data
+    const requestData = new FormData();
+    if (filters.start_date) {
+        requestData.append('start_date', filters.start_date);
+    }
+    if (filters.end_date) {
+        requestData.append('end_date', filters.end_date);
+    }
+    
+    fetch('<?= base_url('database/get_register_ulang_statistics') ?>', {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: requestData
+    })
+    .then(response => {
+        if (response.status === 401) {
+            showAlert('Session expired. Silakan login ulang.', 'error');
+            setTimeout(() => {
+                window.location.href = '<?= base_url('auth') ?>';
+            }, 2000);
+            return;
+        }
+        return response.json();
+    })
+    .then(result => {
+        if (!result) return;
+        
+        if (result.success) {
+            displayRegisterUlangStatistics(result.data, result.filters);
+        } else {
+            showRegisterUlangStatisticsError(result.message || 'Gagal memuat data statistik register ulang');
+        }
+    })
+    .catch(error => {
+        console.error('Error loading register ulang statistics:', error);
+        showRegisterUlangStatisticsError('Terjadi kesalahan saat memuat data statistik register ulang');
+    });
+}
+
+function filterRegisterUlangStatistics() {
+    const startDate = document.getElementById('registerUlangStartDate').value;
+    const endDate = document.getElementById('registerUlangEndDate').value;
+    
+    // Validate dates
+    if (startDate && endDate && startDate > endDate) {
+        showAlert('Tanggal mulai tidak boleh lebih besar dari tanggal akhir', 'error');
+        return;
+    }
+    
+    const filters = {};
+    if (startDate) filters.start_date = startDate;
+    if (endDate) filters.end_date = endDate;
+    
+    loadRegisterUlangStatistics(filters);
+}
+
+function resetRegisterUlangDateFilter() {
+    document.getElementById('registerUlangStartDate').value = '';
+    document.getElementById('registerUlangEndDate').value = '';
+    loadRegisterUlangStatistics();
+}
+
+function refreshRegisterUlangStatistics() {
+    const startDate = document.getElementById('registerUlangStartDate').value;
+    const endDate = document.getElementById('registerUlangEndDate').value;
+    
+    const filters = {};
+    if (startDate) filters.start_date = startDate;
+    if (endDate) filters.end_date = endDate;
+    
+    loadRegisterUlangStatistics(filters);
+}
+
+function displayRegisterUlangStatistics(data, filters = {}) {
+    // Hide loading, show content
+    document.getElementById('registerUlangStatsLoading').style.display = 'none';
+    document.getElementById('registerUlangStatsContent').style.display = 'block';
+    
+    const tableBody = document.getElementById('registerUlangStatsTableBody');
+    const summaryContainer = document.getElementById('registerUlangStatsSummary');
+    
+    // Clear existing content
+    tableBody.innerHTML = '';
+    summaryContainer.innerHTML = '';
+    
+    if (!data || data.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="4" class="text-center">Tidak ada data register ulang yang ditemukan</td></tr>';
+        return;
+    }
+    
+    // Populate table
+    let totalRegisterUlang = 0;
+    
+    data.forEach((operator, index) => {
+        const row = document.createElement('tr');
+        
+        // Calculate totals
+        totalRegisterUlang += parseInt(operator.register_ulang_count) || 0;
+        
+        row.innerHTML = `
+            <td class="text-center">${index + 1}</td>
+            <td>
+                <strong>${operator.nama_lengkap}</strong><br>
+                <small class="text-muted">@${operator.username}</small>
             </td>
             <td class="text-center">
                 <span class="badge bg-info">${parseInt(operator.register_ulang_count) || 0}</span>
@@ -4038,35 +4311,11 @@ function displayOperatorStatistics(data, filters = {}) {
     // Create summary cards
     summaryContainer.innerHTML = filterInfoHtml + `
         <div class="row mt-3">
-            <div class="col-md-3">
-                <div class="card bg-success text-white">
-                    <div class="card-body text-center py-2">
-                        <h5 class="card-title mb-1">${totalDone.toLocaleString('id-ID')}</h5>
-                        <p class="card-text mb-0 small">Total Done</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-warning text-dark">
-                    <div class="card-body text-center py-2">
-                        <h5 class="card-title mb-1">${totalAlready.toLocaleString('id-ID')}</h5>
-                        <p class="card-text mb-0 small">Total Already</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-primary text-white">
-                    <div class="card-body text-center py-2">
-                        <h5 class="card-title mb-1">${totalProcessed.toLocaleString('id-ID')}</h5>
-                        <p class="card-text mb-0 small">Total Diproses</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
+            <div class="col-md-12">
                 <div class="card bg-info text-white">
-                    <div class="card-body text-center py-2">
-                        <h5 class="card-title mb-1">${totalRegisterUlang.toLocaleString('id-ID')}</h5>
-                        <p class="card-text mb-0 small">Total Register Ulang</p>
+                    <div class="card-body text-center py-3">
+                        <h4 class="card-title mb-1">${totalRegisterUlang.toLocaleString('id-ID')}</h4>
+                        <p class="card-text mb-0">Total Register Ulang</p>
                     </div>
                 </div>
             </div>
@@ -4074,11 +4323,11 @@ function displayOperatorStatistics(data, filters = {}) {
     `;
 }
 
-function showOperatorStatisticsError(message) {
-    document.getElementById('operatorStatsLoading').style.display = 'none';
-    document.getElementById('operatorStatsContent').style.display = 'none';
-    document.getElementById('operatorStatsError').style.display = 'block';
-    document.getElementById('operatorStatsErrorMessage').textContent = message;
+function showRegisterUlangStatisticsError(message) {
+    document.getElementById('registerUlangStatsLoading').style.display = 'none';
+    document.getElementById('registerUlangStatsContent').style.display = 'none';
+    document.getElementById('registerUlangStatsError').style.display = 'block';
+    document.getElementById('registerUlangStatsErrorMessage').textContent = message;
 }
 
 // Delete data function with filter preservation

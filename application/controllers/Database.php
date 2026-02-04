@@ -4932,6 +4932,72 @@ class Database extends CI_Controller {
     }
 
     /**
+     * Get register ulang statistics via AJAX
+     */
+    public function get_register_ulang_statistics() {
+        // Check if user is logged in
+        if (!$this->session->userdata('logged_in')) {
+            $this->output->set_status_header(401);
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            return;
+        }
+
+        // Check if request is AJAX
+        if (!$this->input->is_ajax_request()) {
+            $this->output->set_status_header(400);
+            echo json_encode(['success' => false, 'message' => 'Invalid request']);
+            return;
+        }
+
+        try {
+            // Get date range filters from POST data
+            $start_date = $this->input->post('start_date');
+            $end_date = $this->input->post('end_date');
+            
+            // Validate date format
+            if (!empty($start_date) && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $start_date)) {
+                $this->output->set_status_header(400);
+                echo json_encode(['success' => false, 'message' => 'Format tanggal mulai tidak valid']);
+                return;
+            }
+            
+            if (!empty($end_date) && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $end_date)) {
+                $this->output->set_status_header(400);
+                echo json_encode(['success' => false, 'message' => 'Format tanggal akhir tidak valid']);
+                return;
+            }
+            
+            // Prepare filters array
+            $filters = [];
+            if (!empty($start_date)) {
+                $filters['start_date'] = $start_date;
+            }
+            if (!empty($end_date)) {
+                $filters['end_date'] = $end_date;
+            }
+            
+            // Get register ulang statistics from model with filters
+            $register_ulang_stats = $this->transaksi_model->get_register_ulang_statistics($filters);
+            
+            // Always return success, even if data is empty (empty array is valid)
+            $this->output->set_content_type('application/json');
+            echo json_encode([
+                'success' => true,
+                'data' => $register_ulang_stats ? $register_ulang_stats : [],
+                'filters' => $filters
+            ]);
+        } catch (Exception $e) {
+            log_message('error', 'Error getting register ulang statistics: ' . $e->getMessage());
+            $this->output->set_status_header(500);
+            $this->output->set_content_type('application/json');
+            echo json_encode([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat mengambil data statistik register ulang'
+            ]);
+        }
+    }
+
+    /**
      * Export operator statistics to Excel
      */
     public function export_operator_statistics() {
