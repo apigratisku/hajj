@@ -36,7 +36,7 @@ class Email extends CI_Controller {
             $this->load->library('Cpanel_new', $this->cpanel_config);
             
             // Pagination settings
-            $per_page = 25;
+            $per_page = 250;
             $page = $this->input->get('page') ? $this->input->get('page') : 1;
             $offset = ($page - 1) * $per_page;
             
@@ -233,7 +233,7 @@ class Email extends CI_Controller {
                         'accounts' => [],
                         'pagination' => [
                             'current_page' => 1,
-                            'per_page' => 25,
+                            'per_page' => 250,
                             'total_pages' => 0,
                             'total_accounts' => 0,
                             'has_prev' => false,
@@ -246,7 +246,7 @@ class Email extends CI_Controller {
             }
             
             // Pagination parameters
-            $per_page = 25;
+            $per_page = 250;
             $page = $this->input->get('page') ? intval($this->input->get('page')) : 1;
             if ($page < 1) {
                 $page = 1;
@@ -387,7 +387,7 @@ class Email extends CI_Controller {
                 'message' => 'Terjadi kesalahan server: ' . $e->getMessage(),
                 'pagination' => [
                     'current_page' => 1,
-                    'per_page' => 25,
+                    'per_page' => 250,
                     'total_pages' => 0,
                     'total_accounts' => 0,
                     'has_prev' => false,
