@@ -77,14 +77,6 @@
                                 <option value="large">Besar (> 500MB)</option>
                             </select>
                         </div>
-                        <div class="col-12 col-lg-3">
-                            <div class="form-check form-switch mt-2 mt-lg-0">
-                                <input class="form-check-input" type="checkbox" id="pesertaFilter" onchange="filterEmails()">
-                                <label class="form-check-label" for="pesertaFilter">
-                                    Hanya email peserta (Already)
-                                </label>
-                            </div>
-                        </div>
                     </div>
 
                     <!-- Search Results Info -->
@@ -140,6 +132,7 @@
                                         <td colspan="7" class="text-center text-muted">
                                             <i class="fas fa-inbox fa-2x mb-2"></i>
                                             <br>Tidak ada akun email yang ditemukan
+                                            <br><small>Yang ditampilkan hanya email peserta status Already.</small>
                                             <br><small>Silakan konfigurasi cPanel credentials di file config/cpanel_config.php</small>
                                             <br><button class="btn btn-sm btn-info mt-2" onclick="showDebugInfo()">Show Debug Info</button>
                                         </td>
@@ -523,8 +516,7 @@ window.displayedEmailAccounts = Array.isArray(window.allEmailAccounts)
 window.emailFilterState = {
     search: '',
     status: '',
-    quota: '',
-    peserta_only: false
+    quota: ''
 };
 // Global variables for email inbox
 window.currentEmailAccount = '';
@@ -548,7 +540,7 @@ function getValidEmails(checkboxes) {
 
 function hasActiveFilters() {
     const state = window.emailFilterState || {};
-    return Boolean((state.search && state.search.trim()) || state.status || state.quota || state.peserta_only);
+    return Boolean((state.search && state.search.trim()) || state.status || state.quota);
 }
 
 function toggleServerPagination(isVisible) {
@@ -562,13 +554,11 @@ function getFilterParams() {
     const searchInput = document.getElementById('emailSearchInput');
     const statusSelect = document.getElementById('statusFilter');
     const quotaSelect = document.getElementById('quotaFilter');
-    const pesertaCheckbox = document.getElementById('pesertaFilter');
     
     return {
         search: searchInput ? searchInput.value.trim() : '',
         status: statusSelect ? statusSelect.value : '',
-        quota: quotaSelect ? quotaSelect.value : '',
-        peserta_only: pesertaCheckbox ? pesertaCheckbox.checked : false
+        quota: quotaSelect ? quotaSelect.value : ''
     };
 }
 
@@ -587,12 +577,9 @@ function updateSearchResultsInfo(metadata, filtersActive, responseFilters = {}) 
     }
     
     const totalAccounts = metadata.total_accounts || 0;
-    const pesertaFilterActive = Boolean(responseFilters.peserta_only || (window.emailFilterState && window.emailFilterState.peserta_only));
     if (totalAccounts === 0) {
         searchResultsInfo.style.display = 'block';
-        searchResultsText.textContent = pesertaFilterActive
-            ? 'Tidak ada email peserta (status Already) yang cocok dengan filter saat ini'
-            : 'Tidak ada akun email yang cocok dengan filter saat ini';
+        searchResultsText.textContent = 'Tidak ada email (status Already) yang cocok dengan filter saat ini.';
         return;
     }
     
@@ -600,10 +587,7 @@ function updateSearchResultsInfo(metadata, filtersActive, responseFilters = {}) 
     const endItem = Math.min(metadata.current_page * metadata.per_page, totalAccounts);
     
     searchResultsInfo.style.display = 'block';
-    let infoText = `Menampilkan ${startItem} - ${endItem} dari ${totalAccounts} akun email (hasil filter)`;
-    if (pesertaFilterActive) {
-        infoText += ' | Filter peserta status Already aktif';
-    }
+    const infoText = `Menampilkan ${startItem} - ${endItem} dari ${totalAccounts} akun email (hanya status Already)`;
     searchResultsText.textContent = infoText;
 }
 
@@ -619,14 +603,12 @@ function clearSearch() {
     const searchInput = document.getElementById('emailSearchInput');
     const statusSelect = document.getElementById('statusFilter');
     const quotaSelect = document.getElementById('quotaFilter');
-    const pesertaCheckbox = document.getElementById('pesertaFilter');
     
     if (searchInput) searchInput.value = '';
     if (statusSelect) statusSelect.value = '';
     if (quotaSelect) quotaSelect.value = '';
-    if (pesertaCheckbox) pesertaCheckbox.checked = false;
     
-    window.emailFilterState = { search: '', status: '', quota: '', peserta_only: false };
+    window.emailFilterState = { search: '', status: '', quota: '' };
     updateSearchResultsInfo(null, false);
     checkAccounts(1);
 }
@@ -1623,11 +1605,10 @@ function checkAccounts(page = 1) {
     
     const filtersActive = hasActiveFilters();
     if (filtersActive) {
-        const { search, status, quota, peserta_only } = window.emailFilterState || {};
+        const { search, status, quota } = window.emailFilterState || {};
         if (search) params.append('search', search);
         if (status) params.append('status', status);
         if (quota) params.append('quota', quota);
-        if (peserta_only) params.append('peserta_only', '1');
     }
     
     const requestUrl = '<?= base_url('email/check_accounts') ?>?' + params.toString();
@@ -1733,11 +1714,10 @@ function forceRefresh() {
     
     const filtersActive = hasActiveFilters();
     if (filtersActive) {
-        const { search, status, quota, peserta_only } = window.emailFilterState || {};
+        const { search, status, quota } = window.emailFilterState || {};
         if (search) params.append('search', search);
         if (status) params.append('status', status);
         if (quota) params.append('quota', quota);
-        if (peserta_only) params.append('peserta_only', '1');
     }
     
     const requestUrl = '<?= base_url('email/check_accounts') ?>?' + params.toString();

@@ -49,9 +49,19 @@ class Email extends CI_Controller {
                 $data['error_message'] = $email_result['error'];
             } else {
                 $all_accounts = $email_result;
+                // Only show emails that are peserta with status 1 (Already)
+                $peserta_emails = $this->get_peserta_emails_by_status(1);
+                $all_accounts = array_filter($all_accounts, function ($account) use ($peserta_emails) {
+                    if (empty($account['email'])) {
+                        return false;
+                    }
+                    $email = strtolower(trim($account['email']));
+                    return isset($peserta_emails[$email]);
+                });
+                $all_accounts = array_values($all_accounts);
                 $data['total_accounts'] = count($all_accounts);
                 $data['email_accounts'] = array_slice($all_accounts, $offset, $per_page);
-                
+
                 // Pagination data
                 $data['current_page'] = $page;
                 $data['per_page'] = $per_page;
@@ -313,18 +323,15 @@ class Email extends CI_Controller {
                 });
             }
             
-            if ($filter_peserta_only) {
-                $peserta_emails = $this->get_peserta_emails_by_status(1);
-                $filtered_accounts = array_filter($filtered_accounts, function($account) use ($peserta_emails) {
-                    if (empty($account['email'])) {
-                        return false;
-                    }
-                    $email = strtolower(trim($account['email']));
-                    return isset($peserta_emails[$email]);
-                });
-            } else {
-                $peserta_emails = [];
-            }
+            // Always filter to only peserta with status 1 (Already)
+            $peserta_emails = $this->get_peserta_emails_by_status(1);
+            $filtered_accounts = array_filter($filtered_accounts, function($account) use ($peserta_emails) {
+                if (empty($account['email'])) {
+                    return false;
+                }
+                $email = strtolower(trim($account['email']));
+                return isset($peserta_emails[$email]);
+            });
 
             $filtered_accounts = array_values($filtered_accounts);
             
@@ -348,12 +355,10 @@ class Email extends CI_Controller {
                     'search' => $search_term,
                     'status' => $status_filter,
                     'quota' => $quota_filter,
-                    'peserta_only' => $filter_peserta_only
+                    'peserta_only' => true
                 ]
             ];
-            if ($filter_peserta_only) {
-                $debug_info['peserta_email_count'] = count($peserta_emails);
-            }
+            $debug_info['peserta_email_count'] = count($peserta_emails);
             
             log_message('info', 'Email check_accounts - Debug info: ' . json_encode($debug_info));
             
@@ -374,7 +379,7 @@ class Email extends CI_Controller {
                     'search' => $search_term,
                     'status' => $status_filter,
                     'quota' => $quota_filter,
-                    'peserta_only' => $filter_peserta_only
+                    'peserta_only' => true
                 ]
             ]));
         } catch (Exception $e) {
