@@ -42,13 +42,23 @@
             background: linear-gradient(135deg, rgba(30, 58, 95, 0.1), rgba(44, 82, 130, 0.1));
         }
         
+        /* Desktop: tampilan setara zoom out 65% */
+        @media (min-width: 769px) {
+            html {
+                zoom: 0.65;
+            }
+        }
+        
         /* Sidebar styles - Ultra Compact */
         .sidebar {
             width: 280px;
             background: linear-gradient(to bottom, var(--dark-blue), var(--secondary-color));
             color: white;
             position: fixed;
-            height: 100vh;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            min-height: 100vh;
             z-index: 1000;
             transition: all 0.3s;
             display: flex;
