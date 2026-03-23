@@ -78,6 +78,7 @@ class Database extends CI_Controller {
             'tanggal_pengerjaan' => trim($this->input->get('tanggal_pengerjaan')),
             'status' => trim($this->input->get('status')),
             'gender' => trim($this->input->get('gender')),
+            'status_register_kembali' => trim($this->input->get('status_register_kembali')),
             'status_jadwal' => trim($this->input->get('status_jadwal')),
             'history_done' => trim($this->input->get('history_done')),
             'nama_travel' => trim($this->input->get('nama_travel')),
@@ -147,6 +148,9 @@ class Database extends CI_Controller {
         }
         if (!empty($filters['gender'])) {
             $query_params['gender'] = $filters['gender'];
+        }
+        if (!empty($filters['status_register_kembali'])) {
+            $query_params['status_register_kembali'] = $filters['status_register_kembali'];
         }
         if (!empty($filters['tanggal_pengerjaan'])) {
             $query_params['tanggal_pengerjaan'] = $filters['tanggal_pengerjaan'];

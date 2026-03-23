@@ -171,7 +171,7 @@
                     </div>
                 </div>
                 
-                <div class="stats-item">
+                <a href="<?= base_url('database/index?status_register_kembali=belum') ?>" class="stats-item" style="text-decoration: none; color: inherit;">
                     <div class="stats-icon">
                         <i class="fas fa-users"></i>
                     </div>
@@ -179,7 +179,7 @@
                         <div class="stats-count"><?= $stats_already - $stats_register_ulang ?></div>
                         <div class="stats-title">Belum Register Ulang</div>
                     </div>
-                </div>
+                </a>
             </div>
         </div>
     </div>
@@ -218,7 +218,7 @@
                     </div>
                 </div>
                 
-                <div class="stats-item mobile-stats-item">
+                <a href="<?= base_url('database/index?status_register_kembali=belum') ?>" class="stats-item mobile-stats-item" style="text-decoration: none; color: inherit;">
                     <div class="stats-icon">
                         <i class="fas fa-users"></i>
                     </div>
@@ -226,7 +226,7 @@
                         <div class="stats-count"><?= $stats_already - $stats_register_ulang ?></div>
                         <div class="stats-title">Belum Register Ulang</div>
                     </div>
-                </div>
+                </a>
             </div>
         </div>
     </div>

@@ -114,6 +114,13 @@
                                     </select>
                                 </div>
                                 <div class="form-group">
+                                    <select name="status_register_kembali" class="form-select mobile-input">
+                                        <option value="">Status Register Ulang</option>
+                                        <option value="sudah" <?= (isset($_GET['status_register_kembali']) && $_GET['status_register_kembali'] === 'sudah') ? 'selected' : '' ?>>Register Ulang</option>
+                                        <option value="belum" <?= (isset($_GET['status_register_kembali']) && $_GET['status_register_kembali'] === 'belum') ? 'selected' : '' ?>>Belum Register Ulang</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
                                     <select name="gender" class="form-select mobile-input">
                                         <option value="">Gender</option>
                                         <option value="L" <?= (isset($_GET['gender']) && $_GET['gender'] === 'L') ? 'selected' : '' ?>>Laki-laki</option>
@@ -261,6 +268,14 @@
                                     </select>
                                 </div>
                                 
+                                <div class="col-md-1">
+                                    <select name="status_register_kembali" class="form-select form-control-sm">
+                                        <option value="">Status Register Ulang</option>
+                                        <option value="sudah" <?= (isset($_GET['status_register_kembali']) && $_GET['status_register_kembali'] === 'sudah') ? 'selected' : '' ?>>Register Ulang</option>
+                                        <option value="belum" <?= (isset($_GET['status_register_kembali']) && $_GET['status_register_kembali'] === 'belum') ? 'selected' : '' ?>>Belum Register Ulang</option>
+                                    </select>
+                                </div>
+
                                 <div class="col-md-1">
                                     <select name="tanggal_pengerjaan" class="form-select form-control-sm">
                                         <option value="">Tanggal Pengerjaan</option>
@@ -514,7 +529,7 @@
                                             <td class="col-register-ulang">
                                                 <?php if($p->status_register_kembali == 'sudah'): ?>
                                                 <span class="value" data-field="status_register_kembali" data-value="<?= $p->status_register_kembali ?>"><i class="fas fa-check-circle" style="color: green;"></i></span>
-                                                <?php elseif($p->status_register_kembali == 'belum'): ?>
+                                                <?php elseif(is_null($p->status_register_kembali) || $p->status_register_kembali == 'belum'): ?>
                                                 <span class="value" data-field="status_register_kembali" data-value="<?= $p->status_register_kembali ?>"><i class="fas fa-times-circle" style="color: red;"></i></span>
                                                 <?php else: ?>
                                                 <span class="value" data-field="status_register_kembali" data-value="<?= $p->status_register_kembali ?>">-</span>
@@ -716,7 +731,7 @@
                                         <td class="col-register-ulang text-center">
                                                 <?php if($p->status_register_kembali == 'sudah'): ?>
                                                 <span class="value" data-field="status_register_kembali" data-value="<?= $p->status_register_kembali ?>"><i class="fas fa-check-circle" style="color: green;"></i></span>
-                                                <?php elseif($p->status_register_kembali == 'belum'): ?>
+                                                <?php elseif(is_null($p->status_register_kembali) || $p->status_register_kembali == 'belum'): ?>
                                                 <span class="value" data-field="status_register_kembali" data-value="<?= $p->status_register_kembali ?>"><i class="fas fa-times-circle" style="color: red;"></i></span>
                                                 <?php else: ?>
                                                 <span class="value" data-field="status_register_kembali" data-value="<?= $p->status_register_kembali ?>">-</span>

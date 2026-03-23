@@ -262,6 +262,21 @@ class Transaksi_model extends CI_Model {
         if (!empty($filters['gender'])) {
             $this->db->where('peserta.gender', $filters['gender']);
         }
+        if (isset($filters['status_register_kembali']) && $filters['status_register_kembali'] !== '') {
+            // Samakan dengan logika dashboard:
+            // - "Belum Register Ulang" = status=1 dan status_register_kembali IS NULL
+            // - "Register Ulang" = status IN (1,2) dan status_register_kembali='sudah'
+            if ($filters['status_register_kembali'] === 'sudah') {
+                $this->db->where_in('peserta.status', [1, 2]);
+                $this->db->where('peserta.status_register_kembali', 'sudah');
+            } elseif ($filters['status_register_kembali'] === 'belum') {
+                $this->db->where('peserta.status', 1);
+                $this->db->where('peserta.status_register_kembali IS NULL', null, false);
+            } else {
+                // Fallback untuk nilai lain (mis. legacy string)
+                $this->db->where('peserta.status_register_kembali', $filters['status_register_kembali']);
+            }
+        }
         if (!empty($filters['history_done'])) {
             $this->db->where('peserta.history_done', $filters['history_done']);
         }
@@ -410,6 +425,21 @@ class Transaksi_model extends CI_Model {
         }
         if (!empty($filters['gender'])) {
             $this->db->where('peserta.gender', $filters['gender']);
+        }
+        if (isset($filters['status_register_kembali']) && $filters['status_register_kembali'] !== '') {
+            // Samakan dengan logika dashboard:
+            // - "Belum Register Ulang" = status=1 dan status_register_kembali IS NULL
+            // - "Register Ulang" = status IN (1,2) dan status_register_kembali='sudah'
+            if ($filters['status_register_kembali'] === 'sudah') {
+                $this->db->where_in('peserta.status', [1, 2]);
+                $this->db->where('peserta.status_register_kembali', 'sudah');
+            } elseif ($filters['status_register_kembali'] === 'belum') {
+                $this->db->where('peserta.status', 1);
+                $this->db->where('peserta.status_register_kembali IS NULL', null, false);
+            } else {
+                // Fallback untuk nilai lain (mis. legacy string)
+                $this->db->where('peserta.status_register_kembali', $filters['status_register_kembali']);
+            }
         }
         if (isset($filters['status']) && $filters['status'] !== '') {
             $this->db->where('peserta.status', $filters['status']);
