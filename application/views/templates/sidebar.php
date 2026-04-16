@@ -24,6 +24,12 @@
             </a>
         </li>
         
+        <li class="nav-item">
+            <a target="_blank" href="<?= base_url('qr') ?>" <?= $this->uri->segment(1) == 'qr' ? 'class="active"' : '' ?>>
+                <i class="fas fa-qrcode"></i> <span>QR Code</span>
+            </a>
+        </li>
+        
         <div class="nav-section-divider"></div>
         
        

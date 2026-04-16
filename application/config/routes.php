@@ -16,6 +16,7 @@ $route['api/health'] = 'api/health';
 // Auth routes
 $route['login'] = 'auth/login';
 $route['logout'] = 'auth/logout';
+$route['qr'] = 'qr';
 $route['nusukbot'] = 'nusukbot';
 $route['telegram_bot'] = 'telegram_bot';
 $route['telegram_bot/webhook'] = 'telegram_bot/webhook';
