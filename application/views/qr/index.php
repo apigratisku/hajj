@@ -60,8 +60,8 @@ body{
 }
 
 .phone{
-  width:375px;
-  height:812px;
+  width:350px;
+  height:700px;
   background:#efefef;
   position:relative;
   overflow:hidden;
@@ -105,7 +105,7 @@ body{
   top:60px;
   left:4px;
   right:4px;
-  height:400px;
+  height:420px;
   background:#fff;
   border-radius:8px;
   box-shadow:0 1px 1px rgba(0,0,0,.04);
@@ -115,7 +115,7 @@ body{
   position:absolute;
   left:0;
   right:0;
-  top:145px;
+  top:150px;
   border-top:2px dashed #e2e2e2;
   z-index:1;
 }
@@ -123,7 +123,7 @@ body{
 .notch-left,
 .notch-right{
   position:absolute;
-  top:137px;
+  top:142px;
   width:8px;
   height:16px;
   background:#efefef;
@@ -157,8 +157,8 @@ body{
   position:relative;
   z-index:3;
   margin:34px auto 0;
-  width:100px;
-  height:100px;
+  width:115px;
+  height:115px;
   background:#f2f2f2;
   border-radius:4px;
   padding:8px;
@@ -257,7 +257,7 @@ body{
 </div>
 
 <div class="phone" id="captureArea">
-  <div class="top-gradient"></div>
+  <!-- <div class="top-gradient"></div>
 
   <div class="status-bar">
     <div>19.09</div>
@@ -267,7 +267,7 @@ body{
   <div class="header">
     <div>×</div>
     <div>You</div>
-  </div>
+  </div> -->
 
   <div class="card">
     <div class="date" id="ticketDate">09 Apr 2026</div>
@@ -306,8 +306,8 @@ function generateQR(data) {
 
     qr = new QRCode(qrContainer, {
         text: data,
-        width: 84,
-        height: 84,
+        width: 100,
+        height: 100,
         correctLevel: QRCode.CorrectLevel.M
     });
 }

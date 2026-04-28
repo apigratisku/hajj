@@ -5,7 +5,7 @@
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
-        'reference' => '31318034fc0e41f027ad12590103ce4d65763084',
+        'reference' => 'e3480775a88b57d192218a95e6aab0971dc88181',
         'name' => 'codeigniter/framework',
         'dev' => true,
     ),
@@ -16,7 +16,7 @@
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
-            'reference' => '31318034fc0e41f027ad12590103ce4d65763084',
+            'reference' => 'e3480775a88b57d192218a95e6aab0971dc88181',
             'dev_requirement' => false,
         ),
         'doctrine/instantiator' => array(
@@ -27,6 +27,15 @@
             'aliases' => array(),
             'reference' => '8e884e78f9f0eb1329e445619e04456e64d8051d',
             'dev_requirement' => true,
+        ),
+        'khanamiryan/qrcode-detector-decoder' => array(
+            'pretty_version' => '1',
+            'version' => '1.0.0.0',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../khanamiryan/qrcode-detector-decoder',
+            'aliases' => array(),
+            'reference' => '96d5f80680b04803c4f1b69d6e01735e876b80c7',
+            'dev_requirement' => false,
         ),
         'markbaker/complex' => array(
             'pretty_version' => '1.5.0',
