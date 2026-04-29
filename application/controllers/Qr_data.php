@@ -92,6 +92,17 @@ class Qr_data extends CI_Controller {
             $ticket_time = substr($ticket_time, 0, 64);
         }
 
+        $existing_id = $this->qr_data_model->exists_by_booking_and_barcode($booking, $barcode);
+        if ($existing_id !== null) {
+            $this->output->set_output(json_encode(array(
+                'success' => false,
+                'duplicate' => true,
+                'message' => 'Data dengan Booking ID dan barcode yang sama sudah ada di database.',
+                'existing_id' => $existing_id
+            )));
+            return;
+        }
+
         $user_id = $this->session->userdata('user_id');
         $created_by = ($user_id !== null && $user_id !== '') ? (int) $user_id : null;
 

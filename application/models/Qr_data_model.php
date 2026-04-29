@@ -32,6 +32,26 @@ class Qr_data_model extends CI_Model {
     }
 
     /**
+     * Cek baris dengan booking_id dan barcode_data sama persis (anti-duplikat).
+     *
+     * @param string $booking_id
+     * @param string $barcode_data
+     * @return int|null id baris pertama jika ada, null jika belum ada
+     */
+    public function exists_by_booking_and_barcode($booking_id, $barcode_data) {
+        $this->db->select('id');
+        $this->db->from($this->table);
+        $this->db->where('booking_id', (string) $booking_id);
+        $this->db->where('barcode_data', (string) $barcode_data);
+        $this->db->limit(1);
+        $row = $this->db->get()->row();
+        if ($row === null || !isset($row->id)) {
+            return null;
+        }
+        return (int) $row->id;
+    }
+
+    /**
      * @return object[]
      */
     public function get_all() {

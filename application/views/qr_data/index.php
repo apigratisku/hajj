@@ -787,6 +787,19 @@ if ($filter_tanggaljam !== '') {
                 return response.json();
             })
             .then(function(data) {
+                if (data && data.duplicate) {
+                    lastSavedBarcode = barcodeInput.value.trim();
+                    showAlert('warning', (data.message) ? data.message : 'Data sudah tersimpan sebelumnya.');
+                    if (autoMode) {
+                        setCameraStatus('data sudah ada, tidak disimpan ulang.');
+                        return safeStopCamera().then(function() {
+                            window.location.reload();
+                            return true;
+                        });
+                    }
+                    window.location.reload();
+                    return true;
+                }
                 if (data && data.success) {
                     lastSavedBarcode = barcodeInput.value.trim();
                     showAlert('success', data.message || 'Tersimpan.');
