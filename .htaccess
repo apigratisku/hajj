@@ -8,19 +8,19 @@ RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ index.php/$1 [L]
 
-<FilesMatch ".(eot|ttf|otf|woff)">
-	Header set Access-Control-Allow-Origin "*"
-</FilesMatch>
+<IfModule mod_headers.c>
+    <FilesMatch "\.(eot|ttf|otf|woff)$">
+        Header set Access-Control-Allow-Origin "*"
+    </FilesMatch>
+</IfModule>
 
 # Allow direct access to middleware file
-<Files "cpanel_email_middleware.php">
-    Header set Access-Control-Allow-Origin "*"
-    Header set Access-Control-Allow-Methods "GET, POST, OPTIONS"
-    Header set Access-Control-Allow-Headers "Content-Type"
-</Files>
-
-<IfModule mod_php7.c>
-    php_value extension=curl
+<IfModule mod_headers.c>
+    <Files "cpanel_email_middleware.php">
+        Header set Access-Control-Allow-Origin "*"
+        Header set Access-Control-Allow-Methods "GET, POST, OPTIONS"
+        Header set Access-Control-Allow-Headers "Content-Type"
+    </Files>
 </IfModule>
 
 

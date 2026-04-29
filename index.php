@@ -1,5 +1,36 @@
 <?php
 /**
+ * Capture bootstrap/runtime fatal errors into application logs.
+ */
+$__ci_logs_dir = __DIR__ . DIRECTORY_SEPARATOR . 'application' . DIRECTORY_SEPARATOR . 'logs';
+if (!is_dir($__ci_logs_dir)) {
+	@mkdir($__ci_logs_dir, 0755, true);
+}
+$__ci_probe_line = '[' . date('Y-m-d H:i:s') . '] bootstrap-hit'
+	. ' uri=' . (isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : 'cli')
+	. ' writable=' . (is_writable($__ci_logs_dir) ? 'yes' : 'no')
+	. PHP_EOL;
+@file_put_contents($__ci_logs_dir . DIRECTORY_SEPARATOR . 'bootstrap-probe.log', $__ci_probe_line, FILE_APPEND);
+if (is_dir($__ci_logs_dir) && is_writable($__ci_logs_dir)) {
+	ini_set('log_errors', '1');
+	ini_set('error_log', $__ci_logs_dir . DIRECTORY_SEPARATOR . 'php-error.log');
+	register_shutdown_function(function () use ($__ci_logs_dir) {
+		$last = error_get_last();
+		if (!is_array($last) || !isset($last['type'])) {
+			return;
+		}
+
+		$fatal_types = array(E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR, E_RECOVERABLE_ERROR);
+		if (!in_array($last['type'], $fatal_types, true)) {
+			return;
+		}
+
+		$line = '[' . date('Y-m-d H:i:s') . '] PHP Fatal: ' . $last['message']
+			. ' in ' . $last['file'] . ':' . $last['line'] . PHP_EOL;
+		@error_log($line, 3, $__ci_logs_dir . DIRECTORY_SEPARATOR . 'bootstrap-fatal.log');
+	});
+}
+/**
  * CodeIgniter
  *
  * An open source application development framework for PHP

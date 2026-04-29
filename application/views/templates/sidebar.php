@@ -29,9 +29,10 @@
                 <i class="fas fa-qrcode"></i> <span>QR Code</span>
             </a>
         </li>
+       
         <li class="nav-item">
-            <a href="<?= base_url('qr-upload') ?>" <?= $this->uri->segment(1) == 'qr-upload' ? 'class="active"' : '' ?>>
-                <i class="fas fa-upload"></i> <span>QR Upload</span>
+            <a href="<?= base_url('qr-data') ?>" <?= $this->uri->segment(1) == 'qr-data' ? 'class="active"' : '' ?>>
+                <i class="fas fa-database"></i> <span>QR Data</span>
             </a>
         </li>
         
