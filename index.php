@@ -6,11 +6,6 @@ $__ci_logs_dir = __DIR__ . DIRECTORY_SEPARATOR . 'application' . DIRECTORY_SEPAR
 if (!is_dir($__ci_logs_dir)) {
 	@mkdir($__ci_logs_dir, 0755, true);
 }
-$__ci_probe_line = '[' . date('Y-m-d H:i:s') . '] bootstrap-hit'
-	. ' uri=' . (isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : 'cli')
-	. ' writable=' . (is_writable($__ci_logs_dir) ? 'yes' : 'no')
-	. PHP_EOL;
-@file_put_contents($__ci_logs_dir . DIRECTORY_SEPARATOR . 'bootstrap-probe.log', $__ci_probe_line, FILE_APPEND);
 if (is_dir($__ci_logs_dir) && is_writable($__ci_logs_dir)) {
 	ini_set('log_errors', '1');
 	ini_set('error_log', $__ci_logs_dir . DIRECTORY_SEPARATOR . 'php-error.log');
