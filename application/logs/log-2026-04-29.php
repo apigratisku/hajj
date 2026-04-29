@@ -2460,3 +2460,30 @@ INFO - 2026-04-29 14:40:09 --> File loaded: D:\DATA ADHIT\PROJECT\Website\hajj\a
 INFO - 2026-04-29 14:40:09 --> File loaded: D:\DATA ADHIT\PROJECT\Website\hajj\application\views\templates/footer.php
 INFO - 2026-04-29 14:40:09 --> Final output sent to browser
 DEBUG - 2026-04-29 14:40:09 --> Total execution time: 0.2256
+INFO - 2026-04-29 08:44:01 --> Config Class Initialized
+INFO - 2026-04-29 08:44:01 --> Hooks Class Initialized
+DEBUG - 2026-04-29 14:44:01 --> UTF-8 Support Enabled
+INFO - 2026-04-29 14:44:01 --> Utf8 Class Initialized
+INFO - 2026-04-29 14:44:01 --> URI Class Initialized
+INFO - 2026-04-29 14:44:01 --> Router Class Initialized
+INFO - 2026-04-29 14:44:01 --> Output Class Initialized
+INFO - 2026-04-29 14:44:01 --> Security Class Initialized
+DEBUG - 2026-04-29 14:44:01 --> Global POST, GET and COOKIE data sanitized
+INFO - 2026-04-29 14:44:01 --> Input Class Initialized
+INFO - 2026-04-29 14:44:01 --> Language Class Initialized
+INFO - 2026-04-29 14:44:01 --> Loader Class Initialized
+INFO - 2026-04-29 14:44:01 --> Helper loaded: url_helper
+INFO - 2026-04-29 14:44:01 --> Helper loaded: form_helper
+INFO - 2026-04-29 14:44:01 --> Helper loaded: log_activity_helper
+INFO - 2026-04-29 14:44:02 --> Database Driver Class Initialized
+DEBUG - 2026-04-29 14:44:02 --> Session: "sess_save_path" is empty; using "session.save_path" value from php.ini.
+INFO - 2026-04-29 14:44:02 --> Session: Class initialized using 'files' driver.
+INFO - 2026-04-29 14:44:02 --> Controller Class Initialized
+DEBUG - 2026-04-29 14:44:02 --> Session class already loaded. Second attempt ignored.
+INFO - 2026-04-29 14:44:02 --> Model "Qr_data_model" initialized
+INFO - 2026-04-29 14:44:02 --> File loaded: D:\DATA ADHIT\PROJECT\Website\hajj\application\views\templates/sidebar.php
+INFO - 2026-04-29 14:44:02 --> File loaded: D:\DATA ADHIT\PROJECT\Website\hajj\application\views\templates/header.php
+INFO - 2026-04-29 14:44:02 --> File loaded: D:\DATA ADHIT\PROJECT\Website\hajj\application\views\qr_data/index.php
+INFO - 2026-04-29 14:44:02 --> File loaded: D:\DATA ADHIT\PROJECT\Website\hajj\application\views\templates/footer.php
+INFO - 2026-04-29 14:44:02 --> Final output sent to browser
+DEBUG - 2026-04-29 14:44:02 --> Total execution time: 0.1711

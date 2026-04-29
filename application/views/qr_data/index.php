@@ -34,6 +34,7 @@ foreach ($qr_list as $opt_row) {
                                 <i class="fas fa-stop mr-1"></i> Matikan kamera
                             </button>
                         </div>
+                        <small id="cameraStatus" class="form-text text-muted mt-2">Status kamera: belum aktif.</small>
                     </div>
 
                     <div id="scanAlert" class="alert mt-3 d-none" role="alert"></div>
@@ -530,6 +531,13 @@ foreach ($qr_list as $opt_row) {
     var html5QrCodeCamera = null;
     var lastDecodedCam = '';
     var canUseClientDecoder = typeof Html5Qrcode !== 'undefined';
+    var isAutoSaving = false;
+    var isCameraStarting = false;
+    var lastScanAt = 0;
+    var lastSavedBarcode = '';
+    var decodeFailCount = 0;
+    var decodeFailWindowStart = 0;
+    var cameraStatusEl = document.getElementById('cameraStatus');
 
     var bookingInput = document.getElementById('bookingInput');
     var barcodeInput = document.getElementById('barcodeInput');
@@ -546,6 +554,12 @@ foreach ($qr_list as $opt_row) {
     var qrCodeOffscreenEl = document.getElementById('qrCodeOffscreen');
     var captureAreaOffscreenEl = document.getElementById('captureAreaOffscreen');
 
+    function setCameraStatus(message) {
+        if (cameraStatusEl) {
+            cameraStatusEl.textContent = 'Status kamera: ' + message;
+        }
+    }
+
     function showAlert(type, message) {
         alertBox.classList.remove('d-none', 'alert-success', 'alert-danger', 'alert-warning');
         if (type === 'success') {
@@ -556,6 +570,108 @@ foreach ($qr_list as $opt_row) {
             alertBox.classList.add('alert-danger');
         }
         alertBox.textContent = message;
+    }
+
+    function toBookingId(value) {
+        var normalized = (value || '').replace(/[^0-9A-Za-z]/g, '');
+        if (normalized.length >= 8) {
+            return normalized.substring(0, 32);
+        }
+        return '';
+    }
+
+    function getCameraStartErrorMessage(errorObj) {
+        var errText = '';
+        var errName = '';
+        if (errorObj) {
+            errText = (errorObj.message || errorObj.toString() || '').toString();
+            errName = (errorObj.name || '').toString();
+        }
+        var joined = (errName + ' ' + errText).toLowerCase();
+        if (joined.indexOf('notallowederror') !== -1 || joined.indexOf('permission denied') !== -1) {
+            return 'Izin kamera ditolak. Buka izin kamera browser lalu coba lagi.';
+        }
+        if (joined.indexOf('notfounderror') !== -1 || joined.indexOf('devicesnotfounderror') !== -1) {
+            return 'Kamera tidak ditemukan di perangkat ini.';
+        }
+        if (joined.indexOf('notreadableerror') !== -1 || joined.indexOf('trackstarterror') !== -1) {
+            return 'Kamera sedang dipakai aplikasi lain. Tutup aplikasi lain lalu coba lagi.';
+        }
+        if (joined.indexOf('overconstrainederror') !== -1 || joined.indexOf('constraint') !== -1) {
+            return 'Pengaturan kamera tidak didukung perangkat. Coba mulai ulang kamera.';
+        }
+        if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+            return 'Kamera membutuhkan HTTPS atau localhost.';
+        }
+        return 'Gagal memulai kamera. Pastikan izin kamera aktif dan koneksi aman (HTTPS).';
+    }
+
+    function safeStopCamera() {
+        if (!html5QrCodeCamera) {
+            return Promise.resolve();
+        }
+        return html5QrCodeCamera.stop()
+            .catch(function() { return null; })
+            .then(function() {
+                try {
+                    html5QrCodeCamera.clear();
+                } catch (e1) {}
+                html5QrCodeCamera = null;
+                btnCameraStart.disabled = false;
+                btnCameraStop.disabled = true;
+                setCameraStatus('berhenti.');
+            });
+    }
+
+    function saveQrData(autoMode) {
+        if (isAutoSaving) {
+            return Promise.resolve(false);
+        }
+        if (!barcodeInput.value.trim()) {
+            showAlert('error', 'Isi barcode dari scan kamera terlebih dahulu.');
+            return Promise.resolve(false);
+        }
+        isAutoSaving = true;
+        var btnDb = document.getElementById('btnSaveDb');
+        btnDb.disabled = true;
+        var fd = new FormData();
+        fd.append('booking_id', bookingInput.value || '');
+        fd.append('barcode_data', barcodeInput.value.trim());
+        fd.append('ticket_date', dateInput.value || '');
+        fd.append('ticket_time', timeInput.value || '');
+        return fetch('<?= base_url('qr-data/save') ?>', {
+            method: 'POST',
+            body: fd,
+            credentials: 'same-origin'
+        })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                if (data && data.success) {
+                    lastSavedBarcode = barcodeInput.value.trim();
+                    showAlert('success', data.message || 'Tersimpan.');
+                    if (autoMode) {
+                        setCameraStatus('scan berhasil, data tersimpan otomatis.');
+                        return safeStopCamera().then(function() {
+                            window.location.reload();
+                            return true;
+                        });
+                    }
+                    window.location.reload();
+                    return true;
+                }
+                showAlert('error', (data && data.message) ? data.message : 'Gagal menyimpan.');
+                return false;
+            })
+            .catch(function() {
+                showAlert('error', 'Gagal menghubungi server.');
+                return false;
+            })
+            .finally(function() {
+                isAutoSaving = false;
+                btnDb.disabled = false;
+            });
     }
 
     function generateQR(data) {
@@ -587,7 +703,10 @@ foreach ($qr_list as $opt_row) {
 
     function updateTicket() {
         var barcodeValue = barcodeInput.value || '';
-        var bookingId = barcodeValue.substring(0, 10);
+        var bookingId = toBookingId(barcodeValue);
+        if (!bookingId && barcodeValue) {
+            bookingId = barcodeValue.substring(0, 10);
+        }
         bookingInput.value = bookingId;
         if (ticketRefEl) {
             ticketRefEl.textContent = bookingId || '—';
@@ -714,45 +833,112 @@ foreach ($qr_list as $opt_row) {
             showAlert('error', 'Pemindaian kamera tidak didukung di browser ini.');
             return;
         }
+        if (isCameraStarting) {
+            showAlert('warning', 'Kamera sedang dipersiapkan...');
+            return;
+        }
         if (html5QrCodeCamera) {
             showAlert('warning', 'Kamera sudah aktif.');
             return;
         }
+        isCameraStarting = true;
+        setCameraStatus('menyiapkan kamera...');
         html5QrCodeCamera = new Html5Qrcode('qrCameraRegion');
+        var supportedFormats = [];
+        if (typeof Html5QrcodeSupportedFormats !== 'undefined') {
+            supportedFormats = [
+                Html5QrcodeSupportedFormats.QR_CODE,
+                Html5QrcodeSupportedFormats.CODE_128,
+                Html5QrcodeSupportedFormats.CODE_39,
+                Html5QrcodeSupportedFormats.EAN_13,
+                Html5QrcodeSupportedFormats.EAN_8,
+                Html5QrcodeSupportedFormats.UPC_A,
+                Html5QrcodeSupportedFormats.UPC_E,
+                Html5QrcodeSupportedFormats.ITF,
+                Html5QrcodeSupportedFormats.CODABAR
+            ];
+        }
         var camConfig = {
-            fps: 12,
+            fps: 10,
             qrbox: function(viewfinderWidth, viewfinderHeight) {
-                var edge = Math.floor(0.75 * Math.min(viewfinderWidth, viewfinderHeight));
+                var edge = Math.floor(0.62 * Math.min(viewfinderWidth, viewfinderHeight));
+                if (edge < 180) {
+                    edge = 180;
+                }
+                if (edge > 320) {
+                    edge = 320;
+                }
                 return { width: edge, height: edge };
-            }
+            },
+            aspectRatio: 1.3333333,
+            formatsToSupport: supportedFormats
         };
         var onCamSuccess = function(decodedText) {
             if (!decodedText) {
                 return;
             }
+            var now = Date.now();
+            if ((now - lastScanAt) < 1000) {
+                return;
+            }
             if (decodedText === lastDecodedCam) {
                 return;
             }
+            if (decodedText === lastSavedBarcode) {
+                return;
+            }
+            if (isAutoSaving) {
+                return;
+            }
+            lastScanAt = now;
             lastDecodedCam = decodedText;
             barcodeInput.value = decodedText;
             updateTicket();
-            showAlert('success', 'QR terbaca — Booking & Barcode terisi.');
+            setCameraStatus('kode terbaca, menyimpan otomatis...');
+            showAlert('warning', 'Kode terbaca, menyimpan otomatis...');
+            saveQrData(true);
         };
-        var onCamErr = function() {};
-        html5QrCodeCamera.start({ facingMode: 'environment' }, camConfig, onCamSuccess, onCamErr)
+        var onCamErr = function() {
+            var now = Date.now();
+            if (decodeFailWindowStart === 0 || (now - decodeFailWindowStart) > 7000) {
+                decodeFailWindowStart = now;
+                decodeFailCount = 0;
+            }
+            decodeFailCount++;
+            if (decodeFailCount === 16) {
+                showAlert('warning', 'Kamera aktif, tetapi kode belum terbaca. Dekatkan kamera, tambah cahaya, dan tahan ponsel agar stabil.');
+            }
+        };
+        var rearConfig = {
+            facingMode: { exact: 'environment' },
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+        };
+        var frontConfig = {
+            facingMode: 'user',
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+        };
+        html5QrCodeCamera.start(rearConfig, camConfig, onCamSuccess, onCamErr)
             .then(function() {
                 btnCameraStart.disabled = true;
                 btnCameraStop.disabled = false;
+                isCameraStarting = false;
+                setCameraStatus('aktif (kamera belakang).');
+                showAlert('success', 'Scanner aktif. Arahkan kamera ke QR/Barcode.');
             })
-            .catch(function() {
-                return html5QrCodeCamera.stop().catch(function() {}).then(function() {
-                    return html5QrCodeCamera.start({ facingMode: 'user' }, camConfig, onCamSuccess, onCamErr);
-                }).then(function() {
+            .catch(function(errRear) {
+                return html5QrCodeCamera.start(frontConfig, camConfig, onCamSuccess, onCamErr);
+            })
+            .then(function() {
+                if (!btnCameraStart.disabled) {
                     btnCameraStart.disabled = true;
                     btnCameraStop.disabled = false;
-                });
+                    setCameraStatus('aktif (kamera depan - fallback).');
+                    showAlert('warning', 'Kamera belakang tidak tersedia, memakai kamera depan.');
+                }
             })
-            .catch(function() {
+            .catch(function(errFinal) {
                 try {
                     if (html5QrCodeCamera) {
                         html5QrCodeCamera.clear();
@@ -761,7 +947,12 @@ foreach ($qr_list as $opt_row) {
                 html5QrCodeCamera = null;
                 btnCameraStart.disabled = false;
                 btnCameraStop.disabled = true;
-                showAlert('error', 'Gagal memulai kamera. Pastikan izin kamera dan HTTPS/localhost.');
+                isCameraStarting = false;
+                setCameraStatus('gagal aktif.');
+                showAlert('error', getCameraStartErrorMessage(errFinal));
+            })
+            .finally(function() {
+                isCameraStarting = false;
             });
     });
 
@@ -769,55 +960,19 @@ foreach ($qr_list as $opt_row) {
         if (!html5QrCodeCamera) {
             return;
         }
-        html5QrCodeCamera.stop().then(function() {
-            try {
-                html5QrCodeCamera.clear();
-            } catch (e1) {}
-            html5QrCodeCamera = null;
+        safeStopCamera().then(function() {
             lastDecodedCam = '';
-            btnCameraStart.disabled = false;
-            btnCameraStop.disabled = true;
+            lastSavedBarcode = '';
         }).catch(function() {
             html5QrCodeCamera = null;
             btnCameraStart.disabled = false;
             btnCameraStop.disabled = true;
+            setCameraStatus('berhenti.');
         });
     });
 
     document.getElementById('btnSaveDb').addEventListener('click', function() {
-        if (!barcodeInput.value.trim()) {
-            showAlert('error', 'Isi barcode dari scan kamera terlebih dahulu.');
-            return;
-        }
-        var btnDb = document.getElementById('btnSaveDb');
-        btnDb.disabled = true;
-        var fd = new FormData();
-        fd.append('booking_id', bookingInput.value || '');
-        fd.append('barcode_data', barcodeInput.value.trim());
-        fd.append('ticket_date', dateInput.value || '');
-        fd.append('ticket_time', timeInput.value || '');
-        fetch('<?= base_url('qr-data/save') ?>', {
-            method: 'POST',
-            body: fd,
-            credentials: 'same-origin'
-        })
-            .then(function(response) {
-                return response.json();
-            })
-            .then(function(data) {
-                if (data.success) {
-                    showAlert('success', data.message || 'Tersimpan.');
-                    window.location.reload();
-                } else {
-                    showAlert('error', data.message || 'Gagal menyimpan.');
-                }
-            })
-            .catch(function() {
-                showAlert('error', 'Gagal menghubungi server.');
-            })
-            .finally(function() {
-                btnDb.disabled = false;
-            });
+        saveQrData(false);
     });
 
     var btnDownloadQr = document.getElementById('btnDownloadQr');
