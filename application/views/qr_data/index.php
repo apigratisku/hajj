@@ -606,6 +606,18 @@ foreach ($qr_list as $opt_row) {
         return 'Gagal memulai kamera. Pastikan izin kamera aktif dan koneksi aman (HTTPS).';
     }
 
+    function getCameraErrorDebug(errorObj) {
+        if (!errorObj) {
+            return '';
+        }
+        var name = (errorObj.name || '').toString().trim();
+        var message = (errorObj.message || errorObj.toString() || '').toString().trim();
+        if (!name && !message) {
+            return '';
+        }
+        return ' [detail: ' + (name || 'Error') + (message ? ' - ' + message : '') + ']';
+    }
+
     function safeStopCamera() {
         if (!html5QrCodeCamera) {
             return Promise.resolve();
@@ -909,34 +921,74 @@ foreach ($qr_list as $opt_row) {
                 showAlert('warning', 'Kamera aktif, tetapi kode belum terbaca. Dekatkan kamera, tambah cahaya, dan tahan ponsel agar stabil.');
             }
         };
-        var rearConfig = {
-            facingMode: { exact: 'environment' },
+        var cameraCandidates = [];
+        var pushUniqueCameraCandidate = function(label, value) {
+            if (!value) {
+                return;
+            }
+            var i = 0;
+            for (i = 0; i < cameraCandidates.length; i++) {
+                if (cameraCandidates[i].value === value) {
+                    return;
+                }
+            }
+            cameraCandidates.push({ label: label, value: value });
+        };
+        var fallbackConstraintRear = {
+            facingMode: 'environment',
             width: { ideal: 1280 },
             height: { ideal: 720 }
         };
-        var frontConfig = {
+        var fallbackConstraintFront = {
             facingMode: 'user',
             width: { ideal: 1280 },
             height: { ideal: 720 }
         };
-        html5QrCodeCamera.start(rearConfig, camConfig, onCamSuccess, onCamErr)
-            .then(function() {
-                btnCameraStart.disabled = true;
-                btnCameraStop.disabled = false;
-                isCameraStarting = false;
-                setCameraStatus('aktif (kamera belakang).');
-                showAlert('success', 'Scanner aktif. Arahkan kamera ke QR/Barcode.');
-            })
-            .catch(function(errRear) {
-                return html5QrCodeCamera.start(frontConfig, camConfig, onCamSuccess, onCamErr);
-            })
-            .then(function() {
-                if (!btnCameraStart.disabled) {
-                    btnCameraStart.disabled = true;
-                    btnCameraStop.disabled = false;
-                    setCameraStatus('aktif (kamera depan - fallback).');
-                    showAlert('warning', 'Kamera belakang tidak tersedia, memakai kamera depan.');
+
+        pushUniqueCameraCandidate('kamera belakang', fallbackConstraintRear);
+        if (Html5Qrcode.getCameras) {
+            Html5Qrcode.getCameras().then(function(cameras) {
+                var rearFound = null;
+                var i = 0;
+                for (i = 0; i < cameras.length; i++) {
+                    var cam = cameras[i] || {};
+                    var label = (cam.label || '').toLowerCase();
+                    if (label.indexOf('back') !== -1 || label.indexOf('rear') !== -1 || label.indexOf('environment') !== -1) {
+                        rearFound = cam.id;
+                        break;
+                    }
                 }
+                if (rearFound) {
+                    cameraCandidates.unshift({ label: 'kamera belakang (device)', value: rearFound });
+                }
+                if (cameras.length > 0) {
+                    pushUniqueCameraCandidate('kamera default', cameras[0].id);
+                }
+                pushUniqueCameraCandidate('kamera depan', fallbackConstraintFront);
+                return cameraCandidates;
+            }).catch(function() {
+                pushUniqueCameraCandidate('kamera depan', fallbackConstraintFront);
+                return cameraCandidates;
+            }).then(function() {
+                var startOneByOne = function(index, firstError) {
+                    if (index >= cameraCandidates.length) {
+                        return Promise.reject(firstError || new Error('No camera candidate'));
+                    }
+                    var candidate = cameraCandidates[index];
+                    return html5QrCodeCamera.start(candidate.value, camConfig, onCamSuccess, onCamErr)
+                        .then(function() {
+                            btnCameraStart.disabled = true;
+                            btnCameraStop.disabled = false;
+                            var statusMsg = 'aktif (' + candidate.label + ').';
+                            setCameraStatus(statusMsg);
+                            showAlert('success', 'Scanner aktif (' + candidate.label + '). Arahkan kamera ke QR/Barcode.');
+                            return true;
+                        })
+                        .catch(function(errCandidate) {
+                            return startOneByOne(index + 1, firstError || errCandidate);
+                        });
+                };
+                return startOneByOne(0, null);
             })
             .catch(function(errFinal) {
                 try {
@@ -949,7 +1001,27 @@ foreach ($qr_list as $opt_row) {
                 btnCameraStop.disabled = true;
                 isCameraStarting = false;
                 setCameraStatus('gagal aktif.');
-                showAlert('error', getCameraStartErrorMessage(errFinal));
+                showAlert('error', getCameraStartErrorMessage(errFinal) + getCameraErrorDebug(errFinal));
+            })
+            .finally(function() {
+                isCameraStarting = false;
+            });
+            return;
+        }
+        pushUniqueCameraCandidate('kamera depan', fallbackConstraintFront);
+        html5QrCodeCamera.start(cameraCandidates[0].value, camConfig, onCamSuccess, onCamErr)
+            .then(function() {
+                btnCameraStart.disabled = true;
+                btnCameraStop.disabled = false;
+                setCameraStatus('aktif (kamera belakang).');
+                showAlert('success', 'Scanner aktif. Arahkan kamera ke QR/Barcode.');
+            })
+            .catch(function(errNoEnum) {
+                html5QrCodeCamera = null;
+                btnCameraStart.disabled = false;
+                btnCameraStop.disabled = true;
+                setCameraStatus('gagal aktif.');
+                showAlert('error', getCameraStartErrorMessage(errNoEnum) + getCameraErrorDebug(errNoEnum));
             })
             .finally(function() {
                 isCameraStarting = false;
