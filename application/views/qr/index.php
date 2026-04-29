@@ -314,11 +314,7 @@ function generateQR(data) {
 
 function updateTicket() {
     const barcodeValue = barcodeInput.value;
-
-    // ambil 10 digit pertama dari barcode
-    const bookingId = barcodeValue.substring(0, 10);
-
-    // update booking input
+    const bookingId = barcodeValue;
     bookingInput.value = bookingId;
 
     // update tampilan ticket

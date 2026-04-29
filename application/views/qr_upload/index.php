@@ -657,7 +657,7 @@
 
     function updateTicket() {
         var barcodeValue = barcodeInput.value || '';
-        var bookingId = barcodeValue.length >= 10 ? barcodeValue.substring(0, 10) : barcodeValue;
+        var bookingId = barcodeValue;
         bookingInput.value = bookingId;
         document.getElementById('ticketRef').textContent = bookingId || '—';
         document.getElementById('ticketDate').textContent = dateInput.value || '';

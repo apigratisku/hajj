@@ -62,10 +62,10 @@ class Qr_data extends CI_Controller {
 
         $booking_post = $this->input->post('booking_id', true);
         $booking = $booking_post !== null && $booking_post !== ''
-            ? substr(preg_replace('/[^0-9A-Za-z]/', '', (string) $booking_post), 0, 32)
+            ? substr(trim((string) $booking_post), 0, 32)
             : '';
-        if ($booking === '' && strlen($barcode) >= 10) {
-            $booking = substr($barcode, 0, 10);
+        if ($booking === '' && $barcode !== '') {
+            $booking = substr($barcode, 0, 32);
         }
 
         $ticket_date = (string) $this->input->post('ticket_date', true);

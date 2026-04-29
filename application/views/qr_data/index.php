@@ -707,7 +707,7 @@ foreach ($qr_list as $opt_row) {
 
     function updateTicket() {
         var barcodeValue = barcodeInput.value || '';
-        var bookingId = barcodeValue;
+        var bookingId = barcodeValue.substring(0, 10);
         bookingInput.value = bookingId;
         if (ticketRefEl) {
             ticketRefEl.textContent = bookingId || '—';
