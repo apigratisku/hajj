@@ -2487,3 +2487,79 @@ INFO - 2026-04-29 14:44:02 --> File loaded: D:\DATA ADHIT\PROJECT\Website\hajj\a
 INFO - 2026-04-29 14:44:02 --> File loaded: D:\DATA ADHIT\PROJECT\Website\hajj\application\views\templates/footer.php
 INFO - 2026-04-29 14:44:02 --> Final output sent to browser
 DEBUG - 2026-04-29 14:44:02 --> Total execution time: 0.1711
+INFO - 2026-04-29 09:09:43 --> Config Class Initialized
+INFO - 2026-04-29 09:09:43 --> Hooks Class Initialized
+DEBUG - 2026-04-29 15:09:43 --> UTF-8 Support Enabled
+INFO - 2026-04-29 15:09:43 --> Utf8 Class Initialized
+INFO - 2026-04-29 15:09:43 --> URI Class Initialized
+INFO - 2026-04-29 15:09:43 --> Router Class Initialized
+INFO - 2026-04-29 15:09:43 --> Output Class Initialized
+INFO - 2026-04-29 15:09:43 --> Security Class Initialized
+DEBUG - 2026-04-29 15:09:43 --> Global POST, GET and COOKIE data sanitized
+INFO - 2026-04-29 15:09:43 --> Input Class Initialized
+INFO - 2026-04-29 15:09:43 --> Language Class Initialized
+INFO - 2026-04-29 15:09:43 --> Loader Class Initialized
+INFO - 2026-04-29 15:09:43 --> Helper loaded: url_helper
+INFO - 2026-04-29 15:09:43 --> Helper loaded: form_helper
+INFO - 2026-04-29 15:09:43 --> Helper loaded: log_activity_helper
+INFO - 2026-04-29 15:09:43 --> Database Driver Class Initialized
+DEBUG - 2026-04-29 15:09:43 --> Session: "sess_save_path" is empty; using "session.save_path" value from php.ini.
+INFO - 2026-04-29 15:09:43 --> Session: Class initialized using 'files' driver.
+INFO - 2026-04-29 15:09:43 --> Controller Class Initialized
+INFO - 2026-04-29 15:09:43 --> File loaded: D:\DATA ADHIT\PROJECT\Website\hajj\application\views\qr/index.php
+INFO - 2026-04-29 15:09:43 --> Final output sent to browser
+DEBUG - 2026-04-29 15:09:43 --> Total execution time: 0.1651
+INFO - 2026-04-29 09:09:44 --> Config Class Initialized
+INFO - 2026-04-29 09:09:44 --> Hooks Class Initialized
+DEBUG - 2026-04-29 15:09:44 --> UTF-8 Support Enabled
+INFO - 2026-04-29 15:09:44 --> Utf8 Class Initialized
+INFO - 2026-04-29 15:09:44 --> URI Class Initialized
+INFO - 2026-04-29 15:09:44 --> Router Class Initialized
+INFO - 2026-04-29 15:09:44 --> Output Class Initialized
+INFO - 2026-04-29 15:09:44 --> Security Class Initialized
+DEBUG - 2026-04-29 15:09:44 --> Global POST, GET and COOKIE data sanitized
+INFO - 2026-04-29 15:09:44 --> Input Class Initialized
+INFO - 2026-04-29 15:09:44 --> Language Class Initialized
+INFO - 2026-04-29 15:09:44 --> Loader Class Initialized
+INFO - 2026-04-29 15:09:44 --> Helper loaded: url_helper
+INFO - 2026-04-29 15:09:44 --> Helper loaded: form_helper
+INFO - 2026-04-29 15:09:44 --> Helper loaded: log_activity_helper
+INFO - 2026-04-29 15:09:44 --> Database Driver Class Initialized
+DEBUG - 2026-04-29 15:09:44 --> Session: "sess_save_path" is empty; using "session.save_path" value from php.ini.
+INFO - 2026-04-29 15:09:44 --> Session: Class initialized using 'files' driver.
+INFO - 2026-04-29 15:09:44 --> Controller Class Initialized
+DEBUG - 2026-04-29 15:09:44 --> Session class already loaded. Second attempt ignored.
+INFO - 2026-04-29 15:09:44 --> Model "Qr_data_model" initialized
+INFO - 2026-04-29 15:09:44 --> File loaded: D:\DATA ADHIT\PROJECT\Website\hajj\application\views\templates/sidebar.php
+INFO - 2026-04-29 15:09:44 --> File loaded: D:\DATA ADHIT\PROJECT\Website\hajj\application\views\templates/header.php
+INFO - 2026-04-29 15:09:44 --> File loaded: D:\DATA ADHIT\PROJECT\Website\hajj\application\views\qr_data/index.php
+INFO - 2026-04-29 15:09:44 --> File loaded: D:\DATA ADHIT\PROJECT\Website\hajj\application\views\templates/footer.php
+INFO - 2026-04-29 15:09:44 --> Final output sent to browser
+DEBUG - 2026-04-29 15:09:44 --> Total execution time: 0.1436
+INFO - 2026-04-29 09:09:48 --> Config Class Initialized
+INFO - 2026-04-29 09:09:48 --> Hooks Class Initialized
+DEBUG - 2026-04-29 15:09:48 --> UTF-8 Support Enabled
+INFO - 2026-04-29 15:09:48 --> Utf8 Class Initialized
+INFO - 2026-04-29 15:09:48 --> URI Class Initialized
+INFO - 2026-04-29 15:09:48 --> Router Class Initialized
+INFO - 2026-04-29 15:09:48 --> Output Class Initialized
+INFO - 2026-04-29 15:09:48 --> Security Class Initialized
+DEBUG - 2026-04-29 15:09:48 --> Global POST, GET and COOKIE data sanitized
+INFO - 2026-04-29 15:09:48 --> Input Class Initialized
+INFO - 2026-04-29 15:09:48 --> Language Class Initialized
+INFO - 2026-04-29 15:09:48 --> Loader Class Initialized
+INFO - 2026-04-29 15:09:48 --> Helper loaded: url_helper
+INFO - 2026-04-29 15:09:48 --> Helper loaded: form_helper
+INFO - 2026-04-29 15:09:48 --> Helper loaded: log_activity_helper
+INFO - 2026-04-29 15:09:48 --> Database Driver Class Initialized
+DEBUG - 2026-04-29 15:09:48 --> Session: "sess_save_path" is empty; using "session.save_path" value from php.ini.
+INFO - 2026-04-29 15:09:48 --> Session: Class initialized using 'files' driver.
+INFO - 2026-04-29 15:09:48 --> Controller Class Initialized
+DEBUG - 2026-04-29 15:09:48 --> Session class already loaded. Second attempt ignored.
+INFO - 2026-04-29 15:09:48 --> Model "Qr_data_model" initialized
+INFO - 2026-04-29 15:09:48 --> File loaded: D:\DATA ADHIT\PROJECT\Website\hajj\application\views\templates/sidebar.php
+INFO - 2026-04-29 15:09:48 --> File loaded: D:\DATA ADHIT\PROJECT\Website\hajj\application\views\templates/header.php
+INFO - 2026-04-29 15:09:48 --> File loaded: D:\DATA ADHIT\PROJECT\Website\hajj\application\views\qr_data/index.php
+INFO - 2026-04-29 15:09:48 --> File loaded: D:\DATA ADHIT\PROJECT\Website\hajj\application\views\templates/footer.php
+INFO - 2026-04-29 15:09:48 --> Final output sent to browser
+DEBUG - 2026-04-29 15:09:48 --> Total execution time: 0.0805

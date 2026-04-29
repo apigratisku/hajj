@@ -572,14 +572,6 @@ foreach ($qr_list as $opt_row) {
         alertBox.textContent = message;
     }
 
-    function toBookingId(value) {
-        var normalized = (value || '').replace(/[^0-9A-Za-z]/g, '');
-        if (normalized.length >= 8) {
-            return normalized.substring(0, 32);
-        }
-        return '';
-    }
-
     function getCameraStartErrorMessage(errorObj) {
         var errText = '';
         var errName = '';
@@ -715,10 +707,7 @@ foreach ($qr_list as $opt_row) {
 
     function updateTicket() {
         var barcodeValue = barcodeInput.value || '';
-        var bookingId = toBookingId(barcodeValue);
-        if (!bookingId && barcodeValue) {
-            bookingId = barcodeValue.substring(0, 10);
-        }
+        var bookingId = barcodeValue;
         bookingInput.value = bookingId;
         if (ticketRefEl) {
             ticketRefEl.textContent = bookingId || '—';
@@ -738,7 +727,7 @@ foreach ($qr_list as $opt_row) {
             return;
         }
         var barcodeValue = barcodeInput.value || '';
-        var bookingValue = bookingInput.value || barcodeValue.substring(0, 10);
+        var bookingValue = bookingInput.value || barcodeValue;
         var bookingId = bookingInput.value || 'ticket';
         var frame = document.createElement('iframe');
         frame.setAttribute('aria-hidden', 'true');
