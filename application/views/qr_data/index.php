@@ -4,6 +4,25 @@ $filters = isset($filters) && is_array($filters) ? $filters : array();
 $filter_booking = isset($filters['booking_id']) ? (string) $filters['booking_id'] : '';
 $filter_barcode = isset($filters['barcode_data']) ? (string) $filters['barcode_data'] : '';
 $filter_tanggaljam = isset($filters['tanggaljam']) ? (string) $filters['tanggaljam'] : '';
+$current_page = isset($current_page) ? max(1, (int) $current_page) : 1;
+$total_pages = isset($total_pages) ? max(1, (int) $total_pages) : 1;
+$total_rows = isset($total_rows) ? max(0, (int) $total_rows) : count($qr_list);
+$per_page = isset($per_page) ? max(1, (int) $per_page) : 10;
+$offset = isset($offset) ? max(0, (int) $offset) : (($current_page - 1) * $per_page);
+
+$last_date_value = '09 Apr 2026';
+$last_time_value = '16:00';
+if (!empty($qr_list)) {
+    $first_row = $qr_list[0];
+    $first_date = isset($first_row->ticket_date) ? (string) $first_row->ticket_date : (isset($first_row->tanggal) ? (string) $first_row->tanggal : '');
+    $first_time = isset($first_row->ticket_time) ? (string) $first_row->ticket_time : (isset($first_row->waktu) ? (string) $first_row->waktu : '');
+    if (trim($first_date) !== '') {
+        $last_date_value = trim($first_date);
+    }
+    if (trim($first_time) !== '') {
+        $last_time_value = trim($first_time);
+    }
+}
 $tanggaljam_options = array();
 foreach ($qr_list as $opt_row) {
     $opt_date = isset($opt_row->ticket_date) ? (string) $opt_row->ticket_date : (isset($opt_row->tanggal) ? (string) $opt_row->tanggal : '');
@@ -12,6 +31,16 @@ foreach ($qr_list as $opt_row) {
     if ($opt_val !== '') {
         $tanggaljam_options[$opt_val] = $opt_val;
     }
+}
+$pagination_query = array();
+if ($filter_booking !== '') {
+    $pagination_query['booking_id'] = $filter_booking;
+}
+if ($filter_barcode !== '') {
+    $pagination_query['barcode_data'] = $filter_barcode;
+}
+if ($filter_tanggaljam !== '') {
+    $pagination_query['tanggaljam'] = $filter_tanggaljam;
 }
 ?>
 <div class="container-fluid mt-4">
@@ -42,11 +71,13 @@ foreach ($qr_list as $opt_row) {
                     <div class="form-row mt-4">
                         <div class="form-group col-md-6">
                             <label for="dateInput">Tanggal (tampilan tiket)</label>
-                            <input type="text" class="form-control" id="dateInput" placeholder="contoh: 09 Apr 2026" value="09 Apr 2026">
+                            <input type="text" class="form-control" id="dateInput" placeholder="contoh: 09 Apr 2026" value="<?= html_escape($last_date_value) ?>" readonly>
+                            <input type="date" class="d-none" id="datePickerNative">
                         </div>
                         <div class="form-group col-md-6">
                             <label for="timeInput">Waktu (tampilan tiket)</label>
-                            <input type="text" class="form-control" id="timeInput" placeholder="contoh: 16:00" value="16:00">
+                            <input type="text" class="form-control" id="timeInput" placeholder="contoh: 16:00" value="<?= html_escape($last_time_value) ?>" readonly>
+                            <input type="time" class="d-none" id="timePickerNative" step="60">
                         </div>
                     </div>
 
@@ -56,7 +87,13 @@ foreach ($qr_list as $opt_row) {
                     </div>
                     <div class="form-group">
                         <label for="barcodeInput">Barcode Data</label>
-                        <input type="text" class="form-control" id="barcodeInput" autocomplete="off" placeholder="Terisi otomatis dari hasil scan kamera">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="barcodeInput" autocomplete="off" placeholder="Terisi otomatis dari hasil scan kamera">
+                            <div class="input-group-append">
+                                <button type="button" class="btn btn-outline-secondary" id="btnPasteBarcode">Paste</button>
+                                <button type="button" class="btn btn-outline-danger" id="btnClearBarcode">Clear</button>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="btn-group flex-wrap mb-2" role="group">
@@ -141,7 +178,6 @@ foreach ($qr_list as $opt_row) {
                                 <tr>
                                     <th>#</th>
                                     <th>Booking ID</th>
-                                    <th>Barcode Data</th>
                                     <th>Tanggal</th>
                                     <th>Waktu</th>
                                     <th>Disimpan</th>
@@ -151,7 +187,7 @@ foreach ($qr_list as $opt_row) {
                             <tbody>
                                 <?php if (empty($qr_list)): ?>
                                 <tr>
-                                    <td colspan="7" class="text-center text-muted py-4">Belum ada data.</td>
+                                    <td colspan="6" class="text-center text-muted py-4">Belum ada data.</td>
                                 </tr>
                                 <?php else: ?>
                                 <?php foreach ($qr_list as $idx => $row): ?>
@@ -166,9 +202,9 @@ foreach ($qr_list as $opt_row) {
                                     data-barcode="<?= htmlspecialchars($row_barcode, ENT_QUOTES, 'UTF-8') ?>"
                                     data-date="<?= htmlspecialchars($row_date, ENT_QUOTES, 'UTF-8') ?>"
                                     data-time="<?= htmlspecialchars($row_time, ENT_QUOTES, 'UTF-8') ?>">
-                                    <td><?= (int) $row->id ?></td>
+                                    <td><?= (int) ($offset + $idx + 1) ?></td>
                                     <td><code><?= html_escape($row_booking) ?></code></td>
-                                    <td class="small text-break" style="max-width:280px;"><?= html_escape(strlen($row_barcode) > 80 ? substr($row_barcode, 0, 80) . '…' : $row_barcode) ?></td>
+                                    
                                     <td><?= html_escape($row_date) ?></td>
                                     <td><?= html_escape($row_time) ?></td>
                                     <td class="small"><?= html_escape(isset($row->created_at) ? $row->created_at : '') ?></td>
@@ -191,6 +227,41 @@ foreach ($qr_list as $opt_row) {
                         </table>
                     </div>
                 </div>
+                <?php if ($total_pages > 1): ?>
+                <div class="card-footer bg-white">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap">
+                        <small class="text-muted mb-2 mb-md-0">
+                            Menampilkan <?= (int) count($qr_list) ?> dari <?= (int) $total_rows ?> data
+                        </small>
+                        <nav aria-label="QR data pagination">
+                            <ul class="pagination pagination-sm mb-0">
+                                <?php
+                                    $prev_page = $current_page > 1 ? $current_page - 1 : 1;
+                                    $next_page = $current_page < $total_pages ? $current_page + 1 : $total_pages;
+                                    $start_page = max(1, $current_page - 2);
+                                    $end_page = min($total_pages, $current_page + 2);
+                                    $prev_query = $pagination_query;
+                                    $prev_query['page'] = $prev_page;
+                                    $next_query = $pagination_query;
+                                    $next_query['page'] = $next_page;
+                                ?>
+                                <li class="page-item <?= $current_page <= 1 ? 'disabled' : '' ?>">
+                                    <a class="page-link" href="<?= $current_page <= 1 ? '#' : (base_url('qr-data') . '?' . http_build_query($prev_query)) ?>">Prev</a>
+                                </li>
+                                <?php for ($page_num = $start_page; $page_num <= $end_page; $page_num++): ?>
+                                <?php $page_query = $pagination_query; $page_query['page'] = $page_num; ?>
+                                <li class="page-item <?= $page_num === $current_page ? 'active' : '' ?>">
+                                    <a class="page-link" href="<?= base_url('qr-data') . '?' . http_build_query($page_query) ?>"><?= (int) $page_num ?></a>
+                                </li>
+                                <?php endfor; ?>
+                                <li class="page-item <?= $current_page >= $total_pages ? 'disabled' : '' ?>">
+                                    <a class="page-link" href="<?= $current_page >= $total_pages ? '#' : (base_url('qr-data') . '?' . http_build_query($next_query)) ?>">Next</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -541,8 +612,12 @@ foreach ($qr_list as $opt_row) {
 
     var bookingInput = document.getElementById('bookingInput');
     var barcodeInput = document.getElementById('barcodeInput');
+    var btnPasteBarcode = document.getElementById('btnPasteBarcode');
+    var btnClearBarcode = document.getElementById('btnClearBarcode');
     var dateInput = document.getElementById('dateInput');
     var timeInput = document.getElementById('timeInput');
+    var datePickerNative = document.getElementById('datePickerNative');
+    var timePickerNative = document.getElementById('timePickerNative');
     var ticketRefEl = document.getElementById('ticketRef');
     var ticketDateEl = document.getElementById('ticketDate');
     var ticketTimeEl = document.getElementById('ticketTime');
@@ -570,6 +645,66 @@ foreach ($qr_list as $opt_row) {
             alertBox.classList.add('alert-danger');
         }
         alertBox.textContent = message;
+    }
+
+    function pad2(num) {
+        return num < 10 ? ('0' + num) : String(num);
+    }
+
+    function formatDateDisplayFromIso(isoDate) {
+        if (!isoDate || isoDate.indexOf('-') === -1) {
+            return '';
+        }
+        var parts = isoDate.split('-');
+        if (parts.length !== 3) {
+            return '';
+        }
+        var months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+        var year = parts[0];
+        var monthIdx = parseInt(parts[1], 10) - 1;
+        var day = parseInt(parts[2], 10);
+        if (monthIdx < 0 || monthIdx > 11 || !day) {
+            return '';
+        }
+        return pad2(day) + ' ' + months[monthIdx] + ' ' + year;
+    }
+
+    function toIsoDateFromDisplay(displayDate) {
+        if (!displayDate) {
+            return '';
+        }
+        var text = displayDate.trim();
+        var match = text.match(/^(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})$/);
+        if (!match) {
+            return '';
+        }
+        var day = parseInt(match[1], 10);
+        var mon = match[2].toLowerCase();
+        var year = match[3];
+        var map = {
+            jan: '01', feb: '02', mar: '03', apr: '04', mei: '05', may: '05', jun: '06',
+            jul: '07', agu: '08', aug: '08', sep: '09', okt: '10', oct: '10', nov: '11', des: '12', dec: '12'
+        };
+        if (!map[mon] || !day) {
+            return '';
+        }
+        return year + '-' + map[mon] + '-' + pad2(day);
+    }
+
+    function normalizeTimeDisplay(value) {
+        if (!value) {
+            return '';
+        }
+        var m = value.trim().match(/^(\d{1,2}):(\d{2})$/);
+        if (!m) {
+            return '';
+        }
+        var hh = parseInt(m[1], 10);
+        var mm = parseInt(m[2], 10);
+        if (hh < 0 || hh > 23 || mm < 0 || mm > 59) {
+            return '';
+        }
+        return pad2(hh) + ':' + pad2(mm);
     }
 
     function getCameraStartErrorMessage(errorObj) {
@@ -1096,8 +1231,91 @@ foreach ($qr_list as $opt_row) {
     }
 
     barcodeInput.addEventListener('input', updateTicket);
-    dateInput.addEventListener('input', updateTicket);
-    timeInput.addEventListener('input', updateTicket);
+    dateInput.addEventListener('click', function() {
+        if (!datePickerNative) {
+            return;
+        }
+        var isoVal = toIsoDateFromDisplay(dateInput.value);
+        if (isoVal) {
+            datePickerNative.value = isoVal;
+        }
+        if (datePickerNative.showPicker) {
+            datePickerNative.showPicker();
+            return;
+        }
+        datePickerNative.focus();
+        datePickerNative.click();
+    });
+    timeInput.addEventListener('click', function() {
+        if (!timePickerNative) {
+            return;
+        }
+        var norm = normalizeTimeDisplay(timeInput.value);
+        if (norm) {
+            timePickerNative.value = norm;
+        }
+        if (timePickerNative.showPicker) {
+            timePickerNative.showPicker();
+            return;
+        }
+        timePickerNative.focus();
+        timePickerNative.click();
+    });
+    if (datePickerNative) {
+        datePickerNative.addEventListener('change', function() {
+            var displayDate = formatDateDisplayFromIso(datePickerNative.value);
+            if (displayDate) {
+                dateInput.value = displayDate;
+                updateTicket();
+            }
+        });
+    }
+    if (timePickerNative) {
+        timePickerNative.addEventListener('change', function() {
+            var normTime = normalizeTimeDisplay(timePickerNative.value);
+            if (normTime) {
+                timeInput.value = normTime;
+                updateTicket();
+            }
+        });
+    }
+
+    if (btnPasteBarcode) {
+        btnPasteBarcode.addEventListener('click', function() {
+            if (!navigator.clipboard || !navigator.clipboard.readText) {
+                showAlert('error', 'Clipboard tidak didukung di browser ini.');
+                return;
+            }
+            navigator.clipboard.readText().then(function(text) {
+                var val = (text || '').trim();
+                if (!val) {
+                    showAlert('warning', 'Clipboard kosong.');
+                    return;
+                }
+                barcodeInput.value = val;
+                updateTicket();
+                showAlert('success', 'Barcode berhasil di-paste.');
+            }).catch(function() {
+                showAlert('error', 'Gagal mengakses clipboard.');
+            });
+        });
+    }
+    if (btnClearBarcode) {
+        btnClearBarcode.addEventListener('click', function() {
+            barcodeInput.value = '';
+            updateTicket();
+            showAlert('warning', 'Barcode dibersihkan.');
+        });
+    }
+
+    var initialIsoDate = toIsoDateFromDisplay(dateInput.value);
+    if (datePickerNative && initialIsoDate) {
+        datePickerNative.value = initialIsoDate;
+    }
+    var initialTime = normalizeTimeDisplay(timeInput.value);
+    if (timePickerNative && initialTime) {
+        timePickerNative.value = initialTime;
+    }
 
     updateTicket();
 })();

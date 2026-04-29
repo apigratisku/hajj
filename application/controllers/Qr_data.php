@@ -23,8 +23,23 @@ class Qr_data extends CI_Controller {
             'barcode_data' => (string) $this->input->get('barcode_data', true),
             'tanggaljam' => (string) $this->input->get('tanggaljam', true)
         );
+        $per_page = 10;
+        $requested_page = (int) $this->input->get('page', true);
+        if ($requested_page < 1) {
+            $requested_page = 1;
+        }
+        $total_rows = $this->qr_data_model->count_filtered($filters);
+        $total_pages = $total_rows > 0 ? (int) ceil($total_rows / $per_page) : 1;
+        $current_page = $requested_page > $total_pages ? $total_pages : $requested_page;
+        $offset = ($current_page - 1) * $per_page;
+
         $data['filters'] = $filters;
-        $data['qr_list'] = $this->qr_data_model->get_filtered($filters);
+        $data['qr_list'] = $this->qr_data_model->get_filtered($filters, $per_page, $offset);
+        $data['per_page'] = $per_page;
+        $data['current_page'] = $current_page;
+        $data['total_rows'] = $total_rows;
+        $data['total_pages'] = $total_pages;
+        $data['offset'] = $offset;
 
         $this->load->view('templates/sidebar');
         $this->load->view('templates/header', $data);

@@ -40,11 +40,7 @@ class Qr_data_model extends CI_Model {
         return $this->db->get()->result();
     }
 
-    /**
-     * @param array $filters keys: booking_id, barcode_data, tanggaljam
-     * @return object[]
-     */
-    public function get_filtered($filters = array()) {
+    private function apply_filters($filters = array()) {
         $fields = $this->db->list_fields($this->table);
         $date_col = in_array('ticket_date', $fields, true) ? 'ticket_date' : (in_array('tanggal', $fields, true) ? 'tanggal' : null);
         $time_col = in_array('ticket_time', $fields, true) ? 'ticket_time' : (in_array('waktu', $fields, true) ? 'waktu' : null);
@@ -53,7 +49,6 @@ class Qr_data_model extends CI_Model {
         $barcode = isset($filters['barcode_data']) ? trim((string) $filters['barcode_data']) : '';
         $tanggaljam = isset($filters['tanggaljam']) ? trim((string) $filters['tanggaljam']) : '';
 
-        $this->db->from($this->table);
         if ($booking !== '') {
             $this->db->like('booking_id', $booking);
         }
@@ -66,9 +61,34 @@ class Qr_data_model extends CI_Model {
         } elseif ($tanggaljam !== '' && $date_col !== null) {
             $this->db->like($date_col, $tanggaljam);
         }
+    }
 
+    /**
+     * @param array $filters keys: booking_id, barcode_data, tanggaljam
+     * @param int|null $limit
+     * @param int|null $offset
+     * @return object[]
+     */
+    public function get_filtered($filters = array(), $limit = null, $offset = null) {
+        $this->db->from($this->table);
+        $this->apply_filters($filters);
         $this->db->order_by('id', 'DESC');
+        if ($limit !== null) {
+            $safe_limit = max(1, (int) $limit);
+            $safe_offset = max(0, (int) $offset);
+            $this->db->limit($safe_limit, $safe_offset);
+        }
         return $this->db->get()->result();
+    }
+
+    /**
+     * @param array $filters keys: booking_id, barcode_data, tanggaljam
+     * @return int
+     */
+    public function count_filtered($filters = array()) {
+        $this->db->from($this->table);
+        $this->apply_filters($filters);
+        return (int) $this->db->count_all_results();
     }
 
     /**
