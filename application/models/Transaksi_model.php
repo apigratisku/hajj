@@ -333,6 +333,15 @@ class Transaksi_model extends CI_Model {
             }
             $this->db->where('DATE(updated_at)', $tanggal_pengerjaan);
         }
+        if (!empty($filters['tanggal_update_terakhir'])) {
+            // Convert dd-mm-yyyy format to yyyy-mm-dd for database comparison
+            $tanggal_update_terakhir = $filters['tanggal_update_terakhir'];
+            if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $tanggal_update_terakhir)) {
+                $date_parts = explode('-', $tanggal_update_terakhir);
+                $tanggal_update_terakhir = $date_parts[2] . '-' . $date_parts[1] . '-' . $date_parts[0];
+            }
+            $this->db->where('DATE(updated_at)', $tanggal_update_terakhir);
+        }
         
         // Filter berdasarkan tanggal updated_at (Sortir Mulai dan Sortir Akhir)
         if (!empty($filters['startDate'])) {
@@ -499,6 +508,15 @@ class Transaksi_model extends CI_Model {
                 $tanggal_pengerjaan = $date_parts[2] . '-' . $date_parts[1] . '-' . $date_parts[0];
             }
             $this->db->where('DATE(updated_at)', $tanggal_pengerjaan);
+        }
+        if (!empty($filters['tanggal_update_terakhir'])) {
+            // Convert dd-mm-yyyy format to yyyy-mm-dd for database comparison
+            $tanggal_update_terakhir = $filters['tanggal_update_terakhir'];
+            if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $tanggal_update_terakhir)) {
+                $date_parts = explode('-', $tanggal_update_terakhir);
+                $tanggal_update_terakhir = $date_parts[2] . '-' . $date_parts[1] . '-' . $date_parts[0];
+            }
+            $this->db->where('DATE(updated_at)', $tanggal_update_terakhir);
         }
         
         // Filter berdasarkan tanggal updated_at (Sortir Mulai dan Sortir Akhir)

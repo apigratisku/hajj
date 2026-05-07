@@ -84,6 +84,24 @@
                                 </div>
                                 -->
                                 <div class="mb-3">
+                                    <label for="email_prefix" class="form-label">Prefix / Domain Email <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-at"></i></span>
+                                        <input type="text" class="form-control" id="email_prefix" name="email_prefix"
+                                               placeholder="Contoh: choco.web.id" value="choco.web.id" required>
+                                    </div>
+                                    <div class="form-text">Domain yang digunakan untuk membuat email otomatis dari No. Visa / No. Paspor. Contoh: <code>choco.web.id</code> &rarr; email: <code>noVisa@choco.web.id</code></div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="mailbox" class="form-label">Mailbox (Target Forwarding) <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-inbox"></i></span>
+                                        <input type="text" class="form-control" id="mailbox" name="mailbox"
+                                               placeholder="Contoh: mailbox@choco.web.id" value="mailbox@choco.web.id" required>
+                                    </div>
+                                    <div class="form-text">Alamat email mailbox tujuan forwarding yang akan diisi di kolom Target pada file export forwarding.</div>
+                                </div>
+                                <div class="mb-3">
                                     <button type="submit" class="btn btn-brown">
                                         <i class="fas fa-upload"></i> Import Data
                                     </button>

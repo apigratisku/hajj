@@ -143,6 +143,20 @@
                                     </select>
                                 </div>
                                 <div class="form-group">
+                                    <select name="tanggal_update_terakhir" class="form-select mobile-input">
+                                        <option value="">Update Terakhir</option>
+                                        <?php if (!empty($tanggal_pengerjaan_list)): foreach ($tanggal_pengerjaan_list as $tanggal_update_terakhir): ?>
+                                            <?php 
+                                                $display_date = date('d-m-Y', strtotime($tanggal_update_terakhir->tanggal_pengerjaan));
+                                                $value_date = date('d-m-Y', strtotime($tanggal_update_terakhir->tanggal_pengerjaan));
+                                            ?>
+                                            <option value="<?= htmlspecialchars($value_date) ?>" <?= (isset($_GET['tanggal_update_terakhir']) && $_GET['tanggal_update_terakhir'] === $value_date) ? 'selected' : '' ?>>
+                                                <?= $display_date ?> (<?= $tanggal_update_terakhir->jumlah_update ?> data)
+                                            </option>
+                                        <?php endforeach; endif; ?>
+                                    </select>
+                                </div>
+                                <div class="form-group">
                                     <select name="status_jadwal" class="form-select mobile-input">
                                         <option value="">Status Jadwal</option>
                                         <option value="2">Sudah dijadwalkan</option>
@@ -316,6 +330,22 @@
                             </div>
                             <div class="row g-2 align-items-center">
                                 
+                                
+                                <div class="col-md-1">
+                                    <label for="tanggal_update_terakhir" class="form-label"><i class="fas fa-calendar"></i> Update Terakhir</label>
+                                    <select id="tanggal_update_terakhir" name="tanggal_update_terakhir" class="form-select form-control-sm">
+                                        <option value="">Update Terakhir</option>
+                                        <?php if (!empty($tanggal_pengerjaan_list)): foreach ($tanggal_pengerjaan_list as $tanggal_update_terakhir): ?>
+                                            <?php
+                                                $display_date = date('d-m-Y', strtotime($tanggal_update_terakhir->tanggal_pengerjaan));
+                                                $value_date = date('d-m-Y', strtotime($tanggal_update_terakhir->tanggal_pengerjaan));
+                                            ?>
+                                            <option value="<?= htmlspecialchars($value_date) ?>" <?= (isset($_GET['tanggal_update_terakhir']) && $_GET['tanggal_update_terakhir'] === $value_date) ? 'selected' : '' ?> >
+                                                <?= $display_date ?> (<?= $tanggal_update_terakhir->jumlah_update ?> data)
+                                            </option>
+                                        <?php endforeach; endif; ?>
+                                    </select>
+                                </div>
                                 <div class="col-md-1">
                                     <label for="startDate" class="form-label"><i class="fas fa-calendar"></i> Sortir Mulai</label>
                                     <input type="date" class="form-control" id="startDate" name="startDate" 
@@ -3721,7 +3751,7 @@ function saveRowMobileTable(button) {
                 const queryParams = [];
                 
                 // Add all current filters
-                ['nama', 'nomor_paspor', 'no_visa', 'flag_doc', 'tanggaljam', 'status', 'gender', 'page', 'status_jadwal', 'tanggal_pengerjaan', 'history_done', 'nama_travel', 'sortir_waktu_start', 'sortir_waktu_end', 'startDate', 'endDate', 'has_barcode'].forEach(param => {
+                ['nama', 'nomor_paspor', 'no_visa', 'flag_doc', 'tanggaljam', 'status', 'gender', 'page', 'status_jadwal', 'tanggal_pengerjaan', 'tanggal_update_terakhir', 'history_done', 'nama_travel', 'sortir_waktu_start', 'sortir_waktu_end', 'startDate', 'endDate', 'has_barcode'].forEach(param => {
                     if (params.has(param) && params.get(param)) {
                         queryParams.push(`${param}=${encodeURIComponent(params.get(param))}`);
                     }
