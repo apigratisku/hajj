@@ -2575,15 +2575,16 @@ class Database extends CI_Controller
                 // Logika: Email dibuat dari no_visa@{email_prefix} atau nomor_paspor@{email_prefix}
                 $email = null;
                 $parts = preg_split('/\s+/', trim($nama_peserta));
-                $kataPertama = $parts[0];
+                $kataPertama = strtolower($parts[0]);
                 if (!empty($no_visa)) {
                     // Buat email dari no_visa + domain prefix
-
-                    $email = $kataPertama . "" . $no_visa . '@' . $email_prefix;
+                    $last3 = substr($no_visa, -3);
+                    $email = $kataPertama . "" . $last3 . '@' . $email_prefix;
                     log_message('info', "Row $row: Email dibuat dari no_visa: $email");
                 } else {
                     // Jika no_visa kosong, gunakan nomor_paspor + domain prefix
-                    $email = $kataPertama . "" . $nomor_paspor . '@' . $email_prefix;
+                    $last3 = substr($nomor_paspor, -3);
+                    $email = $kataPertama . "" . $last3 . '@' . $email_prefix;
                     log_message('info', "Row $row: Email dibuat dari nomor_paspor (no_visa kosong): $email");
                 }
                 // ===== END MODIFIKASI EMAIL =====
