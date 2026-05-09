@@ -101,7 +101,7 @@ class Transaksi_model extends CI_Model {
             log_message('debug', 'Transaksi_model update - Barcode in filtered data: ' . (isset($filtered_data['barcode']) ? $filtered_data['barcode'] : 'NOT FOUND'));
             
             // Add updated_at timestamp
-            if (isset($filtered_data['status']) && in_array((string)$filtered_data['status'], ['1','2'], true)) {
+            if (isset($filtered_data['status']) && in_array((string)$filtered_data['status'], ['1','2','3'], true)) {
                 $filtered_data['updated_at'] = date('Y-m-d H:i:s');
             }
             
@@ -643,7 +643,8 @@ class Transaksi_model extends CI_Model {
             COUNT(*) as total,
             SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) as todo_count,
             SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as already_count,
-            SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) as done_count
+            SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) as done_count,
+            SUM(CASE WHEN status = 3 THEN 1 ELSE 0 END) as fasttrack_count
         ');
         $this->db->from($this->table);
         $this->db->where('flag_doc IS NOT NULL');
@@ -1652,7 +1653,8 @@ class Transaksi_model extends CI_Model {
                 flag_doc,
                 COUNT(*) as total,
                 SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) as done,
-                SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as already
+                SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as already,
+                SUM(CASE WHEN status = 3 THEN 1 ELSE 0 END) as fasttrack
             FROM peserta 
             WHERE " . implode(' AND ', $main_conditions) . "
             GROUP BY flag_doc 
@@ -1704,8 +1706,9 @@ class Transaksi_model extends CI_Model {
             u.username,
             SUM(CASE WHEN p.status = 2 THEN 1 ELSE 0 END) as done_count,
             SUM(CASE WHEN p.status = 1 THEN 1 ELSE 0 END) as already_count,
-            SUM(CASE WHEN p.status IN (1, 2) THEN 1 ELSE 0 END) as total_processed,
-            SUM(CASE WHEN p.status IN (1, 2) AND p.status_register_kembali = \'sudah\' THEN 1 ELSE 0 END) as register_ulang_count
+            SUM(CASE WHEN p.status = 3 THEN 1 ELSE 0 END) as fasttrack_count,
+            SUM(CASE WHEN p.status IN (1, 2, 3) THEN 1 ELSE 0 END) as total_processed,
+            SUM(CASE WHEN p.status IN (1, 2, 3) AND p.status_register_kembali = \'sudah\' THEN 1 ELSE 0 END) as register_ulang_count
         ');
         $this->db->from('users u');
         $this->db->join('peserta p', 'u.id_user = p.history_done', 'left');
@@ -1753,7 +1756,7 @@ class Transaksi_model extends CI_Model {
         $this->db->where('u.username !=', 'adhit');
         $this->db->where('u.username !=', 'mimin');
         $this->db->where('u.status', 1); // Active users only
-        $this->db->where_in('p.status', [1, 2]);
+        $this->db->where_in('p.status', [1, 2, 3]);
         $this->db->where('p.status_register_kembali', 'sudah');
         $this->db->having('register_ulang_count >', 0); // Only show operators with register ulang data
         
@@ -1781,7 +1784,8 @@ class Transaksi_model extends CI_Model {
             COUNT(*) as total_imported,
             SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) as on_target,
             SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as already,
-            SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) as done
+            SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) as done,
+            SUM(CASE WHEN status = 3 THEN 1 ELSE 0 END) as fasttrack
         ');
         $this->db->from($this->table);
         $this->db->where('created_at >=', date('Y-m-01', strtotime('-11 months')));
@@ -1804,6 +1808,7 @@ class Transaksi_model extends CI_Model {
                 SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) as on_target,
                 SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as already,
                 SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) as done,
+                SUM(CASE WHEN status = 3 THEN 1 ELSE 0 END) as fasttrack,
                 SUM(CASE WHEN status_register_kembali = "sudah" THEN 1 ELSE 0 END) as register_ulang
             ');
             $this->db->from($this->table);
@@ -1820,6 +1825,7 @@ class Transaksi_model extends CI_Model {
                 SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) as on_target,
                 SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as already,
                 SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) as done,
+                SUM(CASE WHEN status = 3 THEN 1 ELSE 0 END) as fasttrack,
                 SUM(CASE WHEN status_register_kembali = "sudah" THEN 1 ELSE 0 END) as register_ulang
             ');
             $this->db->from($this->table);

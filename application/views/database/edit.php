@@ -116,8 +116,9 @@
                                     </label>
                                     <select name="status" id="status" class="form-select mobile-input">
                                         <option value="0" <?= $peserta->status == 0 ? 'selected' : '' ?>>On Target</option>
-                                        <option value="1" <?= $peserta->status == 1 ? 'selected' : '' ?>>On Schedule</option>
+                                        <option value="1" <?= $peserta->status == 1 ? 'selected' : '' ?>>Already</option>
                                         <option value="2" <?= $peserta->status == 2 ? 'selected' : '' ?>>Done</option>
+                                        <option value="3" <?= $peserta->status == 3 ? 'selected' : '' ?>>Fasttrack</option>
                                     </select>
                                 </div>
                                 

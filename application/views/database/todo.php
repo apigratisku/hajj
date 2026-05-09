@@ -230,12 +230,13 @@
                                             </td>
                                             <td class="col-status" data-field="status" data-value="<?= $p->status ?>">
                                                 <span class="value mobile-status-badge mobile-status-<?= $p->status ?>" data-field="status" data-value="<?= $p->status ?>">
-                                                <?= $p->status == 0 ? 'On Target' : ($p->status == 1 ? 'Already' : 'Done') ?>
+                                                <?= $p->status == 0 ? 'On Target' : ($p->status == 1 ? 'Already' : ($p->status == 3 ? 'Fasttrack' : 'Done')) ?>
                                             </span>
                                                 <select class="mobile-edit-field" style="display:none;">
                                                 <option value="0" <?= $p->status == 0 ? 'selected' : '' ?>>On Target</option>
                                                 <option value="1" <?= $p->status == 1 ? 'selected' : '' ?>>Already</option>
                                                 <option value="2" <?= $p->status == 2 ? 'selected' : '' ?>>Done</option>
+                                                <option value="3" <?= $p->status == 3 ? 'selected' : '' ?>>Fasttrack</option>
                                             </select>
                                             </td>
                                                                                         <td class="col-flag" data-field="flag_doc" data-value="<?= $p->flag_doc ?>">
@@ -390,11 +391,12 @@
                                         <input type="time" class="form-control edit-field" value="<?= $p->jam ?>" style="display:none;">
                                         </td>
                                         <td class="status text-center" data-field="status" data-value="<?= $p->status ?>" style="white-space: nowrap;width: auto;">
-                                        <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->status == 0 ? 'On Target' : ($p->status == 1 ? 'Already' : 'Done') ?: '-', ENT_QUOTES) ?>', 'Status')" title="Klik untuk copy"><?= $p->status == 0 ? 'On Target' : ($p->status == 1 ? 'Already' : 'Done') ?></span>
+                                        <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->status == 0 ? 'On Target' : ($p->status == 1 ? 'Already' : ($p->status == 3 ? 'Fasttrack' : 'Done')), ENT_QUOTES) ?>', 'Status')" title="Klik untuk copy"><?= $p->status == 0 ? 'On Target' : ($p->status == 1 ? 'Already' : ($p->status == 3 ? 'Fasttrack' : 'Done')) ?></span>
                                                 <select class="form-select edit-field" style="display:none;">
                                                     <option value="0" <?= $p->status == 0 ? 'selected' : '' ?>>On Target</option>
                                                     <option value="1" <?= $p->status == 1 ? 'selected' : '' ?>>Already</option>
                                                     <option value="2" <?= $p->status == 2 ? 'selected' : '' ?>>Done</option>
+                                                    <option value="3" <?= $p->status == 3 ? 'selected' : '' ?>>Fasttrack</option>
                                                 </select>
                                         </td>
                                         <td class="flag-doc text-center" data-field="flag_doc" data-value="<?= $p->flag_doc ?>">
@@ -902,8 +904,13 @@
 }
 
 .mobile-status-2 {
-    background: #e8f5e8;
+    background: #e8f5e9;
     color: #388e3c;
+}
+
+.mobile-status-3 {
+    background: #f3e5f5;
+    color: #7b1fa2;
 }
 
 /* Copyable Text for Mobile Table */

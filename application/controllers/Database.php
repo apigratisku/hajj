@@ -637,19 +637,19 @@ class Database extends CI_Controller
                 'history_update' => $this->session->userdata('user_id') ?: null,
             ];
 
-            // Set updated_at hanya jika status = 1 atau 2
-            if (in_array((string) $status_raw, ['1', '2'], true)) {
+            // Set updated_at hanya jika status = 1, 2, atau 3 (Fasttrack)
+            if (in_array((string) $status_raw, ['1', '2', '3'], true)) {
                 $data['updated_at'] = date('Y-m-d H:i:s');
             }
             // Jika status = "0" atau tidak dikirim, JANGAN set $data['updated_at']
             // sehingga nilai di database tidak berubah.
 
             // Logic for history_done field
-            // 1. Jika user melakukan perubahan status menjadi done (status=1/2), set history_done
-            // 2. Jika history_done sudah ada value di database dan data sudah done, jangan update history_done
-            if ($status_raw == '1' || $status_raw == '2') {
+            // 1. Jika user melakukan perubahan status menjadi done/already/fasttrack (status=1/2/3), set history_done
+            // 2. Jika history_done sudah ada value di database dan data sudah done/already/fasttrack, jangan update history_done
+            if (in_array((string) $status_raw, ['1', '2', '3'], true)) {
                 // Check if current data is already done and has history_done
-                if (!empty($current_peserta->history_done) && ($current_peserta->status == '1' || $current_peserta->status == '2')) {
+                if (!empty($current_peserta->history_done) && in_array((string) $current_peserta->status, ['1', '2', '3'], true)) {
                     // Data sudah done dan history_done sudah ada, jangan update history_done
                     log_message('debug', 'Update - Data already done with history_done, skipping history_done update');
                 } else {
@@ -757,11 +757,12 @@ class Database extends CI_Controller
         $data['history_update'] = $this->session->userdata('user_id') ?: null;
 
         // Logic for history_done field
-        // 1. Jika user melakukan perubahan status menjadi done (status=1/2), set history_done
-        // 2. Jika history_done sudah ada value di database dan data sudah done, jangan update history_done
-        if (isset($data['status']) && ($data['status'] == '1' || $data['status'] == '2')) {
+        // Logic for history_done field
+        // 1. Jika user melakukan perubahan status menjadi already/done/fasttrack (status=1/2/3), set history_done
+        // 2. Jika history_done sudah ada value di database dan data sudah already/done/fasttrack, jangan update history_done
+        if (isset($data['status']) && in_array((string) $data['status'], ['1', '2', '3'], true)) {
             // Check if current data is already done and has history_done
-            if (!empty($current_peserta->history_done) && ($current_peserta->status == '1' || $current_peserta->status == '2')) {
+            if (!empty($current_peserta->history_done) && in_array((string) $current_peserta->status, ['1', '2', '3'], true)) {
                 // Data sudah done dan history_done sudah ada, jangan update history_done
                 log_message('debug', 'Database update_ajax - Data already done with history_done, skipping history_done update');
             } else {
@@ -1560,6 +1561,7 @@ class Database extends CI_Controller
             $on_target_count = 0;
             $already_count = 0;
             $done_count = 0;
+            $fasttrack_count = 0;
 
             foreach ($peserta as $p) {
                 $status = '';
@@ -1572,6 +1574,9 @@ class Database extends CI_Controller
                 } elseif ($p->status == 2) {
                     $status = 'Done';
                     $done_count++;
+                } elseif ($p->status == 3) {
+                    $status = 'Fasttrack';
+                    $fasttrack_count++;
                 }
 
                 $gender = '';
@@ -1645,6 +1650,11 @@ class Database extends CI_Controller
 
             $summary_row++;
             $excel->setActiveSheetIndex(0)
+                ->setCellValue('A' . $summary_row, 'Fasttrack')
+                ->setCellValue('B' . $summary_row, $fasttrack_count);
+
+            $summary_row++;
+            $excel->setActiveSheetIndex(0)
                 ->setCellValue('A' . $summary_row, 'TOTAL')
                 ->setCellValue('B' . $summary_row, $total_count);
 
@@ -1683,32 +1693,43 @@ class Database extends CI_Controller
                                 'color' => ['rgb' => '006400'], // Dark green text
                             ],
                         ];
-                    } elseif ($p->status == 1) { // Already - Red
+                    } elseif ($p->status == 1) { // Already - Orange/Yellow
                         $status_style = [
                             'fill' => [
                                 'type' => PHPExcel_Style_Fill::FILL_SOLID,
-                                'color' => ['rgb' => 'FFB6C1'], // Light red
+                                'color' => ['rgb' => 'FFEB3B'], // Yellow
                             ],
                             'font' => [
                                 'bold' => true,
-                                'color' => ['rgb' => '8B0000'], // Dark red text
+                                'color' => ['rgb' => 'FF8C00'], // Orange text
+                            ],
+                        ];
+                    } elseif ($p->status == 3) { // Fasttrack - Purple
+                        $status_style = [
+                            'fill' => [
+                                'type' => PHPExcel_Style_Fill::FILL_SOLID,
+                                'color' => ['rgb' => 'E1BEE7'], // Light purple
+                            ],
+                            'font' => [
+                                'bold' => true,
+                                'color' => ['rgb' => '7B1FA2'], // Dark purple text
                             ],
                         ];
                     } elseif ($p->status == 0) { // On Target - Blue
                         $status_style = [
                             'fill' => [
                                 'type' => PHPExcel_Style_Fill::FILL_SOLID,
-                                'color' => ['rgb' => '87CEEB'], // Light blue
+                                'color' => ['rgb' => 'ADD8E6'], // Light blue
                             ],
                             'font' => [
                                 'bold' => true,
-                                'color' => ['rgb' => '000080'], // Dark blue text
+                                'color' => ['rgb' => '00008B'], // Dark blue text
                             ],
                         ];
                     }
 
                     if (!empty($status_style)) {
-                        $excel->getActiveSheet()->getStyle('L' . $row_num)->applyFromArray($status_style);
+                        $excel->getActiveSheet()->getStyle('L' . ($row_num))->applyFromArray($status_style);
                     }
                     $row_num++;
                 }
@@ -1901,6 +1922,7 @@ class Database extends CI_Controller
             $on_target_count = 0;
             $already_count = 0;
             $done_count = 0;
+            $fasttrack_count = 0;
 
             foreach ($peserta as $p) {
                 if ($p->status == 0)
@@ -1909,6 +1931,8 @@ class Database extends CI_Controller
                     $already_count++;
                 elseif ($p->status == 2)
                     $done_count++;
+                elseif ($p->status == 3)
+                    $fasttrack_count++;
             }
 
             $total_count = count($peserta);
@@ -1944,6 +1968,8 @@ class Database extends CI_Controller
                     $status = 'Already';
                 } elseif ($p->status == 2) {
                     $status = 'Done';
+                } elseif ($p->status == 3) {
+                    $status = 'Fasttrack';
                 }
 
                 $gender = '';
@@ -1995,6 +2021,10 @@ class Database extends CI_Controller
                     <tr style="background-color: #F0F8FF; font-weight: bold;">
                         <td>Done</td>
                         <td>' . $done_count . '</td>
+                    </tr>
+                    <tr style="background-color: #F0F8FF; font-weight: bold;">
+                        <td>Fasttrack</td>
+                        <td>' . $fasttrack_count . '</td>
                     </tr>
                     <tr style="background-color: #F0F8FF; font-weight: bold;">
                         <td><strong>TOTAL</strong></td>
@@ -4120,6 +4150,8 @@ class Database extends CI_Controller
                     $status = 'Already';
                 } elseif ($p->status == 2) {
                     $status = 'Done';
+                } elseif ($p->status == 3) {
+                    $status = 'Fasttrack';
                 }
 
                 $gender = '';
@@ -4581,6 +4613,8 @@ class Database extends CI_Controller
                     $status = 'Already';
                 } elseif ($p->status == 2) {
                     $status = 'Done';
+                } elseif ($p->status == 3) {
+                    $status = 'Fasttrack';
                 }
 
                 $gender = '';

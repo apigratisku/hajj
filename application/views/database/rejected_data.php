@@ -84,6 +84,7 @@
                                     <option value="0" <?= $this->input->get('status') == '0' ? 'selected' : '' ?>>On Target</option>
                                     <option value="1" <?= $this->input->get('status') == '1' ? 'selected' : '' ?>>Already</option>
                                     <option value="2" <?= $this->input->get('status') == '2' ? 'selected' : '' ?>>Done</option>
+                                    <option value="3" <?= $this->input->get('status') == '3' ? 'selected' : '' ?>>Fasttrack</option>
                                 </select>
                             </div>
                             <div class="col-md-2">
@@ -154,6 +155,8 @@
                                                     <span class="badge bg-info">Already</span>
                                                 <?php elseif($data->status == 2): ?>
                                                     <span class="badge bg-success">Done</span>
+                                                <?php elseif($data->status == 3): ?>
+                                                    <span class="badge bg-purple" style="background-color: #7b1fa2;">Fasttrack</span>
                                                 <?php else: ?>
                                                     <span class="badge bg-secondary">-</span>
                                                 <?php endif; ?>
@@ -248,6 +251,8 @@
                                                                                 <span class="badge bg-info">Already</span>
                                                                             <?php elseif($data->status == 2): ?>
                                                                                 <span class="badge bg-success">Done</span>
+                                                                            <?php elseif($data->status == 3): ?>
+                                                                                <span class="badge bg-purple" style="background-color: #7b1fa2;">Fasttrack</span>
                                                                             <?php else: ?>
                                                                                 <span class="badge bg-secondary">-</span>
                                                                             <?php endif; ?>

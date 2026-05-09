@@ -89,8 +89,9 @@
                         <select class="form-select" id="export_status" name="status">
                             <option value="">Semua Status</option>
                             <option value="2">Done (Arsip)</option>
+                            <option value="3">Fasttrack (Arsip)</option>
                         </select>
-                        <div class="form-text">Data arsip hanya berisi status Done</div>
+                        <div class="form-text">Data arsip berisi status Done dan Fasttrack</div>
                     </div>
                     
                     <div class="mb-3">

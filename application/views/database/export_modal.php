@@ -141,6 +141,7 @@
                             <option value="0">On Target</option>
                             <option value="1">Already</option>
                             <option value="2">Done</option>
+                            <option value="3">Fasttrack</option>
                         </select>
                         <div class="form-text">Pilih status untuk memfilter data yang akan di-export</div>
                     </div>
