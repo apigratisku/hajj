@@ -3,7 +3,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 class Qr_data extends CI_Controller {
 
-    private static $max_barcode_len = 4096;
+    private static $max_barcode_len = 1000000; // Increased for unlimited-like storage
 
     public function __construct() {
         parent::__construct();
@@ -77,20 +77,14 @@ class Qr_data extends CI_Controller {
 
         $booking_post = $this->input->post('booking_id', true);
         $booking = $booking_post !== null && $booking_post !== ''
-            ? substr(trim((string) $booking_post), 0, 32)
+            ? trim((string) $booking_post)
             : '';
         if ($booking === '' && $barcode !== '') {
-            $booking = substr($barcode, 0, 32);
+            $booking = $barcode;
         }
 
         $ticket_date = (string) $this->input->post('ticket_date', true);
         $ticket_time = (string) $this->input->post('ticket_time', true);
-        if (strlen($ticket_date) > 128) {
-            $ticket_date = substr($ticket_date, 0, 128);
-        }
-        if (strlen($ticket_time) > 64) {
-            $ticket_time = substr($ticket_time, 0, 64);
-        }
 
         $existing_id = $this->qr_data_model->exists_by_booking_and_barcode($booking, $barcode);
         if ($existing_id !== null) {
@@ -185,6 +179,43 @@ class Qr_data extends CI_Controller {
         $this->output->set_output(json_encode(array(
             'success' => true,
             'message' => 'Data berhasil dihapus.'
+        )));
+    }
+
+    public function bulk_delete() {
+        $this->output->set_content_type('application/json');
+
+        if (!$this->session->userdata('logged_in')) {
+            $this->output->set_output(json_encode(array(
+                'success' => false,
+                'message' => 'Unauthorized'
+            )));
+            return;
+        }
+
+        $ids = $this->input->post('ids');
+        if (!is_array($ids) || empty($ids)) {
+            $this->output->set_output(json_encode(array(
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih.'
+            )));
+            return;
+        }
+
+        $ids = array_map('intval', $ids);
+        $ok = $this->qr_data_model->delete_batch($ids);
+
+        if (!$ok) {
+            $this->output->set_output(json_encode(array(
+                'success' => false,
+                'message' => 'Beberapa atau semua data gagal dihapus.'
+            )));
+            return;
+        }
+
+        $this->output->set_output(json_encode(array(
+            'success' => true,
+            'message' => count($ids) . ' data berhasil dihapus.'
         )));
     }
 }

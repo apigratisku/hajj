@@ -119,4 +119,16 @@ class Qr_data_model extends CI_Model {
         $this->db->where('id', (int) $id);
         return (bool) $this->db->delete($this->table);
     }
+
+    /**
+     * @param int[] $ids
+     * @return bool
+     */
+    public function delete_batch($ids) {
+        if (empty($ids)) {
+            return false;
+        }
+        $this->db->where_in('id', $ids);
+        return (bool) $this->db->delete($this->table);
+    }
 }

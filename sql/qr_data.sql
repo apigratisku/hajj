@@ -3,8 +3,8 @@
 
 CREATE TABLE IF NOT EXISTS `qr_data` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `booking_id` varchar(32) NOT NULL DEFAULT '',
-  `barcode_data` text NOT NULL,
+  `booking_id` varchar(255) NOT NULL DEFAULT '',
+  `barcode_data` longtext NOT NULL,
   `ticket_date` varchar(128) NOT NULL DEFAULT '',
   `ticket_time` varchar(64) NOT NULL DEFAULT '',
   `foto_qr_path` varchar(512) DEFAULT NULL,

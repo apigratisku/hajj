@@ -150,6 +150,9 @@ if ($filter_tanggaljam !== '') {
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap">
                     <h6 class="mb-0">Data tersimpan</h6>
+                    <button type="button" class="btn btn-sm btn-danger d-none" id="btnBulkDelete">
+                        <i class="fas fa-trash mr-1"></i> Hapus Terpilih (<span id="selectedCount">0</span>)
+                    </button>
                 </div>
                 <div class="card-body">
                     <form method="get" action="<?= base_url('qr-data') ?>">
@@ -176,6 +179,9 @@ if ($filter_tanggaljam !== '') {
                         <table class="table table-sm table-striped table-bordered mb-0" id="qrDataTable">
                             <thead class="thead-light">
                                 <tr>
+                                    <th style="width:40px;" class="text-center">
+                                        <input type="checkbox" id="selectAllRows">
+                                    </th>
                                     <th>#</th>
                                     <th>Booking ID</th>
                                     <th>Tanggal</th>
@@ -187,7 +193,7 @@ if ($filter_tanggaljam !== '') {
                             <tbody>
                                 <?php if (empty($qr_list)): ?>
                                 <tr>
-                                    <td colspan="6" class="text-center text-muted py-4">Belum ada data.</td>
+                                    <td colspan="7" class="text-center text-muted py-4">Belum ada data.</td>
                                 </tr>
                                 <?php else: ?>
                                 <?php foreach ($qr_list as $idx => $row): ?>
@@ -202,6 +208,9 @@ if ($filter_tanggaljam !== '') {
                                     data-barcode="<?= htmlspecialchars($row_barcode, ENT_QUOTES, 'UTF-8') ?>"
                                     data-date="<?= htmlspecialchars($row_date, ENT_QUOTES, 'UTF-8') ?>"
                                     data-time="<?= htmlspecialchars($row_time, ENT_QUOTES, 'UTF-8') ?>">
+                                    <td class="text-center">
+                                        <input type="checkbox" class="row-checkbox" value="<?= (int) $row->id ?>">
+                                    </td>
                                     <td><?= (int) ($offset + $idx + 1) ?></td>
                                     <td><code><?= html_escape($row_booking) ?></code></td>
                                     
@@ -790,13 +799,6 @@ if ($filter_tanggaljam !== '') {
                 if (data && data.duplicate) {
                     lastSavedBarcode = barcodeInput.value.trim();
                     showAlert('warning', (data.message) ? data.message : 'Data sudah tersimpan sebelumnya.');
-                    if (autoMode) {
-                        setCameraStatus('data sudah ada, tidak disimpan ulang.');
-                        return safeStopCamera().then(function() {
-                            window.location.reload();
-                            return true;
-                        });
-                    }
                     window.location.reload();
                     return true;
                 }
@@ -816,14 +818,95 @@ if ($filter_tanggaljam !== '') {
                 showAlert('error', (data && data.message) ? data.message : 'Gagal menyimpan.');
                 return false;
             })
-            .catch(function() {
-                showAlert('error', 'Gagal menghubungi server.');
+            .catch(function(err) {
+                isAutoSaving = false;
+                btnDb.disabled = false;
+                showAlert('error', 'Gagal menyimpan ke database.');
+                console.error(err);
                 return false;
             })
             .finally(function() {
                 isAutoSaving = false;
                 btnDb.disabled = false;
             });
+    }
+
+    // --- Mass Delete Logic ---
+    var selectAllRows = document.getElementById('selectAllRows');
+    var btnBulkDelete = document.getElementById('btnBulkDelete');
+    var selectedCountEl = document.getElementById('selectedCount');
+
+    function updateBulkDeleteUI() {
+        var checked = document.querySelectorAll('.row-checkbox:checked');
+        if (checked.length > 0) {
+            btnBulkDelete.classList.remove('d-none');
+            selectedCountEl.textContent = checked.length;
+        } else {
+            btnBulkDelete.classList.add('d-none');
+        }
+    }
+
+    if (selectAllRows) {
+        selectAllRows.addEventListener('change', function() {
+            var isChecked = this.checked;
+            var cbs = document.querySelectorAll('.row-checkbox');
+            cbs.forEach(function(cb) {
+                cb.checked = isChecked;
+            });
+            updateBulkDeleteUI();
+        });
+    }
+
+    // Delegation for checkboxes since they might be many or handled dynamically
+    document.addEventListener('change', function(e) {
+        if (e.target && e.target.classList.contains('row-checkbox')) {
+            var allCbs = document.querySelectorAll('.row-checkbox');
+            var allChecked = true;
+            allCbs.forEach(function(c) { if (!c.checked) allChecked = false; });
+            if (selectAllRows) selectAllRows.checked = allChecked;
+            updateBulkDeleteUI();
+        }
+    });
+
+    if (btnBulkDelete) {
+        btnBulkDelete.addEventListener('click', function() {
+            var checked = document.querySelectorAll('.row-checkbox:checked');
+            var ids = Array.from(checked).map(function(cb) { return cb.value; });
+            if (ids.length === 0) return;
+
+            if (!confirm('Apakah Anda yakin ingin menghapus ' + ids.length + ' data terpilih?')) {
+                return;
+            }
+
+            var fd = new FormData();
+            ids.forEach(function(id) { fd.append('ids[]', id); });
+
+            btnBulkDelete.disabled = true;
+            var originalHtml = btnBulkDelete.innerHTML;
+            btnBulkDelete.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Menghapus...';
+
+            fetch('<?= base_url('qr-data/bulk_delete') ?>', {
+                method: 'POST',
+                body: fd,
+                credentials: 'same-origin'
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.message || 'Gagal menghapus data.');
+                    btnBulkDelete.disabled = false;
+                    btnBulkDelete.innerHTML = originalHtml;
+                }
+            })
+            .catch(function(err) {
+                console.error(err);
+                alert('Terjadi kesalahan jaringan.');
+                btnBulkDelete.disabled = false;
+                btnBulkDelete.innerHTML = originalHtml;
+            });
+        });
     }
 
     function generateQR(data) {

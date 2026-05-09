@@ -22,6 +22,7 @@ $route['qr-upload/scan'] = 'qr_upload/scan';
 $route['qr-data'] = 'qr_data/index';
 $route['qr-data/save'] = 'qr_data/save';
 $route['qr-data/delete/(:num)'] = 'qr_data/delete/$1';
+$route['qr-data/bulk_delete'] = 'qr_data/bulk_delete';
 $route['nusukbot'] = 'nusukbot';
 $route['telegram_bot'] = 'telegram_bot';
 $route['telegram_bot/webhook'] = 'telegram_bot/webhook';
