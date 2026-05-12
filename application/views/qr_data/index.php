@@ -668,7 +668,7 @@ if ($filter_tanggaljam !== '') {
         if (parts.length !== 3) {
             return '';
         }
-        var months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+        var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         var year = parts[0];
         var monthIdx = parseInt(parts[1], 10) - 1;
         var day = parseInt(parts[2], 10);
@@ -676,6 +676,54 @@ if ($filter_tanggaljam !== '') {
             return '';
         }
         return pad2(day) + ' ' + months[monthIdx] + ' ' + year;
+    }
+
+    function extractIsoDateFromBarcode(barcodeValue) {
+        if (!barcodeValue) {
+            return '';
+        }
+        var text = String(barcodeValue);
+        var dateRegex = /(20\d{2})(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])/g;
+        var match = null;
+        while ((match = dateRegex.exec(text)) !== null) {
+            var year = parseInt(match[1], 10);
+            var month = parseInt(match[2], 10);
+            var day = parseInt(match[3], 10);
+            var dateObj = new Date(year, month - 1, day);
+            if (
+                dateObj.getFullYear() === year &&
+                dateObj.getMonth() === (month - 1) &&
+                dateObj.getDate() === day
+            ) {
+                return year + '-' + pad2(month) + '-' + pad2(day);
+            }
+        }
+        return '';
+    }
+
+    function extractTimeDisplayFromBarcode(barcodeValue) {
+        if (!barcodeValue) {
+            return '';
+        }
+        var text = String(barcodeValue);
+        var dateTimeRegex = /(20\d{2})(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])([01]\d|2[0-3])([0-5]\d)/g;
+        var match = null;
+        while ((match = dateTimeRegex.exec(text)) !== null) {
+            var year = parseInt(match[1], 10);
+            var month = parseInt(match[2], 10);
+            var day = parseInt(match[3], 10);
+            var hour = parseInt(match[4], 10);
+            var minute = parseInt(match[5], 10);
+            var dateObj = new Date(year, month - 1, day);
+            if (
+                dateObj.getFullYear() === year &&
+                dateObj.getMonth() === (month - 1) &&
+                dateObj.getDate() === day
+            ) {
+                return pad2(hour) + ':' + pad2(minute);
+            }
+        }
+        return '';
     }
 
     function toIsoDateFromDisplay(displayDate) {
@@ -1125,6 +1173,23 @@ if ($filter_tanggaljam !== '') {
             lastScanAt = now;
             lastDecodedCam = decodedText;
             barcodeInput.value = decodedText;
+            var scannedIsoDate = extractIsoDateFromBarcode(decodedText);
+            if (scannedIsoDate) {
+                var scannedDisplayDate = formatDateDisplayFromIso(scannedIsoDate);
+                if (scannedDisplayDate) {
+                    dateInput.value = scannedDisplayDate;
+                }
+                if (datePickerNative) {
+                    datePickerNative.value = scannedIsoDate;
+                }
+            }
+            var scannedDisplayTime = extractTimeDisplayFromBarcode(decodedText);
+            if (scannedDisplayTime) {
+                timeInput.value = scannedDisplayTime;
+                if (timePickerNative) {
+                    timePickerNative.value = scannedDisplayTime;
+                }
+            }
             updateTicket();
             setCameraStatus('kode terbaca, menyimpan otomatis...');
             showAlert('warning', 'Kode terbaca, menyimpan otomatis...');
