@@ -846,9 +846,13 @@ if ($filter_tanggaljam !== '') {
             .then(function(data) {
                 if (data && data.duplicate) {
                     lastSavedBarcode = barcodeInput.value.trim();
-                    showAlert('warning', (data.message) ? data.message : 'Data sudah tersimpan sebelumnya.');
-                    window.location.reload();
-                    return true;
+                    var duplicateMessage = (data.message) ? data.message : 'Data barcode sudah ada di database.';
+                    showAlert('warning', duplicateMessage);
+                    if (autoMode) {
+                        setCameraStatus('barcode duplikat terdeteksi, data tidak disimpan.');
+                    }
+                    window.alert(duplicateMessage);
+                    return false;
                 }
                 if (data && data.success) {
                     lastSavedBarcode = barcodeInput.value.trim();
