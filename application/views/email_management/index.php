@@ -446,6 +446,7 @@
             </div>
             <div class="modal-body">
                 <p>Apakah Anda yakin ingin menghapus akun email <strong id="deleteEmail"></strong>?</p>
+                <p class="text-muted"><small>Forwarder (pengalihan email di cPanel) untuk alamat ini akan ikut dihapus jika ada.</small></p>
                 <p class="text-danger"><small>Perhatian: Tindakan ini tidak dapat dibatalkan!</small></p>
             </div>
             <div class="modal-footer">
@@ -474,6 +475,7 @@
                     <strong>Perhatian!</strong> Anda akan menghapus <span id="selectedCount" class="badge bg-danger">0</span> akun email yang dipilih.
                 </div>
                 <p>Apakah Anda yakin ingin menghapus akun email berikut?</p>
+                <p class="text-muted"><small>Forwarder di cPanel untuk tiap alamat yang dipilih akan ikut dihapus jika ada.</small></p>
                 <div class="table-responsive">
                     <table class="table table-sm table-bordered">
                         <thead class="table-light">
@@ -1496,9 +1498,9 @@ function confirmBulkDelete() {
             console.log('Bulk delete parsed response:', jsonData);
             
             if (jsonData.success) {
-                const message = `Berhasil menghapus ${jsonData.deleted_count} dari ${jsonData.total_count} akun email`;
+                const message = jsonData.message || `Berhasil menghapus ${jsonData.deleted_count} dari ${jsonData.total_count} akun email`;
                 if (jsonData.failed_count > 0) {
-                    showAlert('warning', message + `. Gagal menghapus ${jsonData.failed_count} akun email.`);
+                    showAlert('warning', message);
                 } else {
                     showAlert('success', message);
                 }

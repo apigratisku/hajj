@@ -192,7 +192,15 @@ class Email extends CI_Controller {
                     $this->telegram_notification->email_management_notification('delete', $email, 'Email account deleted');
                 }
                 
-                $this->session->set_flashdata('success', 'Akun email berhasil dihapus: ' . $email);
+                $success_msg = 'Akun email berhasil dihapus: ' . $email;
+                if (!empty($result['forwarder_warnings'])) {
+                    $w = $result['forwarder_warnings'];
+                    $success_msg .= '. Peringatan forwarder: ' . implode('; ', array_slice($w, 0, 2));
+                    if (count($w) > 2) {
+                        $success_msg .= ' (+' . (count($w) - 2) . ' lainnya)';
+                    }
+                }
+                $this->session->set_flashdata('success', $success_msg);
             } else {
                 log_message('error', 'Email delete - Failed deleting email: ' . $email . ' - ' . $result['message']);
                 $this->session->set_flashdata('error', 'Gagal menghapus akun email: ' . $result['message']);
@@ -752,7 +760,14 @@ class Email extends CI_Controller {
             }
             
             log_message('info', 'Email delete_email_account - Success');
-            return ['success' => true, 'message' => 'Email account deleted successfully'];
+            $fwd = isset($result['forwarder_warnings']) && is_array($result['forwarder_warnings'])
+                ? $result['forwarder_warnings']
+                : [];
+            return [
+                'success' => true,
+                'message' => 'Email account deleted successfully',
+                'forwarder_warnings' => $fwd
+            ];
         } catch (Exception $e) {
             log_message('error', 'Error in delete_email_account: ' . $e->getMessage());
             return ['success' => false, 'message' => 'Error deleting email account: ' . $e->getMessage()];
@@ -976,6 +991,7 @@ class Email extends CI_Controller {
             
             $success_count = 0;
             $failed_emails = [];
+            $forwarder_warning_lines = [];
             
             foreach ($emails as $email) {
                 log_message('info', 'Email bulk_delete - Processing email: ' . $email);
@@ -985,6 +1001,12 @@ class Email extends CI_Controller {
                 if ($result['success']) {
                     $success_count++;
                     log_message('info', 'Email bulk_delete - Successfully deleted: ' . $email);
+                    
+                    if (!empty($result['forwarder_warnings'])) {
+                        foreach ($result['forwarder_warnings'] as $fw) {
+                            $forwarder_warning_lines[] = $email . ': ' . $fw;
+                        }
+                    }
                     
                     // Kirim notifikasi Telegram untuk delete email account
                     if (isset($this->telegram_notification)) {
@@ -1013,6 +1035,13 @@ class Email extends CI_Controller {
                 $response['message'] = "Berhasil menghapus {$success_count} dari {$total_emails} akun email";
                 if (count($failed_emails) > 0) {
                     $response['message'] .= ". Gagal menghapus " . count($failed_emails) . " akun email";
+                }
+                if (!empty($forwarder_warning_lines)) {
+                    $preview = implode('; ', array_slice($forwarder_warning_lines, 0, 2));
+                    $response['message'] .= '. Peringatan forwarder: ' . $preview;
+                    if (count($forwarder_warning_lines) > 2) {
+                        $response['message'] .= ' (+' . (count($forwarder_warning_lines) - 2) . ' lainnya)';
+                    }
                 }
             } else {
                 $response['success'] = false;

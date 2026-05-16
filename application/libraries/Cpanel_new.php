@@ -758,121 +758,313 @@ class Cpanel_new {
     }
 
     /**
+     * Normalisasi baris forwarder dari respons list_forwarders (execute vs json-api).
+     *
+     * @param mixed $result
+     * @return array|null Array baris forwarder, atau null jika respons invalid/error.
+     */
+    private function extractForwardersRowsFromApiResult($result)
+    {
+        if (!is_array($result) || isset($result['error'])) {
+            return null;
+        }
+
+        if (isset($result['data'])) {
+            $data = $result['data'];
+            if ($data === null) {
+                return [];
+            }
+            if (is_array($data) && isset($data['dest'])) {
+                return [$data];
+            }
+            if (is_array($data)) {
+                return $data;
+            }
+        }
+
+        if (isset($result['cpanelresult']['event']['result']) && is_array($result['cpanelresult']['event']['result'])) {
+            $rows = [];
+            foreach ($result['cpanelresult']['event']['result'] as $item) {
+                if (!is_array($item) || empty($item['data'])) {
+                    continue;
+                }
+                $d = $item['data'];
+                if (isset($d['dest'])) {
+                    $rows[] = $d;
+                }
+            }
+            return $rows;
+        }
+
+        if (isset($result[0]) && is_array($result[0]) && (isset($result[0]['dest']) || isset($result[0]['forward']))) {
+            return $result;
+        }
+
+        return [];
+    }
+
+    /**
+     * Daftar forwarder untuk sebuah domain (cPanel Email/list_forwarders).
+     *
+     * @param string $domain
+     * @return array
+     */
+    public function listForwardersForDomain($domain)
+    {
+        try {
+            if ($domain === null || $domain === '') {
+                return ['error' => 'Domain required'];
+            }
+
+            if ($this->auth_token && !empty($this->auth_token)) {
+                $query = http_build_query(['domain' => $domain]);
+                return $this->requestWithToken('/Email/list_forwarders?' . $query, 'GET');
+            }
+
+            $endpoints = [
+                "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=list_forwarders&domain=" . rawurlencode($domain),
+                "/execute/Email/list_forwarders?domain=" . rawurlencode($domain),
+            ];
+
+            $result = ['error' => 'Failed to list forwarders'];
+            foreach ($endpoints as $endpoint) {
+                log_message('info', 'CPanel listForwardersForDomain - Trying endpoint: ' . $endpoint);
+                $try = $this->request($endpoint);
+                if (is_array($try) && !isset($try['error'])) {
+                    $result = $try;
+                    break;
+                }
+                $result = $try;
+            }
+
+            return $result;
+        } catch (Exception $e) {
+            log_message('error', 'CPanel listForwardersForDomain - Exception: ' . $e->getMessage());
+            return ['error' => 'Exception in listForwardersForDomain: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Hapus satu pasangan forwarder (Email/delete_forwarder).
+     *
+     * @param string $address Alamat yang diforward (dest dari list).
+     * @param string $forwardDestination Tujuan forward.
+     * @return array
+     */
+    private function deleteForwarderEntry($address, $forwardDestination)
+    {
+        $query = http_build_query([
+            'address' => $address,
+            'forwarder' => $forwardDestination,
+        ]);
+
+        if ($this->auth_token && !empty($this->auth_token)) {
+            return $this->requestWithToken('/Email/delete_forwarder?' . $query, 'GET');
+        }
+
+        $endpoints = [
+            "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=delete_forwarder&address=" . rawurlencode($address) . '&forwarder=' . rawurlencode($forwardDestination),
+            '/execute/Email/delete_forwarder?' . $query,
+        ];
+
+        $last = ['error' => 'Failed to delete forwarder'];
+        foreach ($endpoints as $endpoint) {
+            log_message('info', 'CPanel deleteForwarderEntry - Trying endpoint: ' . $endpoint);
+            $last = $this->request($endpoint, 'GET');
+            if (is_array($last) && !isset($last['error'])) {
+                return $last;
+            }
+            if (isset($last['error']) && strpos($last['error'], '403') === false) {
+                return $last;
+            }
+        }
+
+        return $last;
+    }
+
+    /**
+     * Hapus semua forwarder yang sumbernya sama dengan $email (kolom dest pada list_forwarders).
+     *
+     * @param string $email Alamat lengkap user@domain.
+     * @param string $domain
+     * @return array Daftar string peringatan jika ada kegagalan per entri.
+     */
+    private function removeForwardersForAddress($email, $domain)
+    {
+        $warnings = [];
+        $target = strtolower(trim($email));
+
+        $listResult = $this->listForwardersForDomain($domain);
+        $rows = $this->extractForwardersRowsFromApiResult($listResult);
+
+        if ($rows === null) {
+            log_message('error', 'CPanel removeForwardersForAddress - Could not list forwarders: ' . json_encode($listResult));
+            return $warnings;
+        }
+
+        foreach ($rows as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $dest = isset($row['dest']) ? trim($row['dest']) : '';
+            if ($dest === '' || strtolower($dest) !== $target) {
+                continue;
+            }
+            $forwardTo = isset($row['forward']) ? $row['forward'] : '';
+            log_message('info', 'CPanel removeForwardersForAddress - Deleting forwarder ' . $dest . ' -> ' . $forwardTo);
+            $del = $this->deleteForwarderEntry($dest, $forwardTo);
+            if (!is_array($del) || isset($del['error'])) {
+                $msg = isset($del['error']) ? $del['error'] : 'Unknown error';
+                $warnings[] = 'Gagal hapus forwarder ' . $dest . ': ' . $msg;
+                log_message('warning', 'CPanel removeForwardersForAddress - ' . end($warnings));
+                continue;
+            }
+            if (isset($del['errors']) && !empty($del['errors'])) {
+                $warnings[] = 'Gagal hapus forwarder ' . $dest . ': ' . implode(', ', $del['errors']);
+                log_message('warning', 'CPanel removeForwardersForAddress - ' . end($warnings));
+            }
+        }
+
+        return $warnings;
+    }
+
+    /**
      * Hapus akun email dengan optimasi untuk mengatasi HTTP 403
      */
     public function deleteEmailAccount($email)
     {
         try {
             log_message('info', 'CPanel deleteEmailAccount - Deleting email: ' . $email);
-            
-            $domain = substr(strrchr($email, "@"), 1);
-            $user = substr($email, 0, strpos($email, "@"));
-            
+
+            $at = strpos($email, '@');
+            if ($at === false) {
+                return ['error' => 'Invalid email address'];
+            }
+            $user = substr($email, 0, $at);
+            $domain = substr($email, $at + 1);
+            if ($user === '' || $domain === '') {
+                return ['error' => 'Invalid email address'];
+            }
+
+            $forwarder_warnings = [];
+
             if ($this->auth_token && !empty($this->auth_token)) {
                 log_message('info', 'CPanel deleteEmailAccount - Using token authentication');
+                $forwarder_warnings = $this->removeForwardersForAddress($email, $domain);
+
                 $data = [
                     'email' => $user,
                     'domain' => $domain
                 ];
                 $result = $this->requestWithToken('/Email/delete_pop', 'POST', $data);
-            } else {
-                log_message('info', 'CPanel deleteEmailAccount - Using session authentication');
-                
-                // Force fresh login untuk operasi delete dengan timeout yang lebih pendek
-                log_message('info', 'CPanel deleteEmailAccount - Force fresh login for delete operation');
-                if (!$this->forceLogin()) {
-                    log_message('error', 'CPanel deleteEmailAccount - Force login failed');
-                    return ['error' => 'Failed to establish fresh session for delete operation'];
+
+                if (!empty($forwarder_warnings)) {
+                    $result['forwarder_warnings'] = $forwarder_warnings;
                 }
-                
-                // Tunggu sebentar untuk memastikan session stabil
-                sleep(1);
-                
-                // Coba endpoint yang paling reliable untuk Jupiter interface
-                $endpoints = [
-                    // Jupiter interface specific endpoint dengan POST data
-                    "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=delete_pop",
-                    // Execute API endpoint dengan POST data
-                    "/execute/Email/delete_pop",
-                    // Legacy endpoint sebagai fallback
-                    "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=1&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=delete_pop"
-                ];
-                
-                // Data untuk POST request
-                $postData = [
-                    'email' => $user,
-                    'domain' => $domain
-                ];
-                
-                // Log data yang akan dikirim untuk debugging
-                log_message('info', 'CPanel deleteEmailAccount - POST data: ' . json_encode($postData));
-                
-                $result = null;
-                $max_retries = 2; // Kurangi retry untuk performa lebih baik
-                $retry_count = 0;
-                
-                while ($retry_count < $max_retries) {
-                    $retry_count++;
-                    log_message('info', 'CPanel deleteEmailAccount - Attempt ' . $retry_count . ' of ' . $max_retries);
-                    
-                    foreach ($endpoints as $endpoint) {
-                        log_message('info', 'CPanel deleteEmailAccount - Trying endpoint: ' . $endpoint);
-                        
-                        // Gunakan POST request untuk delete operation
-                        $result = $this->requestWithSession($endpoint, 'POST', $postData);
-                        
-                        // Log response untuk debugging
-                        log_message('info', 'CPanel deleteEmailAccount - Response: ' . json_encode($result));
-                        
-                        // Jika mendapat HTTP 403, coba endpoint berikutnya
-                        if (isset($result['error']) && strpos($result['error'], '403') !== false) {
-                            log_message('info', 'CPanel deleteEmailAccount - HTTP 403 detected, trying next endpoint');
-                            continue;
-                        }
-                        
-                        if (!isset($result['error']) && !empty($result)) {
-                            log_message('info', 'CPanel deleteEmailAccount - Success with endpoint: ' . $endpoint);
-                            break 2; // Break dari kedua loop
-                        }
+
+                log_message('info', 'CPanel deleteEmailAccount - Result: ' . json_encode($result));
+                return $result;
+            }
+
+            log_message('info', 'CPanel deleteEmailAccount - Using session authentication');
+
+            log_message('info', 'CPanel deleteEmailAccount - Force fresh login for delete operation');
+            if (!$this->forceLogin()) {
+                log_message('error', 'CPanel deleteEmailAccount - Force login failed');
+                return ['error' => 'Failed to establish fresh session for delete operation'];
+            }
+
+            sleep(1);
+
+            $forwarder_warnings = $this->removeForwardersForAddress($email, $domain);
+
+            $endpoints = [
+                "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=delete_pop",
+                "/execute/Email/delete_pop",
+                "/json-api/cpanel?cpanel_jsonapi_user={$this->cpanel_user}&cpanel_jsonapi_apiversion=1&cpanel_jsonapi_module=Email&cpanel_jsonapi_func=delete_pop"
+            ];
+
+            $postData = [
+                'email' => $user,
+                'domain' => $domain
+            ];
+
+            log_message('info', 'CPanel deleteEmailAccount - POST data: ' . json_encode($postData));
+
+            $result = null;
+            $max_retries = 2;
+            $retry_count = 0;
+
+            while ($retry_count < $max_retries) {
+                $retry_count++;
+                log_message('info', 'CPanel deleteEmailAccount - Attempt ' . $retry_count . ' of ' . $max_retries);
+
+                foreach ($endpoints as $endpoint) {
+                    log_message('info', 'CPanel deleteEmailAccount - Trying endpoint: ' . $endpoint);
+
+                    $result = $this->requestWithSession($endpoint, 'POST', $postData);
+
+                    log_message('info', 'CPanel deleteEmailAccount - Response: ' . json_encode($result));
+
+                    if (isset($result['error']) && strpos($result['error'], '403') !== false) {
+                        log_message('info', 'CPanel deleteEmailAccount - HTTP 403 detected, trying next endpoint');
+                        continue;
                     }
-                    
-                    // Jika semua endpoint gagal dan mendapat 403, coba force login sekali lagi
-                    if (isset($result['error']) && strpos($result['error'], '403') !== false && $retry_count < $max_retries) {
-                        log_message('info', 'CPanel deleteEmailAccount - All endpoints returned 403, attempting force login');
-                        if ($this->forceLogin()) {
-                            log_message('info', 'CPanel deleteEmailAccount - Force login successful, will retry');
-                            sleep(1); // Tunggu sebentar setelah login
-                            continue;
-                        } else {
-                            log_message('error', 'CPanel deleteEmailAccount - Force login failed on attempt ' . $retry_count);
-                            break;
-                        }
+
+                    if (!isset($result['error']) && !empty($result)) {
+                        log_message('info', 'CPanel deleteEmailAccount - Success with endpoint: ' . $endpoint);
+                        break 2;
+                    }
+                }
+
+                if (isset($result['error']) && strpos($result['error'], '403') !== false && $retry_count < $max_retries) {
+                    log_message('info', 'CPanel deleteEmailAccount - All endpoints returned 403, attempting force login');
+                    if ($this->forceLogin()) {
+                        log_message('info', 'CPanel deleteEmailAccount - Force login successful, will retry');
+                        sleep(1);
+                        continue;
                     } else {
-                        // Error lain selain 403, tidak perlu retry
+                        log_message('error', 'CPanel deleteEmailAccount - Force login failed on attempt ' . $retry_count);
                         break;
                     }
-                }
-                
-                if (!$result || isset($result['error'])) {
-                    log_message('error', 'CPanel deleteEmailAccount - All endpoints failed');
-                    
-                    // Jika mendapat HTTP 403, coba retry dengan fresh login
-                    if (isset($result['error']) && strpos($result['error'], '403') !== false) {
-                        log_message('info', 'CPanel deleteEmailAccount - HTTP 403 detected, trying retry mechanism');
-                        $retry_result = $this->retryDeleteEmailWithFreshLogin($email);
-                        
-                        if (isset($retry_result['error'])) {
-                            return ['error' => 'Failed to delete email account after retry: ' . $retry_result['error']];
-                        } else {
-                            log_message('info', 'CPanel deleteEmailAccount - Success after retry');
-                            return $retry_result;
-                        }
-                    }
-                    
-                    return ['error' => 'Failed to delete email account: ' . (isset($result['error']) ? $result['error'] : 'Unknown error')];
+                } else {
+                    break;
                 }
             }
-            
+
+            if (!$result || isset($result['error'])) {
+                log_message('error', 'CPanel deleteEmailAccount - All endpoints failed');
+
+                if (isset($result['error']) && strpos($result['error'], '403') !== false) {
+                    log_message('info', 'CPanel deleteEmailAccount - HTTP 403 detected, trying retry mechanism');
+                    $retry_result = $this->retryDeleteEmailWithFreshLogin($email);
+
+                    if (isset($retry_result['error'])) {
+                        $err = ['error' => 'Failed to delete email account after retry: ' . $retry_result['error']];
+                        if (!empty($forwarder_warnings)) {
+                            $err['forwarder_warnings'] = $forwarder_warnings;
+                        }
+                        return $err;
+                    }
+
+                    log_message('info', 'CPanel deleteEmailAccount - Success after retry');
+                    if (!empty($forwarder_warnings)) {
+                        $retry_result['forwarder_warnings'] = $forwarder_warnings;
+                    }
+                    return $retry_result;
+                }
+
+                $err = ['error' => 'Failed to delete email account: ' . (isset($result['error']) ? $result['error'] : 'Unknown error')];
+                if (!empty($forwarder_warnings)) {
+                    $err['forwarder_warnings'] = $forwarder_warnings;
+                }
+                return $err;
+            }
+
+            if (!empty($forwarder_warnings)) {
+                $result['forwarder_warnings'] = $forwarder_warnings;
+            }
+
             log_message('info', 'CPanel deleteEmailAccount - Result: ' . json_encode($result));
             return $result;
         } catch (Exception $e) {
