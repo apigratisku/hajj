@@ -6,15 +6,6 @@
                 <div class="card-header bg-brown text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <div class="d-flex align-items-center">
                         <h5 class="mb-0 me-3">Filter Already</h5>
-                        <?php if (isset($update_stats) && isset($_GET['tanggal_pengerjaan'])): ?>
-                        <div class="update-stats-info">
-                            <span class="badge bg-light text-dark">
-                                <i class="fas fa-calendar-check"></i>
-                                Update <?= date('d-m-Y', strtotime($_GET['tanggal_pengerjaan'])) ?>: 
-                                <strong><?= $update_stats ?> data</strong>
-                            </span>
-                        </div>
-                        <?php endif; ?>
                     </div>
                 </div>
                 <div class="card-body p-0">
@@ -22,140 +13,22 @@
                     <!-- Mobile Search Form -->
                     <div class="mobile-search-container d-block d-md-none">
                         <div class="search-toggle" onclick="toggleMobileSearch()">
-                            <i class="fas fa-search"></i> Cari Data
+                            <i class="fas fa-search"></i> Filter Email
                         </div>
                         <div class="mobile-search-form" id="mobileSearchForm" style="display: none;">
-                            <form method="get" action="<?= base_url('database/filter_already') ?>" class="mobile-form" id="mobileSearchForm">
-                                <div class="form-group">
-                                    <select name="nama_travel" class="form-select mobile-input">
-                                        <option value="">Semua Travel</option>
-                                        <?php if (!empty($travel_list)): foreach ($travel_list as $travel): ?>
-                                            <option value="<?= htmlspecialchars($travel->nama_travel) ?>" <?= (isset($_GET['nama_travel']) && $_GET['nama_travel'] === $travel->nama_travel) ? 'selected' : '' ?>>
-                                                <?= htmlspecialchars($travel->nama_travel) ?>
-                                            </option>
-                                        <?php endforeach; endif; ?>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <div class="searchable-select-wrapper" style="position: relative;">
-                                        <select name="flag_doc" id="flag_doc_mobile" class="form-select mobile-input searchable-select">
-                                        <option value="">Semua Flag Dokumen</option>
-                                        <option value="null" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === 'null') ? 'selected' : '' ?>>Tanpa Flag Dokumen</option>
-                                        <?php if (!empty($flag_doc_list)): foreach ($flag_doc_list as $flag): ?>
-                                            <option value="<?= htmlspecialchars($flag->flag_doc) ?>" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === $flag->flag_doc) ? 'selected' : '' ?>>
-                                                <?= htmlspecialchars($flag->flag_doc) ?>
-                                            </option>
-                                        <?php endforeach; endif; ?>
-                                    </select>
-                                        <button type="button" class="btn-clear-flag-doc" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #666; font-size: 16px; cursor: pointer; z-index: 10; display: none;" title="Clear">
-                                            Ã—
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div class="form-group">
-                                    <input type="text" name="nama" value="<?= isset($_GET['nama']) ? htmlspecialchars($_GET['nama']) : '' ?>" class="form-control mobile-input" placeholder="Nama Peserta">
-                                </div>
-                                <div class="form-group">
-                                    <input type="text" name="nomor_paspor" value="<?= isset($_GET['nomor_paspor']) ? htmlspecialchars($_GET['nomor_paspor']) : '' ?>" class="form-control mobile-input" placeholder="No Paspor">
-                                </div>
-                                <div class="form-group">
-                                    <input type="text" name="no_visa" value="<?= isset($_GET['no_visa']) ? htmlspecialchars($_GET['no_visa']) : '' ?>" class="form-control mobile-input" placeholder="No Visa">
-                                </div>
-                                <div class="form-group">
-                                    <select name="tanggaljam" class="form-select mobile-input">
-                                        <option value="">Waktu</option>
-                                        <?php if (!empty($tanggaljam_list)): foreach ($tanggaljam_list as $tanggaljam): ?>
-                                            <option value="<?= htmlspecialchars($tanggaljam->tanggaljam) ?>" <?= (isset($_GET['tanggaljam']) && $_GET['tanggaljam'] === $tanggaljam->tanggaljam) ? 'selected' : '' ?>>
-                                                <?= date('d-m-Y h:i A', strtotime($tanggaljam->tanggaljam)) ?>
-                                            </option>
-                                        <?php endforeach; endif; ?>
-                                    </select>
-                                </div>
-                                
-                                
+                            <form method="get" action="<?= base_url('database/filter_already') ?>" class="mobile-form">
                                 <input type="hidden" name="status" value="1">
                                 <div class="form-group">
-                                    <select name="status_register_kembali" class="form-select mobile-input">
-                                        <option value="">Status Register Ulang</option>
-                                        <option value="sudah" <?= (isset($_GET['status_register_kembali']) && $_GET['status_register_kembali'] === 'sudah') ? 'selected' : '' ?>>Register Ulang</option>
-                                        <option value="belum" <?= (isset($_GET['status_register_kembali']) && $_GET['status_register_kembali'] === 'belum') ? 'selected' : '' ?>>Belum Register Ulang</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <select name="gender" class="form-select mobile-input">
-                                        <option value="">Gender</option>
-                                        <option value="L" <?= (isset($_GET['gender']) && $_GET['gender'] === 'L') ? 'selected' : '' ?>>Laki-laki</option>
-                                        <option value="P" <?= (isset($_GET['gender']) && $_GET['gender'] === 'P') ? 'selected' : '' ?>>Perempuan</option>
-                                    </select>
-                                </div>
-                               
-                                <div class="form-group">
-                                    <select name="tanggal_pengerjaan" class="form-select mobile-input">
-                                        <option value="">Tanggal Pengerjaan</option>
-                                        <?php if (!empty($tanggal_pengerjaan_list)): foreach ($tanggal_pengerjaan_list as $tanggal_pengerjaan): ?>
-                                            <?php 
-                                                $display_date = date('d-m-Y', strtotime($tanggal_pengerjaan->tanggal_pengerjaan));
-                                                $value_date = date('d-m-Y', strtotime($tanggal_pengerjaan->tanggal_pengerjaan));
-                                            ?>
-                                            <option value="<?= htmlspecialchars($value_date) ?>" <?= (isset($_GET['tanggal_pengerjaan']) && $_GET['tanggal_pengerjaan'] === $value_date) ? 'selected' : '' ?>>
-                                                <?= $display_date ?> (<?= $tanggal_pengerjaan->jumlah_update ?> data)
+                                    <label class="form-label"><i class="fas fa-at"></i> Domain Email</label>
+                                    <select name="email_domain" class="form-select mobile-input">
+                                        <option value="">Semua Email</option>
+                                        <?php if (!empty($email_domain_list)): foreach ($email_domain_list as $domain): ?>
+                                            <option value="<?= htmlspecialchars($domain->email_domain) ?>" <?= (isset($_GET['email_domain']) && $_GET['email_domain'] === $domain->email_domain) ? 'selected' : '' ?>>
+                                                @<?= htmlspecialchars($domain->email_domain) ?>
                                             </option>
                                         <?php endforeach; endif; ?>
                                     </select>
                                 </div>
-                                <div class="form-group">
-                                    <select name="tanggal_update_terakhir" class="form-select mobile-input">
-                                        <option value="">Update Terakhir</option>
-                                        <?php if (!empty($tanggal_pengerjaan_list)): foreach ($tanggal_pengerjaan_list as $tanggal_update_terakhir): ?>
-                                            <?php 
-                                                $display_date = date('d-m-Y', strtotime($tanggal_update_terakhir->tanggal_pengerjaan));
-                                                $value_date = date('d-m-Y', strtotime($tanggal_update_terakhir->tanggal_pengerjaan));
-                                            ?>
-                                            <option value="<?= htmlspecialchars($value_date) ?>" <?= (isset($_GET['tanggal_update_terakhir']) && $_GET['tanggal_update_terakhir'] === $value_date) ? 'selected' : '' ?>>
-                                                <?= $display_date ?> (<?= $tanggal_update_terakhir->jumlah_update ?> data)
-                                            </option>
-                                        <?php endforeach; endif; ?>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <select name="status_jadwal" class="form-select mobile-input">
-                                        <option value="">Status Jadwal</option>
-                                        <option value="2">Sudah dijadwalkan</option>
-                                        <option value="1">Belum dijadwalkan</option>
-                                    </select>
-                                </div>
-                                <?php //if($this->session->userdata('role') == 'admin'): ?>
-                                <div class="form-group">
-                                    <select name="history_done" class="form-select mobile-input">
-                                    <option value="">Operator</option>
-                                        
-                                        <?php if (!empty($user_operators)): foreach ($user_operators as $operator): ?>
-                            
-                                            <option value="<?= htmlspecialchars($operator->id_user) ?>" <?= (isset($_GET['history_done']) && $_GET['history_done'] === $operator->id_user) ? 'selected' : '' ?>>
-                                                <?= htmlspecialchars($operator->nama_lengkap) ?>
-                                            </option>
-                                        <?php endforeach; endif; ?>
-                                    </select>
-                                </div>
-                                <?php //endif; ?>
-                                
-                                <!-- Filter Tanggal Updated untuk Mobile -->
-                                <div class="form-group">
-                                    <label for="startDateMobile" class="form-label">
-                                        <i class="fas fa-calendar"></i> Sortir Mulai
-                                    </label>
-                                    <input type="date" name="startDate" class="form-control mobile-input" id="startDateMobile" 
-                                           value="<?= isset($_GET['startDate']) ? htmlspecialchars($_GET['startDate']) : '' ?>">
-                                </div>
-                                <div class="form-group">
-                                    <label for="endDateMobile" class="form-label">
-                                        <i class="fas fa-calendar"></i> Sortir Akhir
-                                    </label>
-                                    <input type="date" name="endDate" class="form-control mobile-input" id="endDateMobile"
-                                           value="<?= isset($_GET['endDate']) ? htmlspecialchars($_GET['endDate']) : '' ?>">
-                                </div>
-                                
                                 <div class="form-actions">
                                     <button type="submit" class="btn btn-search">
                                         <i class="fas fa-search"></i> Cari
@@ -166,201 +39,35 @@
                                 </div>
                             </form>
                         </div>
-                      
                     </div>
 
                     <!-- Desktop Search Form -->
-                    <div class="desktop-search-container d-none d-md-block">
+                    <div class="desktop-search-container d-none d-md-block p-3">
                         <form method="get" action="<?= base_url('database/filter_already') ?>" class="desktop-form">
-                            <div class="row g-2 align-items-center">
-                                <div class="col-md-1">
-                                    <select name="nama_travel" class="form-select form-control-sm">
-                                        <option value="">Semua Travel</option>
-                                        <?php if (!empty($travel_list)): foreach ($travel_list as $travel): ?>
-                                            <option value="<?= htmlspecialchars($travel->nama_travel) ?>" <?= (isset($_GET['nama_travel']) && $_GET['nama_travel'] === $travel->nama_travel) ? 'selected' : '' ?>>
-                                                <?= htmlspecialchars($travel->nama_travel) ?>
+                            <input type="hidden" name="status" value="1">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-4">
+                                    <label for="email_domain_desktop" class="form-label"><i class="fas fa-at"></i> Domain Email</label>
+                                    <select id="email_domain_desktop" name="email_domain" class="form-select form-control-sm">
+                                        <option value="">Semua Email</option>
+                                        <?php if (!empty($email_domain_list)): foreach ($email_domain_list as $domain): ?>
+                                            <option value="<?= htmlspecialchars($domain->email_domain) ?>" <?= (isset($_GET['email_domain']) && $_GET['email_domain'] === $domain->email_domain) ? 'selected' : '' ?>>
+                                                @<?= htmlspecialchars($domain->email_domain) ?>
                                             </option>
                                         <?php endforeach; endif; ?>
                                     </select>
                                 </div>
-                                <div class="col-md-1">
-                                    <div class="searchable-select-wrapper" style="position: relative;">
-                                        <select name="flag_doc" id="flag_doc_desktop" class="form-select form-control-sm searchable-select">
-                                        <option value="">Semua Flag Dokumen</option>
-                                        <option value="null" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === 'null') ? 'selected' : '' ?>>Tanpa Flag Dokumen</option>
-                                        <?php if (!empty($flag_doc_list)): foreach ($flag_doc_list as $flag): ?>
-                                            <option value="<?= htmlspecialchars($flag->flag_doc) ?>" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === $flag->flag_doc) ? 'selected' : '' ?>>
-                                                <?= htmlspecialchars($flag->flag_doc) ?>
-                                            </option>
-                                        <?php endforeach; endif; ?>
-                                    </select>
-                                        <button type="button" class="btn-clear-flag-doc" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #666; font-size: 14px; cursor: pointer; z-index: 10; display: none;" title="Clear">
-                                            Ã—
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="col-md-1">
-                                    <input type="text" name="nama" value="<?= isset($_GET['nama']) ? htmlspecialchars($_GET['nama']) : '' ?>" class="form-control form-control-sm" placeholder="Nama Peserta">
-                                </div>
-                                <div class="col-md-1">
-                                    <input type="text" name="nomor_paspor" value="<?= isset($_GET['nomor_paspor']) ? htmlspecialchars($_GET['nomor_paspor']) : '' ?>" class="form-control form-control-sm" placeholder="No Paspor" >
-                                </div>
-                                <div class="col-md-1">
-                                    <input type="text" name="no_visa" value="<?= isset($_GET['no_visa']) ? htmlspecialchars($_GET['no_visa']) : '' ?>" class="form-control form-control-sm" placeholder="No Visa">
-                                </div>
-                                
-                                
-                                <div class="col-md-1">
-                                    <select name="tanggaljam" class="form-select form-control-sm">
-                                        <option value="">Waktu</option>
-                                        <?php if (!empty($tanggaljam_list)): foreach ($tanggaljam_list as $tanggaljam): ?>
-                                            <option value="<?= htmlspecialchars($tanggaljam->tanggaljam) ?>" <?= (isset($_GET['tanggaljam']) && $_GET['tanggaljam'] === $tanggaljam->tanggaljam) ? 'selected' : '' ?>>
-                                            <?= date('d-m-Y h:i A', strtotime($tanggaljam->tanggaljam)) ?>
-                                            </option>
-                                        <?php endforeach; endif; ?>
-                                    </select>
-                                </div>
-                                <!-- gender -->
-                                 <div class="col-md-1">
-                                    <select name="gender" class="form-select form-control-sm">
-                                        <option value="">Gender</option>
-                                        <option value="L" <?= (isset($_GET['gender']) && $_GET['gender'] === 'L') ? 'selected' : '' ?>>Laki-laki</option>
-                                        <option value="P" <?= (isset($_GET['gender']) && $_GET['gender'] === 'P') ? 'selected' : '' ?>>Perempuan</option>
-                                    </select>
-                                </div>
-
-                                <input type="hidden" name="status" value="1">
-
-                                <div class="col-md-1">
-                                    <select name="status_register_kembali" class="form-select form-control-sm">
-                                        <option value="">Status Register Ulang</option>
-                                        <option value="sudah" <?= (isset($_GET['status_register_kembali']) && $_GET['status_register_kembali'] === 'sudah') ? 'selected' : '' ?>>Register Ulang</option>
-                                        <option value="belum" <?= (isset($_GET['status_register_kembali']) && $_GET['status_register_kembali'] === 'belum') ? 'selected' : '' ?>>Belum Register Ulang</option>
-                                    </select>
-                                </div>
-
-                                <div class="col-md-1">
-                                    <select name="tanggal_pengerjaan" class="form-select form-control-sm">
-                                        <option value="">Tanggal Pengerjaan</option>
-                                        <?php if (!empty($tanggal_pengerjaan_list)): foreach ($tanggal_pengerjaan_list as $tanggal_pengerjaan): ?>
-                                            <?php 
-                                                $display_date = date('d-m-Y', strtotime($tanggal_pengerjaan->tanggal_pengerjaan));
-                                                $value_date = date('d-m-Y', strtotime($tanggal_pengerjaan->tanggal_pengerjaan));
-                                            ?>
-                                            <option value="<?= htmlspecialchars($value_date) ?>" <?= (isset($_GET['tanggal_pengerjaan']) && $_GET['tanggal_pengerjaan'] === $value_date) ? 'selected' : '' ?>>
-                                                <?= $display_date ?> (<?= $tanggal_pengerjaan->jumlah_update ?> data)
-                                            </option>
-                                        <?php endforeach; endif; ?>
-                                    </select>
-                                </div>
-                                
-                                <div class="col-md-1">
-                                    <select name="status_jadwal" class="form-select form-control-sm">
-                                        <option value="">Status Jadwal</option>
-                                        <option value="2" <?= (isset($_GET['status_jadwal']) && $_GET['status_jadwal'] === '2') ? 'selected' : '' ?>>Sudah dijadwalkan</option>
-                                        <option value="1" <?= (isset($_GET['status_jadwal']) && $_GET['status_jadwal'] === '1') ? 'selected' : '' ?>>Belum dijadwalkan</option>
-                                    </select>
-                                </div>
-                                <?php //if($this->session->userdata('role') == 'admin'): ?>
-                                <div class="col-md-1">
-                                    <select name="history_done" class="form-select form-control-sm">
-                                        <option value="">Operator</option>
-                                        
-                                        <?php if (!empty($user_operators)): foreach ($user_operators as $operator): ?>
-                            
-                                            <option value="<?= htmlspecialchars($operator->id_user) ?>" <?= (isset($_GET['history_done']) && $_GET['history_done'] === $operator->id_user) ? 'selected' : '' ?>>
-                                                <?= htmlspecialchars($operator->nama_lengkap) ?>
-                                            </option>
-                                        <?php endforeach; endif; ?>
-                                    </select>
-                                </div>
-                                <?php //endif; ?>
-                                
-                            </div>
-                            <div class="row g-2 align-items-center">
-                                
-                                
-                                <div class="col-md-1">
-                                    <label for="tanggal_update_terakhir" class="form-label"><i class="fas fa-calendar"></i> Update Terakhir</label>
-                                    <select id="tanggal_update_terakhir" name="tanggal_update_terakhir" class="form-select form-control-sm">
-                                        <option value="">Update Terakhir</option>
-                                        <?php if (!empty($tanggal_pengerjaan_list)): foreach ($tanggal_pengerjaan_list as $tanggal_update_terakhir): ?>
-                                            <?php
-                                                $display_date = date('d-m-Y', strtotime($tanggal_update_terakhir->tanggal_pengerjaan));
-                                                $value_date = date('d-m-Y', strtotime($tanggal_update_terakhir->tanggal_pengerjaan));
-                                            ?>
-                                            <option value="<?= htmlspecialchars($value_date) ?>" <?= (isset($_GET['tanggal_update_terakhir']) && $_GET['tanggal_update_terakhir'] === $value_date) ? 'selected' : '' ?> >
-                                                <?= $display_date ?> (<?= $tanggal_update_terakhir->jumlah_update ?> data)
-                                            </option>
-                                        <?php endforeach; endif; ?>
-                                    </select>
-                                </div>
-                                <div class="col-md-1">
-                                    <label for="startDate" class="form-label"><i class="fas fa-calendar"></i> Sortir Mulai</label>
-                                    <input type="date" class="form-control" id="startDate" name="startDate" 
-                                           value="<?= isset($_GET['startDate']) ? htmlspecialchars($_GET['startDate']) : '' ?>">
-                                </div>
-                                <div class="col-md-1">
-                                    <label for="endDate" class="form-label"><i class="fas fa-calendar"></i> Sortir Akhir</label>
-                                    <input type="date" class="form-control" id="endDate" name="endDate"
-                                           value="<?= isset($_GET['endDate']) ? htmlspecialchars($_GET['endDate']) : '' ?>">
-                                </div>
-                                      
-                            </div> 
-                            <br>
-                            <div class="row g-2 align-items-center">
-                                <div class="col-md-3">
+                                <div class="col-md-auto">
                                     <button type="submit" class="btn btn-brown btn-sm me-2">
                                         <i class="fas fa-search"></i> Cari
                                     </button>
-                                    <a href="<?= base_url('database/filter_already') ?>" class="btn btn-brown-light btn-sm me-2">
+                                    <a href="<?= base_url('database/filter_already') ?>" class="btn btn-brown-light btn-sm">
                                         <i class="fas fa-times"></i> Reset
                                     </a>
-                                    
-                                </div>             
+                                </div>
                             </div>
                         </form>
                     </div>
-
-                    <!-- Update Statistics Info -->
-                    <?php if (isset($update_stats) && isset($update_stats_detail)): ?>
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <div class="alert alert-info">
-                                <h6 class="alert-heading">
-                                    <i class="fas fa-chart-bar"></i> Statistik Update Data
-                                </h6>
-                                <p class="mb-2">
-                                    <strong>Tanggal Pengerjaan:</strong> 
-                                    <?= date('d-m-Y', strtotime($_GET['tanggal_pengerjaan'])) ?>
-                                </p>
-                                <p class="mb-2">
-                                    <strong>Total Data Diupdate:</strong> 
-                                    <span class="badge bg-primary"><?= $update_stats ?> data</span>
-                                </p>
-                                <?php if (!empty($update_stats_detail)): ?>
-                                <div class="mt-2">
-                                    <strong>Breakdown Status:</strong>
-                                    <div class="d-flex flex-wrap gap-2 mt-1">
-                                        <?php foreach ($update_stats_detail as $stat): ?>
-                                            <span class="badge bg-secondary">
-                                                <?= $stat->status == 0 ? 'On Target' : ($stat->status == 1 ? 'Already' : 'Done') ?>: 
-                                                <?= $stat->count ?> data
-                                            </span>
-                                        <?php endforeach; ?>
-                                    </div>
-                                </div>
-                                <br>
-                                <p class="mb-2">
-                                    <button type="button" class="btn btn-sm btn-attachment" onclick="downloadBarcodeAttachments()">
-                                        <i class="fas fa-download"></i> <span class="d-none d-sm-inline">Download Barcode</span>
-                                    </button>
-                                </p>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-                    <?php endif; ?>
 
                     <!-- Mobile Excel-like Table -->
                     <div class="mobile-table-container d-block d-lg-none">
@@ -2372,6 +2079,23 @@
     }
     </style>
     <script>
+const FILTER_ALREADY_BASE_URL = '<?= base_url('database/filter_already') ?>';
+
+function buildFilterAlreadyRedirectUrl() {
+    const params = new URLSearchParams(window.location.search);
+    let redirectUrl = FILTER_ALREADY_BASE_URL;
+    const queryParams = [];
+    ['email_domain', 'page'].forEach(param => {
+        if (params.has(param) && params.get(param)) {
+            queryParams.push(`${param}=${encodeURIComponent(params.get(param))}`);
+        }
+    });
+    if (queryParams.length > 0) {
+        redirectUrl += '?' + queryParams.join('&');
+    }
+    return redirectUrl;
+}
+
 // Copy to clipboard function dengan visual indicator
 function copyToClipboard(text, fieldName) {
     // Handle empty or dash values
@@ -2996,25 +2720,7 @@ function saveRow(button) {
             showAlert('Data berhasil diperbarui', 'success');
             // Redirect back to previous page with filters after 1 second
             setTimeout(() => {
-                const currentUrl = new URL(window.location.href);
-                const params = new URLSearchParams(currentUrl.search);
-                
-                // Build redirect URL with current filters
-                let redirectUrl = '<?= base_url('database/filter_already') ?>';
-                const queryParams = [];
-                
-                // Add all current filters
-                ['nama', 'nomor_paspor', 'no_visa', 'flag_doc', 'tanggaljam', 'status', 'gender', 'page', 'status_jadwal', 'tanggal_pengerjaan', 'history_done', 'nama_travel', 'sortir_waktu_start', 'sortir_waktu_end', 'startDate', 'endDate', 'has_barcode'].forEach(param => {
-                    if (params.has(param) && params.get(param)) {
-                        queryParams.push(`${param}=${encodeURIComponent(params.get(param))}`);
-                    }
-                });
-                
-                if (queryParams.length > 0) {
-                    redirectUrl += '?' + queryParams.join('&');
-                }
-                
-                window.location.href = redirectUrl;
+                window.location.href = buildFilterAlreadyRedirectUrl();
             }, 1000);
             
             editFields.forEach(field => field.style.display = 'none');
@@ -3221,9 +2927,8 @@ function downloadBarcodeAttachments() {
     // Get current filters
     const urlParams = new URLSearchParams(window.location.search);
     const filters = {
-        tanggaljam: urlParams.get('tanggaljam') || '',
-        flag_doc: urlParams.get('flag_doc') || '',
-        status: urlParams.get('status') || ''
+        email_domain: urlParams.get('email_domain') || '',
+        status: urlParams.get('status') || '1'
     };
     
     // Show loading state
@@ -3236,8 +2941,7 @@ function downloadBarcodeAttachments() {
     let downloadUrl = '<?= base_url('database/download_barcode_attachments') ?>';
     const queryParams = new URLSearchParams();
     
-    if (filters.tanggaljam) queryParams.append('tanggaljam', filters.tanggaljam);
-    if (filters.flag_doc) queryParams.append('flag_doc', filters.flag_doc);
+    if (filters.email_domain) queryParams.append('email_domain', filters.email_domain);
     if (filters.status) queryParams.append('status', filters.status);
     
     if (queryParams.toString()) {
@@ -3408,11 +3112,7 @@ function enhancePagination() {
     // Debug: Log current URL and parameters
     console.log('Current URL:', window.location.href);
     console.log('Current filters:', {
-        nama: new URLSearchParams(window.location.search).get('nama'),
-        nomor_paspor: new URLSearchParams(window.location.search).get('nomor_paspor'),
-        no_visa: new URLSearchParams(window.location.search).get('no_visa'),
-        flag_doc: new URLSearchParams(window.location.search).get('flag_doc'),
-        tanggaljam: new URLSearchParams(window.location.search).get('tanggaljam'),
+        email_domain: new URLSearchParams(window.location.search).get('email_domain'),
         page: new URLSearchParams(window.location.search).get('page')
     });
     
@@ -3697,25 +3397,7 @@ function saveRowMobileTable(button) {
             showAlert('Data berhasil diperbarui', 'success');
             // Redirect back to previous page with filters after 1 second
             setTimeout(() => {
-                const currentUrl = new URL(window.location.href);
-                const params = new URLSearchParams(currentUrl.search);
-                
-                // Build redirect URL with current filters
-                let redirectUrl = '<?= base_url('database/filter_already') ?>';
-                const queryParams = [];
-                
-                // Add all current filters
-                ['nama', 'nomor_paspor', 'no_visa', 'flag_doc', 'tanggaljam', 'status', 'gender', 'page', 'status_jadwal', 'tanggal_pengerjaan', 'tanggal_update_terakhir', 'history_done', 'nama_travel', 'sortir_waktu_start', 'sortir_waktu_end', 'startDate', 'endDate', 'has_barcode'].forEach(param => {
-                    if (params.has(param) && params.get(param)) {
-                        queryParams.push(`${param}=${encodeURIComponent(params.get(param))}`);
-                    }
-                });
-                
-                if (queryParams.length > 0) {
-                    redirectUrl += '?' + queryParams.join('&');
-                }
-                
-                window.location.href = redirectUrl;
+                window.location.href = buildFilterAlreadyRedirectUrl();
             }, 1000);
             
             // Remove editing class
@@ -3857,25 +3539,7 @@ function saveRow(button) {
             showAlert('Data berhasil diperbarui', 'success');
             // Redirect back to previous page with filters after 1 second
             setTimeout(() => {
-                const currentUrl = new URL(window.location.href);
-                const params = new URLSearchParams(currentUrl.search);
-                
-                // Build redirect URL with current filters
-                let redirectUrl = '<?= base_url('database/filter_already') ?>';
-                const queryParams = [];
-                
-                // Add all current filters
-                ['nama', 'nomor_paspor', 'no_visa', 'flag_doc', 'tanggaljam', 'status', 'gender', 'page', 'status_jadwal', 'tanggal_pengerjaan', 'history_done', 'nama_travel', 'sortir_waktu_start', 'sortir_waktu_end', 'startDate', 'endDate', 'has_barcode'].forEach(param => {
-                    if (params.has(param) && params.get(param)) {
-                        queryParams.push(`${param}=${encodeURIComponent(params.get(param))}`);
-                    }
-                });
-                
-                if (queryParams.length > 0) {
-                    redirectUrl += '?' + queryParams.join('&');
-                }
-                
-                window.location.href = redirectUrl;
+                window.location.href = buildFilterAlreadyRedirectUrl();
             }, 1000);
             
             editFields.forEach(field => field.style.display = 'none');
@@ -4332,24 +3996,7 @@ function showRegisterUlangStatisticsError(message) {
 // Delete data function with filter preservation
 function deleteData(id) {
     if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
-        // Get current filters from URL
-        const currentUrl = new URL(window.location.href);
-        const params = new URLSearchParams(currentUrl.search);
-        
-        // Build redirect URL with current filters
-        let redirectUrl = '<?= base_url('database/filter_already') ?>';
-        const queryParams = [];
-        
-        // Add all current filters
-        ['nama', 'nomor_paspor', 'no_visa', 'flag_doc', 'tanggaljam', 'status', 'gender', 'page', 'status_jadwal', 'tanggal_pengerjaan', 'history_done', 'nama_travel', 'sortir_waktu_start', 'sortir_waktu_end', 'startDate', 'endDate', 'has_barcode'].forEach(param => {
-            if (params.has(param) && params.get(param)) {
-                queryParams.push(`${param}=${encodeURIComponent(params.get(param))}`);
-            }
-        });
-        
-        if (queryParams.length > 0) {
-            redirectUrl += '?' + queryParams.join('&');
-        }
+        const redirectUrl = buildFilterAlreadyRedirectUrl();
         
         // Show loading state
         const button = event.target.closest('button');
@@ -4367,24 +4014,7 @@ function deleteData(id) {
 // Remove schedule (tanggal & jam) function
 function removeSchedule(id) {
     if (confirm('Apakah Anda yakin ingin menghapus tanggal dan jam untuk data ini?')) {
-        // Get current filters from URL
-        const currentUrl = new URL(window.location.href);
-        const params = new URLSearchParams(currentUrl.search);
-        
-        // Build redirect URL with current filters
-        let redirectUrl = '<?= base_url('database/filter_already') ?>';
-        const queryParams = [];
-        
-        // Add all current filters
-        ['nama', 'nomor_paspor', 'no_visa', 'flag_doc', 'tanggaljam', 'status', 'gender', 'page', 'status_jadwal', 'tanggal_pengerjaan', 'history_done', 'nama_travel', 'sortir_waktu_start', 'sortir_waktu_end', 'startDate', 'endDate', 'has_barcode'].forEach(param => {
-            if (params.has(param) && params.get(param)) {
-                queryParams.push(`${param}=${encodeURIComponent(params.get(param))}`);
-            }
-        });
-        
-        if (queryParams.length > 0) {
-            redirectUrl += '?' + queryParams.join('&');
-        }
+        const redirectUrl = buildFilterAlreadyRedirectUrl();
         
         // Show loading state
         const button = event.target.closest('button');
@@ -4402,24 +4032,7 @@ function removeSchedule(id) {
 // Register ulang function
 function registerUlang(id) {
     if (confirm('Apakah Anda yakin ingin menandai data ini sebagai Register Ulang?')) {
-        // Get current filters from URL
-        const currentUrl = new URL(window.location.href);
-        const params = new URLSearchParams(currentUrl.search);
-        
-        // Build redirect URL with current filters
-        let redirectUrl = '<?= base_url('database/filter_already') ?>';
-        const queryParams = [];
-        
-        // Add all current filters
-        ['nama', 'nomor_paspor', 'no_visa', 'flag_doc', 'tanggaljam', 'status', 'gender', 'page', 'status_jadwal', 'tanggal_pengerjaan', 'history_done', 'nama_travel', 'sortir_waktu_start', 'sortir_waktu_end', 'startDate', 'endDate', 'has_barcode'].forEach(param => {
-            if (params.has(param) && params.get(param)) {
-                queryParams.push(`${param}=${encodeURIComponent(params.get(param))}`);
-            }
-        });
-        
-        if (queryParams.length > 0) {
-            redirectUrl += '?' + queryParams.join('&');
-        }
+        const redirectUrl = buildFilterAlreadyRedirectUrl();
         
         // Show loading state
         const button = event.target.closest('button');
@@ -5150,22 +4763,7 @@ function handleRedirectAfterUpdate(result) {
     } else {
         console.log('Using fallback redirect URL');
         // Fallback: build redirect URL manually
-        const currentUrl = new URL(window.location.href);
-        const params = new URLSearchParams(currentUrl.search);
-        
-        let redirectUrl = '<?= base_url('database/filter_already') ?>';
-        const queryParams = [];
-        
-        ['nama', 'nomor_paspor', 'no_visa', 'flag_doc', 'tanggaljam', 'status', 'gender', 'page', 'status_jadwal', 'tanggal_pengerjaan', 'history_done', 'nama_travel', 'sortir_waktu_start', 'sortir_waktu_end', 'startDate', 'endDate', 'has_barcode'].forEach(param => {
-            if (params.has(param) && params.get(param)) {
-                queryParams.push(`${param}=${encodeURIComponent(params.get(param))}`);
-            }
-        });
-        
-        if (queryParams.length > 0) {
-            redirectUrl += '?' + queryParams.join('&');
-        }
-        
+        const redirectUrl = buildFilterAlreadyRedirectUrl();
         console.log('Fallback redirect URL:', redirectUrl);
         window.location.href = redirectUrl;
     }

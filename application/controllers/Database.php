@@ -236,31 +236,17 @@ class Database extends CI_Controller
     {
         $this->load->model('transaksi_model');
         $data['title'] = 'Filter Already';
-        $filters = [
-            'nama' => trim($this->input->get('nama')),
-            'nomor_paspor' => trim($this->input->get('nomor_paspor')),
-            'no_visa' => trim($this->input->get('no_visa')),
-            'flag_doc' => trim($this->input->get('flag_doc')),
-            'tanggaljam' => trim($this->input->get('tanggaljam')),
-            'tanggal_pengerjaan' => trim($this->input->get('tanggal_pengerjaan')),
-            'tanggal_update_terakhir' => trim($this->input->get('tanggal_update_terakhir')),
-            'status' => 1,
-            'gender' => trim($this->input->get('gender')),
-            'status_register_kembali' => trim($this->input->get('status_register_kembali')),
-            'status_jadwal' => trim($this->input->get('status_jadwal')),
-            'history_done' => trim($this->input->get('history_done')),
-            'nama_travel' => trim($this->input->get('nama_travel')),
-            'sortir_waktu_start' => trim($this->input->get('sortir_waktu_start')),
-            'sortir_waktu_end' => trim($this->input->get('sortir_waktu_end')),
-            'startDate' => trim($this->input->get('startDate')),
-            'endDate' => trim($this->input->get('endDate')),
-            'has_barcode' => trim($this->input->get('has_barcode')),
-        ];
 
-        $filters = array_filter($filters, function ($value) {
-            return $value !== '' && $value !== null;
-        });
-        $filters['status'] = 1;
+        $data['email_domain_list'] = $this->transaksi_model->get_unique_email_domains_already();
+        $allowed_domains = array_map(function ($row) {
+            return $row->email_domain;
+        }, $data['email_domain_list']);
+
+        $email_domain = trim($this->input->get('email_domain'));
+        $filters = ['status' => 1];
+        if ($email_domain !== '' && in_array($email_domain, $allowed_domains, true)) {
+            $filters['email_domain'] = $email_domain;
+        }
 
         $per_page = 25;
         $page = $this->input->get('page') ? $this->input->get('page') : 1;
@@ -268,16 +254,6 @@ class Database extends CI_Controller
 
         $data['peserta'] = $this->transaksi_model->get_paginated_filtered_already($per_page, $offset, $filters);
         $data['flag_doc_list'] = $this->transaksi_model->get_unique_flag_doc_already();
-        $data['flag_doc_list_export'] = $this->transaksi_model->get_unique_flag_doc_Export();
-        $data['tanggaljam_list'] = $this->transaksi_model->get_unique_tanggaljam_already();
-        $data['tanggal_pengerjaan_list'] = $this->transaksi_model->get_unique_tanggal_pengerjaan_already();
-        $data['user_operators'] = $this->user_model->get_all_users_for_filter();
-        $data['travel_list'] = $this->transaksi_model->get_unique_nama_travel();
-
-        if (!empty($filters['tanggal_pengerjaan'])) {
-            $data['update_stats'] = $this->transaksi_model->get_update_stats_by_date_already($filters['tanggal_pengerjaan']);
-            $data['update_stats_detail'] = $this->transaksi_model->get_update_stats_detail_by_date_already($filters['tanggal_pengerjaan']);
-        }
 
         $total_rows = $this->transaksi_model->count_filtered_already($filters);
 
@@ -286,50 +262,8 @@ class Database extends CI_Controller
         $base_url = base_url('database/filter_already');
         $query_params = [];
 
-        if (!empty($filters['nama'])) {
-            $query_params['nama'] = $filters['nama'];
-        }
-        if (!empty($filters['nomor_paspor'])) {
-            $query_params['nomor_paspor'] = $filters['nomor_paspor'];
-        }
-        if (!empty($filters['no_visa'])) {
-            $query_params['no_visa'] = $filters['no_visa'];
-        }
-        if (!empty($filters['flag_doc'])) {
-            $query_params['flag_doc'] = $filters['flag_doc'];
-        }
-        if (!empty($filters['tanggaljam'])) {
-            $query_params['tanggaljam'] = $filters['tanggaljam'];
-        }
-        if (!empty($filters['gender'])) {
-            $query_params['gender'] = $filters['gender'];
-        }
-        if (!empty($filters['status_register_kembali'])) {
-            $query_params['status_register_kembali'] = $filters['status_register_kembali'];
-        }
-        if (!empty($filters['tanggal_pengerjaan'])) {
-            $query_params['tanggal_pengerjaan'] = $filters['tanggal_pengerjaan'];
-        }
-        if (!empty($filters['tanggal_update_terakhir'])) {
-            $query_params['tanggal_update_terakhir'] = $filters['tanggal_update_terakhir'];
-        }
-        if (!empty($filters['status_jadwal'])) {
-            $query_params['status_jadwal'] = $filters['status_jadwal'];
-        }
-        if (!empty($filters['history_done'])) {
-            $query_params['history_done'] = $filters['history_done'];
-        }
-        if (!empty($filters['startDate'])) {
-            $query_params['startDate'] = $filters['startDate'];
-        }
-        if (!empty($filters['endDate'])) {
-            $query_params['endDate'] = $filters['endDate'];
-        }
-        if (!empty($filters['has_barcode'])) {
-            $query_params['has_barcode'] = $filters['has_barcode'];
-        }
-        if (!empty($filters['nama_travel'])) {
-            $query_params['nama_travel'] = $filters['nama_travel'];
+        if (!empty($filters['email_domain'])) {
+            $query_params['email_domain'] = $filters['email_domain'];
         }
 
         if (!empty($query_params)) {
@@ -4158,29 +4092,14 @@ class Database extends CI_Controller
         $base_url = base_url('database/filter_already');
         $query_params = [];
 
-        $filters = [
-            'nama' => $this->input->get('nama'),
-            'nomor_paspor' => $this->input->get('nomor_paspor'),
-            'no_visa' => $this->input->get('no_visa'),
-            'flag_doc' => $this->input->get('flag_doc'),
-            'tanggaljam' => $this->input->get('tanggaljam'),
-            'gender' => $this->input->get('gender'),
-            'page' => $this->input->get('page'),
-            'status_jadwal' => $this->input->get('status_jadwal'),
-            'tanggal_pengerjaan' => $this->input->get('tanggal_pengerjaan'),
-            'tanggal_update_terakhir' => $this->input->get('tanggal_update_terakhir'),
-            'status_register_kembali' => $this->input->get('status_register_kembali'),
-            'history_done' => $this->input->get('history_done'),
-            'startDate' => $this->input->get('startDate'),
-            'endDate' => $this->input->get('endDate'),
-            'has_barcode' => $this->input->get('has_barcode'),
-            'nama_travel' => $this->input->get('nama_travel'),
-        ];
+        $email_domain = trim($this->input->get('email_domain'));
+        $page = $this->input->get('page');
 
-        foreach ($filters as $key => $value) {
-            if ($value !== '' && $value !== null) {
-                $query_params[$key] = $value;
-            }
+        if ($email_domain !== '') {
+            $query_params['email_domain'] = $email_domain;
+        }
+        if ($page !== '' && $page !== null) {
+            $query_params['page'] = $page;
         }
 
         if (!empty($query_params)) {

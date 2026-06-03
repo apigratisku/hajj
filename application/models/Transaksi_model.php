@@ -1001,112 +1001,29 @@ class Transaksi_model extends CI_Model {
 
     // ==================== FILTER ALREADY METHODS ====================
 
+    public function get_unique_email_domains_already() {
+        $this->db->select("SUBSTRING_INDEX(email, '@', -1) AS email_domain", false);
+        $this->db->from($this->table);
+        $this->db->where('status', 1);
+        $this->db->where('email IS NOT NULL');
+        $this->db->where('email !=', '');
+        $this->db->like('email', '@');
+        $this->db->group_by('email_domain');
+        $this->db->order_by('email_domain', 'ASC');
+        return $this->db->get()->result();
+    }
+
+    private function apply_email_domain_filter_already($filters) {
+        if (!empty($filters['email_domain'])) {
+            $this->db->like('peserta.email', '@' . $filters['email_domain'], 'before');
+        }
+    }
+
     public function get_paginated_filtered_already($limit, $offset, $filters = []) {
         $this->db->select('peserta.*');
         $this->db->from($this->table);
         $this->db->where('peserta.status', 1);
-
-        if (!empty($filters['nama'])) {
-            $this->db->like('peserta.nama', $filters['nama']);
-        }
-        if (!empty($filters['nomor_paspor'])) {
-            $this->db->like('peserta.nomor_paspor', $filters['nomor_paspor']);
-        }
-        if (!empty($filters['no_visa'])) {
-            $this->db->like('peserta.no_visa', $filters['no_visa']);
-        }
-        if (!empty($filters['gender'])) {
-            $this->db->where('peserta.gender', $filters['gender']);
-        }
-        if (isset($filters['status_register_kembali']) && $filters['status_register_kembali'] !== '') {
-            if ($filters['status_register_kembali'] === 'sudah') {
-                $this->db->where('peserta.status_register_kembali', 'sudah');
-            } elseif ($filters['status_register_kembali'] === 'belum') {
-                $this->db->where('peserta.status_register_kembali IS NULL', null, false);
-            } else {
-                $this->db->where('peserta.status_register_kembali', $filters['status_register_kembali']);
-            }
-        }
-        if (!empty($filters['history_done'])) {
-            $this->db->where('peserta.history_done', $filters['history_done']);
-        }
-        if (!empty($filters['nama_travel'])) {
-            $this->db->where('peserta.nama_travel', $filters['nama_travel']);
-        }
-        if (isset($filters['flag_doc'])) {
-            if (is_array($filters['flag_doc'])) {
-                $flag_docs = [];
-                $has_null = false;
-                foreach ($filters['flag_doc'] as $flag_doc) {
-                    if ($flag_doc === null || $flag_doc === 'null' || $flag_doc === 'NULL' || $flag_doc === '') {
-                        $has_null = true;
-                    } else {
-                        $flag_docs[] = $flag_doc;
-                    }
-                }
-                if (!empty($flag_docs) && $has_null) {
-                    $this->db->group_start();
-                    $this->db->where_in('peserta.flag_doc', $flag_docs);
-                    $this->db->or_where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
-                    $this->db->group_end();
-                } elseif (!empty($flag_docs)) {
-                    $this->db->where_in('peserta.flag_doc', $flag_docs);
-                } elseif ($has_null) {
-                    $this->db->where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
-                }
-            } else {
-                if ($filters['flag_doc'] === null || $filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
-                    $this->db->where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
-                } else {
-                    $this->db->where('peserta.flag_doc', $filters['flag_doc']);
-                }
-            }
-        }
-        if (!empty($filters['tanggaljam'])) {
-            $this->db->like("CONCAT(tanggal, ' ', jam)", $filters['tanggaljam']);
-        }
-        if (!empty($filters['tanggal_pengerjaan'])) {
-            $tanggal_pengerjaan = $filters['tanggal_pengerjaan'];
-            if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $tanggal_pengerjaan)) {
-                $date_parts = explode('-', $tanggal_pengerjaan);
-                $tanggal_pengerjaan = $date_parts[2] . '-' . $date_parts[1] . '-' . $date_parts[0];
-            }
-            $this->db->where('DATE(updated_at)', $tanggal_pengerjaan);
-        }
-        if (!empty($filters['tanggal_update_terakhir'])) {
-            $tanggal_update_terakhir = $filters['tanggal_update_terakhir'];
-            if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $tanggal_update_terakhir)) {
-                $date_parts = explode('-', $tanggal_update_terakhir);
-                $tanggal_update_terakhir = $date_parts[2] . '-' . $date_parts[1] . '-' . $date_parts[0];
-            }
-            $this->db->where('DATE(updated_at)', $tanggal_update_terakhir);
-        }
-        if (!empty($filters['startDate'])) {
-            $this->db->where('DATE(updated_at) >=', $filters['startDate']);
-        }
-        if (!empty($filters['endDate'])) {
-            $this->db->where('DATE(updated_at) <=', $filters['endDate']);
-        }
-        if (!empty($filters['status_jadwal'])) {
-            if ($filters['status_jadwal'] === '2') {
-                $this->db->where('peserta.tanggal IS NOT NULL');
-                $this->db->where('peserta.jam IS NOT NULL');
-            } else {
-                $this->db->where('peserta.tanggal IS NULL');
-                $this->db->where('peserta.jam IS NULL');
-            }
-        }
-        if (isset($filters['has_barcode'])) {
-            if ($filters['has_barcode'] === '1') {
-                $this->db->where('peserta.barcode IS NOT NULL');
-                $this->db->where('peserta.barcode !=', '');
-            } elseif ($filters['has_barcode'] === '0') {
-                $this->db->group_start();
-                $this->db->where('peserta.barcode IS NULL');
-                $this->db->or_where('peserta.barcode =', '');
-                $this->db->group_end();
-            }
-        }
+        $this->apply_email_domain_filter_already($filters);
 
         $this->db->order_by('peserta.created_at', 'ASC');
         $this->db->order_by('peserta.id', 'ASC');
@@ -1121,108 +1038,7 @@ class Transaksi_model extends CI_Model {
     public function count_filtered_already($filters = []) {
         $this->db->from($this->table);
         $this->db->where('peserta.status', 1);
-
-        if (!empty($filters['nama'])) {
-            $this->db->like('peserta.nama', $filters['nama']);
-        }
-        if (!empty($filters['nomor_paspor'])) {
-            $this->db->like('peserta.nomor_paspor', $filters['nomor_paspor']);
-        }
-        if (!empty($filters['no_visa'])) {
-            $this->db->like('peserta.no_visa', $filters['no_visa']);
-        }
-        if (!empty($filters['gender'])) {
-            $this->db->where('peserta.gender', $filters['gender']);
-        }
-        if (isset($filters['status_register_kembali']) && $filters['status_register_kembali'] !== '') {
-            if ($filters['status_register_kembali'] === 'sudah') {
-                $this->db->where('peserta.status_register_kembali', 'sudah');
-            } elseif ($filters['status_register_kembali'] === 'belum') {
-                $this->db->where('peserta.status_register_kembali IS NULL', null, false);
-            } else {
-                $this->db->where('peserta.status_register_kembali', $filters['status_register_kembali']);
-            }
-        }
-        if (!empty($filters['history_done'])) {
-            $this->db->where('peserta.history_done', $filters['history_done']);
-        }
-        if (!empty($filters['nama_travel'])) {
-            $this->db->where('peserta.nama_travel', $filters['nama_travel']);
-        }
-        if (isset($filters['flag_doc'])) {
-            if (is_array($filters['flag_doc'])) {
-                $flag_docs = [];
-                $has_null = false;
-                foreach ($filters['flag_doc'] as $flag_doc) {
-                    if ($flag_doc === null || $flag_doc === 'null' || $flag_doc === 'NULL' || $flag_doc === '') {
-                        $has_null = true;
-                    } else {
-                        $flag_docs[] = $flag_doc;
-                    }
-                }
-                if (!empty($flag_docs) && $has_null) {
-                    $this->db->group_start();
-                    $this->db->where_in('peserta.flag_doc', $flag_docs);
-                    $this->db->or_where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
-                    $this->db->group_end();
-                } elseif (!empty($flag_docs)) {
-                    $this->db->where_in('peserta.flag_doc', $flag_docs);
-                } elseif ($has_null) {
-                    $this->db->where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
-                }
-            } else {
-                if ($filters['flag_doc'] === null || $filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
-                    $this->db->where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
-                } else {
-                    $this->db->where('peserta.flag_doc', $filters['flag_doc']);
-                }
-            }
-        }
-        if (!empty($filters['tanggaljam'])) {
-            $this->db->like("CONCAT(tanggal, ' ', jam)", $filters['tanggaljam']);
-        }
-        if (!empty($filters['tanggal_pengerjaan'])) {
-            $tanggal_pengerjaan = $filters['tanggal_pengerjaan'];
-            if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $tanggal_pengerjaan)) {
-                $date_parts = explode('-', $tanggal_pengerjaan);
-                $tanggal_pengerjaan = $date_parts[2] . '-' . $date_parts[1] . '-' . $date_parts[0];
-            }
-            $this->db->where('DATE(updated_at)', $tanggal_pengerjaan);
-        }
-        if (!empty($filters['tanggal_update_terakhir'])) {
-            $tanggal_update_terakhir = $filters['tanggal_update_terakhir'];
-            if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $tanggal_update_terakhir)) {
-                $date_parts = explode('-', $tanggal_update_terakhir);
-                $tanggal_update_terakhir = $date_parts[2] . '-' . $date_parts[1] . '-' . $date_parts[0];
-            }
-            $this->db->where('DATE(updated_at)', $tanggal_update_terakhir);
-        }
-        if (!empty($filters['startDate'])) {
-            $this->db->where('DATE(updated_at) >=', $filters['startDate']);
-        }
-        if (!empty($filters['endDate'])) {
-            $this->db->where('DATE(updated_at) <=', $filters['endDate']);
-        }
-        if (!empty($filters['status_jadwal'])) {
-            if ($filters['status_jadwal'] === '2') {
-                $this->db->where('peserta.tanggal IS NOT NULL');
-                $this->db->where('peserta.jam IS NOT NULL');
-            } else {
-                $this->db->where('peserta.tanggal IS NULL');
-                $this->db->where('peserta.jam IS NULL');
-            }
-        }
-        if (isset($filters['has_barcode'])) {
-            if ($filters['has_barcode'] === '1') {
-                $this->db->where('peserta.barcode IS NOT NULL');
-                $this->db->where('peserta.barcode !=', '');
-            } elseif ($filters['has_barcode'] === '0') {
-                $this->db->group_start();
-                $this->db->where('peserta.barcode IS NULL');
-                $this->db->or_where('peserta.barcode =', '');
-                $this->db->group_end();
-            }
-        }
+        $this->apply_email_domain_filter_already($filters);
 
         return $this->db->count_all_results();
     }
