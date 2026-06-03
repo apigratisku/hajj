@@ -231,6 +231,153 @@ class Database extends CI_Controller
         $this->load->view('database/index', $data);
         $this->load->view('templates/footer');
     }
+
+    public function filter_already()
+    {
+        $this->load->model('transaksi_model');
+        $data['title'] = 'Filter Already';
+        $filters = [
+            'nama' => trim($this->input->get('nama')),
+            'nomor_paspor' => trim($this->input->get('nomor_paspor')),
+            'no_visa' => trim($this->input->get('no_visa')),
+            'flag_doc' => trim($this->input->get('flag_doc')),
+            'tanggaljam' => trim($this->input->get('tanggaljam')),
+            'tanggal_pengerjaan' => trim($this->input->get('tanggal_pengerjaan')),
+            'tanggal_update_terakhir' => trim($this->input->get('tanggal_update_terakhir')),
+            'status' => 1,
+            'gender' => trim($this->input->get('gender')),
+            'status_register_kembali' => trim($this->input->get('status_register_kembali')),
+            'status_jadwal' => trim($this->input->get('status_jadwal')),
+            'history_done' => trim($this->input->get('history_done')),
+            'nama_travel' => trim($this->input->get('nama_travel')),
+            'sortir_waktu_start' => trim($this->input->get('sortir_waktu_start')),
+            'sortir_waktu_end' => trim($this->input->get('sortir_waktu_end')),
+            'startDate' => trim($this->input->get('startDate')),
+            'endDate' => trim($this->input->get('endDate')),
+            'has_barcode' => trim($this->input->get('has_barcode')),
+        ];
+
+        $filters = array_filter($filters, function ($value) {
+            return $value !== '' && $value !== null;
+        });
+        $filters['status'] = 1;
+
+        $per_page = 25;
+        $page = $this->input->get('page') ? $this->input->get('page') : 1;
+        $offset = ($page - 1) * $per_page;
+
+        $data['peserta'] = $this->transaksi_model->get_paginated_filtered_already($per_page, $offset, $filters);
+        $data['flag_doc_list'] = $this->transaksi_model->get_unique_flag_doc_already();
+        $data['flag_doc_list_export'] = $this->transaksi_model->get_unique_flag_doc_Export();
+        $data['tanggaljam_list'] = $this->transaksi_model->get_unique_tanggaljam_already();
+        $data['tanggal_pengerjaan_list'] = $this->transaksi_model->get_unique_tanggal_pengerjaan_already();
+        $data['user_operators'] = $this->user_model->get_all_users_for_filter();
+        $data['travel_list'] = $this->transaksi_model->get_unique_nama_travel();
+
+        if (!empty($filters['tanggal_pengerjaan'])) {
+            $data['update_stats'] = $this->transaksi_model->get_update_stats_by_date_already($filters['tanggal_pengerjaan']);
+            $data['update_stats_detail'] = $this->transaksi_model->get_update_stats_detail_by_date_already($filters['tanggal_pengerjaan']);
+        }
+
+        $total_rows = $this->transaksi_model->count_filtered_already($filters);
+
+        $this->load->library('pagination');
+
+        $base_url = base_url('database/filter_already');
+        $query_params = [];
+
+        if (!empty($filters['nama'])) {
+            $query_params['nama'] = $filters['nama'];
+        }
+        if (!empty($filters['nomor_paspor'])) {
+            $query_params['nomor_paspor'] = $filters['nomor_paspor'];
+        }
+        if (!empty($filters['no_visa'])) {
+            $query_params['no_visa'] = $filters['no_visa'];
+        }
+        if (!empty($filters['flag_doc'])) {
+            $query_params['flag_doc'] = $filters['flag_doc'];
+        }
+        if (!empty($filters['tanggaljam'])) {
+            $query_params['tanggaljam'] = $filters['tanggaljam'];
+        }
+        if (!empty($filters['gender'])) {
+            $query_params['gender'] = $filters['gender'];
+        }
+        if (!empty($filters['status_register_kembali'])) {
+            $query_params['status_register_kembali'] = $filters['status_register_kembali'];
+        }
+        if (!empty($filters['tanggal_pengerjaan'])) {
+            $query_params['tanggal_pengerjaan'] = $filters['tanggal_pengerjaan'];
+        }
+        if (!empty($filters['tanggal_update_terakhir'])) {
+            $query_params['tanggal_update_terakhir'] = $filters['tanggal_update_terakhir'];
+        }
+        if (!empty($filters['status_jadwal'])) {
+            $query_params['status_jadwal'] = $filters['status_jadwal'];
+        }
+        if (!empty($filters['history_done'])) {
+            $query_params['history_done'] = $filters['history_done'];
+        }
+        if (!empty($filters['startDate'])) {
+            $query_params['startDate'] = $filters['startDate'];
+        }
+        if (!empty($filters['endDate'])) {
+            $query_params['endDate'] = $filters['endDate'];
+        }
+        if (!empty($filters['has_barcode'])) {
+            $query_params['has_barcode'] = $filters['has_barcode'];
+        }
+        if (!empty($filters['nama_travel'])) {
+            $query_params['nama_travel'] = $filters['nama_travel'];
+        }
+
+        if (!empty($query_params)) {
+            $base_url .= '?' . http_build_query($query_params);
+        }
+
+        $config['base_url'] = $base_url;
+        $config['total_rows'] = $total_rows;
+        $config['per_page'] = $per_page;
+        $config['page_query_string'] = TRUE;
+        $config['query_string_segment'] = 'page';
+        $config['use_page_numbers'] = TRUE;
+        $config['num_links'] = 5;
+
+        $config['full_tag_open'] = '<nav aria-label="Data navigation"><ul class="pagination pagination-custom justify-content-center">';
+        $config['full_tag_close'] = '</ul></nav>';
+        $config['num_tag_open'] = '<li class="page-item">';
+        $config['num_tag_close'] = '</li>';
+        $config['cur_tag_open'] = '<li class="page-item active"><a class="page-link" href="#">';
+        $config['cur_tag_close'] = '</a></li>';
+        $config['next_tag_open'] = '<li class="page-item">';
+        $config['next_tag_close'] = '</li>';
+        $config['prev_tag_open'] = '<li class="page-item">';
+        $config['prev_tag_close'] = '</li>';
+        $config['first_tag_open'] = '<li class="page-item">';
+        $config['first_tag_close'] = '</li>';
+        $config['last_tag_open'] = '<li class="page-item">';
+        $config['last_tag_close'] = '</li>';
+        $config['anchor_class'] = 'page-link';
+        $config['next_link'] = '<i class="fas fa-chevron-right"></i>';
+        $config['prev_link'] = '<i class="fas fa-chevron-left"></i>';
+        $config['first_link'] = '<i class="fas fa-angle-double-left"></i>';
+        $config['last_link'] = '<i class="fas fa-angle-double-right"></i>';
+
+        $this->pagination->initialize($config);
+        $data['pagination'] = $this->pagination->create_links();
+
+        $data['total_rows'] = $total_rows;
+        $data['per_page'] = $per_page;
+        $data['current_page'] = $page;
+        $data['offset'] = $offset;
+
+        $this->load->view('templates/sidebar');
+        $this->load->view('templates/header', $data);
+        $this->load->view('database/filter_already', $data);
+        $this->load->view('templates/footer');
+    }
+
     public function index2()
     {
         $data['title'] = 'Data Peserta';
@@ -3996,6 +4143,46 @@ class Database extends CI_Controller
         }
 
         // Build query string
+        if (!empty($query_params)) {
+            $base_url .= '?' . http_build_query($query_params);
+        }
+
+        return $base_url;
+    }
+
+    /**
+     * Get redirect URL with current filters and pagination for filter_already
+     */
+    private function get_redirect_url_with_filters_filter_already()
+    {
+        $base_url = base_url('database/filter_already');
+        $query_params = [];
+
+        $filters = [
+            'nama' => $this->input->get('nama'),
+            'nomor_paspor' => $this->input->get('nomor_paspor'),
+            'no_visa' => $this->input->get('no_visa'),
+            'flag_doc' => $this->input->get('flag_doc'),
+            'tanggaljam' => $this->input->get('tanggaljam'),
+            'gender' => $this->input->get('gender'),
+            'page' => $this->input->get('page'),
+            'status_jadwal' => $this->input->get('status_jadwal'),
+            'tanggal_pengerjaan' => $this->input->get('tanggal_pengerjaan'),
+            'tanggal_update_terakhir' => $this->input->get('tanggal_update_terakhir'),
+            'status_register_kembali' => $this->input->get('status_register_kembali'),
+            'history_done' => $this->input->get('history_done'),
+            'startDate' => $this->input->get('startDate'),
+            'endDate' => $this->input->get('endDate'),
+            'has_barcode' => $this->input->get('has_barcode'),
+            'nama_travel' => $this->input->get('nama_travel'),
+        ];
+
+        foreach ($filters as $key => $value) {
+            if ($value !== '' && $value !== null) {
+                $query_params[$key] = $value;
+            }
+        }
+
         if (!empty($query_params)) {
             $base_url .= '?' . http_build_query($query_params);
         }
