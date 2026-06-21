@@ -231,6 +231,104 @@
         </div>
     </div>
 
+    <!-- Statistics Cards Toggle Button - Already -> Done -->
+    <div class="row mb-1">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                
+                <div class="toggle-buttons">
+                    <!-- Desktop Toggle -->
+                    <button class="btn btn-outline-primary btn-sm d-none d-md-inline-block toggle-stats-btn" 
+                            data-target="desktop-stats-already-done" 
+                            data-action="toggle">
+                        <i class="fas fa-eye-slash"></i> 
+                        <span class="toggle-text">Tampilkan</span> Statistik Already -> Done
+                    </button>
+                    <!-- Mobile Toggle -->
+                    <button class="btn btn-outline-primary btn-sm d-md-none toggle-stats-btn" 
+                            data-target="mobile-stats-already-done" 
+                            data-action="toggle">
+                        <i class="fas fa-eye-slash"></i> 
+                        <span class="toggle-text">Tampilkan</span> Statistik Already -> Done
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Statistics Cards Already -> Done -->
+    <div class="row mb-1 stats-container" id="desktop-stats-already-done" style="display: none;">
+        <div class="col-12">
+            <div class="stats-horizontal-container">
+                <div class="stats-item">
+                    <div class="stats-icon">
+                        <i class="fas fa-user-friends"></i>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-count"><?= $stats_already ?></div>
+                        <div class="stats-title">Total Already <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
+                    </div>
+                </div>
+                
+                <div class="stats-item">
+                    <div class="stats-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-count"><?= $stats_already_to_done ?></div>
+                        <div class="stats-title">Done <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
+                    </div>
+                </div>
+                
+                <div class="stats-item">
+                    <div class="stats-icon">
+                        <i class="fas fa-percentage"></i>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-count"><?= $stats_register_ulang > 0 ? number_format(($stats_already_to_done / $stats_register_ulang) * 100, 1) : '0' ?>%</div>
+                        <div class="stats-title">Persentase Done</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Statistics Cards for Already -> Done -->
+    <div class="row mb-1 stats-container d-md-none" id="mobile-stats-already-done" style="display: none;">
+        <div class="col-12">
+            <div class="stats-horizontal-container mobile-stats-horizontal">
+                <div class="stats-item mobile-stats-item">
+                    <div class="stats-icon">
+                        <i class="fas fa-user-friends"></i>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-count"><?= $stats_already ?></div>
+                        <div class="stats-title">Total Already <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
+                    </div>
+                </div>
+                
+                <div class="stats-item mobile-stats-item">
+                    <div class="stats-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-count"><?= $stats_already_to_done ?></div>
+                        <div class="stats-title">Done <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
+                    </div>
+                </div>
+                
+                <div class="stats-item mobile-stats-item">
+                    <div class="stats-icon">
+                        <i class="fas fa-percentage"></i>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-count"><?= $stats_register_ulang > 0 ? number_format(($stats_already_to_done / $stats_register_ulang) * 100, 1) : '0' ?>%</div>
+                        <div class="stats-title">Persentase Done</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Mobile Statistics Cards -->
     <div class="row mb-1 stats-container d-md-none" id="mobile-stats" style="display: none;">
         <div class="col-12">
@@ -1849,6 +1947,36 @@ document.addEventListener('DOMContentLoaded', function() {
                 mobileBtnRegisterUlang.querySelector('i').className = 'fas fa-eye';
                 mobileBtnRegisterUlang.querySelector('.toggle-text').textContent = 'Sembunyikan';
                 mobileBtnRegisterUlang.setAttribute('data-action', 'hide');
+            }
+        }
+        
+        // Check Already -> Done desktop state
+        var desktopStatsAlreadyDone = document.getElementById('desktop-stats-already-done');
+        var desktopBtnAlreadyDone = document.querySelector('[data-target="desktop-stats-already-done"]');
+        if (desktopStatsAlreadyDone && desktopBtnAlreadyDone) {
+            var desktopAlreadyDoneVisible = localStorage.getItem('stats_desktop-stats-already-done_visible');
+            if (desktopAlreadyDoneVisible === 'true') {
+                desktopStatsAlreadyDone.style.display = 'block';
+                desktopStatsAlreadyDone.classList.add('show');
+                desktopBtnAlreadyDone.classList.add('active');
+                desktopBtnAlreadyDone.querySelector('i').className = 'fas fa-eye';
+                desktopBtnAlreadyDone.querySelector('.toggle-text').textContent = 'Sembunyikan';
+                desktopBtnAlreadyDone.setAttribute('data-action', 'hide');
+            }
+        }
+        
+        // Check Already -> Done mobile state
+        var mobileStatsAlreadyDone = document.getElementById('mobile-stats-already-done');
+        var mobileBtnAlreadyDone = document.querySelector('[data-target="mobile-stats-already-done"]');
+        if (mobileStatsAlreadyDone && mobileBtnAlreadyDone) {
+            var mobileAlreadyDoneVisible = localStorage.getItem('stats_mobile-stats-already-done_visible');
+            if (mobileAlreadyDoneVisible === 'true') {
+                mobileStatsAlreadyDone.style.display = 'block';
+                mobileStatsAlreadyDone.classList.add('show');
+                mobileBtnAlreadyDone.classList.add('active');
+                mobileBtnAlreadyDone.querySelector('i').className = 'fas fa-eye';
+                mobileBtnAlreadyDone.querySelector('.toggle-text').textContent = 'Sembunyikan';
+                mobileBtnAlreadyDone.setAttribute('data-action', 'hide');
             }
         }
     }

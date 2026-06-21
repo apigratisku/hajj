@@ -964,6 +964,20 @@ class Transaksi_model extends CI_Model {
         return $result ? $result->total_register_ulang : 0;
     }
     
+    public function get_dashboard_stats_already_to_done($flag_doc = null) {
+        $this->db->select('COUNT(*) as total_already_to_done');
+        $this->db->from($this->table);
+        $this->db->where('status', 2);
+        $this->db->where('status_register_kembali', 'sudah');
+        
+        if ($flag_doc) {
+            $this->db->where('flag_doc', $flag_doc);
+        }
+        
+        $result = $this->db->get()->row();
+        return $result ? $result->total_already_to_done : 0;
+    }
+    
     /**
      * Get statistics for data updated on specific date
      */
