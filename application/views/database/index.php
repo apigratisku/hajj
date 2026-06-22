@@ -2100,9 +2100,10 @@
                                 <tr>
                                     <th class="text-center" style="width: 5%;">No</th>
                                     <th style="width: 25%;">Nama Operator</th>
-                                    <th class="text-center" style="width: 15%;">Done</th>
-                                    <th class="text-center" style="width: 15%;">Already</th>
-                                    <th class="text-center" style="width: 15%;">Total</th>
+                                    <th class="text-center" style="width: 12%;">Done</th>
+                                    <th class="text-center" style="width: 12%;">Already</th>
+                                    <th class="text-center" style="width: 12%;">Already -> Done</th>
+                                    <th class="text-center" style="width: 12%;">Total</th>
                                 </tr>
                             </thead>
                             <tbody id="operatorStatsTableBody">
@@ -4122,7 +4123,7 @@ function displayOperatorStatistics(data, filters = {}) {
     summaryContainer.innerHTML = '';
     
     if (!data || data.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="5" class="text-center">Tidak ada data operator yang ditemukan</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="6" class="text-center">Tidak ada data operator yang ditemukan</td></tr>';
         return;
     }
     
@@ -4150,6 +4151,9 @@ function displayOperatorStatistics(data, filters = {}) {
             </td>
             <td class="text-center">
                 <span class="badge bg-warning text-dark">${parseInt(operator.already_count) || 0}</span>
+            </td>
+            <td class="text-center">
+                <span class="badge bg-info">${parseInt(operator.already_to_done_count) || 0}</span>
             </td>
             <td class="text-center">
                 <span class="badge bg-primary">${parseInt(operator.total_processed) || 0}</span>

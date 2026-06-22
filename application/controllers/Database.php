@@ -5316,11 +5316,12 @@ class Database extends CI_Controller
                 ->setCellValue('C1', 'Username')
                 ->setCellValue('D1', 'Total Done')
                 ->setCellValue('E1', 'Total Already')
-                ->setCellValue('F1', 'Total Diproses')
-                ->setCellValue('G1', 'Hari Ini')
-                ->setCellValue('H1', 'Minggu Ini')
-                ->setCellValue('I1', 'Bulan Ini')
-                ->setCellValue('J1', 'Aktivitas Terakhir');
+                ->setCellValue('F1', 'Already -> Done')
+                ->setCellValue('G1', 'Total Diproses')
+                ->setCellValue('H1', 'Hari Ini')
+                ->setCellValue('I1', 'Minggu Ini')
+                ->setCellValue('J1', 'Bulan Ini')
+                ->setCellValue('K1', 'Aktivitas Terakhir');
 
             // Set column widths
             $excel->getActiveSheet()->getColumnDimension('A')->setWidth(5);
@@ -5328,11 +5329,12 @@ class Database extends CI_Controller
             $excel->getActiveSheet()->getColumnDimension('C')->setWidth(15);
             $excel->getActiveSheet()->getColumnDimension('D')->setWidth(12);
             $excel->getActiveSheet()->getColumnDimension('E')->setWidth(12);
-            $excel->getActiveSheet()->getColumnDimension('F')->setWidth(12);
+            $excel->getActiveSheet()->getColumnDimension('F')->setWidth(15);
             $excel->getActiveSheet()->getColumnDimension('G')->setWidth(12);
             $excel->getActiveSheet()->getColumnDimension('H')->setWidth(12);
             $excel->getActiveSheet()->getColumnDimension('I')->setWidth(12);
-            $excel->getActiveSheet()->getColumnDimension('J')->setWidth(20);
+            $excel->getActiveSheet()->getColumnDimension('J')->setWidth(12);
+            $excel->getActiveSheet()->getColumnDimension('K')->setWidth(20);
 
             // Style header row
             $headerStyle = [
@@ -5350,12 +5352,13 @@ class Database extends CI_Controller
                 ],
             ];
 
-            $excel->getActiveSheet()->getStyle('A1:J1')->applyFromArray($headerStyle);
+            $excel->getActiveSheet()->getStyle('A1:K1')->applyFromArray($headerStyle);
 
             // Populate data
             $row = 2;
             $totalDone = 0;
             $totalAlready = 0;
+            $totalAlreadyToDone = 0;
             $totalProcessed = 0;
 
             foreach ($operator_stats as $index => $operator) {
@@ -5365,14 +5368,16 @@ class Database extends CI_Controller
                     ->setCellValue('C' . $row, $operator->username)
                     ->setCellValue('D' . $row, $operator->done_count)
                     ->setCellValue('E' . $row, $operator->already_count)
-                    ->setCellValue('F' . $row, $operator->total_processed)
-                    ->setCellValue('G' . $row, $operator->today_total)
-                    ->setCellValue('H' . $row, $operator->week_total)
-                    ->setCellValue('I' . $row, $operator->month_total)
-                    ->setCellValue('J' . $row, $operator->last_activity ? date('d/m/Y h:i A', strtotime($operator->last_activity)) : '-');
+                    ->setCellValue('F' . $row, $operator->already_to_done_count)
+                    ->setCellValue('G' . $row, $operator->total_processed)
+                    ->setCellValue('H' . $row, $operator->today_total)
+                    ->setCellValue('I' . $row, $operator->week_total)
+                    ->setCellValue('J' . $row, $operator->month_total)
+                    ->setCellValue('K' . $row, $operator->last_activity ? date('d/m/Y h:i A', strtotime($operator->last_activity)) : '-');
 
                 $totalDone += $operator->done_count;
                 $totalAlready += $operator->already_count;
+                $totalAlreadyToDone += $operator->already_to_done_count;
                 $totalProcessed += $operator->total_processed;
                 $row++;
             }
@@ -5383,7 +5388,8 @@ class Database extends CI_Controller
                 ->setCellValue('A' . $summaryRow, 'TOTAL')
                 ->setCellValue('D' . $summaryRow, $totalDone)
                 ->setCellValue('E' . $summaryRow, $totalAlready)
-                ->setCellValue('F' . $summaryRow, $totalProcessed);
+                ->setCellValue('F' . $summaryRow, $totalAlreadyToDone)
+                ->setCellValue('G' . $summaryRow, $totalProcessed);
 
             // Style summary row
             $summaryStyle = [
@@ -5401,7 +5407,7 @@ class Database extends CI_Controller
                 ],
             ];
 
-            $excel->getActiveSheet()->getStyle('A' . $summaryRow . ':F' . $summaryRow)->applyFromArray($summaryStyle);
+            $excel->getActiveSheet()->getStyle('A' . $summaryRow . ':G' . $summaryRow)->applyFromArray($summaryStyle);
 
             // Add filter information
             if (!empty($filters)) {
@@ -5433,7 +5439,7 @@ class Database extends CI_Controller
             ];
 
             if ($row > 2) {
-                $excel->getActiveSheet()->getStyle('A2:J' . ($row - 1))->applyFromArray($dataStyle);
+                $excel->getActiveSheet()->getStyle('A2:K' . ($row - 1))->applyFromArray($dataStyle);
             }
 
             // Set filename
