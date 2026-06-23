@@ -1899,13 +1899,19 @@
 }
 
 /* Operator Statistics Modal Styles */
-#operatorStatisticsModal .modal-lg {
-    max-width: 800px;
+#operatorStatisticsModal .modal-dialog {
+    max-width: min(1140px, calc(100vw - 2rem));
+    margin: 0;
+}
+
+#operatorStatisticsModal .modal-content {
+    min-height: 200px;
 }
 
 #operatorStatisticsModal .modal-body {
-    max-height: 60vh;
+    max-height: 75vh;
     overflow-y: auto;
+    padding: 1.25rem;
 }
 
 #operatorStatisticsModal .table th {
@@ -1913,6 +1919,9 @@
     top: 0;
     background: #343a40;
     z-index: 10;
+    padding: 0.65rem 0.5rem;
+    font-size: 0.9375rem;
+    white-space: nowrap;
 }
 
 #operatorStatisticsModal .card {
@@ -1927,19 +1936,15 @@
 }
 
 #operatorStatisticsModal .badge {
-    font-size: 0.875rem;
-    padding: 0.5rem 0.75rem;
+    font-size: 0.9375rem;
+    padding: 0.45rem 0.65rem;
+    min-width: 2.5rem;
 }
 
 #operatorStatisticsModal .table td {
     vertical-align: middle;
-    padding: 0.5rem 0.25rem;
-    font-size: 0.875rem;
-}
-
-#operatorStatisticsModal .table th {
-    padding: 0.5rem 0.25rem;
-    font-size: 0.875rem;
+    padding: 0.65rem 0.5rem;
+    font-size: 0.9375rem;
 }
 
 #operatorStatisticsModal .table small {
@@ -2044,7 +2049,7 @@
 
 <!-- Operator Statistics Modal -->
 <div class="modal fade" id="operatorStatisticsModal" tabindex="-1" aria-labelledby="operatorStatisticsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header bg-brown text-white">
                 <h5 class="modal-title" id="operatorStatisticsModalLabel">
@@ -2095,15 +2100,15 @@
                 <!-- Statistics Content -->
                 <div id="operatorStatsContent" style="display: none;">
                     <div class="table-responsive">
-                        <table class="table table-bordered table-striped table-hover table-sm">
+                        <table class="table table-bordered table-striped table-hover mb-0">
                             <thead class="table-dark">
                                 <tr>
                                     <th class="text-center" style="width: 5%;">No</th>
-                                    <th style="width: 25%;">Nama Operator</th>
-                                    <th class="text-center" style="width: 12%;">Done</th>
-                                    <th class="text-center" style="width: 12%;">Already</th>
-                                    <th class="text-center" style="width: 12%;">Already -> Done</th>
-                                    <th class="text-center" style="width: 12%;">Total</th>
+                                    <th style="min-width: 180px;">Nama Operator</th>
+                                    <th class="text-center text-nowrap" style="width: 10%;">Done</th>
+                                    <th class="text-center text-nowrap" style="width: 10%;">Already</th>
+                                    <th class="text-center text-nowrap" style="width: 14%;">Already -> Done</th>
+                                    <th class="text-center text-nowrap" style="width: 10%;">Total</th>
                                 </tr>
                             </thead>
                             <tbody id="operatorStatsTableBody">

@@ -48,6 +48,69 @@
                 zoom: 0.65;
             }
         }
+
+        /* Cegah layout menyusut saat modal Bootstrap terbuka (zoom + scrollbar padding) */
+        body.modal-open {
+            padding-right: 0 !important;
+            overflow: hidden !important;
+        }
+
+        @media (min-width: 769px) {
+            body.modal-open .content {
+                width: calc(100% - 280px) !important;
+                max-width: calc(100% - 280px) !important;
+                margin-left: 280px !important;
+                flex-shrink: 0;
+            }
+        }
+
+        body.modal-open .sidebar {
+            padding-right: 0 !important;
+        }
+
+        .modal-backdrop {
+            position: fixed !important;
+            inset: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        /* Pusatkan modal presisi di tengah layar (fix html zoom) */
+        @media (min-width: 769px) {
+            body > .modal.show {
+                display: block !important;
+                position: fixed !important;
+                inset: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
+                overflow-x: hidden;
+                overflow-y: auto;
+                padding: 0 !important;
+            }
+
+            body > .modal.show .modal-dialog {
+                position: fixed !important;
+                top: 50% !important;
+                left: 50% !important;
+                transform: translate(-50%, -50%) !important;
+                margin: 0 !important;
+                width: auto;
+                max-width: min(1140px, calc(100vw - 2rem));
+                max-height: calc(100vh - 2rem);
+            }
+
+            body > .modal.fade .modal-dialog {
+                transform: translate(-50%, -50%) !important;
+            }
+
+            body > .modal.show .modal-dialog.modal-dialog-scrollable {
+                max-height: calc(100vh - 2rem);
+            }
+
+            body > .modal.show .modal-dialog.modal-dialog-scrollable .modal-content {
+                max-height: calc(100vh - 2rem);
+            }
+        }
         
         /* Sidebar styles - Ultra Compact */
         .sidebar {
@@ -203,6 +266,9 @@
             margin-left: 280px;
             padding: 15px; /* Reduced from 20px */
             transition: all 0.3s;
+            flex: 1 1 auto;
+            min-width: 0;
+            box-sizing: border-box;
         }
         
         .content-header {

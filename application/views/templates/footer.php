@@ -115,8 +115,27 @@
             const sidebarToggle = document.getElementById('sidebarToggle');
             const sidebar = document.querySelector('.sidebar');
             const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+            // Pindahkan modal ke body agar posisi tengah presisi di layar penuh
+            function moveModalsToBody() {
+                document.querySelectorAll('.modal').forEach(function(modalEl) {
+                    if (modalEl.parentElement !== document.body) {
+                        document.body.appendChild(modalEl);
+                    }
+                });
+            }
+
+            moveModalsToBody();
+
+            document.addEventListener('show.bs.modal', function(e) {
+                if (e.target && e.target.classList.contains('modal') && e.target.parentElement !== document.body) {
+                    document.body.appendChild(e.target);
+                }
+                document.body.style.setProperty('padding-right', '0', 'important');
+            });
             
             function toggleSidebar() {
+                if (!sidebarToggle || !sidebar || !sidebarOverlay) return;
                 sidebar.classList.toggle('show');
                 sidebarOverlay.classList.toggle('show');
                 
@@ -130,6 +149,7 @@
             }
             
             function closeSidebar() {
+                if (!sidebarToggle || !sidebar || !sidebarOverlay) return;
                 sidebar.classList.remove('show');
                 sidebarOverlay.classList.remove('show');
                 const icon = sidebarToggle.querySelector('i');
@@ -137,8 +157,12 @@
             }
             
             // Event listeners
-            sidebarToggle.addEventListener('click', toggleSidebar);
-            sidebarOverlay.addEventListener('click', closeSidebar);
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', toggleSidebar);
+            }
+            if (sidebarOverlay) {
+                sidebarOverlay.addEventListener('click', closeSidebar);
+            }
             
             // Close sidebar when clicking on a menu item (mobile)
             document.querySelectorAll('.sidebar a').forEach(link => {
@@ -153,6 +177,30 @@
             window.addEventListener('resize', function() {
                 if (window.innerWidth > 768) {
                     closeSidebar();
+                }
+            });
+
+            // Nonaktifkan kompensasi scrollbar Bootstrap yang merusak layout (html zoom)
+            if (typeof bootstrap !== 'undefined' && bootstrap.Modal && bootstrap.Modal.prototype) {
+                bootstrap.Modal.prototype._setScrollbar = function() {
+                    document.body.classList.add('modal-open');
+                    document.body.style.overflow = 'hidden';
+                    document.body.style.paddingRight = '0px';
+                    document.body.removeAttribute('data-bs-padding-right');
+                };
+
+                bootstrap.Modal.prototype._resetScrollbar = function() {
+                    document.body.classList.remove('modal-open');
+                    document.body.style.overflow = '';
+                    document.body.style.paddingRight = '';
+                    document.body.removeAttribute('data-bs-padding-right');
+                };
+            }
+
+            document.addEventListener('hidden.bs.modal', function() {
+                if (!document.querySelector('.modal.show')) {
+                    document.body.style.removeProperty('padding-right');
+                    document.body.style.overflow = '';
                 }
             });
         });
