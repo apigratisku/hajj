@@ -1737,7 +1737,7 @@
                     <div class="col-12">
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle"></i>
-                            <strong>Informasi:</strong> Data yang ditampilkan adalah performa operator berdasarkan data status Done dan Already yang telah diproses dalam rentang tanggal yang dipilih.
+                            <strong>Informasi:</strong> Statistik per operator berdasarkan field <strong>History Done</strong>, difilter rentang tanggal <strong>update terakhir</strong> (<code>updated_at</code>). Kolom <strong>Already -&gt; Done</strong> hanya menghitung peserta dengan status Done yang sudah Register Ulang.
                         </div>
                     </div>
                 </div>

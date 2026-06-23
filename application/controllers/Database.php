@@ -726,18 +726,14 @@ class Database extends CI_Controller
             // sehingga nilai di database tidak berubah.
 
             // Logic for history_done field
-            // 1. Jika user melakukan perubahan status menjadi done/already/fasttrack (status=1/2/3), set history_done
-            // 2. Jika history_done sudah ada value di database dan data sudah done/already/fasttrack, jangan update history_done
-            if (in_array((string) $status_raw, ['1', '2', '3'], true)) {
-                // Check if current data is already done and has history_done
-                if (!empty($current_peserta->history_done) && in_array((string) $current_peserta->status, ['1', '2', '3'], true)) {
-                    // Data sudah done dan history_done sudah ada, jangan update history_done
-                    log_message('debug', 'Update - Data already done with history_done, skipping history_done update');
-                } else {
-                    // Set history_done for new done status
-                    $data['history_done'] = $this->session->userdata('user_id') ?: null;
-                    log_message('debug', 'Update - Setting history_done for new done status: ' . $data['history_done']);
-                }
+            // Done (2): selalu atribusikan ke operator yang menandai Done
+            // Already (1) / Fasttrack (3): set history_done hanya jika belum ada
+            if ((string) $status_raw === '2') {
+                $data['history_done'] = $this->session->userdata('user_id') ?: null;
+                log_message('debug', 'Update - Setting history_done for Done status: ' . $data['history_done']);
+            } elseif (in_array((string) $status_raw, ['1', '3'], true) && empty($current_peserta->history_done)) {
+                $data['history_done'] = $this->session->userdata('user_id') ?: null;
+                log_message('debug', 'Update - Setting history_done for Already/Fasttrack status: ' . $data['history_done']);
             }
 
             // Debug: Log the data being updated
@@ -838,19 +834,14 @@ class Database extends CI_Controller
         $data['history_update'] = $this->session->userdata('user_id') ?: null;
 
         // Logic for history_done field
-        // Logic for history_done field
-        // 1. Jika user melakukan perubahan status menjadi already/done/fasttrack (status=1/2/3), set history_done
-        // 2. Jika history_done sudah ada value di database dan data sudah already/done/fasttrack, jangan update history_done
-        if (isset($data['status']) && in_array((string) $data['status'], ['1', '2', '3'], true)) {
-            // Check if current data is already done and has history_done
-            if (!empty($current_peserta->history_done) && in_array((string) $current_peserta->status, ['1', '2', '3'], true)) {
-                // Data sudah done dan history_done sudah ada, jangan update history_done
-                log_message('debug', 'Database update_ajax - Data already done with history_done, skipping history_done update');
-            } else {
-                // Set history_done for new done status
-                $data['history_done'] = $this->session->userdata('user_id') ?: null;
-                log_message('debug', 'Database update_ajax - Setting history_done for new done status: ' . $data['history_done']);
-            }
+        // Done (2): selalu atribusikan ke operator yang menandai Done
+        // Already (1) / Fasttrack (3): set history_done hanya jika belum ada
+        if (isset($data['status']) && (string) $data['status'] === '2') {
+            $data['history_done'] = $this->session->userdata('user_id') ?: null;
+            log_message('debug', 'Database update_ajax - Setting history_done for Done status: ' . $data['history_done']);
+        } elseif (isset($data['status']) && in_array((string) $data['status'], ['1', '3'], true) && empty($current_peserta->history_done)) {
+            $data['history_done'] = $this->session->userdata('user_id') ?: null;
+            log_message('debug', 'Database update_ajax - Setting history_done for Already/Fasttrack status: ' . $data['history_done']);
         }
 
         // Debug: Log the data being updated
