@@ -1809,7 +1809,7 @@ class Transaksi_model extends CI_Model {
     /**
      * Get operator statistics for performance report
      * Shows Done and Already status data for each operator
-     * Filters by updated_at (last update) and attributes via history_done
+     * Uses same logic as get_flagdoc_summary: filters by created_at and uses SUM for counting
      */
     public function get_operator_statistics($filters = []) {
         $start_date = isset($filters['start_date']) && !empty($filters['start_date'])
@@ -1828,7 +1828,7 @@ class Transaksi_model extends CI_Model {
             SUM(CASE WHEN p.status = 3 THEN 1 ELSE 0 END) as fasttrack_count,
             SUM(CASE WHEN p.status IN (1, 2, 3) THEN 1 ELSE 0 END) as total_processed,
             SUM(CASE WHEN p.status IN (1, 2, 3) AND p.status_register_kembali = \'sudah\' THEN 1 ELSE 0 END) as register_ulang_count,
-            SUM(CASE WHEN p.status = 2 AND p.status_register_kembali = \'sudah\' AND p.history_done IS NOT NULL THEN 1 ELSE 0 END) as already_to_done_count
+            SUM(CASE WHEN p.status = 2 AND p.status_register_kembali = \'sudah\' THEN 1 ELSE 0 END) as already_to_done_count
         ');
         $this->db->from('users u');
         $this->db->join('peserta p', 'u.id_user = p.history_done', 'left');
@@ -1837,15 +1837,12 @@ class Transaksi_model extends CI_Model {
         $this->db->where('u.username !=', 'mimin');
         $this->db->where('u.status', 1); // Active users only
         
-        // Apply date range filters by last update (updated_at)
-        if ($start_date || $end_date) {
-            $this->db->where('p.updated_at IS NOT NULL', null, false);
-        }
+        // Apply date range filters if provided (using created_at like get_flagdoc_summary)
         if ($start_date) {
-            $this->db->where('DATE(p.updated_at) >=', $start_date);
+            $this->db->where('DATE(p.created_at) >=', $start_date);
         }
         if ($end_date) {
-            $this->db->where('DATE(p.updated_at) <=', $end_date);
+            $this->db->where('DATE(p.created_at) <=', $end_date);
         }
         
         $this->db->group_by('u.id_user, u.nama_lengkap, u.username');
