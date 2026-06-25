@@ -1118,6 +1118,142 @@ class Transaksi_model extends CI_Model {
         return $this->db->get()->result();
     }
 
+    // ==================== FILTER DONE METHODS ====================
+
+    private function apply_base_filter_done() {
+        $this->db->where('peserta.status', 2);
+        $this->db->where('peserta.tanggal IS NULL');
+        $this->db->where('peserta.jam IS NULL');
+    }
+
+    private function apply_email_domain_filter_done($filters) {
+        if (!empty($filters['email_domain'])) {
+            $this->db->like('peserta.email', '@' . $filters['email_domain'], 'before');
+        }
+    }
+
+    private function apply_gender_filter_done($filters) {
+        if (!empty($filters['gender']) && in_array($filters['gender'], ['L', 'P'], true)) {
+            $this->db->where('peserta.gender', $filters['gender']);
+        }
+    }
+
+    public function get_unique_email_domains_done() {
+        $this->db->select("SUBSTRING_INDEX(email, '@', -1) AS email_domain", false);
+        $this->db->from($this->table);
+        $this->apply_base_filter_done();
+        $this->db->where('email IS NOT NULL');
+        $this->db->where('email !=', '');
+        $this->db->like('email', '@');
+        $this->db->group_by('email_domain');
+        $this->db->order_by('email_domain', 'ASC');
+        return $this->db->get()->result();
+    }
+
+    public function get_paginated_filtered_done($limit, $offset, $filters = []) {
+        $this->db->select('peserta.*');
+        $this->db->from($this->table);
+        $this->apply_base_filter_done();
+        $this->apply_email_domain_filter_done($filters);
+        $this->apply_gender_filter_done($filters);
+
+        $this->db->order_by('peserta.created_at', 'ASC');
+        $this->db->order_by('peserta.id', 'ASC');
+
+        if ($limit !== null) {
+            $this->db->limit($limit, isset($offset) ? $offset : 0);
+        }
+
+        return $this->db->get()->result();
+    }
+
+    public function count_filtered_done($filters = []) {
+        $this->db->from($this->table);
+        $this->apply_base_filter_done();
+        $this->apply_email_domain_filter_done($filters);
+        $this->apply_gender_filter_done($filters);
+
+        return $this->db->count_all_results();
+    }
+
+    public function get_unique_flag_doc_done() {
+        $this->db->select('flag_doc, MAX(created_at) as created_at');
+        $this->db->from($this->table);
+        $this->apply_base_filter_done();
+        $this->db->where('flag_doc IS NOT NULL');
+        $this->db->where('flag_doc !=', '');
+        $this->db->group_by('flag_doc');
+        $this->db->order_by('created_at', 'ASC');
+        return $this->db->get()->result();
+    }
+
+    // ==================== FILTER DONE > 1 TAHUN (ARSIP) METHODS ====================
+
+    private function apply_base_filter_done_1tahun() {
+        $one_year_ago = date('Y-m-d H:i:s', strtotime('-1 year'));
+
+        $this->db->where('peserta.selesai', 2);
+        $this->db->where('peserta.status', 2);
+        $this->db->where('peserta.tanggal IS NOT NULL');
+        $this->db->where('peserta.jam IS NOT NULL');
+        $this->db->where("peserta.tanggal != ''");
+        $this->db->where("peserta.jam != ''");
+        $this->db->where('CONCAT(peserta.tanggal, " ", peserta.jam) <', $one_year_ago);
+    }
+
+    private function apply_email_domain_filter_done_1tahun($filters) {
+        if (!empty($filters['email_domain'])) {
+            $this->db->like('peserta.email', '@' . $filters['email_domain'], 'before');
+        }
+    }
+
+    public function get_unique_email_domains_done_1tahun() {
+        $this->db->select("SUBSTRING_INDEX(email, '@', -1) AS email_domain", false);
+        $this->db->from($this->table);
+        $this->apply_base_filter_done_1tahun();
+        $this->db->where('email IS NOT NULL');
+        $this->db->where('email !=', '');
+        $this->db->like('email', '@');
+        $this->db->group_by('email_domain');
+        $this->db->order_by('email_domain', 'ASC');
+        return $this->db->get()->result();
+    }
+
+    public function get_paginated_filtered_done_1tahun($limit, $offset, $filters = []) {
+        $this->db->select('peserta.*');
+        $this->db->from($this->table);
+        $this->apply_base_filter_done_1tahun();
+        $this->apply_email_domain_filter_done_1tahun($filters);
+
+        $this->db->order_by('peserta.created_at', 'ASC');
+        $this->db->order_by('peserta.id', 'ASC');
+
+        if ($limit !== null) {
+            $this->db->limit($limit, isset($offset) ? $offset : 0);
+        }
+
+        return $this->db->get()->result();
+    }
+
+    public function count_filtered_done_1tahun($filters = []) {
+        $this->db->from($this->table);
+        $this->apply_base_filter_done_1tahun();
+        $this->apply_email_domain_filter_done_1tahun($filters);
+
+        return $this->db->count_all_results();
+    }
+
+    public function get_unique_flag_doc_done_1tahun() {
+        $this->db->select('flag_doc, MAX(created_at) as created_at');
+        $this->db->from($this->table);
+        $this->apply_base_filter_done_1tahun();
+        $this->db->where('flag_doc IS NOT NULL');
+        $this->db->where('flag_doc !=', '');
+        $this->db->group_by('flag_doc');
+        $this->db->order_by('created_at', 'ASC');
+        return $this->db->get()->result();
+    }
+
     // ==================== ARSIP METHODS ====================
     
     /**

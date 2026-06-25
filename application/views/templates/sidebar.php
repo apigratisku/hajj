@@ -41,13 +41,23 @@
        
         
         <li class="nav-item">
-            <a href="<?= base_url('database') ?>" <?= $this->uri->segment(1) == 'database' && $this->uri->segment(2) != 'rejected_data' && $this->uri->segment(2) != 'arsip' && $this->uri->segment(2) != 'filter_already' ? 'class="active"' : '' ?>>
+            <a href="<?= base_url('database') ?>" <?= $this->uri->segment(1) == 'database' && $this->uri->segment(2) != 'rejected_data' && $this->uri->segment(2) != 'arsip' && $this->uri->segment(2) != 'filter_already' && $this->uri->segment(2) != 'filter_done' && $this->uri->segment(2) != 'filter_done_1_tahun' ? 'class="active"' : '' ?>>
                 <i class="fas fa-user-friends"></i> <span>Data Peserta</span>
             </a>
         </li>
         <li class="nav-item">
             <a href="<?= base_url('database/filter_already') ?>" <?= $this->uri->segment(1) == 'database' && $this->uri->segment(2) == 'filter_already' ? 'class="active"' : '' ?>>
                 <i class="fas fa-filter"></i> <span>Filter Already</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="<?= base_url('database/filter_done') ?>" <?= $this->uri->segment(1) == 'database' && $this->uri->segment(2) == 'filter_done' ? 'class="active"' : '' ?>>
+                <i class="fas fa-filter"></i> <span>Filter Done</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="<?= base_url('database/filter_done_1_tahun') ?>" <?= $this->uri->segment(1) == 'database' && $this->uri->segment(2) == 'filter_done_1_tahun' ? 'class="active"' : '' ?>>
+                <i class="fas fa-filter"></i> <span>Filter Data > 1 Tahun</span>
             </a>
         </li>
         
