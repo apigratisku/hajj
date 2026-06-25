@@ -374,7 +374,7 @@ class Todo extends CI_Controller {
             $result = $this->transaksi_model->update($id, $data);
             
             if ($result) {
-                // Log activity
+                log_pekerjaan_field_changes((array) $current_peserta, $data, 'todo', (int) $id);
                 log_peserta_activity($id, 'update', 'Mengupdate data peserta dari Todo List: ' . $data['nama'], (array)$current_peserta, $data);
                 
                 // Kirim notifikasi Telegram untuk update data peserta dari Todo
@@ -451,39 +451,6 @@ class Todo extends CI_Controller {
         // If barcode is being cleared and there was a previous file, delete it
         if (empty($new_barcode) && !empty($old_barcode)) {
             $this->delete_barcode_file($old_barcode);
-            // Log barcode deletion
-            log_peserta_activity($id, 'upload_barcode', 'Menghapus barcode peserta: ' . $old_barcode);
-        }
-        
-        // Log barcode upload if new barcode is provided
-        if (!empty($new_barcode) && $new_barcode !== $old_barcode) {
-            log_peserta_activity($id, 'upload_barcode', 'Upload barcode peserta: ' . $new_barcode);
-        }
-        
-        // Log schedule changes (tanggal and jam)
-        if (array_key_exists('tanggal', $input) || array_key_exists('jam', $input)) {
-            $old_schedule = $current_peserta->tanggal . ' ' . $current_peserta->jam;
-            $new_tanggal = array_key_exists('tanggal', $input) ? $input['tanggal'] : $current_peserta->tanggal;
-            $new_jam = array_key_exists('jam', $input) ? $input['jam'] : $current_peserta->jam;
-            $new_schedule = $new_tanggal . ' ' . $new_jam;
-            
-            if ($old_schedule !== $new_schedule) {
-                log_peserta_activity($id, 'update_schedule', 'Mengubah jadwal peserta dari: ' . $old_schedule . ' ke: ' . $new_schedule);
-            }
-        }
-        
-        // Log status changes
-        if (array_key_exists('status', $input)) {
-            $old_status = $current_peserta->status;
-            $new_status = $input['status'];
-            
-            if ($old_status !== $new_status) {
-                $status_text = ['0' => 'Pending', '1' => 'Done', '2' => 'Already'];
-                $old_status_text = isset($status_text[$old_status]) ? $status_text[$old_status] : $old_status;
-                $new_status_text = isset($status_text[$new_status]) ? $status_text[$new_status] : $new_status;
-                
-                log_peserta_activity($id, 'update_status', 'Mengubah status peserta dari: ' . $old_status_text . ' ke: ' . $new_status_text);
-            }
         }
         
         // Prepare data for update only for fields provided
@@ -545,9 +512,9 @@ class Todo extends CI_Controller {
             $result = $this->transaksi_model->update($id, $data);
             
             if ($result) {
-            // Log activity
             $nama_peserta = isset($data['nama']) ? $data['nama'] : $current_peserta->nama;
             try {
+                log_pekerjaan_field_changes((array) $current_peserta, $data, 'todo', (int) $id);
                 log_peserta_activity($id, 'update', 'Mengupdate data peserta dari Todo List (AJAX): ' . $nama_peserta, (array)$current_peserta, $data);
             } catch (Exception $e) {
                 // Log error but don't fail the update

@@ -2432,6 +2432,10 @@ function uploadBarcodeFile(file, flagDoc, barcodeInput, row) {
     const formData = new FormData();
     formData.append('barcode_image', file);
     formData.append('flag_doc', flagDoc);
+    const pesertaId = row.getAttribute('data-id') || '';
+    if (pesertaId) {
+        formData.append('peserta_id', pesertaId);
+    }
     
     // Get existing barcode filename for replacement
     const existingBarcode = barcodeInput.value;

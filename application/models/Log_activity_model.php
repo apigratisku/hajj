@@ -4,6 +4,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 class Log_activity_model extends CI_Model
 {
     protected $table = 'log_aktivitas_user';
+    protected $table_pekerjaan = 'log_statistik_pekerjaan';
 
     public function __construct()
     {
@@ -261,6 +262,85 @@ class Log_activity_model extends CI_Model
         }
         
         return $this->db->count_all_results();
+    }
+
+    /**
+     * Insert log statistik pekerjaan
+     */
+    public function insert_pekerjaan_log($data)
+    {
+        if (!$this->db->table_exists($this->table_pekerjaan)) {
+            log_message('error', 'Log_activity_model: table log_statistik_pekerjaan does not exist');
+            return false;
+        }
+
+        $required = ['user_operator', 'sumber', 'jenis_perubahan'];
+        foreach ($required as $field) {
+            if (!isset($data[$field]) || $data[$field] === '') {
+                log_message('error', "Log_activity_model: Missing pekerjaan field: $field");
+                return false;
+            }
+        }
+
+        if (!isset($data['id_peserta'])) {
+            $data['id_peserta'] = 0;
+        }
+
+        $result = $this->db->insert($this->table_pekerjaan, $data);
+
+        if ($result) {
+            return $this->db->insert_id();
+        }
+
+        log_message('error', 'Log_activity_model: Failed to insert pekerjaan log - ' . json_encode($this->db->error()));
+        return false;
+    }
+
+    /**
+     * Get statistik pekerjaan per operator (per jenis perubahan)
+     */
+    public function get_pekerjaan_statistics($filters = [])
+    {
+        if (!$this->db->table_exists($this->table_pekerjaan)) {
+            return [];
+        }
+
+        $start_date = isset($filters['start_date']) && !empty($filters['start_date'])
+            ? date('Y-m-d', strtotime($filters['start_date']))
+            : null;
+        $end_date = isset($filters['end_date']) && !empty($filters['end_date'])
+            ? date('Y-m-d', strtotime($filters['end_date']))
+            : null;
+
+        $this->db->select("
+            l.user_operator,
+            u.nama_lengkap,
+            u.username,
+            SUM(CASE WHEN l.jenis_perubahan = 'gender' THEN 1 ELSE 0 END) AS gender_count,
+            SUM(CASE WHEN l.jenis_perubahan = 'tanggal' THEN 1 ELSE 0 END) AS tanggal_count,
+            SUM(CASE WHEN l.jenis_perubahan = 'jam' THEN 1 ELSE 0 END) AS jam_count,
+            SUM(CASE WHEN l.jenis_perubahan = 'status' THEN 1 ELSE 0 END) AS status_count,
+            SUM(CASE WHEN l.jenis_perubahan = 'barcode' THEN 1 ELSE 0 END) AS barcode_count,
+            SUM(CASE WHEN l.jenis_perubahan = 'register_ulang' THEN 1 ELSE 0 END) AS register_ulang_count,
+            COUNT(*) AS total_aktivitas,
+            MAX(l.created_at) AS last_activity
+        ", false);
+        $this->db->from($this->table_pekerjaan . ' l');
+        $this->db->join('users u', 'u.username = l.user_operator', 'left');
+        $this->db->where_not_in('l.user_operator', ['adhit', 'mimin']);
+
+        if ($start_date) {
+            $this->db->where('DATE(l.created_at) >=', $start_date);
+        }
+        if ($end_date) {
+            $this->db->where('DATE(l.created_at) <=', $end_date);
+        }
+
+        $this->db->group_by('l.user_operator, u.nama_lengkap, u.username');
+        $this->db->order_by('total_aktivitas', 'DESC');
+        $this->db->order_by('u.nama_lengkap', 'ASC');
+
+        return $this->db->get()->result();
     }
 
     /**

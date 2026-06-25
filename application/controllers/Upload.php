@@ -118,6 +118,11 @@ class Upload extends CI_Controller {
                 'barcode_value' => $new_filename // Nama file untuk disimpan ke database
             ];
 
+            $peserta_id = (int) $this->input->post('peserta_id');
+            if ($peserta_id < 1) {
+                log_pekerjaan_single('upload_barcode', 'barcode', 0);
+            }
+
         } catch (Exception $e) {
             log_message('error', 'Upload barcode error: ' . $e->getMessage());
             $response = [

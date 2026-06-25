@@ -140,6 +140,10 @@ class Qr_data extends CI_Controller {
             return;
         }
 
+        if (!empty($insert['id'])) {
+            log_pekerjaan_qr_data_insert($row, (int) $insert['id']);
+        }
+
         $this->output->set_output(json_encode(array(
             'success' => true,
             'message' => 'Data QR berhasil disimpan.',

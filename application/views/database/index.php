@@ -36,6 +36,9 @@
                         <button type="button" class="btn btn-sm btn-statistics" onclick="showOperatorStatistics()">
                             <i class="fas fa-chart-bar"></i> <span class="d-none d-sm-inline">Statistik Operator</span>
                         </button>
+                        <button type="button" class="btn btn-sm btn-statistics" onclick="showPekerjaanStatistics()">
+                            <i class="fas fa-tasks"></i> <span class="d-none d-sm-inline">Statistik Pekerjaan</span>
+                        </button>
                         <button type="button" class="btn btn-sm btn-statistics" onclick="showRegisterUlangStatistics()">
                             <i class="fas fa-file-excel"></i> <span class="d-none d-sm-inline">Statistik Register Ulang</span>
                         </button>
@@ -2043,6 +2046,79 @@
 #operatorStatisticsModal .card-text {
     font-size: 0.875rem;
 }
+
+/* Pekerjaan Statistics Modal Styles */
+#pekerjaanStatisticsModal .modal-dialog {
+    max-width: min(1140px, calc(100vw - 2rem));
+    margin: 0;
+}
+
+#pekerjaanStatisticsModal .modal-content {
+    min-height: 200px;
+}
+
+#pekerjaanStatisticsModal .modal-body {
+    max-height: 75vh;
+    overflow-y: auto;
+    padding: 1.25rem;
+}
+
+#pekerjaanStatisticsModal .table th {
+    position: sticky;
+    top: 0;
+    background: #343a40;
+    z-index: 10;
+    padding: 0.65rem 0.5rem;
+    font-size: 0.875rem;
+    white-space: nowrap;
+}
+
+#pekerjaanStatisticsModal .card {
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+}
+
+#pekerjaanStatisticsModal .card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+
+#pekerjaanStatisticsModal .badge {
+    font-size: 0.875rem;
+    padding: 0.4rem 0.55rem;
+    min-width: 2rem;
+}
+
+#pekerjaanStatisticsModal .table td {
+    vertical-align: middle;
+    padding: 0.65rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+#pekerjaanStatisticsModal .form-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.25rem;
+}
+
+#pekerjaanStatisticsModal .form-control:focus {
+    border-color: #8B4513;
+    box-shadow: 0 0 0 0.2rem rgba(139, 69, 19, 0.25);
+}
+
+#pekerjaanStatisticsModal .card-body {
+    padding: 0.75rem;
+}
+
+#pekerjaanStatisticsModal .card-title {
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+#pekerjaanStatisticsModal .card-text {
+    font-size: 0.8rem;
+}
 </style>
 
 <?php $this->load->view('database/export_modal'); ?>
@@ -2230,6 +2306,97 @@
                 </button>
                 <button type="button" class="btn btn-primary btn-sm" onclick="refreshRegisterUlangStatistics()">
                     <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pekerjaan Statistics Modal -->
+<div class="modal fade" id="pekerjaanStatisticsModal" tabindex="-1" aria-labelledby="pekerjaanStatisticsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-brown text-white">
+                <h5 class="modal-title" id="pekerjaanStatisticsModalLabel">
+                    <i class="fas fa-tasks"></i> Statistik Pekerjaan
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-5">
+                        <label for="pekerjaanStartDate" class="form-label"><i class="fas fa-calendar"></i> Tanggal Mulai</label>
+                        <input type="date" class="form-control" id="pekerjaanStartDate" name="startDate">
+                    </div>
+                    <div class="col-md-5">
+                        <label for="pekerjaanEndDate" class="form-label"><i class="fas fa-calendar"></i> Tanggal Akhir</label>
+                        <input type="date" class="form-control" id="pekerjaanEndDate" name="endDate">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <div class="d-flex gap-1 w-100">
+                            <button type="button" class="btn btn-primary btn-sm" onclick="filterPekerjaanStatistics()">
+                                <i class="fas fa-filter"></i>
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="resetPekerjaanDateFilter()">
+                                <i class="fas fa-undo"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Informasi:</strong> Menghitung jumlah perubahan per operator dari Todo List, Data Peserta, QR Data, dan upload barcode untuk field Gender, Tanggal, Jam, Status, Barcode, dan Register Ulang. Setiap perubahan field = +1 aktivitas.
+                        </div>
+                    </div>
+                </div>
+
+                <div id="pekerjaanStatsLoading" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Memuat data statistik pekerjaan...</p>
+                </div>
+
+                <div id="pekerjaanStatsContent" style="display: none;">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped table-hover mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th class="text-center" style="width: 4%;">No</th>
+                                    <th style="min-width: 160px;">Nama Operator</th>
+                                    <th class="text-center text-nowrap">Gender</th>
+                                    <th class="text-center text-nowrap">Tanggal</th>
+                                    <th class="text-center text-nowrap">Jam</th>
+                                    <th class="text-center text-nowrap">Status</th>
+                                    <th class="text-center text-nowrap">Barcode</th>
+                                    <th class="text-center text-nowrap">Reg. Ulang</th>
+                                    <th class="text-center text-nowrap">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pekerjaanStatsTableBody"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="row mt-4" id="pekerjaanStatsSummary"></div>
+                </div>
+
+                <div id="pekerjaanStatsError" class="alert alert-danger" style="display: none;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span id="pekerjaanStatsErrorMessage">Terjadi kesalahan saat memuat data.</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Tutup
+                </button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="refreshPekerjaanStatistics()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+                <button type="button" class="btn btn-success btn-sm" onclick="exportPekerjaanStatistics()">
+                    <i class="fas fa-download"></i> Export
                 </button>
             </div>
         </div>
@@ -3210,6 +3377,7 @@ function uploadBarcodeImage(fileInput) {
     const row = fileInput.closest('tr');
     const flagDocField = row.querySelector('[data-field="flag_doc"]');
     const flagDoc = flagDocField ? flagDocField.getAttribute('data-value') : '';
+    const pesertaId = row.getAttribute('data-id') || '';
     
     if (!flagDoc || flagDoc === '-' || flagDoc === '') {
         showAlert('Flag dokumen harus diisi terlebih dahulu sebelum upload barcode', 'warning');
@@ -3219,6 +3387,9 @@ function uploadBarcodeImage(fileInput) {
     const formData = new FormData();
     formData.append('barcode_image', file);
     formData.append('flag_doc', flagDoc);
+    if (pesertaId) {
+        formData.append('peserta_id', pesertaId);
+    }
     
     // Show loading state
     const uploadBtn = fileInput.previousElementSibling.querySelector('.barcode-upload-btn');
@@ -4222,6 +4393,211 @@ function showOperatorStatisticsError(message) {
     document.getElementById('operatorStatsErrorMessage').textContent = message;
 }
 
+// Pekerjaan Statistics Functions
+function showPekerjaanStatistics() {
+    const modal = new bootstrap.Modal(document.getElementById('pekerjaanStatisticsModal'));
+    modal.show();
+    loadPekerjaanStatistics();
+}
+
+function loadPekerjaanStatistics(filters = {}) {
+    document.getElementById('pekerjaanStatsLoading').style.display = 'block';
+    document.getElementById('pekerjaanStatsContent').style.display = 'none';
+    document.getElementById('pekerjaanStatsError').style.display = 'none';
+
+    const requestData = new FormData();
+    if (filters.start_date) requestData.append('start_date', filters.start_date);
+    if (filters.end_date) requestData.append('end_date', filters.end_date);
+
+    fetch('<?= base_url('database/get_pekerjaan_statistics') ?>', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: requestData
+    })
+    .then(response => {
+        if (response.status === 401) {
+            showAlert('Session expired. Silakan login ulang.', 'error');
+            setTimeout(() => { window.location.href = '<?= base_url('auth') ?>'; }, 2000);
+            return;
+        }
+        return response.json();
+    })
+    .then(result => {
+        if (!result) return;
+        if (result.success) {
+            displayPekerjaanStatistics(result.data, result.filters);
+        } else {
+            showPekerjaanStatisticsError(result.message || 'Gagal memuat data statistik pekerjaan');
+        }
+    })
+    .catch(error => {
+        console.error('Error loading pekerjaan statistics:', error);
+        showPekerjaanStatisticsError('Terjadi kesalahan saat memuat data statistik pekerjaan');
+    });
+}
+
+function filterPekerjaanStatistics() {
+    const startDate = document.getElementById('pekerjaanStartDate').value;
+    const endDate = document.getElementById('pekerjaanEndDate').value;
+    if (startDate && endDate && startDate > endDate) {
+        showAlert('Tanggal mulai tidak boleh lebih besar dari tanggal akhir', 'error');
+        return;
+    }
+    const filters = {};
+    if (startDate) filters.start_date = startDate;
+    if (endDate) filters.end_date = endDate;
+    loadPekerjaanStatistics(filters);
+}
+
+function resetPekerjaanDateFilter() {
+    document.getElementById('pekerjaanStartDate').value = '';
+    document.getElementById('pekerjaanEndDate').value = '';
+    loadPekerjaanStatistics();
+}
+
+function refreshPekerjaanStatistics() {
+    const startDate = document.getElementById('pekerjaanStartDate').value;
+    const endDate = document.getElementById('pekerjaanEndDate').value;
+    const filters = {};
+    if (startDate) filters.start_date = startDate;
+    if (endDate) filters.end_date = endDate;
+    loadPekerjaanStatistics(filters);
+}
+
+function exportPekerjaanStatistics() {
+    const startDate = document.getElementById('pekerjaanStartDate').value;
+    const endDate = document.getElementById('pekerjaanEndDate').value;
+    let exportUrl = '<?= base_url('database/export_pekerjaan_statistics') ?>';
+    const params = [];
+    if (startDate) params.push(`start_date=${encodeURIComponent(startDate)}`);
+    if (endDate) params.push(`end_date=${encodeURIComponent(endDate)}`);
+    if (params.length > 0) exportUrl += '?' + params.join('&');
+    window.open(exportUrl, '_blank');
+}
+
+function displayPekerjaanStatistics(data, filters = {}) {
+    document.getElementById('pekerjaanStatsLoading').style.display = 'none';
+    document.getElementById('pekerjaanStatsContent').style.display = 'block';
+
+    const tableBody = document.getElementById('pekerjaanStatsTableBody');
+    const summaryContainer = document.getElementById('pekerjaanStatsSummary');
+    tableBody.innerHTML = '';
+    summaryContainer.innerHTML = '';
+
+    if (!data || data.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="9" class="text-center">Tidak ada data aktivitas pekerjaan</td></tr>';
+        return;
+    }
+
+    const totals = {
+        gender: 0, tanggal: 0, jam: 0, status: 0, barcode: 0, register_ulang: 0, total: 0
+    };
+
+    data.forEach((row, index) => {
+        const gender = parseInt(row.gender_count) || 0;
+        const tanggal = parseInt(row.tanggal_count) || 0;
+        const jam = parseInt(row.jam_count) || 0;
+        const status = parseInt(row.status_count) || 0;
+        const barcode = parseInt(row.barcode_count) || 0;
+        const registerUlang = parseInt(row.register_ulang_count) || 0;
+        const total = parseInt(row.total_aktivitas) || 0;
+
+        totals.gender += gender;
+        totals.tanggal += tanggal;
+        totals.jam += jam;
+        totals.status += status;
+        totals.barcode += barcode;
+        totals.register_ulang += registerUlang;
+        totals.total += total;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="text-center">${index + 1}</td>
+            <td>
+                <strong>${row.nama_lengkap || row.user_operator}</strong><br>
+                <small class="text-muted">@${row.username || row.user_operator}</small>
+            </td>
+            <td class="text-center"><span class="badge bg-secondary">${gender}</span></td>
+            <td class="text-center"><span class="badge bg-info">${tanggal}</span></td>
+            <td class="text-center"><span class="badge bg-primary">${jam}</span></td>
+            <td class="text-center"><span class="badge bg-warning text-dark">${status}</span></td>
+            <td class="text-center"><span class="badge bg-success">${barcode}</span></td>
+            <td class="text-center"><span class="badge bg-danger">${registerUlang}</span></td>
+            <td class="text-center"><span class="badge bg-dark">${total}</span></td>
+        `;
+        tableBody.appendChild(tr);
+    });
+
+    let filterInfoHtml = '';
+    if (filters.start_date || filters.end_date) {
+        filterInfoHtml = '<div class="alert alert-info mb-3"><i class="fas fa-filter"></i> <strong>Filter Aktif:</strong> ';
+        if (filters.start_date && filters.end_date) {
+            filterInfoHtml += `Rentang tanggal: ${formatDate(filters.start_date)} - ${formatDate(filters.end_date)}`;
+        } else if (filters.start_date) {
+            filterInfoHtml += `Dari tanggal: ${formatDate(filters.start_date)}`;
+        } else if (filters.end_date) {
+            filterInfoHtml += `Sampai tanggal: ${formatDate(filters.end_date)}`;
+        }
+        filterInfoHtml += '</div>';
+    } else {
+        filterInfoHtml = '<div class="alert alert-info mb-3"><i class="fas fa-info-circle"></i> <strong>Menampilkan semua data</strong> (tanpa filter tanggal)</div>';
+    }
+
+    summaryContainer.innerHTML = filterInfoHtml + `
+        <div class="row mt-3 g-2">
+            <div class="col-md-4 col-6">
+                <div class="card bg-secondary text-white"><div class="card-body text-center py-2">
+                    <h5 class="card-title mb-1">${totals.gender.toLocaleString('id-ID')}</h5>
+                    <p class="card-text mb-0 small">Gender</p>
+                </div></div>
+            </div>
+            <div class="col-md-4 col-6">
+                <div class="card bg-info text-white"><div class="card-body text-center py-2">
+                    <h5 class="card-title mb-1">${totals.tanggal.toLocaleString('id-ID')}</h5>
+                    <p class="card-text mb-0 small">Tanggal</p>
+                </div></div>
+            </div>
+            <div class="col-md-4 col-6">
+                <div class="card bg-primary text-white"><div class="card-body text-center py-2">
+                    <h5 class="card-title mb-1">${totals.jam.toLocaleString('id-ID')}</h5>
+                    <p class="card-text mb-0 small">Jam</p>
+                </div></div>
+            </div>
+            <div class="col-md-4 col-6">
+                <div class="card bg-warning text-dark"><div class="card-body text-center py-2">
+                    <h5 class="card-title mb-1">${totals.status.toLocaleString('id-ID')}</h5>
+                    <p class="card-text mb-0 small">Status</p>
+                </div></div>
+            </div>
+            <div class="col-md-4 col-6">
+                <div class="card bg-success text-white"><div class="card-body text-center py-2">
+                    <h5 class="card-title mb-1">${totals.barcode.toLocaleString('id-ID')}</h5>
+                    <p class="card-text mb-0 small">Barcode</p>
+                </div></div>
+            </div>
+            <div class="col-md-4 col-6">
+                <div class="card bg-danger text-white"><div class="card-body text-center py-2">
+                    <h5 class="card-title mb-1">${totals.register_ulang.toLocaleString('id-ID')}</h5>
+                    <p class="card-text mb-0 small">Register Ulang</p>
+                </div></div>
+            </div>
+            <div class="col-12">
+                <div class="card text-white" style="background:#6f42c1;"><div class="card-body text-center py-2">
+                    <h5 class="card-title mb-1">${totals.total.toLocaleString('id-ID')}</h5>
+                    <p class="card-text mb-0 small">Total Aktivitas</p>
+                </div></div>
+            </div>
+        </div>
+    `;
+}
+
+function showPekerjaanStatisticsError(message) {
+    document.getElementById('pekerjaanStatsLoading').style.display = 'none';
+    document.getElementById('pekerjaanStatsContent').style.display = 'none';
+    document.getElementById('pekerjaanStatsError').style.display = 'block';
+    document.getElementById('pekerjaanStatsErrorMessage').textContent = message;
+}
+
 // Register Ulang Statistics Functions
 function showRegisterUlangStatistics() {
     // Show modal
@@ -4641,6 +5017,10 @@ function uploadBarcodeFile(file, flagDoc, barcodeInput, row) {
     const formData = new FormData();
     formData.append('barcode_image', file);
     formData.append('flag_doc', flagDoc);
+    const pesertaId = row.getAttribute('data-id') || '';
+    if (pesertaId) {
+        formData.append('peserta_id', pesertaId);
+    }
     
     // Get existing barcode filename for replacement from database value
     const barcodeTd = row.querySelector('[data-field="barcode"]');

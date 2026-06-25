@@ -51,6 +51,7 @@ class Database extends CI_Controller
         $this->load->model('transaksi_model');
         $this->load->model('peserta_reject_model');
         $this->load->model('user_model');
+        $this->load->model('log_activity_model');
         $this->load->library('form_validation');
         $this->load->library('session');
         $this->load->library('telegram_notification');
@@ -723,6 +724,8 @@ class Database extends CI_Controller
             $result = $this->transaksi_model->update($id, $data);
 
             if ($result) {
+                log_pekerjaan_field_changes((array) $peserta, $data, 'database', (int) $id);
+
                 // Log activity
                 log_peserta_activity($id, 'update', 'Menghapus tanggal dan jam jadwal: ' . $peserta->nama, (array) $peserta, $data);
 
@@ -786,6 +789,8 @@ class Database extends CI_Controller
         $result = $this->transaksi_model->update($id, $data);
 
         if ($result) {
+            log_pekerjaan_field_changes((array) $peserta, $data, 'database', (int) $id);
+
             // Log activity
             if (function_exists('log_peserta_activity')) {
                 log_peserta_activity($id, 'update', 'Register ulang: ' . $peserta->nama, (array) $peserta, $data);
@@ -915,7 +920,9 @@ class Database extends CI_Controller
                 $result = $this->transaksi_model->update($id, $data);
 
                 if ($result) {
-                    // Kirim notifikasi Telegram untuk update data peserta
+                log_pekerjaan_field_changes((array) $current_peserta, $data, 'database', (int) $id);
+
+                // Kirim notifikasi Telegram untuk update data peserta
                     if ($this->session->userdata('username') != 'adhit'):
                         $this->telegram_notification->peserta_crud_notification('update', $data['nama'], 'ID: ' . $id);
                     endif;
@@ -1047,6 +1054,8 @@ class Database extends CI_Controller
             $result = $this->transaksi_model->update($id, $data);
 
             if ($result) {
+                log_pekerjaan_field_changes((array) $current_peserta, $data, 'database', (int) $id);
+
                 // Kirim notifikasi Telegram untuk update data peserta via AJAX
 
                 $peserta_name = isset($data['nama']) ? $data['nama'] : $current_peserta->nama;
@@ -1171,6 +1180,8 @@ class Database extends CI_Controller
             $result = $this->transaksi_model->update($id, $data);
 
             if ($result) {
+                log_pekerjaan_field_changes((array) $current_peserta, $data, 'database', (int) $id);
+
                 // Kirim notifikasi Telegram untuk update data peserta via AJAX
 
                 $peserta_name = isset($data['nama']) ? $data['nama'] : $current_peserta->nama;
@@ -5760,6 +5771,240 @@ class Database extends CI_Controller
             echo json_encode(['success' => true, 'data' => $flag_doc_list]);
         } catch (Exception $e) {
             echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Get pekerjaan statistics for popup modal
+     */
+    public function get_pekerjaan_statistics()
+    {
+        if (!$this->session->userdata('logged_in')) {
+            $this->output->set_status_header(401);
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            return;
+        }
+
+        if (!$this->input->is_ajax_request()) {
+            $this->output->set_status_header(400);
+            echo json_encode(['success' => false, 'message' => 'Invalid request']);
+            return;
+        }
+
+        try {
+            $start_date = $this->input->post('start_date');
+            $end_date = $this->input->post('end_date');
+
+            if (!empty($start_date) && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $start_date)) {
+                $this->output->set_status_header(400);
+                echo json_encode(['success' => false, 'message' => 'Format tanggal mulai tidak valid']);
+                return;
+            }
+
+            if (!empty($end_date) && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $end_date)) {
+                $this->output->set_status_header(400);
+                echo json_encode(['success' => false, 'message' => 'Format tanggal akhir tidak valid']);
+                return;
+            }
+
+            $filters = [];
+            if (!empty($start_date)) {
+                $filters['start_date'] = $start_date;
+            }
+            if (!empty($end_date)) {
+                $filters['end_date'] = $end_date;
+            }
+
+            $pekerjaan_stats = $this->log_activity_model->get_pekerjaan_statistics($filters);
+
+            $this->output->set_content_type('application/json');
+            echo json_encode([
+                'success' => true,
+                'data' => $pekerjaan_stats ? $pekerjaan_stats : [],
+                'filters' => $filters
+            ]);
+        } catch (Exception $e) {
+            log_message('error', 'Error getting pekerjaan statistics: ' . $e->getMessage());
+            $this->output->set_status_header(500);
+            $this->output->set_content_type('application/json');
+            echo json_encode([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat mengambil data statistik pekerjaan'
+            ]);
+        }
+    }
+
+    /**
+     * Export pekerjaan statistics to Excel
+     */
+    public function export_pekerjaan_statistics()
+    {
+        if (!$this->session->userdata('logged_in')) {
+            $this->session->set_flashdata('error', 'Anda harus login terlebih dahulu');
+            redirect('auth');
+        }
+
+        try {
+            $start_date = $this->input->get('start_date');
+            $end_date = $this->input->get('end_date');
+
+            if (!empty($start_date) && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $start_date)) {
+                $this->session->set_flashdata('error', 'Format tanggal mulai tidak valid');
+                redirect('database');
+            }
+
+            if (!empty($end_date) && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $end_date)) {
+                $this->session->set_flashdata('error', 'Format tanggal akhir tidak valid');
+                redirect('database');
+            }
+
+            $filters = [];
+            if (!empty($start_date)) {
+                $filters['start_date'] = $start_date;
+            }
+            if (!empty($end_date)) {
+                $filters['end_date'] = $end_date;
+            }
+
+            $pekerjaan_stats = $this->log_activity_model->get_pekerjaan_statistics($filters);
+
+            if (empty($pekerjaan_stats)) {
+                $this->session->set_flashdata('error', 'Tidak ada data statistik pekerjaan untuk diexport');
+                redirect('database');
+            }
+
+            $this->export_pekerjaan_statistics_excel($pekerjaan_stats, $filters);
+        } catch (Exception $e) {
+            log_message('error', 'Error exporting pekerjaan statistics: ' . $e->getMessage());
+            $this->session->set_flashdata('error', 'Terjadi kesalahan saat export data statistik pekerjaan');
+            redirect('database');
+        }
+    }
+
+    /**
+     * Export pekerjaan statistics to Excel file
+     */
+    private function export_pekerjaan_statistics_excel($pekerjaan_stats, $filters = [])
+    {
+        ini_set('memory_limit', '512M');
+        ini_set('max_execution_time', 300);
+        set_time_limit(300);
+
+        $phpexcel_path = APPPATH . 'third_party/PHPExcel/Classes/PHPExcel.php';
+        if (!file_exists($phpexcel_path)) {
+            $this->session->set_flashdata('error', 'Library PHPExcel tidak ditemukan. Silakan install library terlebih dahulu.');
+            redirect('database');
+        }
+
+        require_once $phpexcel_path;
+
+        try {
+            $excel = new PHPExcel();
+
+            $excel->getProperties()
+                ->setCreator('Hajj System')
+                ->setLastModifiedBy('Hajj System')
+                ->setTitle('Statistik Pekerjaan')
+                ->setSubject('Statistik Pekerjaan Operator')
+                ->setDescription('Export statistik pekerjaan dari sistem hajj');
+
+            $excel->setActiveSheetIndex(0)
+                ->setCellValue('A1', 'No')
+                ->setCellValue('B1', 'Nama Operator')
+                ->setCellValue('C1', 'Username')
+                ->setCellValue('D1', 'Gender')
+                ->setCellValue('E1', 'Tanggal')
+                ->setCellValue('F1', 'Jam')
+                ->setCellValue('G1', 'Status')
+                ->setCellValue('H1', 'Barcode')
+                ->setCellValue('I1', 'Register Ulang')
+                ->setCellValue('J1', 'Total Aktivitas')
+                ->setCellValue('K1', 'Aktivitas Terakhir');
+
+            $excel->getActiveSheet()->getColumnDimension('A')->setWidth(5);
+            $excel->getActiveSheet()->getColumnDimension('B')->setWidth(25);
+            $excel->getActiveSheet()->getColumnDimension('C')->setWidth(15);
+            $excel->getActiveSheet()->getColumnDimension('D')->setWidth(10);
+            $excel->getActiveSheet()->getColumnDimension('E')->setWidth(10);
+            $excel->getActiveSheet()->getColumnDimension('F')->setWidth(10);
+            $excel->getActiveSheet()->getColumnDimension('G')->setWidth(10);
+            $excel->getActiveSheet()->getColumnDimension('H')->setWidth(10);
+            $excel->getActiveSheet()->getColumnDimension('I')->setWidth(14);
+            $excel->getActiveSheet()->getColumnDimension('J')->setWidth(14);
+            $excel->getActiveSheet()->getColumnDimension('K')->setWidth(20);
+
+            $headerStyle = [
+                'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+                'fill' => ['type' => PHPExcel_Style_Fill::FILL_SOLID, 'color' => ['rgb' => '8B4513']],
+                'alignment' => ['horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER, 'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER],
+            ];
+            $excel->getActiveSheet()->getStyle('A1:K1')->applyFromArray($headerStyle);
+
+            $row = 2;
+            $totals = [
+                'gender' => 0, 'tanggal' => 0, 'jam' => 0, 'status' => 0,
+                'barcode' => 0, 'register_ulang' => 0, 'total' => 0
+            ];
+
+            foreach ($pekerjaan_stats as $index => $stat) {
+                $excel->setActiveSheetIndex(0)
+                    ->setCellValue('A' . $row, $index + 1)
+                    ->setCellValue('B' . $row, $stat->nama_lengkap)
+                    ->setCellValue('C' . $row, $stat->username)
+                    ->setCellValue('D' . $row, (int) $stat->gender_count)
+                    ->setCellValue('E' . $row, (int) $stat->tanggal_count)
+                    ->setCellValue('F' . $row, (int) $stat->jam_count)
+                    ->setCellValue('G' . $row, (int) $stat->status_count)
+                    ->setCellValue('H' . $row, (int) $stat->barcode_count)
+                    ->setCellValue('I' . $row, (int) $stat->register_ulang_count)
+                    ->setCellValue('J' . $row, (int) $stat->total_aktivitas)
+                    ->setCellValue('K' . $row, !empty($stat->last_activity) ? date('d/m/Y h:i A', strtotime($stat->last_activity)) : '-');
+
+                $totals['gender'] += (int) $stat->gender_count;
+                $totals['tanggal'] += (int) $stat->tanggal_count;
+                $totals['jam'] += (int) $stat->jam_count;
+                $totals['status'] += (int) $stat->status_count;
+                $totals['barcode'] += (int) $stat->barcode_count;
+                $totals['register_ulang'] += (int) $stat->register_ulang_count;
+                $totals['total'] += (int) $stat->total_aktivitas;
+                $row++;
+            }
+
+            $summaryRow = $row + 2;
+            $excel->setActiveSheetIndex(0)
+                ->setCellValue('A' . $summaryRow, 'TOTAL')
+                ->setCellValue('D' . $summaryRow, $totals['gender'])
+                ->setCellValue('E' . $summaryRow, $totals['tanggal'])
+                ->setCellValue('F' . $summaryRow, $totals['jam'])
+                ->setCellValue('G' . $summaryRow, $totals['status'])
+                ->setCellValue('H' . $summaryRow, $totals['barcode'])
+                ->setCellValue('I' . $summaryRow, $totals['register_ulang'])
+                ->setCellValue('J' . $summaryRow, $totals['total']);
+
+            $summaryStyle = [
+                'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+                'fill' => ['type' => PHPExcel_Style_Fill::FILL_SOLID, 'color' => ['rgb' => '6f42c1']],
+            ];
+            $excel->getActiveSheet()->getStyle('A' . $summaryRow . ':K' . $summaryRow)->applyFromArray($summaryStyle);
+
+            $excel->getActiveSheet()->setTitle('Statistik Pekerjaan');
+
+            $filename = 'Statistik_Pekerjaan_' . date('Y-m-d_H-i-s') . '.xlsx';
+            if (!empty($filters['start_date']) && !empty($filters['end_date'])) {
+                $filename = 'Statistik_Pekerjaan_' . $filters['start_date'] . '_to_' . $filters['end_date'] . '.xlsx';
+            }
+
+            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            header('Content-Disposition: attachment;filename="' . $filename . '"');
+            header('Cache-Control: max-age=0');
+
+            $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel2007');
+            $writer->save('php://output');
+            exit;
+        } catch (Exception $e) {
+            log_message('error', 'export_pekerjaan_statistics_excel error: ' . $e->getMessage());
+            $this->session->set_flashdata('error', 'Terjadi kesalahan saat export statistik pekerjaan');
+            redirect('database');
         }
     }
 }

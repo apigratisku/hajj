@@ -323,5 +323,61 @@ class Setup extends CI_Controller {
         } else {
             echo "Tabel '$table_log' sudah ada.<br>";
         }
+
+        // Create log_statistik_pekerjaan table
+        $table_pekerjaan = 'log_statistik_pekerjaan';
+
+        if (!$this->db->table_exists($table_pekerjaan)) {
+            $fields_pekerjaan = array(
+                'id_log' => array(
+                    'type' => 'INT',
+                    'constraint' => 11,
+                    'auto_increment' => TRUE
+                ),
+                'user_operator' => array(
+                    'type' => 'VARCHAR',
+                    'constraint' => 100,
+                    'null' => FALSE
+                ),
+                'id_peserta' => array(
+                    'type' => 'INT',
+                    'constraint' => 11,
+                    'null' => FALSE,
+                    'default' => 0
+                ),
+                'sumber' => array(
+                    'type' => 'ENUM',
+                    'constraint' => array('todo', 'database', 'qr_data', 'upload_barcode'),
+                    'null' => FALSE
+                ),
+                'jenis_perubahan' => array(
+                    'type' => 'ENUM',
+                    'constraint' => array('gender', 'tanggal', 'jam', 'status', 'barcode', 'register_ulang'),
+                    'null' => FALSE
+                ),
+                'referensi_id' => array(
+                    'type' => 'INT',
+                    'constraint' => 11,
+                    'null' => TRUE
+                ),
+                'created_at' => array(
+                    'type' => 'TIMESTAMP',
+                    'null' => FALSE,
+                    'default' => 'CURRENT_TIMESTAMP'
+                )
+            );
+
+            $this->dbforge->add_field($fields_pekerjaan);
+            $this->dbforge->add_key('id_log', TRUE);
+            $this->dbforge->create_table($table_pekerjaan, TRUE);
+
+            $this->db->query("ALTER TABLE `$table_pekerjaan` ADD INDEX `idx_user_created` (`user_operator`, `created_at`)");
+            $this->db->query("ALTER TABLE `$table_pekerjaan` ADD INDEX `idx_jenis_created` (`jenis_perubahan`, `created_at`)");
+            $this->db->query("ALTER TABLE `$table_pekerjaan` ADD INDEX `idx_id_peserta` (`id_peserta`)");
+
+            echo "Tabel '$table_pekerjaan' berhasil dibuat.<br>";
+        } else {
+            echo "Tabel '$table_pekerjaan' sudah ada.<br>";
+        }
     }
 }
