@@ -86,9 +86,12 @@
                                     </div>
                                 </div>
 
+                                <?php // hide filter sementara: Nama Peserta (mobile) ?>
+                                <!--
                                 <div class="form-group">
                                     <input type="text" name="nama" value="<?= isset($_GET['nama']) ? htmlspecialchars($_GET['nama']) : '' ?>" class="form-control mobile-input" placeholder="Nama Peserta">
                                 </div>
+                                -->
                                 <div class="form-group">
                                     <input type="text" name="nomor_paspor" value="<?= isset($_GET['nomor_paspor']) ? htmlspecialchars($_GET['nomor_paspor']) : '' ?>" class="form-control mobile-input" placeholder="No Paspor">
                                 </div>
@@ -131,6 +134,8 @@
                                     </select>
                                 </div>
                                
+                                <?php // hide filter sementara: Tanggal Pengerjaan (mobile) ?>
+                                <!--
                                 <div class="form-group">
                                     <select name="tanggal_pengerjaan" class="form-select mobile-input">
                                         <option value="">Tanggal Pengerjaan</option>
@@ -145,6 +150,9 @@
                                         <?php endforeach; endif; ?>
                                     </select>
                                 </div>
+                                -->
+                                <?php // hide filter sementara: Update Terakhir (mobile) ?>
+                                <!--
                                 <div class="form-group">
                                     <select name="tanggal_update_terakhir" class="form-select mobile-input">
                                         <option value="">Update Terakhir</option>
@@ -159,6 +167,7 @@
                                         <?php endforeach; endif; ?>
                                     </select>
                                 </div>
+                                -->
                                 <div class="form-group">
                                     <select name="status_jadwal" class="form-select mobile-input">
                                         <option value="">Status Jadwal</option>
@@ -166,7 +175,8 @@
                                         <option value="1">Belum dijadwalkan</option>
                                     </select>
                                 </div>
-                                <?php //if($this->session->userdata('role') == 'admin'): ?>
+                                <?php // hide filter sementara: Operator (mobile) ?>
+                                <!--
                                 <div class="form-group">
                                     <select name="history_done" class="form-select mobile-input">
                                     <option value="">Operator</option>
@@ -179,9 +189,10 @@
                                         <?php endforeach; endif; ?>
                                     </select>
                                 </div>
-                                <?php //endif; ?>
+                                -->
                                 
-                                <!-- Filter Tanggal Updated untuk Mobile -->
+                                <?php // hide filter sementara: Sortir Mulai (mobile) ?>
+                                <!--
                                 <div class="form-group">
                                     <label for="startDateMobile" class="form-label">
                                         <i class="fas fa-calendar"></i> Sortir Mulai
@@ -189,6 +200,9 @@
                                     <input type="date" name="startDate" class="form-control mobile-input" id="startDateMobile" 
                                            value="<?= isset($_GET['startDate']) ? htmlspecialchars($_GET['startDate']) : '' ?>">
                                 </div>
+                                -->
+                                <?php // hide filter sementara: Sortir Akhir (mobile) ?>
+                                <!--
                                 <div class="form-group">
                                     <label for="endDateMobile" class="form-label">
                                         <i class="fas fa-calendar"></i> Sortir Akhir
@@ -196,6 +210,7 @@
                                     <input type="date" name="endDate" class="form-control mobile-input" id="endDateMobile"
                                            value="<?= isset($_GET['endDate']) ? htmlspecialchars($_GET['endDate']) : '' ?>">
                                 </div>
+                                -->
                                 
                                 <div class="form-actions">
                                     <button type="submit" class="btn btn-search">
@@ -246,9 +261,12 @@
                                         </button>
                                     </div>
                                 </div>
+                                <?php // hide filter sementara: Nama Peserta (desktop) ?>
+                                <!--
                                 <div class="col-md-1">
                                     <input type="text" name="nama" value="<?= isset($_GET['nama']) ? htmlspecialchars($_GET['nama']) : '' ?>" class="form-control form-control-sm" placeholder="Nama Peserta">
                                 </div>
+                                -->
                                 <div class="col-md-1">
                                     <input type="text" name="nomor_paspor" value="<?= isset($_GET['nomor_paspor']) ? htmlspecialchars($_GET['nomor_paspor']) : '' ?>" class="form-control form-control-sm" placeholder="No Paspor" >
                                 </div>
@@ -294,6 +312,8 @@
                                     </select>
                                 </div>
 
+                                <?php // hide filter sementara: Tanggal Pengerjaan (desktop) ?>
+                                <!--
                                 <div class="col-md-1">
                                     <select name="tanggal_pengerjaan" class="form-select form-control-sm">
                                         <option value="">Tanggal Pengerjaan</option>
@@ -308,6 +328,7 @@
                                         <?php endforeach; endif; ?>
                                     </select>
                                 </div>
+                                -->
                                 
                                 <div class="col-md-1">
                                     <select name="status_jadwal" class="form-select form-control-sm">
@@ -316,7 +337,8 @@
                                         <option value="1" <?= (isset($_GET['status_jadwal']) && $_GET['status_jadwal'] === '1') ? 'selected' : '' ?>>Belum dijadwalkan</option>
                                     </select>
                                 </div>
-                                <?php //if($this->session->userdata('role') == 'admin'): ?>
+                                <?php // hide filter sementara: Operator (desktop) ?>
+                                <!--
                                 <div class="col-md-1">
                                     <select name="history_done" class="form-select form-control-sm">
                                         <option value="">Operator</option>
@@ -329,12 +351,14 @@
                                         <?php endforeach; endif; ?>
                                     </select>
                                 </div>
-                                <?php //endif; ?>
+                                -->
                                 
                             </div>
                             <div class="row g-2 align-items-center">
                                 
                                 
+                                <?php // hide filter sementara: Update Terakhir (desktop) ?>
+                                <!--
                                 <div class="col-md-1">
                                     <label for="tanggal_update_terakhir" class="form-label"><i class="fas fa-calendar"></i> Update Terakhir</label>
                                     <select id="tanggal_update_terakhir" name="tanggal_update_terakhir" class="form-select form-control-sm">
@@ -350,16 +374,23 @@
                                         <?php endforeach; endif; ?>
                                     </select>
                                 </div>
+                                -->
+                                <?php // hide filter sementara: Sortir Mulai (desktop) ?>
+                                <!--
                                 <div class="col-md-1">
                                     <label for="startDate" class="form-label"><i class="fas fa-calendar"></i> Sortir Mulai</label>
                                     <input type="date" class="form-control" id="startDate" name="startDate" 
                                            value="<?= isset($_GET['startDate']) ? htmlspecialchars($_GET['startDate']) : '' ?>">
                                 </div>
+                                -->
+                                <?php // hide filter sementara: Sortir Akhir (desktop) ?>
+                                <!--
                                 <div class="col-md-1">
                                     <label for="endDate" class="form-label"><i class="fas fa-calendar"></i> Sortir Akhir</label>
                                     <input type="date" class="form-control" id="endDate" name="endDate"
                                            value="<?= isset($_GET['endDate']) ? htmlspecialchars($_GET['endDate']) : '' ?>">
                                 </div>
+                                -->
                                       
                             </div> 
                             <br>
