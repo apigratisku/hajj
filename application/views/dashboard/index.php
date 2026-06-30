@@ -113,6 +113,8 @@
     </div>
 
 
+    <!-- Disembunyikan sementara: Statistik Register Ulang & Already -> Done -->
+    <div class="d-none" id="dashboard-hidden-stats-register-already-done">
     <!-- Statistics Cards Toggle Button - Ultra Compact -->
     <div class="row mb-1">
         <div class="col-12">
@@ -327,6 +329,7 @@
                 </div>
             </div>
         </div>
+    </div>
     </div>
 
     <!-- Mobile Statistics Cards -->
