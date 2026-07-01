@@ -1,3 +1,6 @@
+# CodeIgniter 3: blokir akses HTTP langsung ke folder application/.
+# Aplikasi diakses lewat index.php di root proyek — bukan lewat folder ini.
+# Jangan ubah menjadi "Allow" — itu celah keamanan.
 <IfModule authz_core_module>
     Require all denied
 </IfModule>

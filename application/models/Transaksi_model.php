@@ -1190,15 +1190,13 @@ class Transaksi_model extends CI_Model {
     // ==================== FILTER DONE > 1 TAHUN (ARSIP) METHODS ====================
 
     private function apply_base_filter_done_1tahun() {
-        $one_year_ago = date('Y-m-d H:i:s', strtotime('-1 year'));
+        $tz = new DateTimeZone('Asia/Singapore');
+        $one_year_ago = (new DateTime('now', $tz))->modify('-1 year')->format('Y-m-d');
 
-        $this->db->where('peserta.selesai', 2);
         $this->db->where('peserta.status', 2);
         $this->db->where('peserta.tanggal IS NOT NULL');
-        $this->db->where('peserta.jam IS NOT NULL');
         $this->db->where("peserta.tanggal != ''");
-        $this->db->where("peserta.jam != ''");
-        $this->db->where('CONCAT(peserta.tanggal, " ", peserta.jam) <', $one_year_ago);
+        $this->db->where('peserta.tanggal <=', $one_year_ago);
     }
 
     private function apply_email_domain_filter_done_1tahun($filters) {

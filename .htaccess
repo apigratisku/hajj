@@ -1,11 +1,12 @@
 RewriteEngine On
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)$ index.php/$1 [L]
 
 # Allow direct access to specific files
 RewriteRule ^(cpanel_email_middleware\.php|test_middleware\.php|htaccess_test\.php)$ - [L]
 
+# Izinkan akses langsung ke file statis & direktori yang ada
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php?/$1 [L,QSA]
 
 <IfModule mod_headers.c>
     <FilesMatch "\.(eot|ttf|otf|woff)$">
@@ -21,5 +22,4 @@ RewriteRule ^(cpanel_email_middleware\.php|test_middleware\.php|htaccess_test\.p
         Header set Access-Control-Allow-Headers "Content-Type"
     </Files>
 </IfModule>
-
 
