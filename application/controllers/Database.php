@@ -401,6 +401,182 @@ class Database extends CI_Controller
         $this->load->view('templates/footer');
     }
 
+    public function filter_already_done()
+    {
+        $this->load->model('transaksi_model');
+        $data['title'] = 'Filter Already → Done';
+
+        $data['email_domain_list'] = $this->transaksi_model->get_unique_email_domains_already_done();
+        $allowed_domains = array_map(function ($row) {
+            return $row->email_domain;
+        }, $data['email_domain_list']);
+
+        $email_domain = trim($this->input->get('email_domain'));
+        $gender = trim($this->input->get('gender'));
+        $filters = [];
+
+        if ($email_domain !== '' && in_array($email_domain, $allowed_domains, true)) {
+            $filters['email_domain'] = $email_domain;
+        }
+        if ($gender !== '' && in_array($gender, ['L', 'P'], true)) {
+            $filters['gender'] = $gender;
+        }
+
+        $per_page = 25;
+        $page = $this->input->get('page') ? $this->input->get('page') : 1;
+        $offset = ($page - 1) * $per_page;
+
+        $data['peserta'] = $this->transaksi_model->get_paginated_filtered_already_done($per_page, $offset, $filters);
+        $data['flag_doc_list'] = $this->transaksi_model->get_unique_flag_doc_already_done();
+
+        $total_rows = $this->transaksi_model->count_filtered_already_done($filters);
+
+        $this->load->library('pagination');
+
+        $base_url = base_url('database/filter_already_done');
+        $query_params = [];
+
+        if (!empty($filters['email_domain'])) {
+            $query_params['email_domain'] = $filters['email_domain'];
+        }
+        if (!empty($filters['gender'])) {
+            $query_params['gender'] = $filters['gender'];
+        }
+
+        if (!empty($query_params)) {
+            $base_url .= '?' . http_build_query($query_params);
+        }
+
+        $config['base_url'] = $base_url;
+        $config['total_rows'] = $total_rows;
+        $config['per_page'] = $per_page;
+        $config['page_query_string'] = TRUE;
+        $config['query_string_segment'] = 'page';
+        $config['use_page_numbers'] = TRUE;
+        $config['num_links'] = 5;
+
+        $config['full_tag_open'] = '<nav aria-label="Data navigation"><ul class="pagination pagination-custom justify-content-center">';
+        $config['full_tag_close'] = '</ul></nav>';
+        $config['num_tag_open'] = '<li class="page-item">';
+        $config['num_tag_close'] = '</li>';
+        $config['cur_tag_open'] = '<li class="page-item active"><a class="page-link" href="#">';
+        $config['cur_tag_close'] = '</a></li>';
+        $config['next_tag_open'] = '<li class="page-item">';
+        $config['next_tag_close'] = '</li>';
+        $config['prev_tag_open'] = '<li class="page-item">';
+        $config['prev_tag_close'] = '</li>';
+        $config['first_tag_open'] = '<li class="page-item">';
+        $config['first_tag_close'] = '</li>';
+        $config['last_tag_open'] = '<li class="page-item">';
+        $config['last_tag_close'] = '</li>';
+        $config['anchor_class'] = 'page-link';
+        $config['next_link'] = '<i class="fas fa-chevron-right"></i>';
+        $config['prev_link'] = '<i class="fas fa-chevron-left"></i>';
+        $config['first_link'] = '<i class="fas fa-angle-double-left"></i>';
+        $config['last_link'] = '<i class="fas fa-angle-double-right"></i>';
+
+        $this->pagination->initialize($config);
+        $data['pagination'] = $this->pagination->create_links();
+
+        $data['total_rows'] = $total_rows;
+        $data['per_page'] = $per_page;
+        $data['current_page'] = $page;
+        $data['offset'] = $offset;
+
+        $this->load->view('templates/sidebar');
+        $this->load->view('templates/header', $data);
+        $this->load->view('database/filter_already_done', $data);
+        $this->load->view('templates/footer');
+    }
+
+    public function filter_on_target_done()
+    {
+        $this->load->model('transaksi_model');
+        $data['title'] = 'Filter On Target → Done';
+
+        $data['email_domain_list'] = $this->transaksi_model->get_unique_email_domains_on_target_done();
+        $allowed_domains = array_map(function ($row) {
+            return $row->email_domain;
+        }, $data['email_domain_list']);
+
+        $email_domain = trim($this->input->get('email_domain'));
+        $gender = trim($this->input->get('gender'));
+        $filters = [];
+
+        if ($email_domain !== '' && in_array($email_domain, $allowed_domains, true)) {
+            $filters['email_domain'] = $email_domain;
+        }
+        if ($gender !== '' && in_array($gender, ['L', 'P'], true)) {
+            $filters['gender'] = $gender;
+        }
+
+        $per_page = 25;
+        $page = $this->input->get('page') ? $this->input->get('page') : 1;
+        $offset = ($page - 1) * $per_page;
+
+        $data['peserta'] = $this->transaksi_model->get_paginated_filtered_on_target_done($per_page, $offset, $filters);
+        $data['flag_doc_list'] = $this->transaksi_model->get_unique_flag_doc_on_target_done();
+
+        $total_rows = $this->transaksi_model->count_filtered_on_target_done($filters);
+
+        $this->load->library('pagination');
+
+        $base_url = base_url('database/filter_on_target_done');
+        $query_params = [];
+
+        if (!empty($filters['email_domain'])) {
+            $query_params['email_domain'] = $filters['email_domain'];
+        }
+        if (!empty($filters['gender'])) {
+            $query_params['gender'] = $filters['gender'];
+        }
+
+        if (!empty($query_params)) {
+            $base_url .= '?' . http_build_query($query_params);
+        }
+
+        $config['base_url'] = $base_url;
+        $config['total_rows'] = $total_rows;
+        $config['per_page'] = $per_page;
+        $config['page_query_string'] = TRUE;
+        $config['query_string_segment'] = 'page';
+        $config['use_page_numbers'] = TRUE;
+        $config['num_links'] = 5;
+
+        $config['full_tag_open'] = '<nav aria-label="Data navigation"><ul class="pagination pagination-custom justify-content-center">';
+        $config['full_tag_close'] = '</ul></nav>';
+        $config['num_tag_open'] = '<li class="page-item">';
+        $config['num_tag_close'] = '</li>';
+        $config['cur_tag_open'] = '<li class="page-item active"><a class="page-link" href="#">';
+        $config['cur_tag_close'] = '</a></li>';
+        $config['next_tag_open'] = '<li class="page-item">';
+        $config['next_tag_close'] = '</li>';
+        $config['prev_tag_open'] = '<li class="page-item">';
+        $config['prev_tag_close'] = '</li>';
+        $config['first_tag_open'] = '<li class="page-item">';
+        $config['first_tag_close'] = '</li>';
+        $config['last_tag_open'] = '<li class="page-item">';
+        $config['last_tag_close'] = '</li>';
+        $config['anchor_class'] = 'page-link';
+        $config['next_link'] = '<i class="fas fa-chevron-right"></i>';
+        $config['prev_link'] = '<i class="fas fa-chevron-left"></i>';
+        $config['first_link'] = '<i class="fas fa-angle-double-left"></i>';
+        $config['last_link'] = '<i class="fas fa-angle-double-right"></i>';
+
+        $this->pagination->initialize($config);
+        $data['pagination'] = $this->pagination->create_links();
+
+        $data['total_rows'] = $total_rows;
+        $data['per_page'] = $per_page;
+        $data['current_page'] = $page;
+        $data['offset'] = $offset;
+
+        $this->load->view('templates/sidebar');
+        $this->load->view('templates/header', $data);
+        $this->load->view('database/filter_on_target_done', $data);
+        $this->load->view('templates/footer');
+    }
+
     public function filter_done_1_tahun()
     {
         $this->load->model('transaksi_model');
@@ -4276,6 +4452,64 @@ class Database extends CI_Controller
 
         if ($email_domain !== '') {
             $query_params['email_domain'] = $email_domain;
+        }
+        if ($page !== '' && $page !== null) {
+            $query_params['page'] = $page;
+        }
+
+        if (!empty($query_params)) {
+            $base_url .= '?' . http_build_query($query_params);
+        }
+
+        return $base_url;
+    }
+
+    /**
+     * Get redirect URL with current filters and pagination for filter_already_done
+     */
+    private function get_redirect_url_with_filters_filter_already_done()
+    {
+        $base_url = base_url('database/filter_already_done');
+        $query_params = [];
+
+        $email_domain = trim($this->input->get('email_domain'));
+        $gender = trim($this->input->get('gender'));
+        $page = $this->input->get('page');
+
+        if ($email_domain !== '') {
+            $query_params['email_domain'] = $email_domain;
+        }
+        if ($gender !== '') {
+            $query_params['gender'] = $gender;
+        }
+        if ($page !== '' && $page !== null) {
+            $query_params['page'] = $page;
+        }
+
+        if (!empty($query_params)) {
+            $base_url .= '?' . http_build_query($query_params);
+        }
+
+        return $base_url;
+    }
+
+    /**
+     * Get redirect URL with current filters and pagination for filter_on_target_done
+     */
+    private function get_redirect_url_with_filters_filter_on_target_done()
+    {
+        $base_url = base_url('database/filter_on_target_done');
+        $query_params = [];
+
+        $email_domain = trim($this->input->get('email_domain'));
+        $gender = trim($this->input->get('gender'));
+        $page = $this->input->get('page');
+
+        if ($email_domain !== '') {
+            $query_params['email_domain'] = $email_domain;
+        }
+        if ($gender !== '') {
+            $query_params['gender'] = $gender;
         }
         if ($page !== '' && $page !== null) {
             $query_params['page'] = $page;

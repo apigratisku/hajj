@@ -104,7 +104,17 @@ class Transaksi_model extends CI_Model {
             if (isset($filtered_data['status']) && in_array((string)$filtered_data['status'], ['1','2','3'], true)) {
                 $filtered_data['updated_at'] = date('Y-m-d H:i:s');
             }
-            
+
+            // Catat status asal saat transisi ke Done dari On Target (0) atau Already (1)
+            if (isset($filtered_data['status']) && (string) $filtered_data['status'] === '2' && in_array('status_asal', $fields, true)) {
+                $current = $this->get_by_id($id);
+                if ($current && (string) $current->status !== '2') {
+                    $old_status = (string) $current->status;
+                    if (in_array($old_status, ['0', '1'], true)) {
+                        $filtered_data['status_asal'] = $old_status;
+                    }
+                }
+            }
             
             $this->db->where('id', $id);
             $result = $this->db->update($this->table, $filtered_data);
@@ -1193,10 +1203,14 @@ class Transaksi_model extends CI_Model {
         $tz = new DateTimeZone('Asia/Singapore');
         $one_year_ago = (new DateTime('now', $tz))->modify('-1 year')->format('Y-m-d');
 
-        $this->db->where('peserta.status', 2);
         $this->db->where('peserta.tanggal IS NOT NULL');
         $this->db->where("peserta.tanggal != ''");
         $this->db->where('peserta.tanggal <=', $one_year_ago);
+
+        $this->db->group_start();
+        $this->db->where('peserta.status', 2);
+        $this->db->or_where('peserta.selesai', 2);
+        $this->db->group_end();
     }
 
     private function apply_email_domain_filter_done_1tahun($filters) {
@@ -1245,6 +1259,142 @@ class Transaksi_model extends CI_Model {
         $this->db->select('flag_doc, MAX(created_at) as created_at');
         $this->db->from($this->table);
         $this->apply_base_filter_done_1tahun();
+        $this->db->where('flag_doc IS NOT NULL');
+        $this->db->where('flag_doc !=', '');
+        $this->db->group_by('flag_doc');
+        $this->db->order_by('created_at', 'ASC');
+        return $this->db->get()->result();
+    }
+
+    // ==================== FILTER ALREADY -> DONE METHODS ====================
+
+    private function apply_base_filter_already_done() {
+        $this->db->where('peserta.status', 2);
+        $this->db->where('peserta.status_asal', 1);
+    }
+
+    private function apply_email_domain_filter_already_done($filters) {
+        if (!empty($filters['email_domain'])) {
+            $this->db->like('peserta.email', '@' . $filters['email_domain'], 'before');
+        }
+    }
+
+    private function apply_gender_filter_already_done($filters) {
+        if (!empty($filters['gender']) && in_array($filters['gender'], ['L', 'P'], true)) {
+            $this->db->where('peserta.gender', $filters['gender']);
+        }
+    }
+
+    public function get_unique_email_domains_already_done() {
+        $this->db->select("SUBSTRING_INDEX(email, '@', -1) AS email_domain", false);
+        $this->db->from($this->table);
+        $this->apply_base_filter_already_done();
+        $this->db->where('email IS NOT NULL');
+        $this->db->where('email !=', '');
+        $this->db->like('email', '@');
+        $this->db->group_by('email_domain');
+        $this->db->order_by('email_domain', 'ASC');
+        return $this->db->get()->result();
+    }
+
+    public function get_paginated_filtered_already_done($limit, $offset, $filters = []) {
+        $this->db->select('peserta.*');
+        $this->db->from($this->table);
+        $this->apply_base_filter_already_done();
+        $this->apply_email_domain_filter_already_done($filters);
+        $this->apply_gender_filter_already_done($filters);
+
+        $this->db->order_by('peserta.created_at', 'ASC');
+        $this->db->order_by('peserta.id', 'ASC');
+
+        if ($limit !== null) {
+            $this->db->limit($limit, isset($offset) ? $offset : 0);
+        }
+
+        return $this->db->get()->result();
+    }
+
+    public function count_filtered_already_done($filters = []) {
+        $this->db->from($this->table);
+        $this->apply_base_filter_already_done();
+        $this->apply_email_domain_filter_already_done($filters);
+        $this->apply_gender_filter_already_done($filters);
+
+        return $this->db->count_all_results();
+    }
+
+    public function get_unique_flag_doc_already_done() {
+        $this->db->select('flag_doc, MAX(created_at) as created_at');
+        $this->db->from($this->table);
+        $this->apply_base_filter_already_done();
+        $this->db->where('flag_doc IS NOT NULL');
+        $this->db->where('flag_doc !=', '');
+        $this->db->group_by('flag_doc');
+        $this->db->order_by('created_at', 'ASC');
+        return $this->db->get()->result();
+    }
+
+    // ==================== FILTER ON TARGET -> DONE METHODS ====================
+
+    private function apply_base_filter_on_target_done() {
+        $this->db->where('peserta.status', 2);
+        $this->db->where('peserta.status_asal', 0);
+    }
+
+    private function apply_email_domain_filter_on_target_done($filters) {
+        if (!empty($filters['email_domain'])) {
+            $this->db->like('peserta.email', '@' . $filters['email_domain'], 'before');
+        }
+    }
+
+    private function apply_gender_filter_on_target_done($filters) {
+        if (!empty($filters['gender']) && in_array($filters['gender'], ['L', 'P'], true)) {
+            $this->db->where('peserta.gender', $filters['gender']);
+        }
+    }
+
+    public function get_unique_email_domains_on_target_done() {
+        $this->db->select("SUBSTRING_INDEX(email, '@', -1) AS email_domain", false);
+        $this->db->from($this->table);
+        $this->apply_base_filter_on_target_done();
+        $this->db->where('email IS NOT NULL');
+        $this->db->where('email !=', '');
+        $this->db->like('email', '@');
+        $this->db->group_by('email_domain');
+        $this->db->order_by('email_domain', 'ASC');
+        return $this->db->get()->result();
+    }
+
+    public function get_paginated_filtered_on_target_done($limit, $offset, $filters = []) {
+        $this->db->select('peserta.*');
+        $this->db->from($this->table);
+        $this->apply_base_filter_on_target_done();
+        $this->apply_email_domain_filter_on_target_done($filters);
+        $this->apply_gender_filter_on_target_done($filters);
+
+        $this->db->order_by('peserta.created_at', 'ASC');
+        $this->db->order_by('peserta.id', 'ASC');
+
+        if ($limit !== null) {
+            $this->db->limit($limit, isset($offset) ? $offset : 0);
+        }
+
+        return $this->db->get()->result();
+    }
+
+    public function count_filtered_on_target_done($filters = []) {
+        $this->db->from($this->table);
+        $this->apply_base_filter_on_target_done();
+        $this->apply_email_domain_filter_on_target_done($filters);
+        $this->apply_gender_filter_on_target_done($filters);
+
+        return $this->db->count_all_results();
+    }
+
+    public function get_unique_flag_doc_on_target_done() {
+        $this->db->select('flag_doc, MAX(created_at) as created_at');
+        $this->db->from($this->table);
+        $this->apply_base_filter_on_target_done();
         $this->db->where('flag_doc IS NOT NULL');
         $this->db->where('flag_doc !=', '');
         $this->db->group_by('flag_doc');
@@ -1727,6 +1877,7 @@ class Transaksi_model extends CI_Model {
         $this->db->where('jam IS NOT NULL');
         $this->db->where('jam !=', '');
         $this->db->where('selesai !=', 2);
+        $this->db->where('tanggal >=', date('Y') . '-01-01');
         
         if ($flag_doc) {
             $this->db->where('flag_doc', $flag_doc);

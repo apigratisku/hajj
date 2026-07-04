@@ -1,53 +1,14 @@
-    <!-- Content Body -->
+﻿    <!-- Content Body -->
     <div class="content-body">
     <div class="row mb-4">
         <div class="col-12">
             <div class="card mobile-card">
                 <div class="card-header bg-brown text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
-                    <div class="d-flex align-items-center">
-                        <h5 class="mb-0 me-3">Data Peserta</h5>
-                        <?php if (isset($update_stats) && isset($_GET['tanggal_pengerjaan'])): ?>
-                        <div class="update-stats-info">
-                            <span class="badge bg-light text-dark">
-                                <i class="fas fa-calendar-check"></i>
-                                Update <?= date('d-m-Y', strtotime($_GET['tanggal_pengerjaan'])) ?>: 
-                                <strong><?= $update_stats ?> data</strong>
-                            </span>
-                        </div>
-                        <?php endif; ?>
-                    </div>
-                   
-                    <div class="d-flex flex-wrap gap-2">
-                    <!--<a href="<?= base_url('database/download_schedule_pdf?' . http_build_query($_GET)) ?>" class="btn btn-danger" target="_blank">
-                                        <i class="fas fa-file-pdf"></i> <span class="d-none d-sm-inline">Download PDF</span>
-                        </a>-->
-                        <?php if($this->session->userdata('role') == 'admin'): ?>
-                        <a href="<?= base_url('database/tambah') ?>" class="btn btn-sm btn-tambah">
-                            <i class="fas fa-plus"></i> <span class="d-none d-sm-inline">Tambah</span>
-                        </a>
-                        <?php endif; ?>
-                        <a href="<?= base_url('database/import') ?>" class="btn btn-sm btn-import">
-                            <i class="fas fa-file-import"></i> <span class="d-none d-sm-inline">Import</span>
-                        </a>
-                        <button type="button" class="btn btn-sm btn-export" data-bs-toggle="modal" data-bs-target="#exportModal">
-                            <i class="fas fa-file-export"></i> <span class="d-none d-sm-inline">Export</span>
-                        </button>
-                        
-                        <button type="button" class="btn btn-sm btn-statistics" onclick="showOperatorStatistics()">
-                            <i class="fas fa-chart-bar"></i> <span class="d-none d-sm-inline">Statistik Operator</span>
-                        </button>
-                        <button type="button" class="btn btn-sm btn-statistics" onclick="showPekerjaanStatistics()">
-                            <i class="fas fa-tasks"></i> <span class="d-none d-sm-inline">Statistik Pekerjaan</span>
-                        </button>
-                        <button type="button" class="btn btn-sm btn-statistics" onclick="showRegisterUlangStatistics()">
-                            <i class="fas fa-file-excel"></i> <span class="d-none d-sm-inline">Statistik Register Ulang</span>
-                        </button>
-                        <?php if($this->session->userdata('role') == 'admin'): ?>
-                        <button type="button" class="btn btn-sm btn-danger" id="deleteMultipleBtn" style="display: none;" onclick="deleteMultipleRecords()">
-                            <i class="fas fa-trash"></i> <span class="d-none d-sm-inline">Hapus Terpilih</span>
-                        </button>
-                        <?php endif; ?>
-                   
+                    <div class="d-flex align-items-center flex-wrap gap-2">
+                        <h5 class="mb-0 me-3">Filter On Target → Done</h5>
+                        <span class="badge bg-light text-dark">
+                            <i class="fas fa-info-circle"></i> Data Done yang berasal dari On Target
+                        </span>
                     </div>
                 </div>
                 <div class="card-body p-0">
@@ -55,398 +16,75 @@
                     <!-- Mobile Search Form -->
                     <div class="mobile-search-container d-block d-md-none">
                         <div class="search-toggle" onclick="toggleMobileSearch()">
-                            <i class="fas fa-search"></i> Cari Data
+                            <i class="fas fa-search"></i> Filter
                         </div>
                         <div class="mobile-search-form" id="mobileSearchForm" style="display: none;">
-                            <form method="get" action="<?= base_url('database/index') ?>" class="mobile-form" id="mobileSearchForm">
+                            <form method="get" action="<?= base_url('database/filter_on_target_done') ?>" class="mobile-form">
                                 <div class="form-group">
-                                    <select name="nama_travel" class="form-select mobile-input">
-                                        <option value="">Semua Travel</option>
-                                        <?php if (!empty($travel_list)): foreach ($travel_list as $travel): ?>
-                                            <option value="<?= htmlspecialchars($travel->nama_travel) ?>" <?= (isset($_GET['nama_travel']) && $_GET['nama_travel'] === $travel->nama_travel) ? 'selected' : '' ?>>
-                                                <?= htmlspecialchars($travel->nama_travel) ?>
+                                    <label class="form-label"><i class="fas fa-at"></i> Domain Email</label>
+                                    <select name="email_domain" class="form-select mobile-input">
+                                        <option value="">Semua Email</option>
+                                        <?php if (!empty($email_domain_list)): foreach ($email_domain_list as $domain): ?>
+                                            <option value="<?= htmlspecialchars($domain->email_domain) ?>" <?= (isset($_GET['email_domain']) && $_GET['email_domain'] === $domain->email_domain) ? 'selected' : '' ?>>
+                                                @<?= htmlspecialchars($domain->email_domain) ?>
                                             </option>
                                         <?php endforeach; endif; ?>
                                     </select>
                                 </div>
                                 <div class="form-group">
-                                    <div class="searchable-select-wrapper" style="position: relative;">
-                                        <select name="flag_doc" id="flag_doc_mobile" class="form-select mobile-input searchable-select">
-                                        <option value="">Semua Flag Dokumen</option>
-                                        <option value="null" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === 'null') ? 'selected' : '' ?>>Tanpa Flag Dokumen</option>
-                                        <?php if (!empty($flag_doc_list)): foreach ($flag_doc_list as $flag): ?>
-                                            <option value="<?= htmlspecialchars($flag->flag_doc) ?>" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === $flag->flag_doc) ? 'selected' : '' ?>>
-                                                <?= htmlspecialchars($flag->flag_doc) ?>
-                                            </option>
-                                        <?php endforeach; endif; ?>
-                                    </select>
-                                        <button type="button" class="btn-clear-flag-doc" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #666; font-size: 16px; cursor: pointer; z-index: 10; display: none;" title="Clear">
-                                            ×
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <?php // hide filter sementara: Nama Peserta (mobile) ?>
-                                <!--
-                                <div class="form-group">
-                                    <input type="text" name="nama" value="<?= isset($_GET['nama']) ? htmlspecialchars($_GET['nama']) : '' ?>" class="form-control mobile-input" placeholder="Nama Peserta">
-                                </div>
-                                -->
-                                <div class="form-group">
-                                    <input type="text" name="nomor_paspor" value="<?= isset($_GET['nomor_paspor']) ? htmlspecialchars($_GET['nomor_paspor']) : '' ?>" class="form-control mobile-input" placeholder="No Paspor">
-                                </div>
-                                <div class="form-group">
-                                    <input type="text" name="no_visa" value="<?= isset($_GET['no_visa']) ? htmlspecialchars($_GET['no_visa']) : '' ?>" class="form-control mobile-input" placeholder="No Visa">
-                                </div>
-                                <div class="form-group">
-                                    <select name="tanggaljam" class="form-select mobile-input">
-                                        <option value="">Waktu</option>
-                                        <?php if (!empty($tanggaljam_list)): foreach ($tanggaljam_list as $tanggaljam): ?>
-                                            <option value="<?= htmlspecialchars($tanggaljam->tanggaljam) ?>" <?= (isset($_GET['tanggaljam']) && $_GET['tanggaljam'] === $tanggaljam->tanggaljam) ? 'selected' : '' ?>>
-                                                <?= date('d-m-Y h:i A', strtotime($tanggaljam->tanggaljam)) ?>
-                                            </option>
-                                        <?php endforeach; endif; ?>
-                                    </select>
-                                </div>
-                                
-                                
-                                <div class="form-group">
-                                    <select name="status" class="form-select mobile-input">
-                                        <option value="">Status Data</option>
-                                            <option value="0" <?= (isset($_GET['status']) && $_GET['status'] === '0') ? 'selected' : '' ?>>On Target</option>
-                                            <option value="1" <?= (isset($_GET['status']) && $_GET['status'] === '1') ? 'selected' : '' ?>>Already</option>
-                                            <option value="2" <?= (isset($_GET['status']) && $_GET['status'] === '2') ? 'selected' : '' ?>>Done</option>
-                                            <option value="3" <?= (isset($_GET['status']) && $_GET['status'] === '3') ? 'selected' : '' ?>>Fasttrack</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <select name="status_register_kembali" class="form-select mobile-input">
-                                        <option value="">Status Register Ulang</option>
-                                        <option value="sudah" <?= (isset($_GET['status_register_kembali']) && $_GET['status_register_kembali'] === 'sudah') ? 'selected' : '' ?>>Register Ulang</option>
-                                        <option value="belum" <?= (isset($_GET['status_register_kembali']) && $_GET['status_register_kembali'] === 'belum') ? 'selected' : '' ?>>Belum Register Ulang</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
+                                    <label class="form-label"><i class="fas fa-venus-mars"></i> Gender</label>
                                     <select name="gender" class="form-select mobile-input">
-                                        <option value="">Gender</option>
+                                        <option value="">Semua Gender</option>
                                         <option value="L" <?= (isset($_GET['gender']) && $_GET['gender'] === 'L') ? 'selected' : '' ?>>Laki-laki</option>
                                         <option value="P" <?= (isset($_GET['gender']) && $_GET['gender'] === 'P') ? 'selected' : '' ?>>Perempuan</option>
                                     </select>
                                 </div>
-                               
-                                <?php // hide filter sementara: Tanggal Pengerjaan (mobile) ?>
-                                <!--
-                                <div class="form-group">
-                                    <select name="tanggal_pengerjaan" class="form-select mobile-input">
-                                        <option value="">Tanggal Pengerjaan</option>
-                                        <?php if (!empty($tanggal_pengerjaan_list)): foreach ($tanggal_pengerjaan_list as $tanggal_pengerjaan): ?>
-                                            <?php 
-                                                $display_date = date('d-m-Y', strtotime($tanggal_pengerjaan->tanggal_pengerjaan));
-                                                $value_date = date('d-m-Y', strtotime($tanggal_pengerjaan->tanggal_pengerjaan));
-                                            ?>
-                                            <option value="<?= htmlspecialchars($value_date) ?>" <?= (isset($_GET['tanggal_pengerjaan']) && $_GET['tanggal_pengerjaan'] === $value_date) ? 'selected' : '' ?>>
-                                                <?= $display_date ?> (<?= $tanggal_pengerjaan->jumlah_update ?> data)
-                                            </option>
-                                        <?php endforeach; endif; ?>
-                                    </select>
-                                </div>
-                                -->
-                                <?php // hide filter sementara: Update Terakhir (mobile) ?>
-                                <!--
-                                <div class="form-group">
-                                    <select name="tanggal_update_terakhir" class="form-select mobile-input">
-                                        <option value="">Update Terakhir</option>
-                                        <?php if (!empty($tanggal_pengerjaan_list)): foreach ($tanggal_pengerjaan_list as $tanggal_update_terakhir): ?>
-                                            <?php 
-                                                $display_date = date('d-m-Y', strtotime($tanggal_update_terakhir->tanggal_pengerjaan));
-                                                $value_date = date('d-m-Y', strtotime($tanggal_update_terakhir->tanggal_pengerjaan));
-                                            ?>
-                                            <option value="<?= htmlspecialchars($value_date) ?>" <?= (isset($_GET['tanggal_update_terakhir']) && $_GET['tanggal_update_terakhir'] === $value_date) ? 'selected' : '' ?>>
-                                                <?= $display_date ?> (<?= $tanggal_update_terakhir->jumlah_update ?> data)
-                                            </option>
-                                        <?php endforeach; endif; ?>
-                                    </select>
-                                </div>
-                                -->
-                                <div class="form-group">
-                                    <select name="status_jadwal" class="form-select mobile-input">
-                                        <option value="">Status Jadwal</option>
-                                        <option value="2">Sudah dijadwalkan</option>
-                                        <option value="1">Belum dijadwalkan</option>
-                                    </select>
-                                </div>
-                                <?php // hide filter sementara: Operator (mobile) ?>
-                                <!--
-                                <div class="form-group">
-                                    <select name="history_done" class="form-select mobile-input">
-                                    <option value="">Operator</option>
-                                        
-                                        <?php if (!empty($user_operators)): foreach ($user_operators as $operator): ?>
-                            
-                                            <option value="<?= htmlspecialchars($operator->id_user) ?>" <?= (isset($_GET['history_done']) && $_GET['history_done'] === $operator->id_user) ? 'selected' : '' ?>>
-                                                <?= htmlspecialchars($operator->nama_lengkap) ?>
-                                            </option>
-                                        <?php endforeach; endif; ?>
-                                    </select>
-                                </div>
-                                -->
-                                
-                                <?php // hide filter sementara: Sortir Mulai (mobile) ?>
-                                
-                                <div class="form-group">
-                                    <label for="startDateMobile" class="form-label">
-                                        <i class="fas fa-calendar"></i> Sortir Mulai
-                                    </label>
-                                    <input type="date" name="startDate" class="form-control mobile-input" id="startDateMobile" 
-                                           value="<?= isset($_GET['startDate']) ? htmlspecialchars($_GET['startDate']) : '' ?>">
-                                </div>
-                                
-                                <?php // hide filter sementara: Sortir Akhir (mobile) ?>
-                                
-                                <div class="form-group">
-                                    <label for="endDateMobile" class="form-label">
-                                        <i class="fas fa-calendar"></i> Sortir Akhir
-                                    </label>
-                                    <input type="date" name="endDate" class="form-control mobile-input" id="endDateMobile"
-                                           value="<?= isset($_GET['endDate']) ? htmlspecialchars($_GET['endDate']) : '' ?>">
-                                </div>
-                                
-                                
                                 <div class="form-actions">
                                     <button type="submit" class="btn btn-search">
                                         <i class="fas fa-search"></i> Cari
                                     </button>
-                                    <a href="<?= base_url('database/index') ?>" class="btn btn-reset">
+                                    <a href="<?= base_url('database/filter_on_target_done') ?>" class="btn btn-reset">
                                         <i class="fas fa-times"></i> Reset
                                     </a>
-                                    
-                                    <?php if($this->session->userdata('role') == 'admin'): ?>
-                                    <button type="button" class="btn btn-danger" id="deleteMultipleBtnMobile" style="display: none;" onclick="deleteMultipleRecords()">
-                                        <i class="fas fa-trash"></i> Hapus Terpilih
-                                    </button>
-                                    <?php endif; ?>
                                 </div>
                             </form>
                         </div>
-                      
                     </div>
 
                     <!-- Desktop Search Form -->
-                    <div class="desktop-search-container d-none d-md-block">
-                        <form method="get" action="<?= base_url('database/index') ?>" class="desktop-form">
-                            <div class="row g-2 align-items-center">
-                                <div class="col-md-1">
-                                    <select name="nama_travel" class="form-select form-control-sm">
-                                        <option value="">Semua Travel</option>
-                                        <?php if (!empty($travel_list)): foreach ($travel_list as $travel): ?>
-                                            <option value="<?= htmlspecialchars($travel->nama_travel) ?>" <?= (isset($_GET['nama_travel']) && $_GET['nama_travel'] === $travel->nama_travel) ? 'selected' : '' ?>>
-                                                <?= htmlspecialchars($travel->nama_travel) ?>
+                    <div class="desktop-search-container d-none d-md-block p-3">
+                        <form method="get" action="<?= base_url('database/filter_on_target_done') ?>" class="desktop-form">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-3">
+                                    <label for="email_domain_desktop" class="form-label"><i class="fas fa-at"></i> Domain Email</label>
+                                    <select id="email_domain_desktop" name="email_domain" class="form-select form-control-sm">
+                                        <option value="">Semua Email</option>
+                                        <?php if (!empty($email_domain_list)): foreach ($email_domain_list as $domain): ?>
+                                            <option value="<?= htmlspecialchars($domain->email_domain) ?>" <?= (isset($_GET['email_domain']) && $_GET['email_domain'] === $domain->email_domain) ? 'selected' : '' ?>>
+                                                @<?= htmlspecialchars($domain->email_domain) ?>
                                             </option>
                                         <?php endforeach; endif; ?>
                                     </select>
                                 </div>
-                                <div class="col-md-1">
-                                    <div class="searchable-select-wrapper" style="position: relative;">
-                                        <select name="flag_doc" id="flag_doc_desktop" class="form-select form-control-sm searchable-select">
-                                        <option value="">Semua Flag Dokumen</option>
-                                        <option value="null" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === 'null') ? 'selected' : '' ?>>Tanpa Flag Dokumen</option>
-                                        <?php if (!empty($flag_doc_list)): foreach ($flag_doc_list as $flag): ?>
-                                            <option value="<?= htmlspecialchars($flag->flag_doc) ?>" <?= (isset($_GET['flag_doc']) && $_GET['flag_doc'] === $flag->flag_doc) ? 'selected' : '' ?>>
-                                                <?= htmlspecialchars($flag->flag_doc) ?>
-                                            </option>
-                                        <?php endforeach; endif; ?>
-                                    </select>
-                                        <button type="button" class="btn-clear-flag-doc" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #666; font-size: 14px; cursor: pointer; z-index: 10; display: none;" title="Clear">
-                                            ×
-                                        </button>
-                                    </div>
-                                </div>
-                                <?php // hide filter sementara: Nama Peserta (desktop) ?>
-                                <!--
-                                <div class="col-md-1">
-                                    <input type="text" name="nama" value="<?= isset($_GET['nama']) ? htmlspecialchars($_GET['nama']) : '' ?>" class="form-control form-control-sm" placeholder="Nama Peserta">
-                                </div>
-                                -->
-                                <div class="col-md-1">
-                                    <input type="text" name="nomor_paspor" value="<?= isset($_GET['nomor_paspor']) ? htmlspecialchars($_GET['nomor_paspor']) : '' ?>" class="form-control form-control-sm" placeholder="No Paspor" >
-                                </div>
-                                <div class="col-md-1">
-                                    <input type="text" name="no_visa" value="<?= isset($_GET['no_visa']) ? htmlspecialchars($_GET['no_visa']) : '' ?>" class="form-control form-control-sm" placeholder="No Visa">
-                                </div>
-                                
-                                
-                                <div class="col-md-1">
-                                    <select name="tanggaljam" class="form-select form-control-sm">
-                                        <option value="">Waktu</option>
-                                        <?php if (!empty($tanggaljam_list)): foreach ($tanggaljam_list as $tanggaljam): ?>
-                                            <option value="<?= htmlspecialchars($tanggaljam->tanggaljam) ?>" <?= (isset($_GET['tanggaljam']) && $_GET['tanggaljam'] === $tanggaljam->tanggaljam) ? 'selected' : '' ?>>
-                                            <?= date('d-m-Y h:i A', strtotime($tanggaljam->tanggaljam)) ?>
-                                            </option>
-                                        <?php endforeach; endif; ?>
-                                    </select>
-                                </div>
-                                <!-- gender -->
-                                 <div class="col-md-1">
-                                    <select name="gender" class="form-select form-control-sm">
-                                        <option value="">Gender</option>
+                                <div class="col-md-2">
+                                    <label for="gender_desktop" class="form-label"><i class="fas fa-venus-mars"></i> Gender</label>
+                                    <select id="gender_desktop" name="gender" class="form-select form-control-sm">
+                                        <option value="">Semua Gender</option>
                                         <option value="L" <?= (isset($_GET['gender']) && $_GET['gender'] === 'L') ? 'selected' : '' ?>>Laki-laki</option>
                                         <option value="P" <?= (isset($_GET['gender']) && $_GET['gender'] === 'P') ? 'selected' : '' ?>>Perempuan</option>
                                     </select>
                                 </div>
-
-                                <div class="col-md-1">
-                                    <select name="status" class="form-select form-control-sm">
-                                        <option value="">Status Data</option>
-                                        <option value="0" <?= (isset($_GET['status']) && $_GET['status'] === '0') ? 'selected' : '' ?>>On Target</option>
-                                        <option value="1" <?= (isset($_GET['status']) && $_GET['status'] === '1') ? 'selected' : '' ?>>Already</option>
-                                        <option value="2" <?= (isset($_GET['status']) && $_GET['status'] === '2') ? 'selected' : '' ?>>Done</option>
-                                        <option value="3" <?= (isset($_GET['status']) && $_GET['status'] === '3') ? 'selected' : '' ?>>Fasttrack</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="col-md-1">
-                                    <select name="status_register_kembali" class="form-select form-control-sm">
-                                        <option value="">Status Register Ulang</option>
-                                        <option value="sudah" <?= (isset($_GET['status_register_kembali']) && $_GET['status_register_kembali'] === 'sudah') ? 'selected' : '' ?>>Register Ulang</option>
-                                        <option value="belum" <?= (isset($_GET['status_register_kembali']) && $_GET['status_register_kembali'] === 'belum') ? 'selected' : '' ?>>Belum Register Ulang</option>
-                                    </select>
-                                </div>
-
-                                <?php // hide filter sementara: Tanggal Pengerjaan (desktop) ?>
-                                <!--
-                                <div class="col-md-1">
-                                    <select name="tanggal_pengerjaan" class="form-select form-control-sm">
-                                        <option value="">Tanggal Pengerjaan</option>
-                                        <?php if (!empty($tanggal_pengerjaan_list)): foreach ($tanggal_pengerjaan_list as $tanggal_pengerjaan): ?>
-                                            <?php 
-                                                $display_date = date('d-m-Y', strtotime($tanggal_pengerjaan->tanggal_pengerjaan));
-                                                $value_date = date('d-m-Y', strtotime($tanggal_pengerjaan->tanggal_pengerjaan));
-                                            ?>
-                                            <option value="<?= htmlspecialchars($value_date) ?>" <?= (isset($_GET['tanggal_pengerjaan']) && $_GET['tanggal_pengerjaan'] === $value_date) ? 'selected' : '' ?>>
-                                                <?= $display_date ?> (<?= $tanggal_pengerjaan->jumlah_update ?> data)
-                                            </option>
-                                        <?php endforeach; endif; ?>
-                                    </select>
-                                </div>
-                                -->
-                                
-                                <div class="col-md-1">
-                                    <select name="status_jadwal" class="form-select form-control-sm">
-                                        <option value="">Status Jadwal</option>
-                                        <option value="2" <?= (isset($_GET['status_jadwal']) && $_GET['status_jadwal'] === '2') ? 'selected' : '' ?>>Sudah dijadwalkan</option>
-                                        <option value="1" <?= (isset($_GET['status_jadwal']) && $_GET['status_jadwal'] === '1') ? 'selected' : '' ?>>Belum dijadwalkan</option>
-                                    </select>
-                                </div>
-                                <?php // hide filter sementara: Operator (desktop) ?>
-                                <!--
-                                <div class="col-md-1">
-                                    <select name="history_done" class="form-select form-control-sm">
-                                        <option value="">Operator</option>
-                                        
-                                        <?php if (!empty($user_operators)): foreach ($user_operators as $operator): ?>
-                            
-                                            <option value="<?= htmlspecialchars($operator->id_user) ?>" <?= (isset($_GET['history_done']) && $_GET['history_done'] === $operator->id_user) ? 'selected' : '' ?>>
-                                                <?= htmlspecialchars($operator->nama_lengkap) ?>
-                                            </option>
-                                        <?php endforeach; endif; ?>
-                                    </select>
-                                </div>
-                                -->
-                                
-                            </div>
-                            <div class="row g-2 align-items-center">
-                                
-                                
-                                <?php // hide filter sementara: Update Terakhir (desktop) ?>
-                                <!--
-                                <div class="col-md-1">
-                                    <label for="tanggal_update_terakhir" class="form-label"><i class="fas fa-calendar"></i> Update Terakhir</label>
-                                    <select id="tanggal_update_terakhir" name="tanggal_update_terakhir" class="form-select form-control-sm">
-                                        <option value="">Update Terakhir</option>
-                                        <?php if (!empty($tanggal_pengerjaan_list)): foreach ($tanggal_pengerjaan_list as $tanggal_update_terakhir): ?>
-                                            <?php
-                                                $display_date = date('d-m-Y', strtotime($tanggal_update_terakhir->tanggal_pengerjaan));
-                                                $value_date = date('d-m-Y', strtotime($tanggal_update_terakhir->tanggal_pengerjaan));
-                                            ?>
-                                            <option value="<?= htmlspecialchars($value_date) ?>" <?= (isset($_GET['tanggal_update_terakhir']) && $_GET['tanggal_update_terakhir'] === $value_date) ? 'selected' : '' ?> >
-                                                <?= $display_date ?> (<?= $tanggal_update_terakhir->jumlah_update ?> data)
-                                            </option>
-                                        <?php endforeach; endif; ?>
-                                    </select>
-                                </div>
-                                -->
-                                <?php // hide filter sementara: Sortir Mulai (desktop) ?>
-                                
-                                <div class="col-md-1">
-                                    <label for="startDate" class="form-label"><i class="fas fa-calendar"></i> Sortir Mulai</label>
-                                    <input type="date" class="form-control" id="startDate" name="startDate" 
-                                           value="<?= isset($_GET['startDate']) ? htmlspecialchars($_GET['startDate']) : '' ?>">
-                                </div>
-                                
-                                <?php // hide filter sementara: Sortir Akhir (desktop) ?>
-                                
-                                <div class="col-md-1">
-                                    <label for="endDate" class="form-label"><i class="fas fa-calendar"></i> Sortir Akhir</label>
-                                    <input type="date" class="form-control" id="endDate" name="endDate"
-                                           value="<?= isset($_GET['endDate']) ? htmlspecialchars($_GET['endDate']) : '' ?>">
-                                </div>
-                                
-                                      
-                            </div> 
-                            <br>
-                            <div class="row g-2 align-items-center">
-                                <div class="col-md-3">
+                                <div class="col-md-auto">
                                     <button type="submit" class="btn btn-brown btn-sm me-2">
                                         <i class="fas fa-search"></i> Cari
                                     </button>
-                                    <a href="<?= base_url('database/index') ?>" class="btn btn-brown-light btn-sm me-2">
+                                    <a href="<?= base_url('database/filter_on_target_done') ?>" class="btn btn-brown-light btn-sm">
                                         <i class="fas fa-times"></i> Reset
                                     </a>
-                                    
-                                </div>             
+                                </div>
                             </div>
                         </form>
                     </div>
-
-                    <!-- Update Statistics Info -->
-                    <?php if (isset($update_stats) && isset($update_stats_detail)): ?>
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <div class="alert alert-info">
-                                <h6 class="alert-heading">
-                                    <i class="fas fa-chart-bar"></i> Statistik Update Data
-                                </h6>
-                                <p class="mb-2">
-                                    <strong>Tanggal Pengerjaan:</strong> 
-                                    <?= date('d-m-Y', strtotime($_GET['tanggal_pengerjaan'])) ?>
-                                </p>
-                                <p class="mb-2">
-                                    <strong>Total Data Diupdate:</strong> 
-                                    <span class="badge bg-primary"><?= $update_stats ?> data</span>
-                                </p>
-                                <?php if (!empty($update_stats_detail)): ?>
-                                <div class="mt-2">
-                                    <strong>Breakdown Status:</strong>
-                                    <div class="d-flex flex-wrap gap-2 mt-1">
-                                        <?php foreach ($update_stats_detail as $stat): ?>
-                                            <span class="badge bg-secondary">
-                                                <?= $stat->status == 0 ? 'On Target' : ($stat->status == 1 ? 'Already' : 'Done') ?>: 
-                                                <?= $stat->count ?> data
-                                            </span>
-                                        <?php endforeach; ?>
-                                    </div>
-                                </div>
-                                <br>
-                                <p class="mb-2">
-                                    <button type="button" class="btn btn-sm btn-attachment" onclick="downloadBarcodeAttachments()">
-                                        <i class="fas fa-download"></i> <span class="d-none d-sm-inline">Download Barcode</span>
-                                    </button>
-                                </p>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-                    <?php endif; ?>
 
                     <!-- Mobile Excel-like Table -->
                     <div class="mobile-table-container d-block d-lg-none">
@@ -1603,7 +1241,7 @@
 }
 
 .copyable-text::after {
-    content: '📋';
+    content: 'ðŸ“‹';
     position: absolute;
     top: -8px;
     right: -8px;
@@ -2077,85 +1715,10 @@
 #operatorStatisticsModal .card-text {
     font-size: 0.875rem;
 }
-
-/* Pekerjaan Statistics Modal Styles */
-#pekerjaanStatisticsModal .modal-dialog {
-    max-width: min(1140px, calc(100vw - 2rem));
-    margin: 0;
-}
-
-#pekerjaanStatisticsModal .modal-content {
-    min-height: 200px;
-}
-
-#pekerjaanStatisticsModal .modal-body {
-    max-height: 75vh;
-    overflow-y: auto;
-    padding: 1.25rem;
-}
-
-#pekerjaanStatisticsModal .table th {
-    position: sticky;
-    top: 0;
-    background: #343a40;
-    z-index: 10;
-    padding: 0.65rem 0.5rem;
-    font-size: 0.875rem;
-    white-space: nowrap;
-}
-
-#pekerjaanStatisticsModal .card {
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow);
-    transition: var(--transition);
-}
-
-#pekerjaanStatisticsModal .card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-hover);
-}
-
-#pekerjaanStatisticsModal .badge {
-    font-size: 0.875rem;
-    padding: 0.4rem 0.55rem;
-    min-width: 2rem;
-}
-
-#pekerjaanStatisticsModal .table td {
-    vertical-align: middle;
-    padding: 0.65rem 0.5rem;
-    font-size: 0.875rem;
-}
-
-#pekerjaanStatisticsModal .form-label {
-    font-weight: 600;
-    color: #495057;
-    margin-bottom: 0.25rem;
-}
-
-#pekerjaanStatisticsModal .form-control:focus {
-    border-color: #8B4513;
-    box-shadow: 0 0 0 0.2rem rgba(139, 69, 19, 0.25);
-}
-
-#pekerjaanStatisticsModal .card-body {
-    padding: 0.75rem;
-}
-
-#pekerjaanStatisticsModal .card-title {
-    font-size: 1.1rem;
-    font-weight: bold;
-}
-
-#pekerjaanStatisticsModal .card-text {
-    font-size: 0.8rem;
-}
 </style>
 
-<?php $this->load->view('database/export_modal'); ?>
-
-<!-- Operator Statistics Modal -->
-<div class="modal fade" id="operatorStatisticsModal" tabindex="-1" aria-labelledby="operatorStatisticsModalLabel" aria-hidden="true">
+<!-- Operator Statistics Modal (disabled on Filter Done page) -->
+<div class="modal fade d-none" id="operatorStatisticsModal" tabindex="-1" aria-labelledby="operatorStatisticsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header bg-brown text-white">
@@ -2343,97 +1906,6 @@
     </div>
 </div>
 
-<!-- Pekerjaan Statistics Modal -->
-<div class="modal fade" id="pekerjaanStatisticsModal" tabindex="-1" aria-labelledby="pekerjaanStatisticsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header bg-brown text-white">
-                <h5 class="modal-title" id="pekerjaanStatisticsModalLabel">
-                    <i class="fas fa-tasks"></i> Statistik Pekerjaan
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="row mb-3">
-                    <div class="col-md-5">
-                        <label for="pekerjaanStartDate" class="form-label"><i class="fas fa-calendar"></i> Tanggal Mulai</label>
-                        <input type="date" class="form-control" id="pekerjaanStartDate" name="startDate">
-                    </div>
-                    <div class="col-md-5">
-                        <label for="pekerjaanEndDate" class="form-label"><i class="fas fa-calendar"></i> Tanggal Akhir</label>
-                        <input type="date" class="form-control" id="pekerjaanEndDate" name="endDate">
-                    </div>
-                    <div class="col-md-2 d-flex align-items-end">
-                        <div class="d-flex gap-1 w-100">
-                            <button type="button" class="btn btn-primary btn-sm" onclick="filterPekerjaanStatistics()">
-                                <i class="fas fa-filter"></i>
-                            </button>
-                            <button type="button" class="btn btn-secondary btn-sm" onclick="resetPekerjaanDateFilter()">
-                                <i class="fas fa-undo"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row mb-3">
-                    <div class="col-12">
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle"></i>
-                            <strong>Informasi:</strong> Menghitung jumlah perubahan per operator dari Todo List, Data Peserta, QR Data, dan upload barcode untuk field Gender, Tanggal, Jam, Status, Barcode, dan Register Ulang. Setiap perubahan field = +1 aktivitas.
-                        </div>
-                    </div>
-                </div>
-
-                <div id="pekerjaanStatsLoading" class="text-center py-4">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <p class="mt-2">Memuat data statistik pekerjaan...</p>
-                </div>
-
-                <div id="pekerjaanStatsContent" style="display: none;">
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-striped table-hover mb-0">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th class="text-center" style="width: 4%;">No</th>
-                                    <th style="min-width: 160px;">Nama Operator</th>
-                                    <th class="text-center text-nowrap">Gender</th>
-                                    <th class="text-center text-nowrap">Tanggal</th>
-                                    <th class="text-center text-nowrap">Jam</th>
-                                    <th class="text-center text-nowrap">Status</th>
-                                    <th class="text-center text-nowrap">Barcode</th>
-                                    <th class="text-center text-nowrap">Reg. Ulang</th>
-                                    <th class="text-center text-nowrap">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody id="pekerjaanStatsTableBody"></tbody>
-                        </table>
-                    </div>
-
-                    <div class="row mt-4" id="pekerjaanStatsSummary"></div>
-                </div>
-
-                <div id="pekerjaanStatsError" class="alert alert-danger" style="display: none;">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <span id="pekerjaanStatsErrorMessage">Terjadi kesalahan saat memuat data.</span>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
-                    <i class="fas fa-times"></i> Tutup
-                </button>
-                <button type="button" class="btn btn-primary btn-sm" onclick="refreshPekerjaanStatistics()">
-                    <i class="fas fa-sync-alt"></i> Refresh
-                </button>
-                <button type="button" class="btn btn-success btn-sm" onclick="exportPekerjaanStatistics()">
-                    <i class="fas fa-download"></i> Export
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <style>
     /* Searchable select styles */
@@ -2590,7 +2062,7 @@
     }
     
     .copyable-text.selected::after {
-        content: " ✓";
+        content: " âœ“";
         color: #f44336;
         font-weight: bold;
         text-shadow: 0 1px 2px rgba(0,0,0,0.2);
@@ -2630,6 +2102,23 @@
     }
     </style>
     <script>
+const FILTER_ON_TARGET_DONE_BASE_URL = '<?= base_url('database/filter_on_target_done') ?>';
+
+function buildFilterOnTargetDoneRedirectUrl() {
+    const params = new URLSearchParams(window.location.search);
+    let redirectUrl = FILTER_ON_TARGET_DONE_BASE_URL;
+    const queryParams = [];
+    ['email_domain', 'gender', 'page'].forEach(param => {
+        if (params.has(param) && params.get(param)) {
+            queryParams.push(`${param}=${encodeURIComponent(params.get(param))}`);
+        }
+    });
+    if (queryParams.length > 0) {
+        redirectUrl += '?' + queryParams.join('&');
+    }
+    return redirectUrl;
+}
+
 // Copy to clipboard function dengan visual indicator
 function copyToClipboard(text, fieldName) {
     // Handle empty or dash values
@@ -2751,7 +2240,7 @@ function showCopySuccess(fieldName, text) {
 // Add loading state to copy function (unchanged)
 function addCopyLoadingState(element) {
     const originalText = element.textContent;
-    element.textContent = '📋 Copying...';
+    element.textContent = 'ðŸ“‹ Copying...';
     element.style.opacity = '0.7';
     element.style.pointerEvents = 'none';
     
@@ -3254,25 +2743,7 @@ function saveRow(button) {
             showAlert('Data berhasil diperbarui', 'success');
             // Redirect back to previous page with filters after 1 second
             setTimeout(() => {
-                const currentUrl = new URL(window.location.href);
-                const params = new URLSearchParams(currentUrl.search);
-                
-                // Build redirect URL with current filters
-                let redirectUrl = '<?= base_url('database/index') ?>';
-                const queryParams = [];
-                
-                // Add all current filters
-                ['nama', 'nomor_paspor', 'no_visa', 'flag_doc', 'tanggaljam', 'status', 'gender', 'page', 'status_jadwal', 'tanggal_pengerjaan', 'history_done', 'nama_travel', 'sortir_waktu_start', 'sortir_waktu_end', 'startDate', 'endDate', 'has_barcode'].forEach(param => {
-                    if (params.has(param) && params.get(param)) {
-                        queryParams.push(`${param}=${encodeURIComponent(params.get(param))}`);
-                    }
-                });
-                
-                if (queryParams.length > 0) {
-                    redirectUrl += '?' + queryParams.join('&');
-                }
-                
-                window.location.href = redirectUrl;
+                window.location.href = buildFilterOnTargetDoneRedirectUrl();
             }, 1000);
             
             editFields.forEach(field => field.style.display = 'none');
@@ -3408,7 +2879,6 @@ function uploadBarcodeImage(fileInput) {
     const row = fileInput.closest('tr');
     const flagDocField = row.querySelector('[data-field="flag_doc"]');
     const flagDoc = flagDocField ? flagDocField.getAttribute('data-value') : '';
-    const pesertaId = row.getAttribute('data-id') || '';
     
     if (!flagDoc || flagDoc === '-' || flagDoc === '') {
         showAlert('Flag dokumen harus diisi terlebih dahulu sebelum upload barcode', 'warning');
@@ -3418,9 +2888,6 @@ function uploadBarcodeImage(fileInput) {
     const formData = new FormData();
     formData.append('barcode_image', file);
     formData.append('flag_doc', flagDoc);
-    if (pesertaId) {
-        formData.append('peserta_id', pesertaId);
-    }
     
     // Show loading state
     const uploadBtn = fileInput.previousElementSibling.querySelector('.barcode-upload-btn');
@@ -3483,9 +2950,8 @@ function downloadBarcodeAttachments() {
     // Get current filters
     const urlParams = new URLSearchParams(window.location.search);
     const filters = {
-        tanggaljam: urlParams.get('tanggaljam') || '',
-        flag_doc: urlParams.get('flag_doc') || '',
-        status: urlParams.get('status') || ''
+        email_domain: urlParams.get('email_domain') || '',
+        status: urlParams.get('status') || '1'
     };
     
     // Show loading state
@@ -3498,8 +2964,7 @@ function downloadBarcodeAttachments() {
     let downloadUrl = '<?= base_url('database/download_barcode_attachments') ?>';
     const queryParams = new URLSearchParams();
     
-    if (filters.tanggaljam) queryParams.append('tanggaljam', filters.tanggaljam);
-    if (filters.flag_doc) queryParams.append('flag_doc', filters.flag_doc);
+    if (filters.email_domain) queryParams.append('email_domain', filters.email_domain);
     if (filters.status) queryParams.append('status', filters.status);
     
     if (queryParams.toString()) {
@@ -3643,7 +3108,7 @@ function showCopySuccess(fieldName, text) {
 // Add loading state to copy function
 function addCopyLoadingState(element) {
     const originalText = element.textContent;
-    element.textContent = '📋 Copying...';
+    element.textContent = 'ðŸ“‹ Copying...';
     element.style.opacity = '0.7';
     element.style.pointerEvents = 'none';
     
@@ -3670,11 +3135,7 @@ function enhancePagination() {
     // Debug: Log current URL and parameters
     console.log('Current URL:', window.location.href);
     console.log('Current filters:', {
-        nama: new URLSearchParams(window.location.search).get('nama'),
-        nomor_paspor: new URLSearchParams(window.location.search).get('nomor_paspor'),
-        no_visa: new URLSearchParams(window.location.search).get('no_visa'),
-        flag_doc: new URLSearchParams(window.location.search).get('flag_doc'),
-        tanggaljam: new URLSearchParams(window.location.search).get('tanggaljam'),
+        email_domain: new URLSearchParams(window.location.search).get('email_domain'),
         page: new URLSearchParams(window.location.search).get('page')
     });
     
@@ -3959,25 +3420,7 @@ function saveRowMobileTable(button) {
             showAlert('Data berhasil diperbarui', 'success');
             // Redirect back to previous page with filters after 1 second
             setTimeout(() => {
-                const currentUrl = new URL(window.location.href);
-                const params = new URLSearchParams(currentUrl.search);
-                
-                // Build redirect URL with current filters
-                let redirectUrl = '<?= base_url('database/index') ?>';
-                const queryParams = [];
-                
-                // Add all current filters
-                ['nama', 'nomor_paspor', 'no_visa', 'flag_doc', 'tanggaljam', 'status', 'gender', 'page', 'status_jadwal', 'tanggal_pengerjaan', 'tanggal_update_terakhir', 'history_done', 'nama_travel', 'sortir_waktu_start', 'sortir_waktu_end', 'startDate', 'endDate', 'has_barcode'].forEach(param => {
-                    if (params.has(param) && params.get(param)) {
-                        queryParams.push(`${param}=${encodeURIComponent(params.get(param))}`);
-                    }
-                });
-                
-                if (queryParams.length > 0) {
-                    redirectUrl += '?' + queryParams.join('&');
-                }
-                
-                window.location.href = redirectUrl;
+                window.location.href = buildFilterOnTargetDoneRedirectUrl();
             }, 1000);
             
             // Remove editing class
@@ -4119,25 +3562,7 @@ function saveRow(button) {
             showAlert('Data berhasil diperbarui', 'success');
             // Redirect back to previous page with filters after 1 second
             setTimeout(() => {
-                const currentUrl = new URL(window.location.href);
-                const params = new URLSearchParams(currentUrl.search);
-                
-                // Build redirect URL with current filters
-                let redirectUrl = '<?= base_url('database/index') ?>';
-                const queryParams = [];
-                
-                // Add all current filters
-                ['nama', 'nomor_paspor', 'no_visa', 'flag_doc', 'tanggaljam', 'status', 'gender', 'page', 'status_jadwal', 'tanggal_pengerjaan', 'history_done', 'nama_travel', 'sortir_waktu_start', 'sortir_waktu_end', 'startDate', 'endDate', 'has_barcode'].forEach(param => {
-                    if (params.has(param) && params.get(param)) {
-                        queryParams.push(`${param}=${encodeURIComponent(params.get(param))}`);
-                    }
-                });
-                
-                if (queryParams.length > 0) {
-                    redirectUrl += '?' + queryParams.join('&');
-                }
-                
-                window.location.href = redirectUrl;
+                window.location.href = buildFilterOnTargetDoneRedirectUrl();
             }, 1000);
             
             editFields.forEach(field => field.style.display = 'none');
@@ -4424,211 +3849,6 @@ function showOperatorStatisticsError(message) {
     document.getElementById('operatorStatsErrorMessage').textContent = message;
 }
 
-// Pekerjaan Statistics Functions
-function showPekerjaanStatistics() {
-    const modal = new bootstrap.Modal(document.getElementById('pekerjaanStatisticsModal'));
-    modal.show();
-    loadPekerjaanStatistics();
-}
-
-function loadPekerjaanStatistics(filters = {}) {
-    document.getElementById('pekerjaanStatsLoading').style.display = 'block';
-    document.getElementById('pekerjaanStatsContent').style.display = 'none';
-    document.getElementById('pekerjaanStatsError').style.display = 'none';
-
-    const requestData = new FormData();
-    if (filters.start_date) requestData.append('start_date', filters.start_date);
-    if (filters.end_date) requestData.append('end_date', filters.end_date);
-
-    fetch('<?= base_url('database/get_pekerjaan_statistics') ?>', {
-        method: 'POST',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-        body: requestData
-    })
-    .then(response => {
-        if (response.status === 401) {
-            showAlert('Session expired. Silakan login ulang.', 'error');
-            setTimeout(() => { window.location.href = '<?= base_url('auth') ?>'; }, 2000);
-            return;
-        }
-        return response.json();
-    })
-    .then(result => {
-        if (!result) return;
-        if (result.success) {
-            displayPekerjaanStatistics(result.data, result.filters);
-        } else {
-            showPekerjaanStatisticsError(result.message || 'Gagal memuat data statistik pekerjaan');
-        }
-    })
-    .catch(error => {
-        console.error('Error loading pekerjaan statistics:', error);
-        showPekerjaanStatisticsError('Terjadi kesalahan saat memuat data statistik pekerjaan');
-    });
-}
-
-function filterPekerjaanStatistics() {
-    const startDate = document.getElementById('pekerjaanStartDate').value;
-    const endDate = document.getElementById('pekerjaanEndDate').value;
-    if (startDate && endDate && startDate > endDate) {
-        showAlert('Tanggal mulai tidak boleh lebih besar dari tanggal akhir', 'error');
-        return;
-    }
-    const filters = {};
-    if (startDate) filters.start_date = startDate;
-    if (endDate) filters.end_date = endDate;
-    loadPekerjaanStatistics(filters);
-}
-
-function resetPekerjaanDateFilter() {
-    document.getElementById('pekerjaanStartDate').value = '';
-    document.getElementById('pekerjaanEndDate').value = '';
-    loadPekerjaanStatistics();
-}
-
-function refreshPekerjaanStatistics() {
-    const startDate = document.getElementById('pekerjaanStartDate').value;
-    const endDate = document.getElementById('pekerjaanEndDate').value;
-    const filters = {};
-    if (startDate) filters.start_date = startDate;
-    if (endDate) filters.end_date = endDate;
-    loadPekerjaanStatistics(filters);
-}
-
-function exportPekerjaanStatistics() {
-    const startDate = document.getElementById('pekerjaanStartDate').value;
-    const endDate = document.getElementById('pekerjaanEndDate').value;
-    let exportUrl = '<?= base_url('database/export_pekerjaan_statistics') ?>';
-    const params = [];
-    if (startDate) params.push(`start_date=${encodeURIComponent(startDate)}`);
-    if (endDate) params.push(`end_date=${encodeURIComponent(endDate)}`);
-    if (params.length > 0) exportUrl += '?' + params.join('&');
-    window.open(exportUrl, '_blank');
-}
-
-function displayPekerjaanStatistics(data, filters = {}) {
-    document.getElementById('pekerjaanStatsLoading').style.display = 'none';
-    document.getElementById('pekerjaanStatsContent').style.display = 'block';
-
-    const tableBody = document.getElementById('pekerjaanStatsTableBody');
-    const summaryContainer = document.getElementById('pekerjaanStatsSummary');
-    tableBody.innerHTML = '';
-    summaryContainer.innerHTML = '';
-
-    if (!data || data.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="9" class="text-center">Tidak ada data aktivitas pekerjaan</td></tr>';
-        return;
-    }
-
-    const totals = {
-        gender: 0, tanggal: 0, jam: 0, status: 0, barcode: 0, register_ulang: 0, total: 0
-    };
-
-    data.forEach((row, index) => {
-        const gender = parseInt(row.gender_count) || 0;
-        const tanggal = parseInt(row.tanggal_count) || 0;
-        const jam = parseInt(row.jam_count) || 0;
-        const status = parseInt(row.status_count) || 0;
-        const barcode = parseInt(row.barcode_count) || 0;
-        const registerUlang = parseInt(row.register_ulang_count) || 0;
-        const total = parseInt(row.total_aktivitas) || 0;
-
-        totals.gender += gender;
-        totals.tanggal += tanggal;
-        totals.jam += jam;
-        totals.status += status;
-        totals.barcode += barcode;
-        totals.register_ulang += registerUlang;
-        totals.total += total;
-
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td class="text-center">${index + 1}</td>
-            <td>
-                <strong>${row.nama_lengkap || row.user_operator}</strong><br>
-                <small class="text-muted">@${row.username || row.user_operator}</small>
-            </td>
-            <td class="text-center"><span class="badge bg-secondary">${gender}</span></td>
-            <td class="text-center"><span class="badge bg-info">${tanggal}</span></td>
-            <td class="text-center"><span class="badge bg-primary">${jam}</span></td>
-            <td class="text-center"><span class="badge bg-warning text-dark">${status}</span></td>
-            <td class="text-center"><span class="badge bg-success">${barcode}</span></td>
-            <td class="text-center"><span class="badge bg-danger">${registerUlang}</span></td>
-            <td class="text-center"><span class="badge bg-dark">${total}</span></td>
-        `;
-        tableBody.appendChild(tr);
-    });
-
-    let filterInfoHtml = '';
-    if (filters.start_date || filters.end_date) {
-        filterInfoHtml = '<div class="alert alert-info mb-3"><i class="fas fa-filter"></i> <strong>Filter Aktif:</strong> ';
-        if (filters.start_date && filters.end_date) {
-            filterInfoHtml += `Rentang tanggal: ${formatDate(filters.start_date)} - ${formatDate(filters.end_date)}`;
-        } else if (filters.start_date) {
-            filterInfoHtml += `Dari tanggal: ${formatDate(filters.start_date)}`;
-        } else if (filters.end_date) {
-            filterInfoHtml += `Sampai tanggal: ${formatDate(filters.end_date)}`;
-        }
-        filterInfoHtml += '</div>';
-    } else {
-        filterInfoHtml = '<div class="alert alert-info mb-3"><i class="fas fa-info-circle"></i> <strong>Menampilkan semua data</strong> (tanpa filter tanggal)</div>';
-    }
-
-    summaryContainer.innerHTML = filterInfoHtml + `
-        <div class="row mt-3 g-2">
-            <div class="col-md-4 col-6">
-                <div class="card bg-secondary text-white"><div class="card-body text-center py-2">
-                    <h5 class="card-title mb-1">${totals.gender.toLocaleString('id-ID')}</h5>
-                    <p class="card-text mb-0 small">Gender</p>
-                </div></div>
-            </div>
-            <div class="col-md-4 col-6">
-                <div class="card bg-info text-white"><div class="card-body text-center py-2">
-                    <h5 class="card-title mb-1">${totals.tanggal.toLocaleString('id-ID')}</h5>
-                    <p class="card-text mb-0 small">Tanggal</p>
-                </div></div>
-            </div>
-            <div class="col-md-4 col-6">
-                <div class="card bg-primary text-white"><div class="card-body text-center py-2">
-                    <h5 class="card-title mb-1">${totals.jam.toLocaleString('id-ID')}</h5>
-                    <p class="card-text mb-0 small">Jam</p>
-                </div></div>
-            </div>
-            <div class="col-md-4 col-6">
-                <div class="card bg-warning text-dark"><div class="card-body text-center py-2">
-                    <h5 class="card-title mb-1">${totals.status.toLocaleString('id-ID')}</h5>
-                    <p class="card-text mb-0 small">Status</p>
-                </div></div>
-            </div>
-            <div class="col-md-4 col-6">
-                <div class="card bg-success text-white"><div class="card-body text-center py-2">
-                    <h5 class="card-title mb-1">${totals.barcode.toLocaleString('id-ID')}</h5>
-                    <p class="card-text mb-0 small">Barcode</p>
-                </div></div>
-            </div>
-            <div class="col-md-4 col-6">
-                <div class="card bg-danger text-white"><div class="card-body text-center py-2">
-                    <h5 class="card-title mb-1">${totals.register_ulang.toLocaleString('id-ID')}</h5>
-                    <p class="card-text mb-0 small">Register Ulang</p>
-                </div></div>
-            </div>
-            <div class="col-12">
-                <div class="card text-white" style="background:#6f42c1;"><div class="card-body text-center py-2">
-                    <h5 class="card-title mb-1">${totals.total.toLocaleString('id-ID')}</h5>
-                    <p class="card-text mb-0 small">Total Aktivitas</p>
-                </div></div>
-            </div>
-        </div>
-    `;
-}
-
-function showPekerjaanStatisticsError(message) {
-    document.getElementById('pekerjaanStatsLoading').style.display = 'none';
-    document.getElementById('pekerjaanStatsContent').style.display = 'none';
-    document.getElementById('pekerjaanStatsError').style.display = 'block';
-    document.getElementById('pekerjaanStatsErrorMessage').textContent = message;
-}
-
 // Register Ulang Statistics Functions
 function showRegisterUlangStatistics() {
     // Show modal
@@ -4802,24 +4022,7 @@ function showRegisterUlangStatisticsError(message) {
 // Delete data function with filter preservation
 function deleteData(id) {
     if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
-        // Get current filters from URL
-        const currentUrl = new URL(window.location.href);
-        const params = new URLSearchParams(currentUrl.search);
-        
-        // Build redirect URL with current filters
-        let redirectUrl = '<?= base_url('database/index') ?>';
-        const queryParams = [];
-        
-        // Add all current filters
-        ['nama', 'nomor_paspor', 'no_visa', 'flag_doc', 'tanggaljam', 'status', 'gender', 'page', 'status_jadwal', 'tanggal_pengerjaan', 'history_done', 'nama_travel', 'sortir_waktu_start', 'sortir_waktu_end', 'startDate', 'endDate', 'has_barcode'].forEach(param => {
-            if (params.has(param) && params.get(param)) {
-                queryParams.push(`${param}=${encodeURIComponent(params.get(param))}`);
-            }
-        });
-        
-        if (queryParams.length > 0) {
-            redirectUrl += '?' + queryParams.join('&');
-        }
+        const redirectUrl = buildFilterOnTargetDoneRedirectUrl();
         
         // Show loading state
         const button = event.target.closest('button');
@@ -4837,24 +4040,7 @@ function deleteData(id) {
 // Remove schedule (tanggal & jam) function
 function removeSchedule(id) {
     if (confirm('Apakah Anda yakin ingin menghapus tanggal dan jam untuk data ini?')) {
-        // Get current filters from URL
-        const currentUrl = new URL(window.location.href);
-        const params = new URLSearchParams(currentUrl.search);
-        
-        // Build redirect URL with current filters
-        let redirectUrl = '<?= base_url('database/index') ?>';
-        const queryParams = [];
-        
-        // Add all current filters
-        ['nama', 'nomor_paspor', 'no_visa', 'flag_doc', 'tanggaljam', 'status', 'gender', 'page', 'status_jadwal', 'tanggal_pengerjaan', 'history_done', 'nama_travel', 'sortir_waktu_start', 'sortir_waktu_end', 'startDate', 'endDate', 'has_barcode'].forEach(param => {
-            if (params.has(param) && params.get(param)) {
-                queryParams.push(`${param}=${encodeURIComponent(params.get(param))}`);
-            }
-        });
-        
-        if (queryParams.length > 0) {
-            redirectUrl += '?' + queryParams.join('&');
-        }
+        const redirectUrl = buildFilterOnTargetDoneRedirectUrl();
         
         // Show loading state
         const button = event.target.closest('button');
@@ -4872,24 +4058,7 @@ function removeSchedule(id) {
 // Register ulang function
 function registerUlang(id) {
     if (confirm('Apakah Anda yakin ingin menandai data ini sebagai Register Ulang?')) {
-        // Get current filters from URL
-        const currentUrl = new URL(window.location.href);
-        const params = new URLSearchParams(currentUrl.search);
-        
-        // Build redirect URL with current filters
-        let redirectUrl = '<?= base_url('database/index') ?>';
-        const queryParams = [];
-        
-        // Add all current filters
-        ['nama', 'nomor_paspor', 'no_visa', 'flag_doc', 'tanggaljam', 'status', 'gender', 'page', 'status_jadwal', 'tanggal_pengerjaan', 'history_done', 'nama_travel', 'sortir_waktu_start', 'sortir_waktu_end', 'startDate', 'endDate', 'has_barcode'].forEach(param => {
-            if (params.has(param) && params.get(param)) {
-                queryParams.push(`${param}=${encodeURIComponent(params.get(param))}`);
-            }
-        });
-        
-        if (queryParams.length > 0) {
-            redirectUrl += '?' + queryParams.join('&');
-        }
+        const redirectUrl = buildFilterOnTargetDoneRedirectUrl();
         
         // Show loading state
         const button = event.target.closest('button');
@@ -5048,10 +4217,6 @@ function uploadBarcodeFile(file, flagDoc, barcodeInput, row) {
     const formData = new FormData();
     formData.append('barcode_image', file);
     formData.append('flag_doc', flagDoc);
-    const pesertaId = row.getAttribute('data-id') || '';
-    if (pesertaId) {
-        formData.append('peserta_id', pesertaId);
-    }
     
     // Get existing barcode filename for replacement from database value
     const barcodeTd = row.querySelector('[data-field="barcode"]');
@@ -5624,22 +4789,7 @@ function handleRedirectAfterUpdate(result) {
     } else {
         console.log('Using fallback redirect URL');
         // Fallback: build redirect URL manually
-        const currentUrl = new URL(window.location.href);
-        const params = new URLSearchParams(currentUrl.search);
-        
-        let redirectUrl = '<?= base_url('database/index') ?>';
-        const queryParams = [];
-        
-        ['nama', 'nomor_paspor', 'no_visa', 'flag_doc', 'tanggaljam', 'status', 'gender', 'page', 'status_jadwal', 'tanggal_pengerjaan', 'history_done', 'nama_travel', 'sortir_waktu_start', 'sortir_waktu_end', 'startDate', 'endDate', 'has_barcode'].forEach(param => {
-            if (params.has(param) && params.get(param)) {
-                queryParams.push(`${param}=${encodeURIComponent(params.get(param))}`);
-            }
-        });
-        
-        if (queryParams.length > 0) {
-            redirectUrl += '?' + queryParams.join('&');
-        }
-        
+        const redirectUrl = buildFilterOnTargetDoneRedirectUrl();
         console.log('Fallback redirect URL:', redirectUrl);
         window.location.href = redirectUrl;
     }
@@ -5854,7 +5004,7 @@ function setupSearchableSelect(selectElement) {
     const input = document.createElement('input');
     input.type = 'text';
     input.className = 'searchable-select-input';
-    input.placeholder = '🔍 Cari flag dokumen...';
+    input.placeholder = 'ðŸ” Cari flag dokumen...';
     input.autocomplete = 'off';
     
     // Create dropdown
@@ -5865,7 +5015,7 @@ function setupSearchableSelect(selectElement) {
     const clearButton = document.createElement('button');
     clearButton.type = 'button';
     clearButton.className = 'btn-clear-flag-doc';
-    clearButton.innerHTML = '×';
+    clearButton.innerHTML = 'Ã—';
     clearButton.title = 'Clear';
     clearButton.style.cssText = 'position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #666; font-size: 16px; cursor: pointer; z-index: 10; display: none;';
     
@@ -6030,7 +5180,7 @@ function setupSearchableSelect(selectElement) {
         // Trigger change event
         selectElement.dispatchEvent(new Event('change'));
         
-        console.log('✅ Flag doc cleared');
+        console.log('âœ… Flag doc cleared');
     });
     
     // Update highlight
@@ -6074,20 +5224,20 @@ function setupSearchableSelect(selectElement) {
         
         // Add travel-specific flag_doc options via AJAX
         if (selectedTravel && selectedTravel !== '') {
-            console.log('🔄 Step 1: Travel selected:', selectedTravel);
-            console.log('📋 Menu: Database (Menu Peserta) - All Status');
+            console.log('ðŸ”„ Step 1: Travel selected:', selectedTravel);
+            console.log('ðŸ“‹ Menu: Database (Menu Peserta) - All Status');
             
             // Step 2: AJAX call
             fetch(`<?= base_url('database/get_flag_doc_by_travel') ?>?travel=${encodeURIComponent(selectedTravel)}`)
             .then(response => {
-                console.log('🔄 Step 2: AJAX response status:', response.status);
+                console.log('ðŸ”„ Step 2: AJAX response status:', response.status);
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}`);
                 }
                 return response.json();
             })
             .then(data => {
-                console.log('🔄 Step 3: Response data:', data);
+                console.log('ðŸ”„ Step 3: Response data:', data);
                 
                 if (data.success && data.data && data.data.length > 0) {
                     // Step 3: Update dropdown
@@ -6097,21 +5247,21 @@ function setupSearchableSelect(selectElement) {
                         option.textContent = flag.flag_doc;
                         selectElement.appendChild(option);
                     });
-                    console.log('✅ Step 3: Added', data.data.length, 'flag_doc options (All Status)');
+                    console.log('âœ… Step 3: Added', data.data.length, 'flag_doc options (All Status)');
                 } else {
-                    console.log('⚠️ Step 3: No flag_doc data found for travel:', selectedTravel);
+                    console.log('âš ï¸ Step 3: No flag_doc data found for travel:', selectedTravel);
                 }
                 
                 // Always refresh dropdown
                 populateDropdown(input.value.trim());
             })
             .catch(error => {
-                console.error('❌ AJAX Error:', error.message);
+                console.error('âŒ AJAX Error:', error.message);
                 // Still refresh dropdown
                 populateDropdown(input.value.trim());
             });
         } else {
-            console.log('🔄 Step 1: No travel selected, restoring all options');
+            console.log('ðŸ”„ Step 1: No travel selected, restoring all options');
             // Restore all original options
             originalOptions.forEach(optionData => {
                 if (optionData.value !== '' && optionData.value !== 'null') {
@@ -6128,8 +5278,8 @@ function setupSearchableSelect(selectElement) {
     // Listen for travel selection changes - use event delegation for better reliability
     document.addEventListener('change', function(e) {
         if (e.target.name === 'nama_travel') {
-            console.log('🔄 Step 1: Travel select changed via event delegation');
-            console.log('🔄 Step 1: Selected travel value:', e.target.value);
+            console.log('ðŸ”„ Step 1: Travel select changed via event delegation');
+            console.log('ðŸ”„ Step 1: Selected travel value:', e.target.value);
             updateFlagDocOptions();
         }
     });

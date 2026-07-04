@@ -40,25 +40,49 @@
         
        
         
+        <?php
+        $filter_routes = ['filter_already_done', 'filter_on_target_done', 'filter_done', 'filter_already', 'filter_done_1_tahun'];
+        $current_filter_route = ($this->uri->segment(1) == 'database') ? $this->uri->segment(2) : '';
+        $is_filter_menu_active = in_array($current_filter_route, $filter_routes, true);
+        ?>
         <li class="nav-item">
-            <a href="<?= base_url('database') ?>" <?= $this->uri->segment(1) == 'database' && $this->uri->segment(2) != 'rejected_data' && $this->uri->segment(2) != 'arsip' && $this->uri->segment(2) != 'filter_already' && $this->uri->segment(2) != 'filter_done' && $this->uri->segment(2) != 'filter_done_1_tahun' ? 'class="active"' : '' ?>>
+            <a href="<?= base_url('database') ?>" <?= $this->uri->segment(1) == 'database' && $this->uri->segment(2) != 'rejected_data' && $this->uri->segment(2) != 'arsip' && !$is_filter_menu_active ? 'class="active"' : '' ?>>
                 <i class="fas fa-user-friends"></i> <span>Data Peserta</span>
             </a>
         </li>
-        <li class="nav-item">
-            <a href="<?= base_url('database/filter_already') ?>" <?= $this->uri->segment(1) == 'database' && $this->uri->segment(2) == 'filter_already' ? 'class="active"' : '' ?>>
-                <i class="fas fa-filter"></i> <span>Filter Already</span>
+        <li class="nav-item nav-item-has-submenu">
+            <a href="#" class="nav-submenu-toggle<?= $is_filter_menu_active ? ' active' : '' ?>" onclick="toggleFilterSubmenu(event)">
+                <i class="fas fa-filter"></i> <span>Filter</span>
+                <i class="fas fa-chevron-down submenu-chevron<?= $is_filter_menu_active ? ' rotated' : '' ?>"></i>
             </a>
-        </li>
-        <li class="nav-item">
-            <a href="<?= base_url('database/filter_done') ?>" <?= $this->uri->segment(1) == 'database' && $this->uri->segment(2) == 'filter_done' ? 'class="active"' : '' ?>>
-                <i class="fas fa-filter"></i> <span>Filter Done</span>
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="<?= base_url('database/filter_done_1_tahun') ?>" <?= $this->uri->segment(1) == 'database' && $this->uri->segment(2) == 'filter_done_1_tahun' ? 'class="active"' : '' ?>>
-                <i class="fas fa-filter"></i> <span>Filter Data > 1 Tahun</span>
-            </a>
+            <ul class="submenu" id="filterSubmenu" style="<?= $is_filter_menu_active ? 'display: block;' : 'display: none;' ?>">
+                
+                <li>
+                    <a href="<?= base_url('database/filter_on_target_done') ?>" <?= $current_filter_route == 'filter_on_target_done' ? 'class="active"' : '' ?>>
+                        <i class="fas fa-arrow-right"></i> <span>On Target → Done</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="<?= base_url('database/filter_already_done') ?>" <?= $current_filter_route == 'filter_already_done' ? 'class="active"' : '' ?>>
+                        <i class="fas fa-arrow-right"></i> <span>Already → Done</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="<?= base_url('database/filter_done') ?>" <?= $current_filter_route == 'filter_done' ? 'class="active"' : '' ?>>
+                        <i class="fas fa-check"></i> <span>Done</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="<?= base_url('database/filter_already') ?>" <?= $current_filter_route == 'filter_already' ? 'class="active"' : '' ?>>
+                        <i class="fas fa-clock"></i> <span>Already</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="<?= base_url('database/filter_done_1_tahun') ?>" <?= $current_filter_route == 'filter_done_1_tahun' ? 'class="active"' : '' ?>>
+                        <i class="fas fa-calendar-alt"></i> <span>Data > 1 Tahun</span>
+                    </a>
+                </li>
+            </ul>
         </li>
         
        
@@ -172,4 +196,37 @@
     color: var(--white);
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
-</style> 
+
+.nav-item-has-submenu > .nav-submenu-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.nav-item-has-submenu > .nav-submenu-toggle .submenu-chevron {
+    font-size: 0.7rem;
+    margin-left: auto;
+    margin-right: 0;
+    width: auto;
+    transition: transform 0.2s ease;
+}
+
+.nav-item-has-submenu > .nav-submenu-toggle .submenu-chevron.rotated {
+    transform: rotate(180deg);
+}
+</style>
+
+<script>
+function toggleFilterSubmenu(event) {
+    event.preventDefault();
+    const submenu = document.getElementById('filterSubmenu');
+    const chevron = event.currentTarget.querySelector('.submenu-chevron');
+    if (!submenu) return;
+
+    const isVisible = submenu.style.display === 'block';
+    submenu.style.display = isVisible ? 'none' : 'block';
+    if (chevron) {
+        chevron.classList.toggle('rotated', !isVisible);
+    }
+}
+</script> 
