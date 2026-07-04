@@ -1271,6 +1271,8 @@ class Transaksi_model extends CI_Model {
     private function apply_base_filter_already_done() {
         $this->db->where('peserta.status', 2);
         $this->db->where('peserta.status_asal', 1);
+        $this->db->where('peserta.tanggal IS NULL');
+        $this->db->where('peserta.jam IS NULL');
     }
 
     private function apply_email_domain_filter_already_done($filters) {
@@ -1339,6 +1341,8 @@ class Transaksi_model extends CI_Model {
     private function apply_base_filter_on_target_done() {
         $this->db->where('peserta.status', 2);
         $this->db->where('peserta.status_asal', 0);
+        $this->db->where('peserta.tanggal IS NULL');
+        $this->db->where('peserta.jam IS NULL');
     }
 
     private function apply_email_domain_filter_on_target_done($filters) {
