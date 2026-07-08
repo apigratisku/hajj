@@ -256,6 +256,10 @@ class Transaksi_model extends CI_Model {
     public function get_paginated_filtered($limit, $offset, $filters = []) {
         $this->db->select('peserta.*');
         $this->db->from($this->table);
+        $this->db->group_start();
+        $this->db->where('peserta.is_cancel', 0);
+        $this->db->or_where('peserta.is_cancel IS NULL');
+        $this->db->group_end();
     
         if (!empty($filters['nama'])) {
             $this->db->like('peserta.nama', $filters['nama']);
@@ -433,6 +437,10 @@ class Transaksi_model extends CI_Model {
 
     public function count_filtered($filters = []) {
         $this->db->from($this->table);
+        $this->db->group_start();
+        $this->db->where('peserta.is_cancel', 0);
+        $this->db->or_where('peserta.is_cancel IS NULL');
+        $this->db->group_end();
         if (!empty($filters['nama'])) {
             $this->db->like('peserta.nama', $filters['nama']);
         }
@@ -2500,5 +2508,67 @@ class Transaksi_model extends CI_Model {
 
         // Return 1 jika semua sudah report, 0 jika belum
         return ((int) $result->sudah_report_count === (int) $result->total) ? 1 : 0;
+    }
+
+    public function get_paginated_filtered_cancel($limit, $offset, $filters = []) {
+        $this->db->select('peserta.*');
+        $this->db->from($this->table);
+        $this->db->where('peserta.is_cancel', 1);
+        
+        if (!empty($filters['nama'])) {
+            $this->db->like('peserta.nama', $filters['nama']);
+        }
+        if (!empty($filters['nomor_paspor'])) {
+            $this->db->like('peserta.nomor_paspor', $filters['nomor_paspor']);
+        }
+        if (!empty($filters['no_visa'])) {
+            $this->db->like('peserta.no_visa', $filters['no_visa']);
+        }
+        if (isset($filters['flag_doc'])) {
+            if ($filters['flag_doc'] === null || $filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
+                $this->db->where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
+            } else {
+                $this->db->where('peserta.flag_doc', $filters['flag_doc']);
+            }
+        }
+        if (!empty($filters['nama_travel'])) {
+            $this->db->where('peserta.nama_travel', $filters['nama_travel']);
+        }
+
+        $this->db->order_by('peserta.flag_doc', 'DESC');
+        $this->db->order_by('peserta.id', 'DESC');
+
+        if ($limit !== null) {
+            $this->db->limit($limit, isset($offset) ? $offset : 0);
+        }
+
+        return $this->db->get()->result();
+    }
+
+    public function count_filtered_cancel($filters = []) {
+        $this->db->from($this->table);
+        $this->db->where('peserta.is_cancel', 1);
+        
+        if (!empty($filters['nama'])) {
+            $this->db->like('peserta.nama', $filters['nama']);
+        }
+        if (!empty($filters['nomor_paspor'])) {
+            $this->db->like('peserta.nomor_paspor', $filters['nomor_paspor']);
+        }
+        if (!empty($filters['no_visa'])) {
+            $this->db->like('peserta.no_visa', $filters['no_visa']);
+        }
+        if (isset($filters['flag_doc'])) {
+            if ($filters['flag_doc'] === null || $filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
+                $this->db->where('(peserta.flag_doc IS NULL OR peserta.flag_doc = "")');
+            } else {
+                $this->db->where('peserta.flag_doc', $filters['flag_doc']);
+            }
+        }
+        if (!empty($filters['nama_travel'])) {
+            $this->db->where('peserta.nama_travel', $filters['nama_travel']);
+        }
+        
+        return $this->db->count_all_results();
     }
 } 

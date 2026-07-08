@@ -233,6 +233,100 @@ class Database extends CI_Controller
         $this->load->view('templates/footer');
     }
 
+    public function filter_cancel()
+    {
+        $this->load->model('transaksi_model');
+        $data['title'] = 'Filter Cancel';
+
+        // Get filters from GET parameters and clean them
+        $filters = [
+            'nama' => trim($this->input->get('nama')),
+            'nomor_paspor' => trim($this->input->get('nomor_paspor')),
+            'no_visa' => trim($this->input->get('no_visa')),
+            'flag_doc' => trim($this->input->get('flag_doc')),
+            'nama_travel' => trim($this->input->get('nama_travel')),
+        ];
+
+        // Remove empty filters
+        $filters = array_filter($filters, function ($value) {
+            return $value !== '' && $value !== null;
+        });
+
+        // Pagination settings
+        $per_page = 25;
+        $page = $this->input->get('page') ? $this->input->get('page') : 1;
+        $offset = ($page - 1) * $per_page;
+
+        // Get data
+        $data['peserta'] = $this->transaksi_model->get_paginated_filtered_cancel($per_page, $offset, $filters);
+        
+        $data['flag_doc_list'] = $this->transaksi_model->get_unique_flag_doc();
+        $data['travel_list'] = $this->transaksi_model->get_unique_nama_travel();
+
+        // Get total count for pagination
+        $total_rows = $this->transaksi_model->count_filtered_cancel($filters);
+
+        // Load pagination library
+        $this->load->library('pagination');
+
+        // Build base URL with current filters
+        $base_url = base_url('database/filter_cancel');
+        $query_params = [];
+
+        // Preserve current filters in pagination links
+        if (!empty($filters['nama'])) $query_params['nama'] = $filters['nama'];
+        if (!empty($filters['nomor_paspor'])) $query_params['nomor_paspor'] = $filters['nomor_paspor'];
+        if (!empty($filters['no_visa'])) $query_params['no_visa'] = $filters['no_visa'];
+        if (!empty($filters['flag_doc'])) $query_params['flag_doc'] = $filters['flag_doc'];
+        if (!empty($filters['nama_travel'])) $query_params['nama_travel'] = $filters['nama_travel'];
+
+        if (!empty($query_params)) {
+            $base_url .= '?' . http_build_query($query_params);
+        }
+
+        $config['base_url'] = $base_url;
+        $config['total_rows'] = $total_rows;
+        $config['per_page'] = $per_page;
+        $config['page_query_string'] = TRUE;
+        $config['query_string_segment'] = 'page';
+        $config['use_page_numbers'] = TRUE;
+        $config['num_links'] = 5;
+
+        // Enhanced Pagination styling
+        $config['full_tag_open'] = '<nav aria-label="Data navigation"><ul class="pagination pagination-custom justify-content-center">';
+        $config['full_tag_close'] = '</ul></nav>';
+        $config['num_tag_open'] = '<li class="page-item">';
+        $config['num_tag_close'] = '</li>';
+        $config['cur_tag_open'] = '<li class="page-item active"><a class="page-link" href="#">';
+        $config['cur_tag_close'] = '</a></li>';
+        $config['next_tag_open'] = '<li class="page-item">';
+        $config['next_tag_close'] = '</li>';
+        $config['prev_tag_open'] = '<li class="page-item">';
+        $config['prev_tag_close'] = '</li>';
+        $config['first_tag_open'] = '<li class="page-item">';
+        $config['first_tag_close'] = '</li>';
+        $config['last_tag_open'] = '<li class="page-item">';
+        $config['last_tag_close'] = '</li>';
+        $config['anchor_class'] = 'page-link';
+        $config['next_link'] = '<i class="fas fa-chevron-right"></i>';
+        $config['prev_link'] = '<i class="fas fa-chevron-left"></i>';
+        $config['first_link'] = '<i class="fas fa-angle-double-left"></i>';
+        $config['last_link'] = '<i class="fas fa-angle-double-right"></i>';
+
+        $this->pagination->initialize($config);
+        $data['pagination'] = $this->pagination->create_links();
+
+        $data['total_rows'] = $total_rows;
+        $data['per_page'] = $per_page;
+        $data['current_page'] = $page;
+        $data['offset'] = $offset;
+
+        $this->load->view('templates/sidebar');
+        $this->load->view('templates/header', $data);
+        $this->load->view('database/filter_cancel', $data);
+        $this->load->view('templates/footer');
+    }
+
     public function filter_already()
     {
         $this->load->model('transaksi_model');
@@ -893,6 +987,7 @@ class Database extends CI_Controller
             $data = array(
                 'tanggal' => NULL,
                 'jam' => NULL,
+                'is_cancel' => 1,
                 'updated_at' => date('Y-m-d H:i:s'),
                 'history_update' => $this->session->userdata('user_id') ?: null
             );
@@ -1323,9 +1418,15 @@ class Database extends CI_Controller
                 }
                 // Untuk field lain: tetap pakai trim dan null jika kosong
                 else {
-                    $data[$field] = trim($value) ?: null;
+                    $data[$field] = trim((string)$value) === '' ? null : trim((string)$value);
                 }
             }
+        }
+        
+        // Cek jika tanggal dihilangkan, maka tandai data sebagai filter cancel
+        if (array_key_exists('tanggal', $data) && empty($data['tanggal'])) {
+            $data['is_cancel'] = 1;
+            $data['jam'] = null; // sekalian kosongkan jam
         }
 
 

@@ -41,7 +41,7 @@
        
         
         <?php
-        $filter_routes = ['filter_already_done', 'filter_on_target_done', 'filter_done', 'filter_already', 'filter_done_1_tahun'];
+        $filter_routes = ['filter_already_done', 'filter_on_target_done', 'filter_done', 'filter_already', 'filter_done_1_tahun', 'filter_cancel'];
         $current_filter_route = ($this->uri->segment(1) == 'database') ? $this->uri->segment(2) : '';
         $is_filter_menu_active = in_array($current_filter_route, $filter_routes, true);
         ?>
@@ -80,6 +80,11 @@
                 <li>
                     <a href="<?= base_url('database/filter_done_1_tahun') ?>" <?= $current_filter_route == 'filter_done_1_tahun' ? 'class="active"' : '' ?>>
                         <i class="fas fa-calendar-alt"></i> <span>Data > 1 Tahun</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="<?= base_url('database/filter_cancel') ?>" <?= $current_filter_route == 'filter_cancel' ? 'class="active"' : '' ?>>
+                        <i class="fas fa-ban"></i> <span>Filter Cancel</span>
                     </a>
                 </li>
             </ul>
