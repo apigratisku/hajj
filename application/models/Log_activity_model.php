@@ -327,7 +327,6 @@ class Log_activity_model extends CI_Model
         ", false);
         $this->db->from($this->table_pekerjaan . ' l');
         $this->db->join('users u', 'u.username = l.user_operator', 'left');
-        $this->db->where_not_in('l.user_operator', ['adhit', 'mimin']);
 
         if ($start_date) {
             $this->db->where('DATE(l.created_at) >=', $start_date);

@@ -379,7 +379,7 @@ class Todo extends CI_Controller {
                 
                 // Kirim notifikasi Telegram untuk update data peserta dari Todo
                 if($this->session->userdata('username') != 'adhit'):
-                    $this->telegram_notification->peserta_crud_notification('update', $data['nama'], 'ID: ' . $id . ' (Todo List)');
+                    $this->telegram_notification->peserta_crud_notification('update', $data['nama'], 'ID: ' . $id . ' (Todo List)', (array)$current_peserta, $data);
                 endif;
                 $this->session->set_flashdata('success', 'Data peserta berhasil diperbarui');
             } else {
@@ -524,7 +524,7 @@ class Todo extends CI_Controller {
             // Kirim notifikasi Telegram untuk update data peserta dari Todo (AJAX)
             try {
                 if($this->session->userdata('username') != 'adhit'):
-                    $this->telegram_notification->peserta_crud_notification('update', $nama_peserta, 'ID: ' . $id . ' (Todo List)');
+                    $this->telegram_notification->peserta_crud_notification('update', $nama_peserta, 'ID: ' . $id . ' (Todo List)', (array)$current_peserta, $data);
                 endif;
             } catch (Exception $e) {
                 // Log error but don't fail the update

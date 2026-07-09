@@ -103,7 +103,7 @@
                                             <td><?= date('d/m/Y', strtotime($log->tanggal)) ?></td>
                                             <td><?= date('H:i:s', strtotime($log->jam)) ?></td>
                                             <td>
-                                                <div class="activity-text" style="max-width: 400px;">
+                                                <div class="activity-text">
                                                     <?= htmlspecialchars(trim($log->aktivitas)) ?>
                                                 </div>
                                             </td>
@@ -123,7 +123,8 @@
 <style>
 .activity-text {
     word-wrap: break-word;
-    white-space: pre-wrap;
+    white-space: normal;
+    text-align: left;
     font-size: 0.9rem;
 }
 

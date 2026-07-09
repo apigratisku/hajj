@@ -25,14 +25,17 @@ if (!function_exists('pekerjaan_statistics_get_operator')) {
         if (!$user_operator) {
             $user_operator = $CI->session->userdata('username');
         }
-        return $user_operator ?: null;
+        if (!$user_operator) {
+            $user_operator = 'system';
+        }
+        return $user_operator;
     }
 }
 
 if (!function_exists('pekerjaan_statistics_should_skip')) {
     function pekerjaan_statistics_should_skip($user_operator)
     {
-        return empty($user_operator) || in_array($user_operator, ['adhit', 'mimin'], true);
+        return false;
     }
 }
 

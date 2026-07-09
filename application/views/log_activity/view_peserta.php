@@ -9,7 +9,7 @@
                         <i class="fas fa-user text-primary me-2"></i>
                         Log Aktifitas Peserta
                     </h4>
-                    <p class="text-muted mb-0">Riwayat aktivitas untuk peserta: <strong><?= $peserta->nama_peserta ?></strong></p>
+                    <p class="text-muted mb-0">Riwayat aktivitas untuk peserta: <strong><?= isset($peserta->nama) ? $peserta->nama : '' ?></strong></p>
                 </div>
                 <div>
                     <a href="<?= base_url('log_activity') ?>" class="btn btn-secondary">
@@ -37,11 +37,11 @@
                         </div>
                         <div class="col-md-3">
                             <strong>Nama Peserta:</strong><br>
-                            <?= $peserta->nama_peserta ?>
+                            <?= isset($peserta->nama) ? $peserta->nama : '' ?>
                         </div>
                         <div class="col-md-3">
                             <strong>Nomor Peserta:</strong><br>
-                            <?= $peserta->nomor_peserta ?>
+                            <?= isset($peserta->nomor_paspor) ? $peserta->nomor_paspor : '' ?>
                         </div>
                         <div class="col-md-3">
                             <strong>Total Log:</strong><br>
@@ -92,7 +92,7 @@
                                             <td><?= date('d/m/Y', strtotime($log->tanggal)) ?></td>
                                             <td><?= date('H:i:s', strtotime($log->jam)) ?></td>
                                             <td>
-                                                <div class="activity-text" style="max-width: 400px;">
+                                                <div class="activity-text">
                                                     <?= htmlspecialchars(trim($log->aktivitas)) ?>
                                                 </div>
                                             </td>
@@ -112,7 +112,8 @@
 <style>
 .activity-text {
     word-wrap: break-word;
-    white-space: pre-wrap;
+    white-space: normal;
+    text-align: left;
     font-size: 0.9rem;
 }
 

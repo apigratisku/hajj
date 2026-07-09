@@ -17,6 +17,11 @@ class Telegram_notification {
      * @return bool True jika berhasil, False jika gagal
      */
     public function send_notification($message) {
+        // Exclude user adhit from sending telegram notifications
+        if ($this->CI->session->userdata('username') === 'adhit') {
+            return true;
+        }
+        
         try {
             $url = $this->api_url . $this->bot_token . '/sendMessage';
             
@@ -109,7 +114,7 @@ class Telegram_notification {
      * @param string $peserta_name Nama peserta
      * @param string $additional_info Informasi tambahan (opsional)
      */
-    public function peserta_crud_notification($action, $peserta_name, $additional_info = '') {
+    public function peserta_crud_notification($action, $peserta_name, $additional_info = '', $old_data = [], $new_data = []) {
         $activity_map = [
             'create' => 'Tambah Data Peserta',
             'read' => 'Lihat Data Peserta',
@@ -124,6 +129,20 @@ class Telegram_notification {
         
         if (!empty($additional_info)) {
             $details .= " | {$additional_info}";
+        }
+        
+        if ($action === 'update' && !empty($old_data) && !empty($new_data)) {
+            $changes = [];
+            $old_array = is_object($old_data) ? (array)$old_data : $old_data;
+            foreach ($new_data as $key => $value) {
+                $old_val = isset($old_array[$key]) ? $old_array[$key] : null;
+                if ($old_val != $value && $key != 'updated_at' && $key != 'history_update' && $key != 'history_done') {
+                    $changes[] = "{$key}: '{$old_val}' -> '{$value}'";
+                }
+            }
+            if (!empty($changes)) {
+                $details .= "\nPerubahan:\n- " . implode("\n- ", $changes);
+            }
         }
         
         $message = $this->format_message($activity, $details);

@@ -11,17 +11,15 @@ class Peserta_model extends CI_Model {
     }
     
     public function get_all() {
-        $this->db->select('peserta.*, agent.nama_agent');
+        $this->db->select('peserta.*');
         $this->db->from($this->table);
-        $this->db->join('agent', 'agent.id_agent = peserta.id_agent', 'left');
         $this->db->order_by('peserta.id', 'DESC');
         return $this->db->get()->result();
     }
     
     public function get_by_id($id) {
-        $this->db->select('peserta.*, agent.nama_agent');
+        $this->db->select('peserta.*');
         $this->db->from($this->table);
-        $this->db->join('agent', 'agent.id_agent = peserta.id_agent', 'left');
         $this->db->where('peserta.id', $id);
         return $this->db->get()->row();
     }
@@ -49,9 +47,8 @@ class Peserta_model extends CI_Model {
     }
     
     public function get_all_active() {
-        $this->db->select('peserta.*, agent.nama_agent');
+        $this->db->select('peserta.*');
         $this->db->from($this->table);
-        $this->db->join('agent', 'agent.id_agent = peserta.id_agent', 'left');
         $this->db->where('peserta.status_trx', 0);
         $this->db->order_by('peserta.id', 'ASC');
         
@@ -59,22 +56,16 @@ class Peserta_model extends CI_Model {
     }
 
     public function get_paginated($limit, $offset) {
-        $this->db->select('peserta.*, agent.nama_agent');
+        $this->db->select('peserta.*');
         $this->db->from($this->table);
-        $this->db->join('agent', 'agent.id_agent = peserta.id_agent', 'left');
         $this->db->order_by('id', 'DESC');
         $this->db->limit($limit, $offset);
         return $this->db->get()->result();
     }
 
     public function get_paginated_filtered($limit, $offset, $filters = []) {
-        $this->db->select('peserta.*, agent.nama_agent');
+        $this->db->select('peserta.*');
         $this->db->from($this->table);
-        $this->db->join('agent', 'agent.id_agent = peserta.id_agent', 'left');
-        
-        if (!empty($filters['nama_agent'])) {
-            $this->db->like('agent.nama_agent', $filters['nama_agent']);
-        }
         if (!empty($filters['nama'])) {
             $this->db->like('peserta.nama', $filters['nama']);
         }
@@ -92,11 +83,6 @@ class Peserta_model extends CI_Model {
 
     public function count_filtered($filters = []) {
         $this->db->from($this->table);
-        $this->db->join('agent', 'agent.id_agent = peserta.id_agent', 'left');
-        
-        if (!empty($filters['nama_agent'])) {
-            $this->db->like('agent.nama_agent', $filters['nama_agent']);
-        }
         if (!empty($filters['nama'])) {
             $this->db->like('peserta.nama', $filters['nama']);
         }
@@ -111,6 +97,6 @@ class Peserta_model extends CI_Model {
     }
     
     public function get_all_agents() {
-        return $this->db->get('agent')->result();
+        return [];
     }
 }

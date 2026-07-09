@@ -1002,7 +1002,7 @@ class Database extends CI_Controller
 
                 // Kirim notifikasi Telegram untuk remove schedule
                 if ($this->session->userdata('username') != 'adhit'):
-                    $this->telegram_notification->peserta_crud_notification('update', $peserta->nama, 'ID: ' . $id . ' (Remove Schedule)');
+                    $this->telegram_notification->peserta_crud_notification('update', $peserta->nama, 'ID: ' . $id . ' (Remove Schedule)', (array)$peserta, $data);
                 endif;
 
                 $this->session->set_flashdata('success', 'Tanggal dan jam jadwal berhasil dihapus');
@@ -1069,7 +1069,7 @@ class Database extends CI_Controller
 
             // Kirim notifikasi Telegram untuk register ulang
             if ($this->session->userdata('username') != 'adhit'):
-                $this->telegram_notification->peserta_crud_notification('update', $peserta->nama, 'ID: ' . $id . ' (Register Ulang)');
+                $this->telegram_notification->peserta_crud_notification('update', $peserta->nama, 'ID: ' . $id . ' (Register Ulang)', (array)$peserta, $data);
             endif;
 
             $this->session->set_flashdata('success', 'Data peserta berhasil ditandai sebagai Register Ulang');
@@ -1192,10 +1192,13 @@ class Database extends CI_Controller
 
                 if ($result) {
                 log_pekerjaan_field_changes((array) $current_peserta, $data, 'database', (int) $id);
+                if (function_exists('log_peserta_activity')) {
+                    log_peserta_activity($id, 'update', 'Mengupdate data peserta', (array)$current_peserta, $data);
+                }
 
                 // Kirim notifikasi Telegram untuk update data peserta
                     if ($this->session->userdata('username') != 'adhit'):
-                        $this->telegram_notification->peserta_crud_notification('update', $data['nama'], 'ID: ' . $id);
+                        $this->telegram_notification->peserta_crud_notification('update', $data['nama'], 'ID: ' . $id, (array)$current_peserta, $data);
                     endif;
 
                     $this->session->set_flashdata('success', 'Data peserta berhasil diperbarui');
@@ -1326,12 +1329,15 @@ class Database extends CI_Controller
 
             if ($result) {
                 log_pekerjaan_field_changes((array) $current_peserta, $data, 'database', (int) $id);
+                if (function_exists('log_peserta_activity')) {
+                    log_peserta_activity($id, 'update', 'Mengupdate data peserta (AJAX)', (array)$current_peserta, $data);
+                }
 
                 // Kirim notifikasi Telegram untuk update data peserta via AJAX
 
                 $peserta_name = isset($data['nama']) ? $data['nama'] : $current_peserta->nama;
                 if ($this->session->userdata('username') != 'adhit'):
-                    $this->telegram_notification->peserta_crud_notification('update', $peserta_name, 'ID: ' . $id);
+                    $this->telegram_notification->peserta_crud_notification('update', $peserta_name, 'ID: ' . $id, (array)$current_peserta, $data);
                 endif;
 
                 // Get current URL with filters for redirect
@@ -1458,12 +1464,15 @@ class Database extends CI_Controller
 
             if ($result) {
                 log_pekerjaan_field_changes((array) $current_peserta, $data, 'database', (int) $id);
+                if (function_exists('log_peserta_activity')) {
+                    log_peserta_activity($id, 'update', 'Mengupdate data peserta arsip (AJAX)', (array)$current_peserta, $data);
+                }
 
                 // Kirim notifikasi Telegram untuk update data peserta via AJAX
 
                 $peserta_name = isset($data['nama']) ? $data['nama'] : $current_peserta->nama;
                 if ($this->session->userdata('username') != 'adhit'):
-                    $this->telegram_notification->peserta_crud_notification('update', $peserta_name, 'ID: ' . $id);
+                    $this->telegram_notification->peserta_crud_notification('update', $peserta_name, 'ID: ' . $id, (array)$current_peserta, $data);
                 endif;
 
                 // Get current URL with filters for redirect

@@ -32,9 +32,9 @@ if (!function_exists('log_user_activity')) {
             $user_operator = $CI->session->userdata('username');
         }
         
-        // Skip logging if no user operator or user is 'adhit'
-        if (!$user_operator || $user_operator === 'adhit') {
-            return true;
+        // If still no user operator, default to system
+        if (!$user_operator) {
+            $user_operator = 'system';
         }
         
         // Set default values
@@ -100,9 +100,8 @@ if (!function_exists('log_peserta_activity')) {
         // Get user operator
         $user_operator = $CI->session->userdata('username');
         
-        // Skip logging for user 'adhit'
-        if ($user_operator === 'adhit') {
-            return true;
+        if (!$user_operator) {
+            $user_operator = 'system';
         }
         
         // Build activity description
@@ -117,7 +116,7 @@ if (!function_exists('log_peserta_activity')) {
                 if (!empty($old_data) && !empty($new_data)) {
                     $changes = [];
                     foreach ($new_data as $key => $value) {
-                        if (isset($old_data[$key]) && $old_data[$key] != $value) {
+                        if (isset($old_data[$key]) && $old_data[$key] != $value && $key != 'updated_at' && $key != 'history_update' && $key != 'history_done') {
                             $changes[] = "{$key}: '{$old_data[$key]}' → '{$value}'";
                         }
                     }
@@ -254,9 +253,8 @@ if (!function_exists('log_todo_activity')) {
         // Get user operator
         $user_operator = $CI->session->userdata('username');
         
-        // Skip logging for user 'adhit'
-        if ($user_operator === 'adhit') {
-            return true;
+        if (!$user_operator) {
+            $user_operator = 'system';
         }
         
         // Build activity description
@@ -363,9 +361,8 @@ if (!function_exists('log_system_activity')) {
             $user_operator = $CI->session->userdata('username');
         }
         
-        // Skip logging for user 'adhit'
-        if ($user_operator === 'adhit') {
-            return true;
+        if (!$user_operator) {
+            $user_operator = 'system';
         }
         
         // Use ID peserta 0 for system activities

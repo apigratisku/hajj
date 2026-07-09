@@ -432,15 +432,15 @@ class Telegram_bot extends CI_Controller {
             }
             
             $this->db->select("
-                DATE(updated_at) as tanggal_pengerjaan,
-                SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) as done_count,
-                SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as already_count
+                DATE(tanggal) as tanggal_pengerjaan,
+                SUM(CASE WHEN aktivitas LIKE 'Mengubah status peserta%ke: \'2\'' THEN 1 ELSE 0 END) as done_count,
+                SUM(CASE WHEN aktivitas LIKE 'Mengubah status peserta%ke: \'1\'' THEN 1 ELSE 0 END) as already_count
             ");
-            $this->db->from('peserta');
-            $this->db->where('updated_at >=', date('Y-m-d', strtotime('-7 days')));
-            $this->db->where('updated_at IS NOT NULL');
-            $this->db->where_in('status', [1, 2]); // Only Done and Already
-            $this->db->group_by('DATE(updated_at)');
+            $this->db->from('log_aktivitas_user');
+            $this->db->where('tanggal >=', date('Y-m-d', strtotime('-7 days')));
+            $this->db->where('tanggal IS NOT NULL');
+            $this->db->where("(aktivitas LIKE 'Mengubah status peserta%ke: \'1\'' OR aktivitas LIKE 'Mengubah status peserta%ke: \'2\'')", NULL, FALSE);
+            $this->db->group_by('DATE(tanggal)');
             $this->db->order_by('tanggal_pengerjaan', 'DESC');
             $this->db->limit(7);
             
