@@ -106,7 +106,7 @@
                                     <div>
                                         <div class="form-check form-check-inline">
                                             <input class="form-check-input" type="radio" name="flag_source" id="flag_excel" value="excel" checked>
-                                            <label class="form-check-label" for="flag_excel">Dari File Excel (Kolom L)</label>
+                                            <label class="form-check-label" for="flag_excel">Dari File Excel (Kolom M)</label>
                                         </div>
                                         <div class="form-check form-check-inline">
                                             <input class="form-check-input" type="radio" name="flag_source" id="flag_form" value="form">
@@ -134,7 +134,7 @@
                                     <div>
                                         <div class="form-check form-check-inline">
                                             <input class="form-check-input" type="radio" name="travel_source" id="travel_excel" value="excel" checked>
-                                            <label class="form-check-label" for="travel_excel">Dari File Excel (Kolom M)</label>
+                                            <label class="form-check-label" for="travel_excel">Dari File Excel (Kolom N)</label>
                                         </div>
                                         <div class="form-check form-check-inline">
                                             <input class="form-check-input" type="radio" name="travel_source" id="travel_form" value="form">
@@ -230,8 +230,8 @@
                                                 </tr>
                                                 <tr>
                                                     <td>H</td>
-                                                    <td>Gender</td>
-                                                    <td>L/P atau Laki-laki/Perempuan</td>
+                                                    <td>Barcode</td>
+                                                    <td>Opsional</td>
                                                 </tr>
                                                 <tr>
                                                     <td>I</td>
@@ -250,11 +250,16 @@
                                                 </tr>
                                                 <tr>
                                                     <td>L</td>
+                                                    <td>Gender</td>
+                                                    <td>L/P atau Laki-laki/Perempuan</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>M</td>
                                                     <td>Flag Dokumen</td>
                                                     <td>Identifier untuk file (opsional)</td>
                                                 </tr>
                                                 <tr>
-                                                    <td>M</td>
+                                                    <td>N</td>
                                                     <td>Nama Travel</td>
                                                     <td>Nama Travel untuk file (opsional)</td>
                                                 </tr>
