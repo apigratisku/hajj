@@ -43,6 +43,9 @@
                             <i class="fas fa-file-excel"></i> <span class="d-none d-sm-inline">Statistik Register Ulang</span>
                         </button>
                         <?php if($this->session->userdata('role') == 'admin'): ?>
+                        <button type="button" class="btn btn-sm btn-info text-white me-1" id="updateMultipleBtn" style="display: none; background-color: var(--info-color) !important; border-color: var(--info-color) !important;" onclick="updateMultipleRecords()">
+                            <i class="fas fa-edit"></i> <span class="d-none d-sm-inline">Move On Target->Done</span>
+                        </button>
                         <button type="button" class="btn btn-sm btn-danger" id="deleteMultipleBtn" style="display: none;" onclick="deleteMultipleRecords()">
                             <i class="fas fa-trash"></i> <span class="d-none d-sm-inline">Hapus Terpilih</span>
                         </button>
@@ -221,6 +224,9 @@
                                     </a>
                                     
                                     <?php if($this->session->userdata('role') == 'admin'): ?>
+                                    <button type="button" class="btn btn-info text-white me-1" id="updateMultipleBtnMobile" style="display: none; background-color: var(--info-color) !important; border-color: var(--info-color) !important;" onclick="updateMultipleRecords()">
+                                        <i class="fas fa-edit"></i> Move On Target->Done
+                                    </button>
                                     <button type="button" class="btn btn-danger" id="deleteMultipleBtnMobile" style="display: none;" onclick="deleteMultipleRecords()">
                                         <i class="fas fa-trash"></i> Hapus Terpilih
                                     </button>
@@ -5682,6 +5688,8 @@ function updateDeleteButton() {
     
     const deleteBtn = document.getElementById('deleteMultipleBtn');
     const deleteBtnMobile = document.getElementById('deleteMultipleBtnMobile');
+    const updateBtn = document.getElementById('updateMultipleBtn');
+    const updateBtnMobile = document.getElementById('updateMultipleBtnMobile');
     
     if (deleteBtn) {
         if (totalChecked > 0) {
@@ -5700,6 +5708,24 @@ function updateDeleteButton() {
             deleteBtnMobile.style.display = 'none';
         }
     }
+
+    if (updateBtn) {
+        if (totalChecked > 0) {
+            updateBtn.style.display = 'inline-block';
+            updateBtn.innerHTML = `<i class="fas fa-edit"></i> <span class="d-none d-sm-inline">Move On Target->Done (${totalChecked})</span>`;
+        } else {
+            updateBtn.style.display = 'none';
+        }
+    }
+
+    if (updateBtnMobile) {
+        if (totalChecked > 0) {
+            updateBtnMobile.style.display = 'inline-block';
+            updateBtnMobile.innerHTML = `<i class="fas fa-edit"></i> Move On Target->Done (${totalChecked})`;
+        } else {
+            updateBtnMobile.style.display = 'none';
+        }
+    }
     
     // Update select all checkboxes
     const selectAllMobile = document.getElementById('selectAllMobile');
@@ -5716,6 +5742,107 @@ function updateDeleteButton() {
         selectAllDesktop.checked = allDesktopCheckboxes.length > 0 && allDesktopCheckboxes.length === desktopCheckboxes.length;
         selectAllDesktop.indeterminate = desktopCheckboxes.length > 0 && desktopCheckboxes.length < allDesktopCheckboxes.length;
     }
+}
+
+function updateMultipleRecords() {
+    const mobileCheckboxes = document.querySelectorAll('.row-checkbox-mobile:checked');
+    const desktopCheckboxes = document.querySelectorAll('.row-checkbox-desktop:checked');
+    
+    const selectedIds = [];
+    mobileCheckboxes.forEach(cb => selectedIds.push(cb.value));
+    desktopCheckboxes.forEach(cb => selectedIds.push(cb.value));
+    
+    if (selectedIds.length === 0) {
+        showAlert('Tidak ada data yang dipilih untuk diupdate', 'warning');
+        return;
+    }
+    
+    const confirmMessage = `Apakah Anda yakin ingin melakukan update massal pada ${selectedIds.length} data yang dipilih?\nTindakan ini akan me-reset jadwal dan mengeset status data menjadi selesai (Done).`;
+    
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+    
+    // Show loading state
+    const updateBtn = document.getElementById('updateMultipleBtn');
+    const updateBtnMobile = document.getElementById('updateMultipleBtnMobile');
+    const originalText = updateBtn ? updateBtn.innerHTML : '';
+    const originalTextMobile = updateBtnMobile ? updateBtnMobile.innerHTML : '';
+    
+    if (updateBtn) {
+        updateBtn.disabled = true;
+        updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span class="d-none d-sm-inline">Moving...</span>';
+    }
+    
+    if (updateBtnMobile) {
+        updateBtnMobile.disabled = true;
+        updateBtnMobile.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Moving...';
+    }
+    
+    fetch('<?= base_url('database/update_multiple') ?>', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({ ids: selectedIds })
+    })
+    .then(response => {
+        if (response.status === 401) {
+            showAlert('Session expired. Silakan login ulang.', 'error');
+            setTimeout(() => {
+                window.location.href = '<?= base_url('auth') ?>';
+            }, 2000);
+            return;
+        }
+        if (response.status === 403) {
+            showAlert('Access denied. Admin only.', 'error');
+            return;
+        }
+        return response.json();
+    })
+    .then(result => {
+        if (!result) return;
+        
+        if (result.success) {
+            showAlert(result.message, 'success');
+            
+            // Reset checkboxes and button
+            const allCheckboxes = document.querySelectorAll('.row-checkbox-mobile, .row-checkbox-desktop');
+            allCheckboxes.forEach(cb => cb.checked = false);
+            
+            const selectAllCheckboxes = document.querySelectorAll('#selectAllMobile, #selectAllDesktop');
+            selectAllCheckboxes.forEach(cb => {
+                cb.checked = false;
+                cb.indeterminate = false;
+            });
+            
+            updateDeleteButton();
+            
+            // Refresh page after 2 seconds to update pagination and values
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+            
+        } else {
+            showAlert(result.message || 'Gagal mengupdate data', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('Terjadi kesalahan saat mengupdate data', 'error');
+    })
+    .finally(() => {
+        // Reset button state
+        if (updateBtn) {
+            updateBtn.disabled = false;
+            updateBtn.innerHTML = originalText;
+        }
+        if (updateBtnMobile) {
+            updateBtnMobile.disabled = false;
+            updateBtnMobile.innerHTML = originalTextMobile;
+        }
+    });
 }
 
 function deleteMultipleRecords() {

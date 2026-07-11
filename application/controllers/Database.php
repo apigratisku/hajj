@@ -419,6 +419,7 @@ class Database extends CI_Controller
 
         $email_domain = trim($this->input->get('email_domain'));
         $gender = trim($this->input->get('gender'));
+        $nama_travel = trim($this->input->get('nama_travel'));
         $filters = [];
 
         if ($email_domain !== '' && in_array($email_domain, $allowed_domains, true)) {
@@ -427,6 +428,9 @@ class Database extends CI_Controller
         if ($gender !== '' && in_array($gender, ['L', 'P'], true)) {
             $filters['gender'] = $gender;
         }
+        if ($nama_travel !== '') {
+            $filters['nama_travel'] = $nama_travel;
+        }
 
         $per_page = 25;
         $page = $this->input->get('page') ? $this->input->get('page') : 1;
@@ -434,6 +438,7 @@ class Database extends CI_Controller
 
         $data['peserta'] = $this->transaksi_model->get_paginated_filtered_done($per_page, $offset, $filters);
         $data['flag_doc_list'] = $this->transaksi_model->get_unique_flag_doc_done();
+        $data['travel_list'] = $this->transaksi_model->get_unique_nama_travel();
 
         $total_rows = $this->transaksi_model->count_filtered_done($filters);
 
@@ -447,6 +452,9 @@ class Database extends CI_Controller
         }
         if (!empty($filters['gender'])) {
             $query_params['gender'] = $filters['gender'];
+        }
+        if (!empty($filters['nama_travel'])) {
+            $query_params['nama_travel'] = $filters['nama_travel'];
         }
 
         if (!empty($query_params)) {
@@ -2801,7 +2809,26 @@ class Database extends CI_Controller
         error_reporting(E_ALL & ~E_NOTICE & ~E_WARNING);
         ini_set('display_errors', 0);
 
-        // === Ambil konfigurasi email dari form ===
+        // Clear previous successful import data from session to ensure fresh state
+        $this->session->unset_userdata('successful_count');
+        $this->session->unset_userdata('successful_data');
+        $this->session->unset_userdata('successful_count_cpanel');
+        $this->session->unset_userdata('successful_data_cpanel');
+        $this->session->unset_userdata('successful_count_cpanel_forwarding');
+        $this->session->unset_userdata('successful_data_cpanel_forwarding');
+        $this->session->unset_userdata('import_email_prefix');
+        $this->session->unset_userdata('import_mailbox');
+
+        // === Ambil konfigurasi dari form ===
+        $email_source   = $this->input->post('email_source')   ?: 'generate';
+        $flag_source    = $this->input->post('flag_source')    ?: 'excel';
+        $travel_source  = $this->input->post('travel_source')  ?: 'excel';
+        $replace_flag   = $this->input->post('replace_flag')   == '1';
+        $replace_travel = $this->input->post('replace_travel') == '1';
+
+        $flag_doc_form    = trim($this->input->post('flag_doc')    ?: '');
+        $nama_travel_form = trim($this->input->post('nama_travel') ?: '');
+
         $email_prefix = trim($this->input->post('email_prefix') ?: 'choco.web.id');
         // Pastikan prefix tidak diawali '@'
         $email_prefix = ltrim($email_prefix, '@');
@@ -3148,43 +3175,138 @@ class Database extends CI_Controller
                 // ===== END MODIFIKASI NOMOR HP =====
 
                 // ===== MODIFIKASI EMAIL =====
-                // Logika: Email dibuat dari no_visa@{email_prefix} atau nomor_paspor@{email_prefix}
                 $email = null;
-                $parts = preg_split('/\s+/', trim($nama_peserta));
-                $kataPertama = strtolower($parts[0]);
-                if (!empty($no_visa)) {
-                    // Buat email dari no_visa + domain prefix
-                    $last3 = substr($no_visa, -3);
-                    $email = $kataPertama . "" . $last3 . '@' . $email_prefix;
-                    log_message('info', "Row $row: Email dibuat dari no_visa: $email");
+                if ($email_source === 'excel') {
+                    $email = trim($sheet->getCellByColumnAndRow(6, $row)->getValue() ?: '');
+                    log_message('info', "Row $row: Email menggunakan dari file excel: $email");
                 } else {
-                    // Jika no_visa kosong, gunakan nomor_paspor + domain prefix
-                    $last3 = substr($nomor_paspor, -3);
-                    $email = $kataPertama . "" . $last3 . '@' . $email_prefix;
-                    log_message('info', "Row $row: Email dibuat dari nomor_paspor (no_visa kosong): $email");
+                    // Logika: Email dibuat dari no_visa@{email_prefix} atau nomor_paspor@{email_prefix}
+                    $parts = preg_split('/\s+/', trim($nama_peserta));
+                    $kataPertama = strtolower($parts[0]);
+                    if (!empty($no_visa)) {
+                        // Buat email dari no_visa + domain prefix
+                        $last3 = substr($no_visa, -3);
+                        $email = $kataPertama . "" . $last3 . '@' . $email_prefix;
+                        log_message('info', "Row $row: Email dibuat dari no_visa: $email");
+                    } else {
+                        // Jika no_visa kosong, gunakan nomor_paspor + domain prefix
+                        $last3 = substr($nomor_paspor, -3);
+                        $email = $kataPertama . "" . $last3 . '@' . $email_prefix;
+                        log_message('info', "Row $row: Email dibuat dari nomor_paspor (no_visa kosong): $email");
+                    }
                 }
                 // ===== END MODIFIKASI EMAIL =====
-                $gender = trim($sheet->getCellByColumnAndRow(8, $row)->getValue());
-                $status_Cek = trim($sheet->getCellByColumnAndRow(7, $row)->getValue());
-                if ($status_Cek == 'On Target') {
-                    $status_value = 0;
-                } elseif ($status_Cek == 'Already') {
-                    $status_value = 1;
-                } elseif ($status_Cek == 'Done') {
-                    $status_value = 2;
-                } elseif ($status_Cek == 'Done!') {
-                    $status_value = 2;
+                // ===== END MODIFIKASI EMAIL =====
+                
+                // Parse gender (from index 7 / Column H)
+                $gender = trim($sheet->getCellByColumnAndRow(7, $row)->getValue() ?: '');
+                
+                // Process gender value early for validation and rejects
+                $gender_value = 'L';
+                if (!empty($gender)) {
+                    if (strtolower($gender) == 'p' || strtolower($gender) == 'perempuan' || strtolower($gender) == 'female') {
+                        $gender_value = 'P';
+                    }
                 } else {
-                    $status_value = 0;
+                    $gender_value = '';
                 }
-                //Set Waktu Import
+
+                // Set Waktu Import
                 $now = new DateTime('now', new DateTimeZone('Asia/Hong_Kong'));
                 $waktu_import = $now->format('Y-m-d');
-                // Ambil tanggal & jam dari kolom Excel (misal index 8 & 9)
-                $tanggal_excel = trim($sheet->getCellByColumnAndRow(9, $row)->getValue());
-                $jam_excel = trim($sheet->getCellByColumnAndRow(10, $row)->getValue());
-                $flag_doc = trim($sheet->getCellByColumnAndRow(11, $row)->getValue()) . ' - ' . $waktu_import;
-                $nama_travel = trim($sheet->getCellByColumnAndRow(12, $row)->getValue());
+
+                // Parse status (from index 8 / Column I)
+                $status_Cek = trim($sheet->getCellByColumnAndRow(8, $row)->getValue() ?: '');
+                $status_Cek_lower = strtolower($status_Cek);
+                $status_value = null;
+
+                if (empty($status_Cek) || $status_Cek_lower === 'on target') {
+                    $status_value = 0;
+                } elseif ($status_Cek_lower === 'already') {
+                    $status_value = 1;
+                } elseif ($status_Cek_lower === 'done' || $status_Cek_lower === 'done!') {
+                    $status_value = 2;
+                } else {
+                    // Status is invalid! Reject this row.
+                    $error_message = "Row $row: Status '$status_Cek' tidak sesuai dengan struktur status saat ini (harus On Target, Already, atau Done)";
+                    $errors[] = $error_message;
+                    $error_count++;
+                    
+                    log_message('warning', $error_message);
+                    
+                    // Parse remaining columns to log reject properly
+                    $tanggal_excel = trim($sheet->getCellByColumnAndRow(9, $row)->getValue() ?: '');
+                    $jam_excel = trim($sheet->getCellByColumnAndRow(10, $row)->getValue() ?: '');
+                    // Parse flag_doc: prioritaskan data dari file Excel jika ada, jika tidak ada/kosong gunakan dari form
+                    $flag_excel_val = trim($sheet->getCellByColumnAndRow(11, $row)->getValue() ?: '');
+                    if ($flag_excel_val !== '') {
+                        $flag_doc = $flag_excel_val . ' - ' . $waktu_import;
+                    } elseif ($flag_doc_form !== '') {
+                        $flag_doc = $flag_doc_form . ' - ' . $waktu_import;
+                    } else {
+                        $flag_doc = $waktu_import;
+                    }
+
+                    // Parse nama_travel: prioritaskan data dari file Excel jika ada, jika tidak ada/kosong gunakan dari form
+                    $travel_excel_val = trim($sheet->getCellByColumnAndRow(12, $row)->getValue() ?: '');
+                    if ($travel_excel_val !== '') {
+                        $nama_travel = $travel_excel_val;
+                    } elseif ($nama_travel_form !== '') {
+                        $nama_travel = $nama_travel_form;
+                    } else {
+                        $nama_travel = null;
+                    }
+
+                    $tgl_lahir_value = $convertDate($tgl_lahir);
+                    $tanggal_value = $convertDate($tanggal_excel);
+                    $jam_value = $convertTime($jam_excel);
+
+                    $reject_data = [
+                        'nama' => $nama_peserta ?: 'EMPTY',
+                        'nomor_paspor' => $nomor_paspor ?: 'EMPTY',
+                        'no_visa' => $no_visa ?: null,
+                        'tgl_lahir' => $tgl_lahir_value ?: '1900-01-01',
+                        'password' => $password ?: 'Madiun2025!',
+                        'nomor_hp' => $nomor_hp ?: null,
+                        'email' => $email ?: null,
+                        'gender' => $gender_value ?: 'L',
+                        'status' => 0,
+                        'tanggal' => $tanggal_value ?: '1900-01-01',
+                        'jam' => $jam_value ?: '00:00:00',
+                        'flag_doc' => $flag_doc ?: 'EMPTY',
+                        'nama_travel' => $nama_travel ?: null,
+                        'reject_reason' => "Status '$status_Cek' tidak sesuai (harus On Target, Already, atau Done)",
+                        'row_number' => $row
+                    ];
+                    
+                    if ($this->insert_reject_data($reject_data, $row)) {
+                        $rejected_data[] = $reject_data;
+                    }
+                    continue;
+                }
+
+                // Ambil tanggal & jam dari kolom Excel (index 9 & 10)
+                $tanggal_excel = trim($sheet->getCellByColumnAndRow(9, $row)->getValue() ?: '');
+                $jam_excel = trim($sheet->getCellByColumnAndRow(10, $row)->getValue() ?: '');
+                // Parse flag_doc: prioritaskan data dari file Excel jika ada, jika tidak ada/kosong gunakan dari form
+                $flag_excel_val = trim($sheet->getCellByColumnAndRow(11, $row)->getValue() ?: '');
+                if ($flag_excel_val !== '') {
+                    $flag_doc = $flag_excel_val . ' - ' . $waktu_import;
+                } elseif ($flag_doc_form !== '') {
+                    $flag_doc = $flag_doc_form . ' - ' . $waktu_import;
+                } else {
+                    $flag_doc = $waktu_import;
+                }
+                
+                // Parse nama_travel: prioritaskan data dari file Excel jika ada, jika tidak ada/kosong gunakan dari form
+                $travel_excel_val = trim($sheet->getCellByColumnAndRow(12, $row)->getValue() ?: '');
+                if ($travel_excel_val !== '') {
+                    $nama_travel = $travel_excel_val;
+                } elseif ($nama_travel_form !== '') {
+                    $nama_travel = $nama_travel_form;
+                } else {
+                    $nama_travel = null;
+                }
 
                 // Skip completely empty rows
                 if (empty($nama_peserta) && empty($nomor_paspor) && empty($no_visa)) {
@@ -3207,10 +3329,10 @@ class Database extends CI_Controller
                         'nomor_paspor' => $nomor_paspor ?: 'EMPTY',
                         'no_visa' => $no_visa ?: null,
                         'tgl_lahir' => '1900-01-01',
-                        'password' => 'Madiun2025!',
+                        'password' => $password ?: 'Madiun2025!',
                         'nomor_hp' => $nomor_hp ?: null,
                         'email' => $email ?: null,
-                        'gender' => 'L',
+                        'gender' => $gender_value ?: 'L',
                         'status' => $status_value,
                         'tanggal' => '1900-01-01',
                         'jam' => '00:00:00',
@@ -3224,17 +3346,6 @@ class Database extends CI_Controller
                         $rejected_data[] = $reject_data;
                     }
                     continue;
-                }
-
-
-                // Process gender
-                $gender_value = 'L';
-                if (!empty($gender)) {
-                    if (strtolower($gender) == 'p' || strtolower($gender) == 'perempuan' || strtolower($gender) == 'female') {
-                        $gender_value = 'P';
-                    }
-                } else {
-                    $gender_value = '';
                 }
 
                 // Konversi semua tanggal
@@ -3278,6 +3389,32 @@ class Database extends CI_Controller
                 // Check if peserta already exists
                 $existing_peserta = $this->transaksi_model->get_by_passport($nomor_paspor);
                 if ($existing_peserta) {
+                    // Jika ada opsi replace flag atau travel, update data yang sudah ada
+                    $should_update = ($replace_flag || $replace_travel);
+                    if ($should_update) {
+                        $update_data = [];
+                        if ($replace_flag) {
+                            $update_data['flag_doc'] = $flag_doc;
+                        }
+                        if ($replace_travel) {
+                            $update_data['nama_travel'] = $nama_travel ?: null;
+                        }
+                        if (!empty($update_data)) {
+                            $this->db->where('id', $existing_peserta->id);
+                            $this->db->update('peserta', $update_data);
+                            log_message('info', "Row $row: Data paspor '$nomor_paspor' diupdate (replace mode): " . json_encode($update_data));
+                            $success_count++;
+                            $successful_data[] = [
+                                'nama'         => $existing_peserta->nama,
+                                'nomor_paspor' => $nomor_paspor,
+                                'row_number'   => $row,
+                                'action'       => 'update',
+                            ];
+                        }
+                        continue;
+                    }
+
+                    // Mode normal: tolak jika sudah ada
                     $error_message = "Row $row: Peserta dengan nomor paspor '$nomor_paspor' sudah ada";
                     $errors[] = $error_message;
                     $error_count++;
@@ -3286,21 +3423,21 @@ class Database extends CI_Controller
 
                     // Simpan data yang gagal ke tabel peserta_reject
                     $reject_data = [
-                        'nama' => $nama_peserta,
-                        'nomor_paspor' => $nomor_paspor,
-                        'no_visa' => $no_visa ?: null,
-                        'tgl_lahir' => $tgl_lahir_value ?: '1900-01-01',
-                        'password' => 'Madiun2025!',
-                        'nomor_hp' => $nomor_hp ?: null,
-                        'email' => $email ?: null,
-                        'gender' => $gender_value ?: 'L',
-                        'status' => $status_value,
-                        'tanggal' => $tanggal_value ?: '1900-01-01',
-                        'jam' => $jam_value ?: '00:00:00',
-                        'flag_doc' => $flag_doc,
-                        'nama_travel' => $nama_travel ?: null,
+                        'nama'          => $nama_peserta,
+                        'nomor_paspor'  => $nomor_paspor,
+                        'no_visa'       => $no_visa ?: null,
+                        'tgl_lahir'     => $tgl_lahir_value ?: '1900-01-01',
+                        'password'      => $password ?: 'Madiun2025!',
+                        'nomor_hp'      => $nomor_hp ?: null,
+                        'email'         => $email ?: null,
+                        'gender'        => $gender_value ?: 'L',
+                        'status'        => $status_value,
+                        'tanggal'       => $tanggal_value ?: '1900-01-01',
+                        'jam'           => $jam_value ?: '00:00:00',
+                        'flag_doc'      => $flag_doc,
+                        'nama_travel'   => $nama_travel ?: null,
                         'reject_reason' => "Nomor paspor '$nomor_paspor' sudah ada dalam database",
-                        'row_number' => $row
+                        'row_number'    => $row
                     ];
 
                     if ($this->insert_reject_data($reject_data, $row)) {
@@ -3315,7 +3452,7 @@ class Database extends CI_Controller
                     'nomor_paspor' => $nomor_paspor,
                     'no_visa' => $no_visa ?: null,
                     'tgl_lahir' => $tgl_lahir_value,
-                    'password' => 'Madiun2025!',
+                    'password' => $password ?: 'Madiun2025!',
                     'nomor_hp' => $nomor_hp ?: null,
                     'email' => $email ?: null,
                     'barcode' => null, // Field barcode untuk import data
@@ -3350,7 +3487,7 @@ class Database extends CI_Controller
                             'nomor_paspor' => $nomor_paspor,
                             'no_visa' => $no_visa ?: '',
                             'tgl_lahir' => $tgl_lahir_value ?: '',
-                            'password' => 'Madiun2025!',
+                            'password' => $password ?: 'Madiun2025!',
                             'nomor_hp' => $nomor_hp ?: '',
                             'email' => $email ?: '',
                             'gender' => $gender_value,
@@ -3376,7 +3513,7 @@ class Database extends CI_Controller
                             'nomor_paspor' => $nomor_paspor,
                             'no_visa' => $no_visa ?: null,
                             'tgl_lahir' => $tgl_lahir_value ?: '1900-01-01',
-                            'password' => 'Madiun2025!',
+                            'password' => $password ?: 'Madiun2025!',
                             'nomor_hp' => $nomor_hp ?: null,
                             'email' => $email ?: null,
                             'gender' => $gender_value ?: 'L',
@@ -3428,7 +3565,7 @@ class Database extends CI_Controller
                         'nomor_paspor' => $nomor_paspor,
                         'no_visa' => $no_visa ?: null,
                         'tgl_lahir' => $tgl_lahir_value ?: '1900-01-01',
-                        'password' => 'Madiun2025!',
+                        'password' => $password ?: 'Madiun2025!',
                         'nomor_hp' => $nomor_hp ?: null,
                         'email' => $email ?: null,
                         'gender' => $gender_value ?: 'L',
@@ -3497,6 +3634,13 @@ class Database extends CI_Controller
                 $this->session->set_flashdata('rejected_count', count($rejected_data));
                 $this->session->set_flashdata('rejected_data', $rejected_data);
 
+                // Buat pesan error detail untuk UI
+                $error_details = "Gagal mengimport $error_count data. Detail error:<br>" . implode("<br>", array_slice($errors, 0, 10));
+                if (count($errors) > 10) {
+                    $error_details .= "<br>...dan " . (count($errors) - 10) . " error lainnya. Silakan download data ditolak untuk melihat detail lengkap.";
+                }
+                $this->session->set_flashdata('error', $error_details);
+
                 // Log first few errors
                 $error_preview = array_slice($errors, 0, 3);
                 log_message('warning', 'Import errors preview: ' . implode('; ', $error_preview));
@@ -3563,11 +3707,10 @@ class Database extends CI_Controller
             'Password',
             'No. HP',
             'Email',
-            'Barcode',
             'Gender',
+            'Status',
             'Tanggal',
             'Jam',
-            'Status',
             'Flag Dokumen',
             'Nama Travel'
         ];
@@ -3607,11 +3750,10 @@ class Database extends CI_Controller
             'password123',
             '08123456789',
             'ahmad@email.com',
-            'Barcode123',
             'L',
+            'On Target',
             '2025-01-01',
             '12:00',
-            'On Target',
             'Batch-001',
             'Travel-001'
         ];
@@ -3628,12 +3770,13 @@ class Database extends CI_Controller
         $sheet->getColumnDimension('D')->setWidth(15);
         $sheet->getColumnDimension('E')->setWidth(15);
         $sheet->getColumnDimension('F')->setWidth(15);
-        $sheet->getColumnDimension('G')->setWidth(15);
-        $sheet->getColumnDimension('H')->setWidth(25);
-        $sheet->getColumnDimension('I')->setWidth(10);
+        $sheet->getColumnDimension('G')->setWidth(25);
+        $sheet->getColumnDimension('H')->setWidth(10);
+        $sheet->getColumnDimension('I')->setWidth(15);
         $sheet->getColumnDimension('J')->setWidth(15);
-        $sheet->getColumnDimension('K')->setWidth(15);
-        $sheet->getColumnDimension('L')->setWidth(15);
+        $sheet->getColumnDimension('K')->setWidth(10);
+        $sheet->getColumnDimension('L')->setWidth(20);
+        $sheet->getColumnDimension('M')->setWidth(20);
 
         // Set sheet title
         $sheet->setTitle('Template Import Peserta');
@@ -3810,7 +3953,18 @@ class Database extends CI_Controller
             $sheet->setCellValue('F' . $row_num, $data->nomor_hp);
             $sheet->setCellValue('G' . $row_num, $data->email);
             $sheet->setCellValue('H' . $row_num, $data->gender);
-            $sheet->setCellValue('I' . $row_num, $data->status);
+            
+            // Map numeric status back to human-readable string labels
+            $status_text = 'On Target';
+            if ($data->status == 1) {
+                $status_text = 'Already';
+            } elseif ($data->status == 2) {
+                $status_text = 'Done';
+            } elseif ($data->status == 3) {
+                $status_text = 'Fasttrack';
+            }
+            $sheet->setCellValue('I' . $row_num, $status_text);
+            
             $sheet->setCellValue('J' . $row_num, $data->tanggal);
             $sheet->setCellValue('K' . $row_num, $data->jam);
             $sheet->setCellValue('L' . $row_num, $data->flag_doc);
@@ -3821,7 +3975,7 @@ class Database extends CI_Controller
         }
 
         // Auto-size columns
-        foreach (range('A', 'O') as $col) {
+        foreach (range('A', 'P') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
@@ -4024,7 +4178,6 @@ class Database extends CI_Controller
                 'Password',
                 'No. HP',
                 'Email',
-                'Barcode',
                 'Gender',
                 'Status',
                 'Tanggal',
@@ -4032,7 +4185,6 @@ class Database extends CI_Controller
                 'Flag Dokumen',
                 'Nama Travel',
                 'Nomor Baris Excel',
-
             ];
 
             $objPHPExcel->setActiveSheetIndex(0);
@@ -4072,18 +4224,28 @@ class Database extends CI_Controller
                 $sheet->setCellValue('E' . $row_num, $data['password']);
                 $sheet->setCellValue('F' . $row_num, $data['nomor_hp']);
                 $sheet->setCellValue('G' . $row_num, $data['email']);
-                $sheet->setCellValue('H' . $row_num, $data['barcode']);
-                $sheet->setCellValue('I' . $row_num, $data['gender']);
-                $sheet->setCellValue('J' . $row_num, $data['status']);
-                $sheet->setCellValue('K' . $row_num, $data['tanggal']);
-                $sheet->setCellValue('L' . $row_num, $data['jam']);
-                $sheet->setCellValue('M' . $row_num, $data['flag_doc']);
-                $sheet->setCellValue('N' . $row_num, $data['nama_travel']);
-                $sheet->setCellValue('O' . $row_num, $data['row_number']);
+                $sheet->setCellValue('H' . $row_num, $data['gender']);
+                
+                // Map numeric status back to human-readable string labels
+                $status_text = 'On Target';
+                if ($data['status'] == 1) {
+                    $status_text = 'Already';
+                } elseif ($data['status'] == 2) {
+                    $status_text = 'Done';
+                } elseif ($data['status'] == 3) {
+                    $status_text = 'Fasttrack';
+                }
+                $sheet->setCellValue('I' . $row_num, $status_text);
+                
+                $sheet->setCellValue('J' . $row_num, $data['tanggal']);
+                $sheet->setCellValue('K' . $row_num, $data['jam']);
+                $sheet->setCellValue('L' . $row_num, $data['flag_doc']);
+                $sheet->setCellValue('M' . $row_num, $data['nama_travel']);
+                $sheet->setCellValue('N' . $row_num, $data['row_number']);
             }
 
             // Auto-size columns
-            foreach (range('A', 'M') as $col) {
+            foreach (range('A', 'N') as $col) {
                 $sheet->getColumnDimension($col)->setAutoSize(true);
             }
 
@@ -4104,9 +4266,7 @@ class Database extends CI_Controller
                 $this->telegram_notification->download_notification('Data Import Berhasil', $filename, count($successful_data));
             endif;
 
-            // Clean up session data after successful download
-            $this->session->unset_userdata('successful_count');
-            $this->session->unset_userdata('successful_data');
+            // Clean up session data is deferred to process_import() to allow multiple downloads
 
 
             exit;
@@ -4222,9 +4382,7 @@ class Database extends CI_Controller
                 $this->telegram_notification->download_notification('Data Import Berhasil', $filename, count($successful_data));
             endif;
 
-            // Clean up session data after successful download
-            $this->session->unset_userdata('successful_count_cpanel');
-            $this->session->unset_userdata('successful_data_cpanel');
+            // Clean up session data is deferred to process_import() to allow multiple downloads
 
 
             exit;
@@ -4339,9 +4497,7 @@ class Database extends CI_Controller
                 $this->telegram_notification->download_notification('Data Import Berhasil', $filename, count($successful_data));
             endif;
 
-            // Clean up session data after successful download
-            $this->session->unset_userdata('successful_count_cpanel_forwarding');
-            $this->session->unset_userdata('successful_data_cpanel_forwarding');
+            // Clean up session data is deferred to process_import() to allow multiple downloads
 
             exit;
 
@@ -6093,6 +6249,126 @@ class Database extends CI_Controller
             echo json_encode([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Update multiple peserta records (status, status_asal, tanggal, jam, selesai)
+     */
+    public function update_multiple()
+    {
+        // Check if user is logged in
+        if (!$this->session->userdata('logged_in')) {
+            $this->output->set_status_header(401);
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            return;
+        }
+
+        // Check if user is admin
+        if ($this->session->userdata('role') !== 'admin') {
+            $this->output->set_status_header(403);
+            echo json_encode(['success' => false, 'message' => 'Access denied. Admin only.']);
+            return;
+        }
+
+        // Check if it's an AJAX request
+        if (!$this->input->is_ajax_request()) {
+            $this->output->set_status_header(400);
+            echo json_encode(['success' => false, 'message' => 'Invalid request']);
+            return;
+        }
+
+        // Get JSON input
+        $input = json_decode(file_get_contents('php://input'), true);
+
+        if (!$input || !isset($input['ids']) || !is_array($input['ids'])) {
+            $this->output->set_status_header(400);
+            echo json_encode(['success' => false, 'message' => 'Invalid input data']);
+            return;
+        }
+
+        $ids = $input['ids'];
+
+        if (empty($ids)) {
+            $this->output->set_status_header(400);
+            echo json_encode(['success' => false, 'message' => 'Tidak ada data yang dipilih untuk diupdate']);
+            return;
+        }
+
+        try {
+            $success_count = 0;
+            $error_count = 0;
+            $errors = [];
+
+            foreach ($ids as $id) {
+                // Get peserta data before update
+                $peserta = $this->transaksi_model->get_by_id($id);
+
+                if ($peserta) {
+                    $update_data = [
+                        'status_asal' => 0,
+                        'tanggal' => null,
+                        'jam' => null,
+                        'selesai' => 2,
+                        'status' => 2,
+                        'arsip_create_at' => date('Y-m-d H:i:s'),
+                        'eksekutor_arsip_create_at' => $this->session->userdata('user_id') ?: null,
+                        'updated_at' => date('Y-m-d H:i:s'),
+                        'history_update' => $this->session->userdata('user_id') ?: null
+                    ];
+
+                    // Update database
+                    $result = $this->transaksi_model->update($id, $update_data);
+
+                    if ($result) {
+                        $success_count++;
+
+                        // Log pekerjaan field changes
+                        if (function_exists('log_pekerjaan_field_changes')) {
+                            log_pekerjaan_field_changes((array) $peserta, $update_data, 'database', (int) $id);
+                        }
+
+                        // Log activity
+                        if (function_exists('log_peserta_activity')) {
+                            log_peserta_activity($id, 'update', 'Mass update status (Reset schedule & set status to Done): ' . $peserta->nama, (array) $peserta, $update_data);
+                        }
+
+                        // Send Telegram notification
+                        if ($this->session->userdata('username') != 'adhit' && isset($this->telegram_notification)) {
+                            $this->telegram_notification->peserta_crud_notification('update', $peserta->nama, 'ID: ' . $id . ' (Mass Update Status)', (array)$peserta, $update_data);
+                        }
+                    } else {
+                        $error_count++;
+                        $errors[] = "Gagal mengupdate data ID: $id";
+                    }
+                } else {
+                    $error_count++;
+                    $errors[] = "Data ID: $id tidak ditemukan";
+                }
+            }
+
+            $message = "Berhasil mengupdate $success_count data";
+            if ($error_count > 0) {
+                $message .= ", gagal mengupdate $error_count data";
+            }
+
+            $this->output->set_content_type('application/json');
+            echo json_encode([
+                'success' => true,
+                'message' => $message,
+                'success_count' => $success_count,
+                'error_count' => $error_count,
+                'errors' => $errors
+            ]);
+
+        } catch (Exception $e) {
+            log_message('error', 'Error in update_multiple: ' . $e->getMessage());
+            $this->output->set_status_header(500);
+            $this->output->set_content_type('application/json');
+            echo json_encode([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat mengupdate data: ' . $e->getMessage()
             ]);
         }
     }

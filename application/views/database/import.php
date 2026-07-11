@@ -76,21 +76,84 @@
                                     <input type="file" class="form-control" id="excel_file" name="excel_file" accept=".xls,.xlsx" required>
                                     <div class="form-text">Pilih file Excel yang berisi data peserta</div>
                                 </div>
-                                <!--
                                 <div class="mb-3">
+                                    <label class="form-label fw-bold">Opsi Sumber Email</label>
+                                    <div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="email_source" id="email_generate" value="generate" checked>
+                                            <label class="form-check-label" for="email_generate">Generate Otomatis</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="email_source" id="email_excel" value="excel">
+                                            <label class="form-check-label" for="email_excel">Dari File Excel (Kolom G)</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="email_generate_settings">
+                                    <div class="mb-3">
+                                        <label for="email_prefix" class="form-label">Prefix / Domain Email</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fas fa-at"></i></span>
+                                            <input type="text" class="form-control" id="email_prefix" name="email_prefix"
+                                                   placeholder="Contoh: choco.web.id" value="choco.web.id">
+                                        </div>
+                                        <div class="form-text">Domain yang digunakan untuk membuat email otomatis dari No. Visa / No. Paspor. Contoh: <code>choco.web.id</code> &rarr; email: <code>noVisa@choco.web.id</code></div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Opsi Flag Dokumen</label>
+                                    <div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="flag_source" id="flag_excel" value="excel" checked>
+                                            <label class="form-check-label" for="flag_excel">Dari File Excel (Kolom L)</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="flag_source" id="flag_form" value="form">
+                                            <label class="form-check-label" for="flag_form">Input Manual</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3" id="flag_form_input" style="display: none;">
                                     <label for="flag_doc" class="form-label">Flag Dokumen</label>
-                                    <input type="text" class="form-control" id="flag_doc" name="flag_doc" placeholder="Contoh: Batch-001, Import-Jan2025" required>
+                                    <input type="text" class="form-control" id="flag_doc" name="flag_doc" placeholder="Contoh: Batch-001, Import-Jan2025">
                                     <div class="form-text">Masukkan identifier untuk file yang diupload (akan digunakan untuk filtering data)</div>
                                 </div>
-                                -->
-                                <div class="mb-3">
-                                    <label for="email_prefix" class="form-label">Prefix / Domain Email <span class="text-danger">*</span></label>
-                                    <div class="input-group">
-                                        <span class="input-group-text"><i class="fas fa-at"></i></span>
-                                        <input type="text" class="form-control" id="email_prefix" name="email_prefix"
-                                               placeholder="Contoh: choco.web.id" value="choco.web.id" required>
+                                <div class="mb-3" id="flag_replace_option">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="replace_flag" name="replace_flag" value="1">
+                                        <label class="form-check-label" for="replace_flag">
+                                            <i class="fas fa-sync-alt text-warning"></i>
+                                            <strong>Replace Flag</strong> — Update flag dokumen data yang <em>sudah ada di database</em> (dicocokkan dengan No. Paspor dari file Excel)
+                                        </label>
                                     </div>
-                                    <div class="form-text">Domain yang digunakan untuk membuat email otomatis dari No. Visa / No. Paspor. Contoh: <code>choco.web.id</code> &rarr; email: <code>noVisa@choco.web.id</code></div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Opsi Nama Travel</label>
+                                    <div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="travel_source" id="travel_excel" value="excel" checked>
+                                            <label class="form-check-label" for="travel_excel">Dari File Excel (Kolom M)</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="travel_source" id="travel_form" value="form">
+                                            <label class="form-check-label" for="travel_form">Input Manual</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3" id="travel_form_input" style="display: none;">
+                                    <label for="nama_travel" class="form-label">Nama Travel</label>
+                                    <input type="text" class="form-control" id="nama_travel" name="nama_travel" placeholder="Masukkan Nama Travel">
+                                </div>
+                                <div class="mb-3" id="travel_replace_option">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="replace_travel" name="replace_travel" value="1">
+                                        <label class="form-check-label" for="replace_travel">
+                                            <i class="fas fa-sync-alt text-warning"></i>
+                                            <strong>Replace Travel</strong> — Update nama travel data yang <em>sudah ada di database</em> (dicocokkan dengan No. Paspor dari file Excel)
+                                        </label>
+                                    </div>
                                 </div>
                                 <div class="mb-3">
                                     <label for="mailbox" class="form-label">Mailbox (Target Forwarding) <span class="text-danger">*</span></label>
@@ -178,17 +241,22 @@
                                                 <tr>
                                                     <td>J</td>
                                                     <td>Tanggal</td>
-                                                    <td>YYYY/MM/DD</td>
+                                                    <td>YYYY/MM/DD atau Format Tanggal Excel (Opsional)</td>
                                                 </tr>
                                                 <tr>
                                                     <td>K</td>
                                                     <td>Jam</td>
-                                                    <td>HH:MM</td>
+                                                    <td>HH:MM atau Format Waktu Excel (Opsional)</td>
                                                 </tr>
                                                 <tr>
                                                     <td>L</td>
                                                     <td>Flag Dokumen</td>
                                                     <td>Identifier untuk file (opsional)</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>M</td>
+                                                    <td>Nama Travel</td>
+                                                    <td>Nama Travel untuk file (opsional)</td>
                                                 </tr>
                                             </tbody>
                                         </table>
@@ -221,6 +289,7 @@
         </div>
     </div>
 </div>
+
 
 <style>
 .bg-brown {
@@ -293,44 +362,89 @@
 .persistent-error {
     animation: errorPulse 2s infinite;
 }
+
+/* Style untuk panel input manual yang muncul */
+.manual-input-panel {
+    background-color: #f0f4ff;
+    border: 1px solid #c7d7f9;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin-top: 4px;
+}
 </style>
 
 <script>
-// Disable auto-dismiss for error alerts
 document.addEventListener('DOMContentLoaded', function() {
-    // Find all error alerts and prevent auto-dismiss
+
+    // ===== Persistent Error Alert =====
     const errorAlerts = document.querySelectorAll('.persistent-error');
     errorAlerts.forEach(function(alert) {
-        // Remove any auto-dismiss functionality
         alert.style.animation = 'none';
         alert.style.transition = 'none';
-        
-        // Ensure the alert stays visible
         alert.classList.add('show');
         alert.style.display = 'block';
         alert.style.opacity = '1';
     });
-    
-    // Override Bootstrap's auto-dismiss if any
+
     if (typeof bootstrap !== 'undefined') {
         const alertList = document.querySelectorAll('.persistent-error');
         alertList.forEach(function(alert) {
             const bsAlert = new bootstrap.Alert(alert);
-            // Disable auto-dismiss
             bsAlert._config.delay = 0;
             bsAlert._config.autohide = false;
         });
     }
-    
-    // Console log untuk data yang berhasil di import
+
+    // ===== Toggle Opsi Sumber Email =====
+    const emailGenerateSettings = document.getElementById('email_generate_settings');
+    document.querySelectorAll('input[name="email_source"]').forEach(function(radio) {
+        radio.addEventListener('change', function() {
+            if (this.value === 'generate') {
+                emailGenerateSettings.style.display = 'block';
+            } else {
+                emailGenerateSettings.style.display = 'none';
+            }
+        });
+    });
+
+    // ===== Toggle Opsi Flag Dokumen =====
+    const flagFormInputDiv = document.getElementById('flag_form_input');
+    const flagDocField     = document.getElementById('flag_doc');
+    document.querySelectorAll('input[name="flag_source"]').forEach(function(radio) {
+        radio.addEventListener('change', function() {
+            if (this.value === 'form') {
+                flagFormInputDiv.style.display = 'block';
+                if (flagDocField) flagDocField.setAttribute('required', 'required');
+            } else {
+                flagFormInputDiv.style.display = 'none';
+                if (flagDocField) flagDocField.removeAttribute('required');
+            }
+        });
+    });
+
+    // ===== Toggle Opsi Nama Travel =====
+    const travelFormInputDiv = document.getElementById('travel_form_input');
+    const travelField        = document.getElementById('nama_travel');
+    document.querySelectorAll('input[name="travel_source"]').forEach(function(radio) {
+        radio.addEventListener('change', function() {
+            if (this.value === 'form') {
+                travelFormInputDiv.style.display = 'block';
+                if (travelField) travelField.setAttribute('required', 'required');
+            } else {
+                travelFormInputDiv.style.display = 'none';
+                if (travelField) travelField.removeAttribute('required');
+            }
+        });
+    });
+
+    // ===== Console log import success =====
     <?php if($this->session->userdata('successful_count')): ?>
     console.log('=== IMPORT SUCCESS LOG ===');
     console.log('Total data berhasil diimport:', <?= $this->session->userdata('successful_count') ?>);
     console.log('Timestamp:', new Date().toISOString());
     console.log('User:', '<?= $this->session->userdata('nama_lengkap') ?>');
     console.log('Session ID:', '<?= $this->session->session_id ?>');
-    
-    // Log detail data yang berhasil di import jika tersedia
+
     <?php if($this->session->userdata('successful_data')): ?>
     const successfulData = <?= json_encode($this->session->userdata('successful_data')) ?>;
     console.log('Detail data berhasil:');
@@ -338,11 +452,11 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(`[${index + 1}] ${data.nama} - ${data.nomor_paspor} (Row: ${data.row_number})`);
     });
     <?php endif; ?>
-    
+
     console.log('=== END IMPORT SUCCESS LOG ===');
     <?php endif; ?>
-    
-    // Console log untuk data yang ditolak
+
+    // ===== Console log import rejected =====
     <?php if($this->session->flashdata('rejected_count')): ?>
     console.log('=== IMPORT REJECTED LOG ===');
     console.log('Total data ditolak:', <?= $this->session->flashdata('rejected_count') ?>);
@@ -351,5 +465,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Session ID:', '<?= $this->session->session_id ?>');
     console.log('=== END IMPORT REJECTED LOG ===');
     <?php endif; ?>
+
 });
 </script>
+

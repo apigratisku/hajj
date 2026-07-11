@@ -105,8 +105,8 @@ class Transaksi_model extends CI_Model {
                 $filtered_data['updated_at'] = date('Y-m-d H:i:s');
             }
 
-            // Catat status asal saat transisi ke Done dari On Target (0) atau Already (1)
-            if (isset($filtered_data['status']) && (string) $filtered_data['status'] === '2' && in_array('status_asal', $fields, true)) {
+            // Catat status asal saat transisi ke Done dari On Target (0) atau Already (1) jika tidak diset secara eksplisit
+            if (!isset($data['status_asal']) && isset($filtered_data['status']) && (string) $filtered_data['status'] === '2' && in_array('status_asal', $fields, true)) {
                 $current = $this->get_by_id($id);
                 if ($current && (string) $current->status !== '2') {
                     $old_status = (string) $current->status;
@@ -1156,6 +1156,12 @@ class Transaksi_model extends CI_Model {
         }
     }
 
+    private function apply_nama_travel_filter_done($filters) {
+        if (!empty($filters['nama_travel'])) {
+            $this->db->where('peserta.nama_travel', $filters['nama_travel']);
+        }
+    }
+
     public function get_unique_email_domains_done() {
         $this->db->select("SUBSTRING_INDEX(email, '@', -1) AS email_domain", false);
         $this->db->from($this->table);
@@ -1174,6 +1180,7 @@ class Transaksi_model extends CI_Model {
         $this->apply_base_filter_done();
         $this->apply_email_domain_filter_done($filters);
         $this->apply_gender_filter_done($filters);
+        $this->apply_nama_travel_filter_done($filters);
 
         $this->db->order_by('peserta.created_at', 'ASC');
         $this->db->order_by('peserta.id', 'ASC');
@@ -1190,6 +1197,7 @@ class Transaksi_model extends CI_Model {
         $this->apply_base_filter_done();
         $this->apply_email_domain_filter_done($filters);
         $this->apply_gender_filter_done($filters);
+        $this->apply_nama_travel_filter_done($filters);
 
         return $this->db->count_all_results();
     }

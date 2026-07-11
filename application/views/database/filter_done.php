@@ -1,4 +1,4 @@
-﻿    <!-- Content Body -->
+    <!-- Content Body -->
     <div class="content-body">
     <div class="row mb-4">
         <div class="col-12">
@@ -39,6 +39,17 @@
                                         <option value="P" <?= (isset($_GET['gender']) && $_GET['gender'] === 'P') ? 'selected' : '' ?>>Perempuan</option>
                                     </select>
                                 </div>
+                                <div class="form-group">
+                                    <label class="form-label"><i class="fas fa-bus"></i> Travel</label>
+                                    <select name="nama_travel" class="form-select mobile-input">
+                                        <option value="">Semua Travel</option>
+                                        <?php if (!empty($travel_list)): foreach ($travel_list as $travel): ?>
+                                            <option value="<?= htmlspecialchars($travel->nama_travel) ?>" <?= (isset($_GET['nama_travel']) && $_GET['nama_travel'] === $travel->nama_travel) ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($travel->nama_travel) ?>
+                                            </option>
+                                        <?php endforeach; endif; ?>
+                                    </select>
+                                </div>
                                 <div class="form-actions">
                                     <button type="submit" class="btn btn-search">
                                         <i class="fas fa-search"></i> Cari
@@ -72,6 +83,17 @@
                                         <option value="">Semua Gender</option>
                                         <option value="L" <?= (isset($_GET['gender']) && $_GET['gender'] === 'L') ? 'selected' : '' ?>>Laki-laki</option>
                                         <option value="P" <?= (isset($_GET['gender']) && $_GET['gender'] === 'P') ? 'selected' : '' ?>>Perempuan</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="nama_travel_desktop" class="form-label"><i class="fas fa-bus"></i> Travel</label>
+                                    <select id="nama_travel_desktop" name="nama_travel" class="form-select form-control-sm">
+                                        <option value="">Semua Travel</option>
+                                        <?php if (!empty($travel_list)): foreach ($travel_list as $travel): ?>
+                                            <option value="<?= htmlspecialchars($travel->nama_travel) ?>" <?= (isset($_GET['nama_travel']) && $_GET['nama_travel'] === $travel->nama_travel) ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($travel->nama_travel) ?>
+                                            </option>
+                                        <?php endforeach; endif; ?>
                                     </select>
                                 </div>
                                 <div class="col-md-auto">
