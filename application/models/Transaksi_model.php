@@ -1140,8 +1140,21 @@ class Transaksi_model extends CI_Model {
 
     private function apply_base_filter_done() {
         $this->db->where('peserta.status', 2);
+        
+        $this->db->group_start();
         $this->db->where('peserta.tanggal IS NULL');
+        $this->db->or_where('peserta.tanggal', '');
+        $this->db->group_end();
+        
+        $this->db->group_start();
         $this->db->where('peserta.jam IS NULL');
+        $this->db->or_where('peserta.jam', '');
+        $this->db->group_end();
+
+        $this->db->group_start();
+        $this->db->where('peserta.status_asal IS NULL');
+        $this->db->or_where('peserta.status_asal', '');
+        $this->db->group_end();
     }
 
     private function apply_email_domain_filter_done($filters) {
