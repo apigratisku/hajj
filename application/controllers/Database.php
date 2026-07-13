@@ -3198,15 +3198,15 @@ class Database extends CI_Controller
                 // ===== END MODIFIKASI EMAIL =====
                 // ===== END MODIFIKASI EMAIL =====
                 
-                // Parse Barcode (from index 7 / Column H)
-                $barcode = trim($sheet->getCellByColumnAndRow(7, $row)->getValue() ?: '');
+                // Parse Barcode (from index 7 / Column H) - Set to null as it's not present in the new Excel sheet
+                $barcode = null;
 
                 // Set Waktu Import
                 $now = new DateTime('now', new DateTimeZone('Asia/Hong_Kong'));
                 $waktu_import = $now->format('Y-m-d');
 
-                // Parse status (from index 8 / Column I)
-                $status_Cek = trim($sheet->getCellByColumnAndRow(8, $row)->getValue() ?: '');
+                // Parse status (from index 7 / Column H)
+                $status_Cek = trim($sheet->getCellByColumnAndRow(7, $row)->getValue() ?: '');
                 $status_Cek_lower = strtolower($status_Cek);
                 $status_value = null;
 
@@ -3228,8 +3228,8 @@ class Database extends CI_Controller
                     $tanggal_excel = trim($sheet->getCellByColumnAndRow(9, $row)->getValue() ?: '');
                     $jam_excel = trim($sheet->getCellByColumnAndRow(10, $row)->getValue() ?: '');
                     
-                    // Parse gender (from index 11 / Column L)
-                    $gender = trim($sheet->getCellByColumnAndRow(11, $row)->getValue() ?: '');
+                    // Parse gender (from index 8 / Column I)
+                    $gender = trim($sheet->getCellByColumnAndRow(8, $row)->getValue() ?: '');
                     $gender_value = 'L';
                     if (!empty($gender)) {
                         if (strtolower($gender) == 'p' || strtolower($gender) == 'perempuan' || strtolower($gender) == 'female') {
@@ -3240,17 +3240,17 @@ class Database extends CI_Controller
                     }
 
                     // Parse flag_doc: prioritaskan data dari file Excel jika ada, jika tidak ada/kosong gunakan dari form
-                    $flag_excel_val = trim($sheet->getCellByColumnAndRow(12, $row)->getValue() ?: '');
+                    $flag_excel_val = trim($sheet->getCellByColumnAndRow(11, $row)->getValue() ?: '');
                     if ($flag_excel_val !== '') {
-                        $flag_doc = $flag_excel_val . ' - ' . $waktu_import;
+                        $flag_doc = $flag_excel_val;
                     } elseif ($flag_doc_form !== '') {
-                        $flag_doc = $flag_doc_form . ' - ' . $waktu_import;
+                        $flag_doc = $flag_doc_form;
                     } else {
                         $flag_doc = $waktu_import;
                     }
 
                     // Parse nama_travel: prioritaskan data dari file Excel jika ada, jika tidak ada/kosong gunakan dari form
-                    $travel_excel_val = trim($sheet->getCellByColumnAndRow(13, $row)->getValue() ?: '');
+                    $travel_excel_val = trim($sheet->getCellByColumnAndRow(12, $row)->getValue() ?: '');
                     if ($travel_excel_val !== '') {
                         $nama_travel = $travel_excel_val;
                     } elseif ($nama_travel_form !== '') {
@@ -3292,8 +3292,8 @@ class Database extends CI_Controller
                 $tanggal_excel = trim($sheet->getCellByColumnAndRow(9, $row)->getValue() ?: '');
                 $jam_excel = trim($sheet->getCellByColumnAndRow(10, $row)->getValue() ?: '');
 
-                // Parse gender (from index 11 / Column L)
-                $gender = trim($sheet->getCellByColumnAndRow(11, $row)->getValue() ?: '');
+                // Parse gender (from index 8 / Column I)
+                $gender = trim($sheet->getCellByColumnAndRow(8, $row)->getValue() ?: '');
                 $gender_value = 'L';
                 if (!empty($gender)) {
                     if (strtolower($gender) == 'p' || strtolower($gender) == 'perempuan' || strtolower($gender) == 'female') {
@@ -3304,17 +3304,17 @@ class Database extends CI_Controller
                 }
 
                 // Parse flag_doc: prioritaskan data dari file Excel jika ada, jika tidak ada/kosong gunakan dari form
-                $flag_excel_val = trim($sheet->getCellByColumnAndRow(12, $row)->getValue() ?: '');
+                $flag_excel_val = trim($sheet->getCellByColumnAndRow(11, $row)->getValue() ?: '');
                 if ($flag_excel_val !== '') {
-                    $flag_doc = $flag_excel_val . ' - ' . $waktu_import;
+                    $flag_doc = $flag_excel_val;
                 } elseif ($flag_doc_form !== '') {
-                    $flag_doc = $flag_doc_form . ' - ' . $waktu_import;
+                    $flag_doc = $flag_doc_form;
                 } else {
                     $flag_doc = $waktu_import;
                 }
                 
                 // Parse nama_travel: prioritaskan data dari file Excel jika ada, jika tidak ada/kosong gunakan dari form
-                $travel_excel_val = trim($sheet->getCellByColumnAndRow(13, $row)->getValue() ?: '');
+                $travel_excel_val = trim($sheet->getCellByColumnAndRow(12, $row)->getValue() ?: '');
                 if ($travel_excel_val !== '') {
                     $nama_travel = $travel_excel_val;
                 } elseif ($nama_travel_form !== '') {
@@ -3728,11 +3728,10 @@ class Database extends CI_Controller
             'Password',
             'No. HP',
             'Email',
-            'Barcode',
             'Status',
+            'Gender',
             'Tanggal',
             'Jam',
-            'Gender',
             'Flag Dokumen',
             'Nama Travel'
         ];
@@ -3772,11 +3771,10 @@ class Database extends CI_Controller
             'password123',
             '08123456789',
             'ahmad@email.com',
-            'Barcode123',
             'On Target',
+            'L',
             '2025-01-01',
             '12:00',
-            'L',
             'Batch-001',
             'Travel-001'
         ];
@@ -3795,12 +3793,11 @@ class Database extends CI_Controller
         $sheet->getColumnDimension('F')->setWidth(15);
         $sheet->getColumnDimension('G')->setWidth(25);
         $sheet->getColumnDimension('H')->setWidth(15);
-        $sheet->getColumnDimension('I')->setWidth(15);
+        $sheet->getColumnDimension('I')->setWidth(10);
         $sheet->getColumnDimension('J')->setWidth(15);
         $sheet->getColumnDimension('K')->setWidth(10);
-        $sheet->getColumnDimension('L')->setWidth(10);
+        $sheet->getColumnDimension('L')->setWidth(20);
         $sheet->getColumnDimension('M')->setWidth(20);
-        $sheet->getColumnDimension('N')->setWidth(20);
 
         // Set sheet title
         $sheet->setTitle('Template Import Peserta');
@@ -3928,11 +3925,10 @@ class Database extends CI_Controller
             'Password',
             'No. HP',
             'Email',
-            'Barcode',
             'Status',
+            'Gender',
             'Tanggal',
             'Jam',
-            'Gender',
             'Flag Dokumen',
             'Nama Travel',
             'Alasan Penolakan',
@@ -3977,7 +3973,6 @@ class Database extends CI_Controller
             $sheet->setCellValue('E' . $row_num, $data->password);
             $sheet->setCellValue('F' . $row_num, $data->nomor_hp);
             $sheet->setCellValue('G' . $row_num, $data->email);
-            $sheet->setCellValue('H' . $row_num, isset($data->barcode) ? $data->barcode : '');
             
             // Map numeric status back to human-readable string labels
             $status_text = 'On Target';
@@ -3988,20 +3983,19 @@ class Database extends CI_Controller
             } elseif ($data->status == 3) {
                 $status_text = 'Fasttrack';
             }
-            $sheet->setCellValue('I' . $row_num, $status_text);
-            
+            $sheet->setCellValue('H' . $row_num, $status_text);
+            $sheet->setCellValue('I' . $row_num, $data->gender);
             $sheet->setCellValue('J' . $row_num, $data->tanggal);
             $sheet->setCellValue('K' . $row_num, $data->jam);
-            $sheet->setCellValue('L' . $row_num, $data->gender);
-            $sheet->setCellValue('M' . $row_num, $data->flag_doc);
-            $sheet->setCellValue('N' . $row_num, $data->nama_travel);
-            $sheet->setCellValue('O' . $row_num, $data->reject_reason);
-            $sheet->setCellValue('P' . $row_num, $data->row_number);
-            $sheet->setCellValue('Q' . $row_num, $data->created_at);
+            $sheet->setCellValue('L' . $row_num, $data->flag_doc);
+            $sheet->setCellValue('M' . $row_num, $data->nama_travel);
+            $sheet->setCellValue('N' . $row_num, $data->reject_reason);
+            $sheet->setCellValue('O' . $row_num, $data->row_number);
+            $sheet->setCellValue('P' . $row_num, $data->created_at);
         }
 
         // Auto-size columns
-        foreach (range('A', 'Q') as $col) {
+        foreach (range('A', 'P') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
@@ -4080,8 +4074,8 @@ class Database extends CI_Controller
             'Password',
             'No. HP',
             'Email',
-            'Gender',
             'Status',
+            'Gender',
             'Tanggal',
             'Jam',
             'Flag Dokumen',
@@ -4128,19 +4122,29 @@ class Database extends CI_Controller
             $sheet->setCellValue('E' . $row_num, $data->password);
             $sheet->setCellValue('F' . $row_num, $data->nomor_hp);
             $sheet->setCellValue('G' . $row_num, $data->email);
-            $sheet->setCellValue('H' . $row_num, $data->gender);
-            $sheet->setCellValue('I' . $row_num, $data->status);
+            
+            // Map numeric status back to human-readable string labels
+            $status_text = 'On Target';
+            if ($data->status == 1) {
+                $status_text = 'Already';
+            } elseif ($data->status == 2) {
+                $status_text = 'Done';
+            } elseif ($data->status == 3) {
+                $status_text = 'Fasttrack';
+            }
+            $sheet->setCellValue('H' . $row_num, $status_text);
+            $sheet->setCellValue('I' . $row_num, $data->gender);
             $sheet->setCellValue('J' . $row_num, $data->tanggal);
             $sheet->setCellValue('K' . $row_num, $data->jam);
             $sheet->setCellValue('L' . $row_num, $data->flag_doc);
             $sheet->setCellValue('M' . $row_num, $data->nama_travel);
             $sheet->setCellValue('N' . $row_num, $data->reject_reason);
-            $sheet->setCellValue('N' . $row_num, $data->row_number);
-            $sheet->setCellValue('O' . $row_num, $data->created_at);
+            $sheet->setCellValue('O' . $row_num, $data->row_number);
+            $sheet->setCellValue('P' . $row_num, $data->created_at);
         }
 
         // Auto-size columns
-        foreach (range('A', 'O') as $col) {
+        foreach (range('A', 'P') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
@@ -4204,11 +4208,10 @@ class Database extends CI_Controller
                 'Password',
                 'No. HP',
                 'Email',
-                'Barcode',
                 'Status',
+                'Gender',
                 'Tanggal',
                 'Jam',
-                'Gender',
                 'Flag Dokumen',
                 'Nama Travel',
                 'Nomor Baris Excel',
@@ -4251,7 +4254,6 @@ class Database extends CI_Controller
                 $sheet->setCellValue('E' . $row_num, $data['password']);
                 $sheet->setCellValue('F' . $row_num, $data['nomor_hp']);
                 $sheet->setCellValue('G' . $row_num, $data['email']);
-                $sheet->setCellValue('H' . $row_num, isset($data['barcode']) ? $data['barcode'] : '');
                 
                 // Map numeric status back to human-readable string labels
                 $status_text = 'On Target';
@@ -4262,18 +4264,17 @@ class Database extends CI_Controller
                 } elseif ($data['status'] == 3) {
                     $status_text = 'Fasttrack';
                 }
-                $sheet->setCellValue('I' . $row_num, $status_text);
-                
+                $sheet->setCellValue('H' . $row_num, $status_text);
+                $sheet->setCellValue('I' . $row_num, $data['gender']);
                 $sheet->setCellValue('J' . $row_num, $data['tanggal']);
                 $sheet->setCellValue('K' . $row_num, $data['jam']);
-                $sheet->setCellValue('L' . $row_num, $data['gender']);
-                $sheet->setCellValue('M' . $row_num, $data['flag_doc']);
-                $sheet->setCellValue('N' . $row_num, $data['nama_travel']);
-                $sheet->setCellValue('O' . $row_num, $data['row_number']);
+                $sheet->setCellValue('L' . $row_num, $data['flag_doc']);
+                $sheet->setCellValue('M' . $row_num, $data['nama_travel']);
+                $sheet->setCellValue('N' . $row_num, $data['row_number']);
             }
 
             // Auto-size columns
-            foreach (range('A', 'O') as $col) {
+            foreach (range('A', 'N') as $col) {
                 $sheet->getColumnDimension($col)->setAutoSize(true);
             }
 

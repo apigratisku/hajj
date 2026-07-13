@@ -836,21 +836,146 @@ class Todo extends CI_Controller {
             $success_count = 0;
             $error_count = 0;
             $errors = [];
+
+            // Fungsi konversi tanggal seragam
+            $convertDate = function ($dateValue) {
+                $bulan_map = [
+                    'Jan' => '01',
+                    'Feb' => '02',
+                    'Mar' => '03',
+                    'Apr' => '04',
+                    'Mei' => '05',
+                    'Jun' => '06',
+                    'Jul' => '07',
+                    'Agu' => '08',
+                    'Sep' => '09',
+                    'Okt' => '10',
+                    'Nov' => '11',
+                    'Des' => '12'
+                ];
+                if (empty($dateValue))
+                    return null;
+                if (is_numeric($dateValue)) {
+                    $phpDate = PHPExcel_Shared_Date::ExcelToPHP($dateValue);
+                    return date('Y-m-d', $phpDate);
+                } else {
+                    $dateValue = trim($dateValue);
+                    // Format dd/MM/yyyy
+                    if (preg_match('/^\d{1,2}\/\d{1,2}\/\d{4}$/', $dateValue)) {
+                        $dt = DateTime::createFromFormat('d/m/Y', $dateValue);
+                        return $dt ? $dt->format('Y-m-d') : null;
+                    }
+                    // Format dd-MMM-yyyy (Indonesia)
+                    elseif (preg_match('/^\d{1,2}-[A-Za-z]{3}-\d{4}$/', $dateValue)) {
+                        list($d, $m, $y) = explode('-', $dateValue);
+                        $m = ucfirst(strtolower($m));
+                        if (isset($bulan_map[$m])) {
+                            return sprintf('%04d-%02d-%02d', $y, $bulan_map[$m], $d);
+                        }
+                    }
+                    // Fallback: parse otomatis
+                    $parsed_date = date_parse($dateValue);
+                    if ($parsed_date['error_count'] == 0 && checkdate($parsed_date['month'], $parsed_date['day'], $parsed_date['year'])) {
+                        return date('Y-m-d', strtotime($dateValue));
+                    }
+                }
+                return null;
+            };
+
+            $convertTime = function ($timeValue) {
+                if ($timeValue === '' || $timeValue === null)
+                    return null;
+
+                // Clean the input
+                $timeValue = trim($timeValue);
+
+                // Handle Excel time format "04.00" -> "04:00"
+                if (preg_match('/^\d{1,2}\.\d{2}$/', $timeValue)) {
+                    return str_replace('.', ':', $timeValue);
+                }
+
+                // Handle Excel time format "4.00" -> "04:00" (single digit hour)
+                if (preg_match('/^\d{1}\.\d{2}$/', $timeValue)) {
+                    $parts = explode('.', $timeValue);
+                    $hour = str_pad($parts[0], 2, '0', STR_PAD_LEFT);
+                    $minute = $parts[1];
+                    return $hour . ':' . $minute;
+                }
+
+                // Handle Excel time format "4.5" -> "04:30" (decimal format)
+                if (preg_match('/^\d{1,2}\.\d{1}$/', $timeValue)) {
+                    $parts = explode('.', $timeValue);
+                    $hour = str_pad($parts[0], 2, '0', STR_PAD_LEFT);
+                    $decimal = $parts[1];
+                    $minute = str_pad($decimal * 6, 2, '0', STR_PAD_LEFT); // Convert decimal to minutes
+                    return $hour . ':' . $minute;
+                }
+
+                // Handle Excel time format "4.50" -> "04:30" (decimal format with 2 digits)
+                if (preg_match('/^\d{1,2}\.\d{2}$/', $timeValue)) {
+                    $parts = explode('.', $timeValue);
+                    $hour = str_pad($parts[0], 2, '0', STR_PAD_LEFT);
+                    $decimal = $parts[1];
+                    if ($decimal == '50') {
+                        $minute = '30';
+                    } else {
+                        $minute = str_pad($decimal, 2, '0', STR_PAD_LEFT);
+                    }
+                    return $hour . ':' . $minute;
+                }
+
+                // Handle Excel numeric time values
+                if (is_numeric($timeValue)) {
+                    if ($timeValue >= 0 && $timeValue < 1) {
+                        $totalMinutes = round($timeValue * 1440);
+                        $hours = floor($totalMinutes / 60);
+                        $minutes = $totalMinutes % 60;
+                        return sprintf('%02d:%02d', $hours, $minutes);
+                    } else if ($timeValue >= 1) {
+                        $timeValue = $timeValue - floor($timeValue);
+                        $totalMinutes = round($timeValue * 1440);
+                        $hours = floor($totalMinutes / 60);
+                        $minutes = $totalMinutes % 60;
+                        return sprintf('%02d:%02d', $hours, $minutes);
+                    }
+                }
+
+                $timeValue = str_replace(['.', ','], ':', $timeValue);
+
+                if (preg_match('/^\d{1}:\d{2}$/', $timeValue)) {
+                    $parts = explode(':', $timeValue);
+                    $hour = str_pad($parts[0], 2, '0', STR_PAD_LEFT);
+                    $minute = $parts[1];
+                    return $hour . ':' . $minute;
+                }
+
+                if (preg_match('/^\d{2}:\d{2}$/', $timeValue)) {
+                    return $timeValue;
+                }
+
+                $parsed_time = date_parse($timeValue);
+                if ($parsed_time['error_count'] == 0 && $parsed_time['hour'] !== false) {
+                    return sprintf('%02d:%02d', $parsed_time['hour'], $parsed_time['minute']);
+                }
+
+                return null;
+            };
             
             // Start from row 2 (skip header)
             for ($row = 2; $row <= $highestRow; $row++) {
-                $nama_peserta = trim($sheet->getCellByColumnAndRow(0, $row)->getValue());
-                $nomor_paspor = trim($sheet->getCellByColumnAndRow(1, $row)->getValue());
-                $no_visa = trim($sheet->getCellByColumnAndRow(2, $row)->getValue());
-                $tgl_lahir = trim($sheet->getCellByColumnAndRow(3, $row)->getValue());
-                $password = trim($sheet->getCellByColumnAndRow(4, $row)->getValue());
-                $nomor_hp = trim($sheet->getCellByColumnAndRow(5, $row)->getValue());
-                $email = trim($sheet->getCellByColumnAndRow(6, $row)->getValue());
-                $gender = "";
-                $status = 0;
-                $tanggal = "";
-                $jam = "";
-                $flag_doc = trim($sheet->getCellByColumnAndRow(11, $row)->getValue());
+                $nama_peserta = trim($sheet->getCellByColumnAndRow(0, $row)->getValue() ?: '');
+                $nomor_paspor = trim($sheet->getCellByColumnAndRow(1, $row)->getValue() ?: '');
+                $no_visa = trim($sheet->getCellByColumnAndRow(2, $row)->getValue() ?: '');
+                $tgl_lahir = trim($sheet->getCellByColumnAndRow(3, $row)->getValue() ?: '');
+                $password = trim($sheet->getCellByColumnAndRow(4, $row)->getValue() ?: '');
+                $nomor_hp = trim($sheet->getCellByColumnAndRow(5, $row)->getValue() ?: '');
+                $email = trim($sheet->getCellByColumnAndRow(6, $row)->getValue() ?: '');
+                $status = trim($sheet->getCellByColumnAndRow(7, $row)->getValue() ?: '');
+                $gender = trim($sheet->getCellByColumnAndRow(8, $row)->getValue() ?: '');
+                $tanggal = trim($sheet->getCellByColumnAndRow(9, $row)->getValue() ?: '');
+                $jam = trim($sheet->getCellByColumnAndRow(10, $row)->getValue() ?: '');
+                $flag_doc = trim($sheet->getCellByColumnAndRow(11, $row)->getValue() ?: '');
+                $nama_travel = trim($sheet->getCellByColumnAndRow(12, $row)->getValue() ?: '');
                 
                 // Skip empty rows
                 if (empty($nama_peserta) && empty($nomor_paspor)) {
@@ -864,17 +989,17 @@ class Todo extends CI_Controller {
                     continue;
                 }
                 
-                
                 // Process status
                 $status_value = 0; // Default to 'On Target'
                 if (!empty($status)) {
                     switch (strtolower($status)) {
                         case 'on schedule':
-                        case 'on schedule':
+                        case 'already':
                             $status_value = 1;
                             break;
                         case 'done':
                         case 'selesai':
+                        case 'done!':
                             $status_value = 2;
                             break;
                         default:
@@ -888,54 +1013,13 @@ class Todo extends CI_Controller {
                     if (strtolower($gender) == 'p' || strtolower($gender) == 'perempuan' || strtolower($gender) == 'female') {
                         $gender_value = 'P';
                     }
-                }else{
+                } else {
                     $gender_value = '';
                 }
                 
-                // Process date
-                $tgl_lahir_value = null;
-
-                if (!empty($tgl_lahir)) {
-                    if (is_numeric($tgl_lahir)) {
-                        // Format numeric Excel
-                        $tgl_lahir_value = PHPExcel_Shared_Date::ExcelToPHP($tgl_lahir);
-                        $tgl_lahir_value = date('Y-m-d', $tgl_lahir_value);
-                    } else {
-                        // Hilangkan spasi ekstra
-                        $tgl_lahir = trim($tgl_lahir);
-
-                        // Mapping bulan Indonesia ke angka
-                        $bulan_map = [
-                            'Jan' => '01', 'Feb' => '02', 'Mar' => '03', 'Apr' => '04',
-                            'Mei' => '05', 'Jun' => '06', 'Jul' => '07', 'Agu' => '08',
-                            'Sep' => '09', 'Okt' => '10', 'Nov' => '11', 'Des' => '12'
-                        ];
-
-                        // Format dd/mm/yyyy
-                        if (preg_match('/^\d{1,2}\/\d{1,2}\/\d{4}$/', $tgl_lahir)) {
-                            $dt = DateTime::createFromFormat('d/m/Y', $tgl_lahir);
-                            if ($dt) {
-                                $tgl_lahir_value = $dt->format('Y-m-d');
-                            }
-                        }
-                        // Format dd-MMM-yyyy (Indonesia)
-                        elseif (preg_match('/^\d{1,2}-[A-Za-z]{3}-\d{4}$/', $tgl_lahir)) {
-                            list($d, $m, $y) = explode('-', $tgl_lahir);
-                            $m = ucfirst(strtolower($m)); // Pastikan kapitalisasi benar
-                            if (isset($bulan_map[$m])) {
-                                $tgl_lahir_value = sprintf('%04d-%02d-%02d', $y, $bulan_map[$m], $d);
-                            }
-                        }
-                        // Fallback: coba parse otomatis
-                        else {
-                            $parsed_date = date_parse($tgl_lahir);
-                            if ($parsed_date['error_count'] == 0 && checkdate($parsed_date['month'], $parsed_date['day'], $parsed_date['year'])) {
-                                $tgl_lahir_value = date('Y-m-d', strtotime($tgl_lahir));
-                            }
-                        }
-                    }
-                }
-
+                $tgl_lahir_value = $convertDate($tgl_lahir);
+                $tanggal_value = $convertDate($tanggal);
+                $jam_value = $convertTime($jam);
                 
                 // Check if peserta already exists
                 $existing_peserta = $this->transaksi_model->get_by_passport($nomor_paspor);
@@ -944,7 +1028,6 @@ class Todo extends CI_Controller {
                     $error_count++;
                     continue;
                 }
-                
                 
                 // Insert peserta data
                 $peserta_data = [
@@ -957,9 +1040,10 @@ class Todo extends CI_Controller {
                     'email' => $email ?: null,
                     'gender' => $gender_value,
                     'status' => $status_value,
-                    'tanggal' => $tanggal,
-                    'jam' => $jam,
+                    'tanggal' => $tanggal_value,
+                    'jam' => $jam_value,
                     'flag_doc' => $flag_doc,
+                    'nama_travel' => $nama_travel ?: null,
                     'created_at' => date('Y-m-d H:i:s'),
                     'updated_at' => date('Y-m-d H:i:s')
                 ];
@@ -1011,11 +1095,12 @@ class Todo extends CI_Controller {
             'Password',
             'No. HP',
             'Email',
-            'Gender',
             'Status',
+            'Gender',
             'Tanggal',
             'Jam',
-            'Flag Dokumen'
+            'Flag Dokumen',
+            'Nama Travel'
         ];
         
         $objPHPExcel->setActiveSheetIndex(0);
@@ -1053,11 +1138,12 @@ class Todo extends CI_Controller {
             'password123',
             '08123456789',
             'ahmad@email.com',
-            'L',
             'On Target',
+            'L',
             '2025-01-01',
             '12:00',
-            'Batch-001'
+            'Batch-001',
+            'Travel-001'
         ];
         
         foreach ($sampleData as $col => $data) {
@@ -1072,12 +1158,13 @@ class Todo extends CI_Controller {
         $sheet->getColumnDimension('D')->setWidth(15);
         $sheet->getColumnDimension('E')->setWidth(15);
         $sheet->getColumnDimension('F')->setWidth(15);
-        $sheet->getColumnDimension('G')->setWidth(15);
-        $sheet->getColumnDimension('H')->setWidth(25);
+        $sheet->getColumnDimension('G')->setWidth(25);
+        $sheet->getColumnDimension('H')->setWidth(15);
         $sheet->getColumnDimension('I')->setWidth(10);
         $sheet->getColumnDimension('J')->setWidth(15);
-        $sheet->getColumnDimension('K')->setWidth(15);
-        $sheet->getColumnDimension('L')->setWidth(15);
+        $sheet->getColumnDimension('K')->setWidth(10);
+        $sheet->getColumnDimension('L')->setWidth(20);
+        $sheet->getColumnDimension('M')->setWidth(20);
         
         // Set sheet title
         $sheet->setTitle('Template Import Peserta');

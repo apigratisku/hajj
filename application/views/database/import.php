@@ -106,7 +106,7 @@
                                     <div>
                                         <div class="form-check form-check-inline">
                                             <input class="form-check-input" type="radio" name="flag_source" id="flag_excel" value="excel" checked>
-                                            <label class="form-check-label" for="flag_excel">Dari File Excel (Kolom M)</label>
+                                            <label class="form-check-label" for="flag_excel">Dari File Excel (Kolom L)</label>
                                         </div>
                                         <div class="form-check form-check-inline">
                                             <input class="form-check-input" type="radio" name="flag_source" id="flag_form" value="form">
@@ -134,7 +134,7 @@
                                     <div>
                                         <div class="form-check form-check-inline">
                                             <input class="form-check-input" type="radio" name="travel_source" id="travel_excel" value="excel" checked>
-                                            <label class="form-check-label" for="travel_excel">Dari File Excel (Kolom N)</label>
+                                            <label class="form-check-label" for="travel_excel">Dari File Excel (Kolom M)</label>
                                         </div>
                                         <div class="form-check form-check-inline">
                                             <input class="form-check-input" type="radio" name="travel_source" id="travel_form" value="form">
@@ -230,13 +230,13 @@
                                                 </tr>
                                                 <tr>
                                                     <td>H</td>
-                                                    <td>Barcode</td>
-                                                    <td>Opsional</td>
+                                                    <td>Status</td>
+                                                    <td>On Target/Already/Done</td>
                                                 </tr>
                                                 <tr>
                                                     <td>I</td>
-                                                    <td>Status</td>
-                                                    <td>On Target/Already/Done</td>
+                                                    <td>Gender</td>
+                                                    <td>L/P atau Laki-laki/Perempuan</td>
                                                 </tr>
                                                 <tr>
                                                     <td>J</td>
@@ -250,16 +250,11 @@
                                                 </tr>
                                                 <tr>
                                                     <td>L</td>
-                                                    <td>Gender</td>
-                                                    <td>L/P atau Laki-laki/Perempuan</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>M</td>
                                                     <td>Flag Dokumen</td>
                                                     <td>Identifier untuk file (opsional)</td>
                                                 </tr>
                                                 <tr>
-                                                    <td>N</td>
+                                                    <td>M</td>
                                                     <td>Nama Travel</td>
                                                     <td>Nama Travel untuk file (opsional)</td>
                                                 </tr>
