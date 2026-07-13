@@ -46,6 +46,9 @@
                         <button type="button" class="btn btn-sm btn-info text-white me-1" id="updateMultipleBtn" style="display: none; background-color: var(--info-color) !important; border-color: var(--info-color) !important;" onclick="updateMultipleRecords()">
                             <i class="fas fa-edit"></i> <span class="d-none d-sm-inline">Move On Target->Done</span>
                         </button>
+                        <button type="button" class="btn btn-sm btn-warning text-white me-1" id="removeScheduleMultipleBtn" style="display: none;" onclick="removeScheduleMultipleRecords()">
+                            <i class="fas fa-calendar-times"></i> <span class="d-none d-sm-inline">Remove Tanggal & Jam</span>
+                        </button>
                         <button type="button" class="btn btn-sm btn-danger" id="deleteMultipleBtn" style="display: none;" onclick="deleteMultipleRecords()">
                             <i class="fas fa-trash"></i> <span class="d-none d-sm-inline">Hapus Terpilih</span>
                         </button>
@@ -226,6 +229,9 @@
                                     <?php if($this->session->userdata('role') == 'admin'): ?>
                                     <button type="button" class="btn btn-info text-white me-1" id="updateMultipleBtnMobile" style="display: none; background-color: var(--info-color) !important; border-color: var(--info-color) !important;" onclick="updateMultipleRecords()">
                                         <i class="fas fa-edit"></i> Move On Target->Done
+                                    </button>
+                                    <button type="button" class="btn btn-warning text-white me-1" id="removeScheduleMultipleBtnMobile" style="display: none;" onclick="removeScheduleMultipleRecords()">
+                                        <i class="fas fa-calendar-times"></i> Remove Tanggal & Jam
                                     </button>
                                     <button type="button" class="btn btn-danger" id="deleteMultipleBtnMobile" style="display: none;" onclick="deleteMultipleRecords()">
                                         <i class="fas fa-trash"></i> Hapus Terpilih
@@ -5690,6 +5696,8 @@ function updateDeleteButton() {
     const deleteBtnMobile = document.getElementById('deleteMultipleBtnMobile');
     const updateBtn = document.getElementById('updateMultipleBtn');
     const updateBtnMobile = document.getElementById('updateMultipleBtnMobile');
+    const removeScheduleBtn = document.getElementById('removeScheduleMultipleBtn');
+    const removeScheduleBtnMobile = document.getElementById('removeScheduleMultipleBtnMobile');
     
     if (deleteBtn) {
         if (totalChecked > 0) {
@@ -5724,6 +5732,24 @@ function updateDeleteButton() {
             updateBtnMobile.innerHTML = `<i class="fas fa-edit"></i> Move On Target->Done (${totalChecked})`;
         } else {
             updateBtnMobile.style.display = 'none';
+        }
+    }
+
+    if (removeScheduleBtn) {
+        if (totalChecked > 0) {
+            removeScheduleBtn.style.display = 'inline-block';
+            removeScheduleBtn.innerHTML = `<i class="fas fa-calendar-times"></i> <span class="d-none d-sm-inline">Remove Tanggal & Jam (${totalChecked})</span>`;
+        } else {
+            removeScheduleBtn.style.display = 'none';
+        }
+    }
+
+    if (removeScheduleBtnMobile) {
+        if (totalChecked > 0) {
+            removeScheduleBtnMobile.style.display = 'inline-block';
+            removeScheduleBtnMobile.innerHTML = `<i class="fas fa-calendar-times"></i> Remove Tanggal & Jam (${totalChecked})`;
+        } else {
+            removeScheduleBtnMobile.style.display = 'none';
         }
     }
     
@@ -5841,6 +5867,107 @@ function updateMultipleRecords() {
         if (updateBtnMobile) {
             updateBtnMobile.disabled = false;
             updateBtnMobile.innerHTML = originalTextMobile;
+        }
+    });
+}
+
+function removeScheduleMultipleRecords() {
+    const mobileCheckboxes = document.querySelectorAll('.row-checkbox-mobile:checked');
+    const desktopCheckboxes = document.querySelectorAll('.row-checkbox-desktop:checked');
+    
+    const selectedIds = [];
+    mobileCheckboxes.forEach(cb => selectedIds.push(cb.value));
+    desktopCheckboxes.forEach(cb => selectedIds.push(cb.value));
+    
+    if (selectedIds.length === 0) {
+        showAlert('Tidak ada data yang dipilih untuk di-remove jadwalnya', 'warning');
+        return;
+    }
+    
+    const confirmMessage = `Apakah Anda yakin ingin menghapus tanggal dan jam untuk ${selectedIds.length} data yang dipilih?`;
+    
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+    
+    // Show loading state
+    const removeScheduleBtn = document.getElementById('removeScheduleMultipleBtn');
+    const removeScheduleBtnMobile = document.getElementById('removeScheduleMultipleBtnMobile');
+    const originalText = removeScheduleBtn ? removeScheduleBtn.innerHTML : '';
+    const originalTextMobile = removeScheduleBtnMobile ? removeScheduleBtnMobile.innerHTML : '';
+    
+    if (removeScheduleBtn) {
+        removeScheduleBtn.disabled = true;
+        removeScheduleBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span class="d-none d-sm-inline">Removing...</span>';
+    }
+    
+    if (removeScheduleBtnMobile) {
+        removeScheduleBtnMobile.disabled = true;
+        removeScheduleBtnMobile.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Removing...';
+    }
+    
+    fetch('<?= base_url('database/remove_schedule_multiple') ?>', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({ ids: selectedIds })
+    })
+    .then(response => {
+        if (response.status === 401) {
+            showAlert('Session expired. Silakan login ulang.', 'error');
+            setTimeout(() => {
+                window.location.href = '<?= base_url('auth') ?>';
+            }, 2000);
+            return;
+        }
+        if (response.status === 403) {
+            showAlert('Access denied. Admin only.', 'error');
+            return;
+        }
+        return response.json();
+    })
+    .then(result => {
+        if (!result) return;
+        
+        if (result.success) {
+            showAlert(result.message, 'success');
+            
+            // Reset checkboxes and button
+            const allCheckboxes = document.querySelectorAll('.row-checkbox-mobile, .row-checkbox-desktop');
+            allCheckboxes.forEach(cb => cb.checked = false);
+            
+            const selectAllCheckboxes = document.querySelectorAll('#selectAllMobile, #selectAllDesktop');
+            selectAllCheckboxes.forEach(cb => {
+                cb.checked = false;
+                cb.indeterminate = false;
+            });
+            
+            updateDeleteButton();
+            
+            // Refresh page after 2 seconds to update pagination and values
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+            
+        } else {
+            showAlert(result.message || 'Gagal menghapus jadwal data', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('Terjadi kesalahan saat menghapus jadwal data', 'error');
+    })
+    .finally(() => {
+        // Reset button state
+        if (removeScheduleBtn) {
+            removeScheduleBtn.disabled = false;
+            removeScheduleBtn.innerHTML = originalText;
+        }
+        if (removeScheduleBtnMobile) {
+            removeScheduleBtnMobile.disabled = false;
+            removeScheduleBtnMobile.innerHTML = originalTextMobile;
         }
     });
 }

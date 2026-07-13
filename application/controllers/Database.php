@@ -991,10 +991,11 @@ class Database extends CI_Controller
         $peserta = $this->transaksi_model->get_by_id($id);
 
         if ($peserta) {
-            // Update tanggal and jam to NULL
+            // Update tanggal, jam, and status_asal to NULL
             $data = array(
                 'tanggal' => NULL,
                 'jam' => NULL,
+                'status_asal' => NULL,
                 'is_cancel' => 1,
                 'updated_at' => date('Y-m-d H:i:s'),
                 'history_update' => $this->session->userdata('user_id') ?: null
@@ -6398,6 +6399,123 @@ class Database extends CI_Controller
             echo json_encode([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat mengupdate data: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Remove schedule for multiple peserta records (tanggal = null, jam = null, status_asal = null)
+     */
+    public function remove_schedule_multiple()
+    {
+        // Check if user is logged in
+        if (!$this->session->userdata('logged_in')) {
+            $this->output->set_status_header(401);
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            return;
+        }
+
+        // Check if user is admin
+        if ($this->session->userdata('role') !== 'admin') {
+            $this->output->set_status_header(403);
+            echo json_encode(['success' => false, 'message' => 'Access denied. Admin only.']);
+            return;
+        }
+
+        // Check if it's an AJAX request
+        if (!$this->input->is_ajax_request()) {
+            $this->output->set_status_header(400);
+            echo json_encode(['success' => false, 'message' => 'Invalid request']);
+            return;
+        }
+
+        // Get JSON input
+        $input = json_decode(file_get_contents('php://input'), true);
+
+        if (!$input || !isset($input['ids']) || !is_array($input['ids'])) {
+            $this->output->set_status_header(400);
+            echo json_encode(['success' => false, 'message' => 'Invalid input data']);
+            return;
+        }
+
+        $ids = $input['ids'];
+
+        if (empty($ids)) {
+            $this->output->set_status_header(400);
+            echo json_encode(['success' => false, 'message' => 'Tidak ada data yang dipilih untuk di-remove jadwalnya']);
+            return;
+        }
+
+        try {
+            $success_count = 0;
+            $error_count = 0;
+            $errors = [];
+
+            foreach ($ids as $id) {
+                // Get peserta data before update
+                $peserta = $this->transaksi_model->get_by_id($id);
+
+                if ($peserta) {
+                    $update_data = [
+                        'tanggal' => null,
+                        'jam' => null,
+                        'status_asal' => null,
+                        'is_cancel' => 1,
+                        'updated_at' => date('Y-m-d H:i:s'),
+                        'history_update' => $this->session->userdata('user_id') ?: null
+                    ];
+
+                    // Update database
+                    $result = $this->transaksi_model->update($id, $update_data);
+
+                    if ($result) {
+                        $success_count++;
+
+                        // Log pekerjaan field changes
+                        if (function_exists('log_pekerjaan_field_changes')) {
+                            log_pekerjaan_field_changes((array) $peserta, $update_data, 'database', (int) $id);
+                        }
+
+                        // Log activity
+                        if (function_exists('log_peserta_activity')) {
+                            log_peserta_activity($id, 'update', 'Menghapus tanggal, jam, dan status_asal jadwal (Mass): ' . $peserta->nama, (array) $peserta, $update_data);
+                        }
+
+                        // Send Telegram notification
+                        if ($this->session->userdata('username') != 'adhit' && isset($this->telegram_notification)) {
+                            $this->telegram_notification->peserta_crud_notification('update', $peserta->nama, 'ID: ' . $id . ' (Mass Remove Schedule)', (array)$peserta, $update_data);
+                        }
+                    } else {
+                        $error_count++;
+                        $errors[] = "Gagal menghapus jadwal data ID: $id";
+                    }
+                } else {
+                    $error_count++;
+                    $errors[] = "Data ID: $id tidak ditemukan";
+                }
+            }
+
+            $message = "Berhasil menghapus jadwal $success_count data";
+            if ($error_count > 0) {
+                $message .= ", gagal menghapus jadwal $error_count data";
+            }
+
+            $this->output->set_content_type('application/json');
+            echo json_encode([
+                'success' => true,
+                'message' => $message,
+                'success_count' => $success_count,
+                'error_count' => $error_count,
+                'errors' => $errors
+            ]);
+
+        } catch (Exception $e) {
+            log_message('error', 'Error in remove_schedule_multiple: ' . $e->getMessage());
+            $this->output->set_status_header(500);
+            $this->output->set_content_type('application/json');
+            echo json_encode([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus jadwal data: ' . $e->getMessage()
             ]);
         }
     }
