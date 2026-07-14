@@ -69,7 +69,7 @@
                 </li>
                 <li>
                     <a href="<?= base_url('database/filter_done') ?>" <?= $current_filter_route == 'filter_done' ? 'class="active"' : '' ?>>
-                        <i class="fas fa-check"></i> <span>Done</span>
+                        <i class="fas fa-check"></i> <span>Done Gender</span>
                     </a>
                 </li>
                 <li>
