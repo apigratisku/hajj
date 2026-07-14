@@ -6337,7 +6337,7 @@ class Database extends CI_Controller
 
                 if ($peserta) {
                     $update_data = [
-                        'status_asal' => 0,
+                        'status_asal' => null,
                         'tanggal' => null,
                         'jam' => null,
                         'selesai' => 2,

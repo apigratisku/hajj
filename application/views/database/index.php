@@ -44,7 +44,7 @@
                         </button>
                         <?php if($this->session->userdata('role') == 'admin'): ?>
                         <button type="button" class="btn btn-sm btn-info text-white me-1" id="updateMultipleBtn" style="display: none; background-color: var(--info-color) !important; border-color: var(--info-color) !important;" onclick="updateMultipleRecords()">
-                            <i class="fas fa-edit"></i> <span class="d-none d-sm-inline">Move On Target->Done</span>
+                            <i class="fas fa-edit"></i> <span class="d-none d-sm-inline">Move to Done</span>
                         </button>
                         <button type="button" class="btn btn-sm btn-warning text-white me-1" id="removeScheduleMultipleBtn" style="display: none;" onclick="removeScheduleMultipleRecords()">
                             <i class="fas fa-calendar-times"></i> <span class="d-none d-sm-inline">Remove Tanggal & Jam</span>
@@ -228,7 +228,7 @@
                                     
                                     <?php if($this->session->userdata('role') == 'admin'): ?>
                                     <button type="button" class="btn btn-info text-white me-1" id="updateMultipleBtnMobile" style="display: none; background-color: var(--info-color) !important; border-color: var(--info-color) !important;" onclick="updateMultipleRecords()">
-                                        <i class="fas fa-edit"></i> Move On Target->Done
+                                        <i class="fas fa-edit"></i> Move to Done
                                     </button>
                                     <button type="button" class="btn btn-warning text-white me-1" id="removeScheduleMultipleBtnMobile" style="display: none;" onclick="removeScheduleMultipleRecords()">
                                         <i class="fas fa-calendar-times"></i> Remove Tanggal & Jam
@@ -5720,7 +5720,7 @@ function updateDeleteButton() {
     if (updateBtn) {
         if (totalChecked > 0) {
             updateBtn.style.display = 'inline-block';
-            updateBtn.innerHTML = `<i class="fas fa-edit"></i> <span class="d-none d-sm-inline">Move On Target->Done (${totalChecked})</span>`;
+            updateBtn.innerHTML = `<i class="fas fa-edit"></i> <span class="d-none d-sm-inline">Move to Done (${totalChecked})</span>`;
         } else {
             updateBtn.style.display = 'none';
         }
@@ -5729,7 +5729,7 @@ function updateDeleteButton() {
     if (updateBtnMobile) {
         if (totalChecked > 0) {
             updateBtnMobile.style.display = 'inline-block';
-            updateBtnMobile.innerHTML = `<i class="fas fa-edit"></i> Move On Target->Done (${totalChecked})`;
+            updateBtnMobile.innerHTML = `<i class="fas fa-edit"></i> Move to Done (${totalChecked})`;
         } else {
             updateBtnMobile.style.display = 'none';
         }
