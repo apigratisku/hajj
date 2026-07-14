@@ -614,8 +614,8 @@
     
     <!-- Main Content Container -->
     <div class="content">
-        <!-- Alert messages -->
-        <?php if (function_exists('get_instance') && get_instance()->session && get_instance()->session->flashdata('success')): ?>
+        <!-- Alert messages 
+        <?php /*if (function_exists('get_instance') && get_instance()->session && get_instance()->session->flashdata('success')): ?>
             <div class="alert alert-success alert-dismissible fade show" role="alert">
                 <?= get_instance()->session->flashdata('success') ?>
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -627,8 +627,8 @@
                 <?= get_instance()->session->flashdata('error') ?>
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
-        <?php endif; ?>
-        
+        <?php endif; */ ?>
+        -->
         <!-- Content Header -->
         <div class="content-header">
             <div class="row">
