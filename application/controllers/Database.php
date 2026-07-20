@@ -3285,6 +3285,12 @@ class Database extends CI_Controller
                         $flag_doc = $waktu_import;
                     }
 
+                    if ($flag_doc !== $waktu_import) {
+                        if (!preg_match('/ - \d{4}-\d{2}-\d{2}$/', $flag_doc)) {
+                            $flag_doc .= ' - ' . $waktu_import;
+                        }
+                    }
+
                     // Parse nama_travel: prioritaskan data dari file Excel jika ada, jika tidak ada/kosong gunakan dari form
                     $travel_excel_val = trim($sheet->getCellByColumnAndRow(12, $row)->getValue() ?: '');
                     if ($travel_excel_val !== '') {
@@ -3347,6 +3353,12 @@ class Database extends CI_Controller
                     $flag_doc = $flag_doc_form;
                 } else {
                     $flag_doc = $waktu_import;
+                }
+
+                if ($flag_doc !== $waktu_import) {
+                    if (!preg_match('/ - \d{4}-\d{2}-\d{2}$/', $flag_doc)) {
+                        $flag_doc .= ' - ' . $waktu_import;
+                    }
                 }
                 
                 // Parse nama_travel: prioritaskan data dari file Excel jika ada, jika tidak ada/kosong gunakan dari form
