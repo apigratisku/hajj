@@ -50,6 +50,10 @@
                                         <?php endforeach; endif; ?>
                                     </select>
                                 </div>
+                                <div class="form-group">
+                                    <label class="form-label"><i class="fas fa-passport"></i> No Paspor</label>
+                                    <input type="text" name="nomor_paspor" class="form-control mobile-input" placeholder="Cari no paspor..." value="<?= isset($_GET['nomor_paspor']) ? htmlspecialchars($_GET['nomor_paspor']) : '' ?>">
+                                </div>
                                 <div class="form-actions">
                                     <button type="submit" class="btn btn-search">
                                         <i class="fas fa-search"></i> Cari
@@ -95,6 +99,10 @@
                                             </option>
                                         <?php endforeach; endif; ?>
                                     </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="nomor_paspor_desktop" class="form-label"><i class="fas fa-passport"></i> No Paspor</label>
+                                    <input type="text" id="nomor_paspor_desktop" name="nomor_paspor" class="form-control form-control-sm" placeholder="Cari no paspor..." value="<?= isset($_GET['nomor_paspor']) ? htmlspecialchars($_GET['nomor_paspor']) : '' ?>">
                                 </div>
                                 <div class="col-md-auto">
                                     <button type="submit" class="btn btn-brown btn-sm me-2">

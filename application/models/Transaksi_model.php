@@ -995,6 +995,73 @@ class Transaksi_model extends CI_Model {
         $result = $this->db->get()->row();
         return $result ? $result->total_already_to_done : 0;
     }
+
+    public function get_dashboard_stats_on_target_done($flag_doc = null) {
+        $this->db->select('COUNT(*) as total');
+        $this->db->from($this->table);
+        $this->db->where('status', 2);
+        $this->db->where('status_asal', 0);
+        $this->db->where('tanggal IS NULL');
+        $this->db->where('jam IS NULL');
+        
+        if ($flag_doc) {
+            $this->db->where('flag_doc', $flag_doc);
+        }
+        
+        $result = $this->db->get()->row();
+        return $result ? $result->total : 0;
+    }
+
+    public function get_dashboard_stats_done_gender($flag_doc = null) {
+        $this->db->select('COUNT(*) as total');
+        $this->db->from($this->table);
+        $this->db->where('status', 2);
+        
+        $this->db->group_start();
+        $this->db->where('tanggal IS NULL');
+        $this->db->or_where('tanggal', '');
+        $this->db->group_end();
+        
+        $this->db->group_start();
+        $this->db->where('jam IS NULL');
+        $this->db->or_where('jam', '');
+        $this->db->group_end();
+
+        $this->db->group_start();
+        $this->db->where('status_asal IS NULL');
+        $this->db->or_where('status_asal', '');
+        $this->db->group_end();
+
+        if ($flag_doc) {
+            $this->db->where('flag_doc', $flag_doc);
+        }
+        
+        $result = $this->db->get()->row();
+        return $result ? $result->total : 0;
+    }
+
+    public function get_dashboard_stats_done_1tahun($flag_doc = null) {
+        $tz = new DateTimeZone('Asia/Singapore');
+        $one_year_ago = (new DateTime('now', $tz))->modify('-1 year')->format('Y-m-d');
+
+        $this->db->select('COUNT(*) as total');
+        $this->db->from($this->table);
+        $this->db->where('tanggal IS NOT NULL');
+        $this->db->where("tanggal != ''");
+        $this->db->where('tanggal <=', $one_year_ago);
+
+        $this->db->group_start();
+        $this->db->where('status', 2);
+        $this->db->or_where('selesai', 2);
+        $this->db->group_end();
+
+        if ($flag_doc) {
+            $this->db->where('flag_doc', $flag_doc);
+        }
+        
+        $result = $this->db->get()->row();
+        return $result ? $result->total : 0;
+    }
     
     /**
      * Get statistics for data updated on specific date
@@ -1056,6 +1123,7 @@ class Transaksi_model extends CI_Model {
         $this->db->from($this->table);
         $this->db->where('peserta.status', 1);
         $this->apply_email_domain_filter_already($filters);
+        $this->apply_nomor_paspor_filter($filters);
 
         $this->db->order_by('peserta.created_at', 'ASC');
         $this->db->order_by('peserta.id', 'ASC');
@@ -1071,6 +1139,7 @@ class Transaksi_model extends CI_Model {
         $this->db->from($this->table);
         $this->db->where('peserta.status', 1);
         $this->apply_email_domain_filter_already($filters);
+        $this->apply_nomor_paspor_filter($filters);
 
         return $this->db->count_all_results();
     }
@@ -1194,6 +1263,7 @@ class Transaksi_model extends CI_Model {
         $this->apply_email_domain_filter_done($filters);
         $this->apply_gender_filter_done($filters);
         $this->apply_nama_travel_filter_done($filters);
+        $this->apply_nomor_paspor_filter($filters);
 
         $this->db->order_by('peserta.created_at', 'ASC');
         $this->db->order_by('peserta.id', 'ASC');
@@ -1211,6 +1281,7 @@ class Transaksi_model extends CI_Model {
         $this->apply_email_domain_filter_done($filters);
         $this->apply_gender_filter_done($filters);
         $this->apply_nama_travel_filter_done($filters);
+        $this->apply_nomor_paspor_filter($filters);
 
         return $this->db->count_all_results();
     }
@@ -1265,6 +1336,7 @@ class Transaksi_model extends CI_Model {
         $this->db->from($this->table);
         $this->apply_base_filter_done_1tahun();
         $this->apply_email_domain_filter_done_1tahun($filters);
+        $this->apply_nomor_paspor_filter($filters);
 
         $this->db->order_by('peserta.created_at', 'ASC');
         $this->db->order_by('peserta.id', 'ASC');
@@ -1280,6 +1352,7 @@ class Transaksi_model extends CI_Model {
         $this->db->from($this->table);
         $this->apply_base_filter_done_1tahun();
         $this->apply_email_domain_filter_done_1tahun($filters);
+        $this->apply_nomor_paspor_filter($filters);
 
         return $this->db->count_all_results();
     }
@@ -1316,6 +1389,12 @@ class Transaksi_model extends CI_Model {
         }
     }
 
+    private function apply_nomor_paspor_filter($filters) {
+        if (!empty($filters['nomor_paspor'])) {
+            $this->db->like('peserta.nomor_paspor', $filters['nomor_paspor']);
+        }
+    }
+
     public function get_unique_email_domains_already_done() {
         $this->db->select("SUBSTRING_INDEX(email, '@', -1) AS email_domain", false);
         $this->db->from($this->table);
@@ -1334,6 +1413,7 @@ class Transaksi_model extends CI_Model {
         $this->apply_base_filter_already_done();
         $this->apply_email_domain_filter_already_done($filters);
         $this->apply_gender_filter_already_done($filters);
+        $this->apply_nomor_paspor_filter($filters);
 
         $this->db->order_by('peserta.created_at', 'ASC');
         $this->db->order_by('peserta.id', 'ASC');
@@ -1350,6 +1430,7 @@ class Transaksi_model extends CI_Model {
         $this->apply_base_filter_already_done();
         $this->apply_email_domain_filter_already_done($filters);
         $this->apply_gender_filter_already_done($filters);
+        $this->apply_nomor_paspor_filter($filters);
 
         return $this->db->count_all_results();
     }
@@ -1404,6 +1485,7 @@ class Transaksi_model extends CI_Model {
         $this->apply_base_filter_on_target_done();
         $this->apply_email_domain_filter_on_target_done($filters);
         $this->apply_gender_filter_on_target_done($filters);
+        $this->apply_nomor_paspor_filter($filters);
 
         $this->db->order_by('peserta.created_at', 'ASC');
         $this->db->order_by('peserta.id', 'ASC');
@@ -1420,6 +1502,7 @@ class Transaksi_model extends CI_Model {
         $this->apply_base_filter_on_target_done();
         $this->apply_email_domain_filter_on_target_done($filters);
         $this->apply_gender_filter_on_target_done($filters);
+        $this->apply_nomor_paspor_filter($filters);
 
         return $this->db->count_all_results();
     }

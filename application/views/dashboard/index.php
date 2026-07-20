@@ -109,6 +109,44 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Estimasi Data (Merged & placed below On Target) -->
+            <div class="estimasi-data-divider-title mt-2 mb-1 px-1 d-flex justify-content-between align-items-center">
+                <span class="fw-bold text-brown" style="font-size: 0.9rem;">
+                    <i class="fas fa-calculator"></i> Estimasi Data: <strong><?= number_format($stats_on_target_done + $stats_done_gender + $stats_done_1tahun) ?></strong>
+                </span>
+            </div>
+            <div class="stats-horizontal-container estimasi-container">
+                <a href="<?= base_url('database/filter_on_target_done') ?>" class="stats-item" style="text-decoration: none; color: inherit;">
+                    <div class="stats-icon text-success">
+                        <i class="fas fa-arrow-circle-right"></i>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-count"><?= $stats_on_target_done ?></div>
+                        <div class="stats-title">On Target → Done <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
+                    </div>
+                </a>
+                
+                <a href="<?= base_url('database/filter_done') ?>" class="stats-item" style="text-decoration: none; color: inherit;">
+                    <div class="stats-icon text-info">
+                        <i class="fas fa-user-check"></i>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-count"><?= $stats_done_gender ?></div>
+                        <div class="stats-title">Done Gender <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
+                    </div>
+                </a>
+                
+                <a href="<?= base_url('database/filter_done_1_tahun') ?>" class="stats-item" style="text-decoration: none; color: inherit;">
+                    <div class="stats-icon text-warning">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-count"><?= $stats_done_1tahun ?></div>
+                        <div class="stats-title">Data > 1 Tahun <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
+                    </div>
+                </a>
+            </div>
         </div>
     </div>
 
@@ -375,6 +413,44 @@
                         <div class="stats-title">Status On Target</div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Mobile Estimasi Data (Merged & placed below On Target) -->
+            <div class="estimasi-data-divider-title mt-2 mb-1 px-1 d-flex justify-content-between align-items-center">
+                <span class="fw-bold text-brown" style="font-size: 0.85rem;">
+                    <i class="fas fa-calculator"></i> Estimasi Data: <strong><?= number_format($stats_on_target_done + $stats_done_gender + $stats_done_1tahun) ?></strong>
+                </span>
+            </div>
+            <div class="stats-horizontal-container mobile-stats-horizontal estimasi-container">
+                <a href="<?= base_url('database/filter_on_target_done') ?>" class="stats-item mobile-stats-item" style="text-decoration: none; color: inherit;">
+                    <div class="stats-icon text-success">
+                        <i class="fas fa-arrow-circle-right"></i>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-count"><?= $stats_on_target_done ?></div>
+                        <div class="stats-title">On Target → Done</div>
+                    </div>
+                </a>
+                
+                <a href="<?= base_url('database/filter_done') ?>" class="stats-item mobile-stats-item" style="text-decoration: none; color: inherit;">
+                    <div class="stats-icon text-info">
+                        <i class="fas fa-user-check"></i>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-count"><?= $stats_done_gender ?></div>
+                        <div class="stats-title">Done Gender</div>
+                    </div>
+                </a>
+                
+                <a href="<?= base_url('database/filter_done_1_tahun') ?>" class="stats-item mobile-stats-item" style="text-decoration: none; color: inherit;">
+                    <div class="stats-icon text-warning">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-count"><?= $stats_done_1tahun ?></div>
+                        <div class="stats-title">Data > 1 Tahun</div>
+                    </div>
+                </a>
             </div>
         </div>
     </div>
@@ -1755,6 +1831,11 @@
     background: linear-gradient(135deg, #f8d7da, #f5c6cb);
     color: #721c24;
     border-left: 4px solid #dc3545;
+}
+
+.stats-horizontal-container.estimasi-container {
+    border-left: 3px solid var(--success-color);
+    background: linear-gradient(135deg, rgba(240, 248, 240, 0.95), rgba(245, 250, 245, 0.95));
 }
 </style>
 

@@ -338,9 +338,13 @@ class Database extends CI_Controller
         }, $data['email_domain_list']);
 
         $email_domain = trim($this->input->get('email_domain'));
+        $nomor_paspor = trim($this->input->get('nomor_paspor'));
         $filters = ['status' => 1];
         if ($email_domain !== '' && in_array($email_domain, $allowed_domains, true)) {
             $filters['email_domain'] = $email_domain;
+        }
+        if ($nomor_paspor !== '') {
+            $filters['nomor_paspor'] = $nomor_paspor;
         }
 
         $per_page = 25;
@@ -359,6 +363,9 @@ class Database extends CI_Controller
 
         if (!empty($filters['email_domain'])) {
             $query_params['email_domain'] = $filters['email_domain'];
+        }
+        if (!empty($filters['nomor_paspor'])) {
+            $query_params['nomor_paspor'] = $filters['nomor_paspor'];
         }
 
         if (!empty($query_params)) {
@@ -420,6 +427,7 @@ class Database extends CI_Controller
         $email_domain = trim($this->input->get('email_domain'));
         $gender = trim($this->input->get('gender'));
         $nama_travel = trim($this->input->get('nama_travel'));
+        $nomor_paspor = trim($this->input->get('nomor_paspor'));
         $filters = [];
 
         if ($email_domain !== '' && in_array($email_domain, $allowed_domains, true)) {
@@ -430,6 +438,9 @@ class Database extends CI_Controller
         }
         if ($nama_travel !== '') {
             $filters['nama_travel'] = $nama_travel;
+        }
+        if ($nomor_paspor !== '') {
+            $filters['nomor_paspor'] = $nomor_paspor;
         }
 
         $per_page = 25;
@@ -455,6 +466,9 @@ class Database extends CI_Controller
         }
         if (!empty($filters['nama_travel'])) {
             $query_params['nama_travel'] = $filters['nama_travel'];
+        }
+        if (!empty($filters['nomor_paspor'])) {
+            $query_params['nomor_paspor'] = $filters['nomor_paspor'];
         }
 
         if (!empty($query_params)) {
@@ -515,6 +529,7 @@ class Database extends CI_Controller
 
         $email_domain = trim($this->input->get('email_domain'));
         $gender = trim($this->input->get('gender'));
+        $nomor_paspor = trim($this->input->get('nomor_paspor'));
         $filters = [];
 
         if ($email_domain !== '' && in_array($email_domain, $allowed_domains, true)) {
@@ -522,6 +537,9 @@ class Database extends CI_Controller
         }
         if ($gender !== '' && in_array($gender, ['L', 'P'], true)) {
             $filters['gender'] = $gender;
+        }
+        if ($nomor_paspor !== '') {
+            $filters['nomor_paspor'] = $nomor_paspor;
         }
 
         $per_page = 25;
@@ -543,6 +561,9 @@ class Database extends CI_Controller
         }
         if (!empty($filters['gender'])) {
             $query_params['gender'] = $filters['gender'];
+        }
+        if (!empty($filters['nomor_paspor'])) {
+            $query_params['nomor_paspor'] = $filters['nomor_paspor'];
         }
 
         if (!empty($query_params)) {
@@ -603,6 +624,7 @@ class Database extends CI_Controller
 
         $email_domain = trim($this->input->get('email_domain'));
         $gender = trim($this->input->get('gender'));
+        $nomor_paspor = trim($this->input->get('nomor_paspor'));
         $filters = [];
 
         if ($email_domain !== '' && in_array($email_domain, $allowed_domains, true)) {
@@ -610,6 +632,9 @@ class Database extends CI_Controller
         }
         if ($gender !== '' && in_array($gender, ['L', 'P'], true)) {
             $filters['gender'] = $gender;
+        }
+        if ($nomor_paspor !== '') {
+            $filters['nomor_paspor'] = $nomor_paspor;
         }
 
         $per_page = 25;
@@ -631,6 +656,9 @@ class Database extends CI_Controller
         }
         if (!empty($filters['gender'])) {
             $query_params['gender'] = $filters['gender'];
+        }
+        if (!empty($filters['nomor_paspor'])) {
+            $query_params['nomor_paspor'] = $filters['nomor_paspor'];
         }
 
         if (!empty($query_params)) {
@@ -690,9 +718,13 @@ class Database extends CI_Controller
         }, $data['email_domain_list']);
 
         $email_domain = trim($this->input->get('email_domain'));
+        $nomor_paspor = trim($this->input->get('nomor_paspor'));
         $filters = [];
         if ($email_domain !== '' && in_array($email_domain, $allowed_domains, true)) {
             $filters['email_domain'] = $email_domain;
+        }
+        if ($nomor_paspor !== '') {
+            $filters['nomor_paspor'] = $nomor_paspor;
         }
 
         $per_page = 25;
@@ -711,6 +743,9 @@ class Database extends CI_Controller
 
         if (!empty($filters['email_domain'])) {
             $query_params['email_domain'] = $filters['email_domain'];
+        }
+        if (!empty($filters['nomor_paspor'])) {
+            $query_params['nomor_paspor'] = $filters['nomor_paspor'];
         }
 
         if (!empty($query_params)) {
