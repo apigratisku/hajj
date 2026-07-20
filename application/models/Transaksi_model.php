@@ -1012,6 +1012,22 @@ class Transaksi_model extends CI_Model {
         return $result ? $result->total : 0;
     }
 
+    public function get_dashboard_stats_already_done($flag_doc = null) {
+        $this->db->select('COUNT(*) as total');
+        $this->db->from($this->table);
+        $this->db->where('status', 2);
+        $this->db->where('status_asal', 1);
+        $this->db->where('tanggal IS NULL');
+        $this->db->where('jam IS NULL');
+        
+        if ($flag_doc) {
+            $this->db->where('flag_doc', $flag_doc);
+        }
+        
+        $result = $this->db->get()->row();
+        return $result ? $result->total : 0;
+    }
+
     public function get_dashboard_stats_done_gender($flag_doc = null) {
         $this->db->select('COUNT(*) as total');
         $this->db->from($this->table);

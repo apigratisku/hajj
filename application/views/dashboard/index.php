@@ -113,7 +113,7 @@
             <!-- Estimasi Data (Merged & placed below On Target) -->
             <div class="estimasi-data-divider-title mt-2 mb-1 px-1 d-flex justify-content-between align-items-center">
                 <span class="fw-bold text-brown" style="font-size: 0.9rem;">
-                    <i class="fas fa-calculator"></i> Estimasi Data: <strong><?= number_format($stats_on_target_done + $stats_done_gender + $stats_done_1tahun) ?></strong>
+                    <i class="fas fa-calculator"></i> Estimasi Data: <strong><?= number_format($stats_on_target_done + $stats_already_done + $stats_done_gender + $stats_done_1tahun) ?></strong>
                 </span>
             </div>
             <div class="stats-horizontal-container estimasi-container">
@@ -124,6 +124,16 @@
                     <div class="stats-content">
                         <div class="stats-count"><?= $stats_on_target_done ?></div>
                         <div class="stats-title">On Target → Done <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
+                    </div>
+                </a>
+
+                <a href="<?= base_url('database/filter_already_done') ?>" class="stats-item" style="text-decoration: none; color: inherit;">
+                    <div class="stats-icon text-primary">
+                        <i class="fas fa-check-double"></i>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-count"><?= $stats_already_done ?></div>
+                        <div class="stats-title">Already → Done <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
                     </div>
                 </a>
                 
@@ -418,7 +428,7 @@
             <!-- Mobile Estimasi Data (Merged & placed below On Target) -->
             <div class="estimasi-data-divider-title mt-2 mb-1 px-1 d-flex justify-content-between align-items-center">
                 <span class="fw-bold text-brown" style="font-size: 0.85rem;">
-                    <i class="fas fa-calculator"></i> Estimasi Data: <strong><?= number_format($stats_on_target_done + $stats_done_gender + $stats_done_1tahun) ?></strong>
+                    <i class="fas fa-calculator"></i> Estimasi Data: <strong><?= number_format($stats_on_target_done + $stats_already_done + $stats_done_gender + $stats_done_1tahun) ?></strong>
                 </span>
             </div>
             <div class="stats-horizontal-container mobile-stats-horizontal estimasi-container">
@@ -429,6 +439,16 @@
                     <div class="stats-content">
                         <div class="stats-count"><?= $stats_on_target_done ?></div>
                         <div class="stats-title">On Target → Done</div>
+                    </div>
+                </a>
+
+                <a href="<?= base_url('database/filter_already_done') ?>" class="stats-item mobile-stats-item" style="text-decoration: none; color: inherit;">
+                    <div class="stats-icon text-primary">
+                        <i class="fas fa-check-double"></i>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-count"><?= $stats_already_done ?></div>
+                        <div class="stats-title">Already → Done</div>
                     </div>
                 </a>
                 
