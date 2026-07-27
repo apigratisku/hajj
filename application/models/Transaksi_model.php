@@ -105,13 +105,14 @@ class Transaksi_model extends CI_Model {
                 $filtered_data['updated_at'] = date('Y-m-d H:i:s');
             }
 
-            // Catat status asal saat transisi ke Done dari On Target (0) atau Already (1) jika tidak diset secara eksplisit
-            if (!isset($data['status_asal']) && isset($filtered_data['status']) && (string) $filtered_data['status'] === '2' && in_array('status_asal', $fields, true)) {
-                $current = $this->get_by_id($id);
-                if ($current && (string) $current->status !== '2') {
-                    $old_status = (string) $current->status;
-                    if (in_array($old_status, ['0', '1'], true)) {
-                        $filtered_data['status_asal'] = $old_status;
+            // Jika data berstatus cancel (is_cancel = 1) dan petugas menjadwalkan tanggal & jam, hilangkan is_cancel (set is_cancel = NULL)
+            if (!array_key_exists('is_cancel', $filtered_data) || $filtered_data['is_cancel'] === null) {
+                $current_rec = $this->get_by_id($id);
+                if ($current_rec && (int)$current_rec->is_cancel === 1) {
+                    $chk_tgl = array_key_exists('tanggal', $filtered_data) ? $filtered_data['tanggal'] : $current_rec->tanggal;
+                    $chk_jm = array_key_exists('jam', $filtered_data) ? $filtered_data['jam'] : $current_rec->jam;
+                    if (!empty($chk_tgl) && !empty($chk_jm)) {
+                        $filtered_data['is_cancel'] = null;
                     }
                 }
             }

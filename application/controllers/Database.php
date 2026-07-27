@@ -1206,6 +1206,11 @@ class Database extends CI_Controller
                 'history_update' => $this->session->userdata('user_id') ?: null,
             ];
 
+            // Jika petugas menjadwalkan tanggal & jam pada data berstatus cancel (is_cancel = 1), hilangkan is_cancel (set is_cancel = NULL)
+            if ((int)$current_peserta->is_cancel === 1 && !empty($data['tanggal']) && !empty($data['jam'])) {
+                $data['is_cancel'] = null;
+            }
+
             // Set updated_at hanya jika status = 1, 2, atau 3 (Fasttrack)
             if (in_array((string) $status_raw, ['1', '2', '3'], true)) {
                 $data['updated_at'] = date('Y-m-d H:i:s');
@@ -1306,7 +1311,7 @@ class Database extends CI_Controller
         }
 
         // Prepare data for update only for fields provided
-        $allowedFields = ['nama', 'flag_doc', 'nomor_paspor', 'no_visa', 'tgl_lahir', 'password', 'nomor_hp', 'email', 'barcode', 'gender', 'status', 'tanggal', 'jam', 'status_jadwal', 'tanggal_pengerjaan'];
+        $allowedFields = ['nama', 'flag_doc', 'nomor_paspor', 'no_visa', 'tgl_lahir', 'password', 'nomor_hp', 'email', 'barcode', 'gender', 'status', 'tanggal', 'jam', 'status_jadwal', 'tanggal_pengerjaan', 'is_cancel'];
         $data = [];
         foreach ($allowedFields as $field) {
             if (array_key_exists($field, $input)) {
@@ -1316,14 +1321,21 @@ class Database extends CI_Controller
                     $data[$field] = null;
                 }
                 // ✅ Khusus field yang boleh bernilai "0", jangan pakai ?: null
-                elseif ($field === 'status') {
-                    $data[$field] = $value; // Biarkan "0", "1", "2" tetap masuk
+                elseif ($field === 'status' || $field === 'is_cancel') {
+                    $data[$field] = ($value === null || $value === '' || $value === 'null') ? null : $value;
                 }
                 // Untuk field lain: tetap pakai trim dan null jika kosong
                 else {
                     $data[$field] = trim($value) ?: null;
                 }
             }
+        }
+
+        // Jika petugas menjadwalkan tanggal & jam pada data berstatus cancel (is_cancel = 1), hilangkan is_cancel (set is_cancel = NULL)
+        $check_tanggal = array_key_exists('tanggal', $data) ? $data['tanggal'] : $current_peserta->tanggal;
+        $check_jam = array_key_exists('jam', $data) ? $data['jam'] : $current_peserta->jam;
+        if ((int)$current_peserta->is_cancel === 1 && !empty($check_tanggal) && !empty($check_jam)) {
+            $data['is_cancel'] = null;
         }
 
         // Add system fields
