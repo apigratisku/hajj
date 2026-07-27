@@ -4610,7 +4610,7 @@ class Database extends CI_Controller
 
         // Apply filters
         if (!empty($tanggaljam)) {
-            $this->db->like("CONCAT(tanggal, ' ', jam)", $tanggaljam);
+            $this->db->where("CONCAT(tanggal, ' ', jam) LIKE '%" . $this->db->escape_like_str($tanggaljam) . "%'", NULL, FALSE);
         }
 
         if (!empty($flag_doc)) {

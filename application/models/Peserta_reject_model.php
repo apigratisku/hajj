@@ -110,7 +110,7 @@ class Peserta_reject_model extends CI_Model {
             }
         }
         if (!empty($filters['tanggaljam'])) {
-            $this->db->like("CONCAT(tanggal, ' ', jam)", $filters['tanggaljam']);
+            $this->db->where("CONCAT(tanggal, ' ', jam) LIKE '%" . $this->db->escape_like_str($filters['tanggaljam']) . "%'", NULL, FALSE);
         }
         
         return $this->db->count_all_results();
@@ -143,7 +143,7 @@ class Peserta_reject_model extends CI_Model {
             }
         }
         if (!empty($filters['tanggaljam'])) {
-            $this->db->like("CONCAT(tanggal, ' ', jam)", $filters['tanggaljam']);
+            $this->db->where("CONCAT(tanggal, ' ', jam) LIKE '%" . $this->db->escape_like_str($filters['tanggaljam']) . "%'", NULL, FALSE);
         }
     
         $this->db->order_by('nama', 'ASC');

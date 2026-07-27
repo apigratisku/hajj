@@ -335,7 +335,7 @@ class Transaksi_model extends CI_Model {
             }
         }
         if (!empty($filters['tanggaljam'])) {
-            $this->db->like("CONCAT(tanggal, ' ', jam)", $filters['tanggaljam']);
+            $this->db->where("CONCAT(peserta.tanggal, ' ', peserta.jam) LIKE '%" . $this->db->escape_like_str($filters['tanggaljam']) . "%'", NULL, FALSE);
         }
         if (!empty($filters['tanggal_pengerjaan'])) {
             // Convert dd-mm-yyyy format to yyyy-mm-dd for database comparison
@@ -515,7 +515,7 @@ class Transaksi_model extends CI_Model {
             }
         }
         if (!empty($filters['tanggaljam'])) {
-            $this->db->like("CONCAT(tanggal, ' ', jam)", $filters['tanggaljam']);
+            $this->db->where("CONCAT(peserta.tanggal, ' ', peserta.jam) LIKE '%" . $this->db->escape_like_str($filters['tanggaljam']) . "%'", NULL, FALSE);
         }
         if (!empty($filters['tanggal_pengerjaan'])) {
             // Convert dd-mm-yyyy format to yyyy-mm-dd for database comparison
@@ -599,7 +599,7 @@ class Transaksi_model extends CI_Model {
             $this->db->where('peserta.nama_travel', $filters['nama_travel']);
         }
         if (!empty($filters['tanggaljam'])) {
-            $this->db->like("CONCAT(tanggal, ' ', jam)", $filters['tanggaljam']);
+            $this->db->where("CONCAT(peserta.tanggal, ' ', peserta.jam) LIKE '%" . $this->db->escape_like_str($filters['tanggaljam']) . "%'", NULL, FALSE);
         }
         
         // Always filter by status = 0 for todo
@@ -1600,7 +1600,7 @@ class Transaksi_model extends CI_Model {
             }
         }
         if (!empty($filters['tanggaljam'])) {
-            $this->db->like("CONCAT(tanggal, ' ', jam)", $filters['tanggaljam']);
+            $this->db->where("CONCAT(peserta.tanggal, ' ', peserta.jam) LIKE '%" . $this->db->escape_like_str($filters['tanggaljam']) . "%'", NULL, FALSE);
         }
         if (!empty($filters['tanggal_pengerjaan'])) {
             // Convert dd-mm-yyyy format to yyyy-mm-dd for database comparison
@@ -1695,7 +1695,7 @@ class Transaksi_model extends CI_Model {
             }
         }
         if (!empty($filters['tanggaljam'])) {
-            $this->db->like("CONCAT(tanggal, ' ', jam)", $filters['tanggaljam']);
+            $this->db->where("CONCAT(peserta.tanggal, ' ', peserta.jam) LIKE '%" . $this->db->escape_like_str($filters['tanggaljam']) . "%'", NULL, FALSE);
         }
         if (!empty($filters['tanggal_pengerjaan'])) {
             // Convert dd-mm-yyyy format to yyyy-mm-dd for database comparison
@@ -1914,7 +1914,7 @@ class Transaksi_model extends CI_Model {
             }
         }
         if (!empty($filters['tanggaljam'])) {
-            $this->db->like("CONCAT(tanggal, ' ', jam)", $filters['tanggaljam']);
+            $this->db->where("CONCAT(peserta.tanggal, ' ', peserta.jam) LIKE '%" . $this->db->escape_like_str($filters['tanggaljam']) . "%'", NULL, FALSE);
         }
         if (!empty($filters['tanggal_pengerjaan'])) {
             // Convert dd-mm-yyyy format to yyyy-mm-dd for database comparison
@@ -2011,6 +2011,11 @@ class Transaksi_model extends CI_Model {
         $this->db->where('selesai !=', 2);
         $this->db->where('tanggal >=', date('Y') . '-01-01');
         
+        $this->db->group_start();
+        $this->db->where('is_cancel', 0);
+        $this->db->or_where('is_cancel IS NULL');
+        $this->db->group_end();
+        
         if ($flag_doc) {
             $this->db->where('flag_doc', $flag_doc);
         }
@@ -2035,6 +2040,11 @@ class Transaksi_model extends CI_Model {
         $this->db->where('jam IS NOT NULL');
         $this->db->where('jam !=', '');
         $this->db->where('selesai !=', 2);
+        
+        $this->db->group_start();
+        $this->db->where('is_cancel', 0);
+        $this->db->or_where('is_cancel IS NULL');
+        $this->db->group_end();
         
         if ($flag_doc) {
             $this->db->where('flag_doc', $flag_doc);
