@@ -74,7 +74,7 @@
                         <i class="fas fa-user-friends"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= $total_peserta ?></div>
+                        <div class="stats-count"><?= number_format($total_peserta, 0, ',', '.') ?></div>
                         <div class="stats-title">Total Peserta</div>
                     </div>
                 </div>
@@ -84,7 +84,7 @@
                         <i class="fas fa-check-circle"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= $stats ?></div>
+                        <div class="stats-count"><?= number_format($stats, 0, ',', '.') ?></div>
                         <div class="stats-title">Status Done <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
                     </div>
                 </div>
@@ -94,7 +94,7 @@
                         <i class="fas fa-times-circle"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= $stats_already ?></div>
+                        <div class="stats-count"><?= number_format($stats_already, 0, ',', '.') ?></div>
                         <div class="stats-title">Status Already <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
                     </div>
                 </div>
@@ -104,7 +104,7 @@
                         <i class="fas fa-crosshairs"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= $stats_on_target ?></div>
+                        <div class="stats-count"><?= number_format($stats_on_target, 0, ',', '.') ?></div>
                         <div class="stats-title">Status On Target <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
                     </div>
                 </div>
@@ -113,7 +113,7 @@
             <!-- Estimasi Data (Merged & placed below On Target) -->
             <div class="estimasi-data-divider-title mt-2 mb-1 px-1 d-flex justify-content-between align-items-center">
                 <span class="fw-bold text-brown" style="font-size: 0.9rem;">
-                    <i class="fas fa-calculator"></i> Estimasi Data: <strong><?= number_format($stats_on_target_done + $stats_already_done + $stats_done_gender + $stats_done_1tahun) ?></strong>
+                    <i class="fas fa-calculator"></i> Estimasi Data: <strong><?= number_format($stats_on_target_done + $stats_already_done + $stats_done_gender + $stats_done_1tahun, 0, ',', '.') ?></strong>
                 </span>
             </div>
             <div class="stats-horizontal-container estimasi-container">
@@ -122,7 +122,7 @@
                         <i class="fas fa-arrow-circle-right"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= $stats_on_target_done ?></div>
+                        <div class="stats-count"><?= number_format($stats_on_target_done, 0, ',', '.') ?></div>
                         <div class="stats-title">On Target → Done <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
                     </div>
                 </a>
@@ -132,7 +132,7 @@
                         <i class="fas fa-check-double"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= $stats_already_done ?></div>
+                        <div class="stats-count"><?= number_format($stats_already_done, 0, ',', '.') ?></div>
                         <div class="stats-title">Already → Done <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
                     </div>
                 </a>
@@ -142,7 +142,7 @@
                         <i class="fas fa-user-check"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= $stats_done_gender ?></div>
+                        <div class="stats-count"><?= number_format($stats_done_gender, 0, ',', '.') ?></div>
                         <div class="stats-title">Done Gender <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
                     </div>
                 </a>
@@ -152,7 +152,7 @@
                         <i class="fas fa-history"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= $stats_done_1tahun ?></div>
+                        <div class="stats-count"><?= number_format($stats_done_1tahun, 0, ',', '.') ?></div>
                         <div class="stats-title">Data > 1 Tahun <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
                     </div>
                 </a>
@@ -196,7 +196,7 @@
                         <i class="fas fa-user-friends"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= $stats_already ?></div>
+                        <div class="stats-count"><?= number_format($stats_already, 0, ',', '.') ?></div>
                         <div class="stats-title">Total Peserta Already <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
                     </div>
                 </div>
@@ -206,7 +206,7 @@
                         <i class="fas fa-redo"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= $stats_register_ulang ?></div>
+                        <div class="stats-count"><?= number_format($stats_register_ulang, 0, ',', '.') ?></div>
                         <div class="stats-title">Register Ulang <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
                     </div>
                 </div>
@@ -216,7 +216,7 @@
                         <i class="fas fa-percentage"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= $stats_already > 0 ? number_format(($stats_register_ulang / $stats_already) * 100, 1) : '0' ?>%</div>
+                        <div class="stats-count"><?= $stats_already > 0 ? number_format(($stats_register_ulang / $stats_already) * 100, 1, ',', '.') : '0' ?>%</div>
                         <div class="stats-title">Persentase Register Ulang</div>
                     </div>
                 </div>
@@ -226,7 +226,7 @@
                         <i class="fas fa-users"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= $stats_already - $stats_register_ulang ?></div>
+                        <div class="stats-count"><?= number_format($stats_already - $stats_register_ulang, 0, ',', '.') ?></div>
                         <div class="stats-title">Belum Register Ulang</div>
                     </div>
                 </a>
@@ -243,7 +243,7 @@
                         <i class="fas fa-user-friends"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= $stats_already ?></div>
+                        <div class="stats-count"><?= number_format($stats_already, 0, ',', '.') ?></div>
                         <div class="stats-title">Total Peserta Already <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
                     </div>
                 </div>
@@ -253,7 +253,7 @@
                         <i class="fas fa-redo"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= $stats_register_ulang ?></div>
+                        <div class="stats-count"><?= number_format($stats_register_ulang, 0, ',', '.') ?></div>
                         <div class="stats-title">Register Ulang <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
                     </div>
                 </div>
@@ -263,7 +263,7 @@
                         <i class="fas fa-percentage"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= $stats_already > 0 ? number_format(($stats_register_ulang / $stats_already) * 100, 1) : '0' ?>%</div>
+                        <div class="stats-count"><?= $stats_already > 0 ? number_format(($stats_register_ulang / $stats_already) * 100, 1, ',', '.') : '0' ?>%</div>
                         <div class="stats-title">Persentase Register Ulang</div>
                     </div>
                 </div>
@@ -273,7 +273,7 @@
                         <i class="fas fa-users"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= $stats_already - $stats_register_ulang ?></div>
+                        <div class="stats-count"><?= number_format($stats_already - $stats_register_ulang, 0, ',', '.') ?></div>
                         <div class="stats-title">Belum Register Ulang</div>
                     </div>
                 </a>
@@ -314,7 +314,7 @@
                         <i class="fas fa-user-friends"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= $stats_already ?></div>
+                        <div class="stats-count"><?= number_format($stats_already, 0, ',', '.') ?></div>
                         <div class="stats-title">Total Already <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
                     </div>
                 </div>
@@ -324,7 +324,7 @@
                         <i class="fas fa-check-circle"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= $stats_already_to_done ?></div>
+                        <div class="stats-count"><?= number_format($stats_already_to_done, 0, ',', '.') ?></div>
                         <div class="stats-title">Done <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
                     </div>
                 </div>
@@ -334,7 +334,7 @@
                         <i class="fas fa-percentage"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= $stats_register_ulang > 0 ? number_format(($stats_already_to_done / $stats_register_ulang) * 100, 1) : '0' ?>%</div>
+                        <div class="stats-count"><?= $stats_register_ulang > 0 ? number_format(($stats_already_to_done / $stats_register_ulang) * 100, 1, ',', '.') : '0' ?>%</div>
                         <div class="stats-title">Persentase Done</div>
                     </div>
                 </div>
@@ -351,7 +351,7 @@
                         <i class="fas fa-user-friends"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= $stats_already ?></div>
+                        <div class="stats-count"><?= number_format($stats_already, 0, ',', '.') ?></div>
                         <div class="stats-title">Total Already <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
                     </div>
                 </div>
@@ -361,7 +361,7 @@
                         <i class="fas fa-check-circle"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= $stats_already_to_done ?></div>
+                        <div class="stats-count"><?= number_format($stats_already_to_done, 0, ',', '.') ?></div>
                         <div class="stats-title">Done <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
                     </div>
                 </div>
@@ -371,7 +371,7 @@
                         <i class="fas fa-percentage"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= $stats_register_ulang > 0 ? number_format(($stats_already_to_done / $stats_register_ulang) * 100, 1) : '0' ?>%</div>
+                        <div class="stats-count"><?= $stats_register_ulang > 0 ? number_format(($stats_already_to_done / $stats_register_ulang) * 100, 1, ',', '.') : '0' ?>%</div>
                         <div class="stats-title">Persentase Done</div>
                     </div>
                 </div>
@@ -389,7 +389,7 @@
                         <i class="fas fa-user-friends"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= $total_peserta ?></div>
+                        <div class="stats-count"><?= number_format($total_peserta, 0, ',', '.') ?></div>
                         <div class="stats-title">Total Peserta</div>
                     </div>
                 </div>
@@ -399,7 +399,7 @@
                         <i class="fas fa-check-circle"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= $stats ?></div>
+                        <div class="stats-count"><?= number_format($stats, 0, ',', '.') ?></div>
                         <div class="stats-title">Status Done</div>
                     </div>
                 </div>
@@ -409,7 +409,7 @@
                         <i class="fas fa-times-circle"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= $stats_already ?></div>
+                        <div class="stats-count"><?= number_format($stats_already, 0, ',', '.') ?></div>
                         <div class="stats-title">Status Already</div>
                     </div>
                 </div>
@@ -419,7 +419,7 @@
                         <i class="fas fa-crosshairs"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= $stats_on_target ?></div>
+                        <div class="stats-count"><?= number_format($stats_on_target, 0, ',', '.') ?></div>
                         <div class="stats-title">Status On Target</div>
                     </div>
                 </div>
@@ -428,7 +428,7 @@
             <!-- Mobile Estimasi Data (Merged & placed below On Target) -->
             <div class="estimasi-data-divider-title mt-2 mb-1 px-1 d-flex justify-content-between align-items-center">
                 <span class="fw-bold text-brown" style="font-size: 0.85rem;">
-                    <i class="fas fa-calculator"></i> Estimasi Data: <strong><?= number_format($stats_on_target_done + $stats_already_done + $stats_done_gender + $stats_done_1tahun) ?></strong>
+                    <i class="fas fa-calculator"></i> Estimasi Data: <strong><?= number_format($stats_on_target_done + $stats_already_done + $stats_done_gender + $stats_done_1tahun, 0, ',', '.') ?></strong>
                 </span>
             </div>
             <div class="stats-horizontal-container mobile-stats-horizontal estimasi-container">
@@ -437,7 +437,7 @@
                         <i class="fas fa-arrow-circle-right"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= $stats_on_target_done ?></div>
+                        <div class="stats-count"><?= number_format($stats_on_target_done, 0, ',', '.') ?></div>
                         <div class="stats-title">On Target → Done</div>
                     </div>
                 </a>
@@ -447,7 +447,7 @@
                         <i class="fas fa-check-double"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= $stats_already_done ?></div>
+                        <div class="stats-count"><?= number_format($stats_already_done, 0, ',', '.') ?></div>
                         <div class="stats-title">Already → Done</div>
                     </div>
                 </a>
@@ -457,7 +457,7 @@
                         <i class="fas fa-user-check"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= $stats_done_gender ?></div>
+                        <div class="stats-count"><?= number_format($stats_done_gender, 0, ',', '.') ?></div>
                         <div class="stats-title">Done Gender</div>
                     </div>
                 </a>
@@ -467,7 +467,7 @@
                         <i class="fas fa-history"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= $stats_done_1tahun ?></div>
+                        <div class="stats-count"><?= number_format($stats_done_1tahun, 0, ',', '.') ?></div>
                         <div class="stats-title">Data > 1 Tahun</div>
                     </div>
                 </a>
@@ -601,14 +601,14 @@
                                             <span class="schedule-date">
                                                 <i class="fas fa-calendar-day text-primary"></i> <?= $tanggal_formatted ?>
                                             </span>
-                                            <span class="schedule-count"><?= (int)$schedule->total_count ?></span>
+                                            <span class="schedule-count"><?= number_format((int)$schedule->total_count, 0, ',', '.') ?></span>
                                         </div>
                                         <div class="schedule-gender-summary">
                                             <span class="gender-badge male">
-                                                <i class="fas fa-mars"></i> <?= (int)$schedule->total_male ?>
+                                                <i class="fas fa-mars"></i> <?= number_format((int)$schedule->total_male, 0, ',', '.') ?>
                                             </span>
                                             <span class="gender-badge female">
-                                                <i class="fas fa-venus"></i> <?= (int)$schedule->total_female ?>
+                                                <i class="fas fa-venus"></i> <?= number_format((int)$schedule->total_female, 0, ',', '.') ?>
                                             </span>
                                         </div>
                                     </div>
@@ -642,7 +642,7 @@
                                                             <span class="time-label">
                                                                 <i class="fas fa-clock text-info"></i> <?= $jam->jam ? date('h:i A', strtotime($jam->jam)) : '-' ?>
                                                             </span>
-                                                            <span class="time-count"><?= (int)$jam->total_count ?></span>
+                                                            <span class="time-count"><?= number_format((int)$jam->total_count, 0, ',', '.') ?></span>
                                                             <?php if ($show_complete_button): ?>
                                                                 <button class="btn btn-success btn-sm complete-btn" 
                                                                         data-tanggal="<?= $tanggal ?>" 
@@ -657,7 +657,7 @@
                                                             <?php if (isset($jam->male_with_barcode) && $jam->male_with_barcode > 0): ?>
                                                             <a href="<?= base_url('database/index?flag_doc=' . ($selected_flag_doc ?: '') . '&tanggaljam=' . $tanggal . ' ' . $jam->jam . '&status=&gender=L&has_barcode=1') ?>" 
                                                                class="gender-link male with-barcode">
-                                                                <span><i class="fas fa-mars text-primary"></i> Laki-laki: <strong><?= (int)$jam->male_with_barcode ?></strong> <i class="fas fa-check-circle" style="color: green;" title="Ada barcode"></i></span>
+                                                                <span><i class="fas fa-mars text-primary"></i> Laki-laki: <strong><?= number_format((int)$jam->male_with_barcode, 0, ',', '.') ?></strong> <i class="fas fa-check-circle" style="color: green;" title="Ada barcode"></i></span>
                                                             </a>
                                                             <?php endif; ?>
                                                             
@@ -665,7 +665,7 @@
                                                             <?php if (isset($jam->male_no_barcode) && $jam->male_no_barcode > 0): ?>
                                                             <a href="<?= base_url('database/index?flag_doc=' . ($selected_flag_doc ?: '') . '&tanggaljam=' . $tanggal . ' ' . $jam->jam . '&status=&gender=L&has_barcode=0') ?>" 
                                                                class="gender-link male no-barcode">
-                                                                <span><i class="fas fa-mars text-primary"></i> Laki-laki: <strong><?= (int)$jam->male_no_barcode ?></strong> <i class="fas fa-times-circle" style="color: red;" title="Tidak ada barcode"></i></span>
+                                                                <span><i class="fas fa-mars text-primary"></i> Laki-laki: <strong><?= number_format((int)$jam->male_no_barcode, 0, ',', '.') ?></strong> <i class="fas fa-times-circle" style="color: red;" title="Tidak ada barcode"></i></span>
                                                             </a>
                                                             <?php endif; ?>
                                                             
@@ -673,7 +673,7 @@
                                                             <?php if (isset($jam->female_with_barcode) && $jam->female_with_barcode > 0): ?>
                                                             <a href="<?= base_url('database/index?flag_doc=' . ($selected_flag_doc ?: '') . '&tanggaljam=' . $tanggal . ' ' . $jam->jam . '&status=&gender=P&has_barcode=1') ?>" 
                                                                class="gender-link female with-barcode">
-                                                                <span><i class="fas fa-venus text-danger"></i> Perempuan: <strong><?= (int)$jam->female_with_barcode ?></strong> <i class="fas fa-check-circle" style="color: green;" title="Ada barcode"></i></span>
+                                                                <span><i class="fas fa-venus text-danger"></i> Perempuan: <strong><?= number_format((int)$jam->female_with_barcode, 0, ',', '.') ?></strong> <i class="fas fa-check-circle" style="color: green;" title="Ada barcode"></i></span>
                                                             </a>
                                                             <?php endif; ?>
                                                             
@@ -681,7 +681,7 @@
                                                             <?php if (isset($jam->female_no_barcode) && $jam->female_no_barcode > 0): ?>
                                                             <a href="<?= base_url('database/index?flag_doc=' . ($selected_flag_doc ?: '') . '&tanggaljam=' . $tanggal . ' ' . $jam->jam . '&status=&gender=P&has_barcode=0') ?>" 
                                                                class="gender-link female no-barcode">
-                                                                <span><i class="fas fa-venus text-danger"></i> Perempuan: <strong><?= (int)$jam->female_no_barcode ?></strong> <i class="fas fa-times-circle" style="color: red;" title="Tidak ada barcode"></i></span>
+                                                                <span><i class="fas fa-venus text-danger"></i> Perempuan: <strong><?= number_format((int)$jam->female_no_barcode, 0, ',', '.') ?></strong> <i class="fas fa-times-circle" style="color: red;" title="Tidak ada barcode"></i></span>
                                                             </a>
                                                             <?php endif; ?>
                                                         </div>
@@ -2121,6 +2121,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Layout is now default ultra compact for all devices
 
+// Helper function untuk format angka ribuan dengan pemisah titik (format Indonesia)
+function formatNumberID(num) {
+    if (num === null || num === undefined || num === '') return '0';
+    return parseInt(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
 // Monthly Visa Import Statistics Chart
 let monthlyVisaChart = null;
 
@@ -2204,11 +2210,11 @@ function updateMonthlyTable(data) {
         html += `
             <tr>
                 <td class="text-center">${monthName}</td>
-                <td class="text-center">${item.total_imported}</td>
-                <td class="text-center">${item.on_target}</td>
-                <td class="text-center">${item.already}</td>
-                <td class="text-center">${item.done}</td>
-                <td class="text-center">${item.register_ulang || 0}</td>
+                <td class="text-center">${formatNumberID(item.total_imported)}</td>
+                <td class="text-center">${formatNumberID(item.on_target)}</td>
+                <td class="text-center">${formatNumberID(item.already)}</td>
+                <td class="text-center">${formatNumberID(item.done)}</td>
+                <td class="text-center">${formatNumberID(item.register_ulang || 0)}</td>
             </tr>
         `;
     });
