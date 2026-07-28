@@ -1346,7 +1346,11 @@ class Database extends CI_Controller
             
             // Check jika sebelumnya masuk kategori done_1_tahun (tanggal <= 1 tahun lalu dan (status == 2 atau selesai == 2))
             if (!empty($tgl_lama) && $tgl_lama <= $one_year_ago && ((int)$current_peserta->status === 2 || (int)$current_peserta->selesai === 2)) {
-                $data['selesai'] = 0;
+                // EXCLUSIVE FOR filter_done_1_tahun: Check if request is from filter_done_1_tahun view
+                $is_from_filter_done_1_tahun = $this->input->get_post('is_from_filter_done_1_tahun') || (isset($input['is_from_filter_done_1_tahun']) && $input['is_from_filter_done_1_tahun']);
+                if ($is_from_filter_done_1_tahun) {
+                    $data['selesai'] = 0;
+                }
             }
         }
 
