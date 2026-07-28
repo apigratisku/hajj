@@ -1338,6 +1338,18 @@ class Database extends CI_Controller
             $data['is_cancel'] = null;
         }
 
+        // Jika mengubah data tanggal atau jam pada data dari filter DONE > 1 Tahun (arsip), ubah selesai = 0
+        if (array_key_exists('tanggal', $data) || array_key_exists('jam', $data)) {
+            $tz = new DateTimeZone('Asia/Singapore');
+            $one_year_ago = (new DateTime('now', $tz))->modify('-1 year')->format('Y-m-d');
+            $tgl_lama = $current_peserta->tanggal;
+            
+            // Check jika sebelumnya masuk kategori done_1_tahun (tanggal <= 1 tahun lalu dan (status == 2 atau selesai == 2))
+            if (!empty($tgl_lama) && $tgl_lama <= $one_year_ago && ((int)$current_peserta->status === 2 || (int)$current_peserta->selesai === 2)) {
+                $data['selesai'] = 0;
+            }
+        }
+
         // Add system fields
         $data['updated_at'] = date('Y-m-d H:i:s');
         $data['history_update'] = $this->session->userdata('user_id') ?: null;
