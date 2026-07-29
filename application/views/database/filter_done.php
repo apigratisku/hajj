@@ -2464,7 +2464,9 @@ function saveRowMobileTable(button) {
         cancelBtn: cancelBtn
     });
     
-    const data = {};
+    const data = {
+        is_from_filter_done: true
+    };
     let hasData = false;
     
     editFields.forEach((field, index) => {
@@ -2692,7 +2694,9 @@ function saveRow(button) {
     const saveBtn = row.querySelector('.btn-save');
     const cancelBtn = row.querySelector('.btn-cancel');
     
-    const data = {};
+    const data = {
+        is_from_filter_done: true
+    };
     editFields.forEach(field => {
         const fieldName = field.closest('td').getAttribute('data-field');
         data[fieldName] = field.value;
@@ -3333,7 +3337,9 @@ function saveRowMobileTable(button) {
     const saveBtn = row.querySelector('.btn-save');
     const cancelBtn = row.querySelector('.btn-cancel');
     
-    const data = {};
+    const data = {
+        is_from_filter_done: true
+    };
     let hasData = false;
     
     editFields.forEach((field, index) => {
@@ -3542,7 +3548,9 @@ function saveRow(button) {
     const saveBtn = row.querySelector('.btn-save');
     const cancelBtn = row.querySelector('.btn-cancel');
     
-    const data = {};
+    const data = {
+        is_from_filter_done: true
+    };
     editFields.forEach(field => {
         const fieldName = field.closest('td').getAttribute('data-field');
         data[fieldName] = field.value;
@@ -4544,7 +4552,8 @@ function autoSaveBarcodeToDatabase(row, barcodeValue) {
     console.log('==================================');
     
     const data = {
-        barcode: barcodeValue
+        barcode: barcodeValue,
+        is_from_filter_done: true
     };
     
     console.log('=== AUTO SAVE BARCODE DEBUG ===');

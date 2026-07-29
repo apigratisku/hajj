@@ -1354,6 +1354,12 @@ class Database extends CI_Controller
             }
         }
 
+        // Jika edit data dari Filter Done (status=2, tanpa tanggal/jam) dan user menambahkan tanggal/jam, set selesai = 0
+        $is_from_filter_done = isset($input['is_from_filter_done']) && $input['is_from_filter_done'];
+        if ($is_from_filter_done && (int)$current_peserta->status === 2 && (array_key_exists('tanggal', $data) || array_key_exists('jam', $data))) {
+            $data['selesai'] = 0;
+        }
+
         // Add system fields
         $data['updated_at'] = date('Y-m-d H:i:s');
         $data['history_update'] = $this->session->userdata('user_id') ?: null;
