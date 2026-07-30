@@ -3350,6 +3350,7 @@ class Database extends CI_Controller
                         'barcode' => $barcode ?: null,
                         'gender' => $gender_value ?: 'L',
                         'status' => 0,
+                        
                         'tanggal' => $tanggal_value ?: '1900-01-01',
                         'jam' => $jam_value ?: '00:00:00',
                         'flag_doc' => $flag_doc ?: 'EMPTY',
@@ -3558,6 +3559,7 @@ class Database extends CI_Controller
                     'barcode' => $barcode ?: null,
                     'gender' => $gender_value,
                     'status' => $status_value,
+                    'status_asal' => 0,
                     'tanggal' => $tanggal_value,
                     'jam' => $jam_value,
                     'flag_doc' => $flag_doc,
@@ -3593,6 +3595,7 @@ class Database extends CI_Controller
                             'barcode' => $barcode ?: '',
                             'gender' => $gender_value,
                             'status' => $status_value,
+                            'status_asal' => 0,
                             'tanggal' => $tanggal_value ?: '',
                             'jam' => $jam_value ?: '',
                             'flag_doc' => $flag_doc,
