@@ -571,8 +571,11 @@
         <!-- Schedule Statistics -->
         <div class="col-md-12">
             <div class="card mobile-card">
-                <div class="card-header bg-brown text-white">
+                <div class="card-header bg-brown text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-calendar-alt"></i> Jadwal Kunjungan</h5>
+                    <button type="button" class="btn btn-sm btn-light text-brown" id="btn-copy-jadwal">
+                        <i class="fas fa-copy"></i> Copy Jadwal
+                    </button>
                 </div>
                 <div class="card-body">
                     <?php if (empty($schedule_by_date)): ?>
@@ -1942,6 +1945,93 @@ document.addEventListener('DOMContentLoaded', function() {
                 button.disabled = false;
                 button.innerHTML = '<i class="fas fa-check"></i> Selesai';
             });
+        }
+    });
+
+    // Handle tombol Copy Jadwal
+    document.getElementById('btn-copy-jadwal')?.addEventListener('click', function() {
+        let scheduleText = "🌑* Ready sementara *🌑\n\n";
+        
+        <?php if (!empty($schedule_by_date)): ?>
+            <?php foreach ($schedule_by_date as $schedule): 
+                $tanggal = $schedule->tanggal;
+                setlocale(LC_TIME, 'id_ID.UTF-8');
+                $tanggal_formatted = strftime('%d %B %Y', strtotime($tanggal));
+                
+                // Get hari ke bahasa Indonesia
+                $day_eng = date('D', strtotime($tanggal));
+                $days_ind = [
+                    'Sun' => 'Ahad',
+                    'Mon' => 'Senin',
+                    'Tue' => 'Selasa',
+                    'Wed' => 'Rabu',
+                    'Thu' => 'Kamis',
+                    'Fri' => 'Jum’at',
+                    'Sat' => 'Sabtu'
+                ];
+                $hari_formatted = isset($days_ind[$day_eng]) ? $days_ind[$day_eng] : $day_eng;
+                
+                $detail_jam = $this->transaksi_model->get_schedule_detail_by_date($tanggal, $selected_flag_doc);
+            ?>
+            scheduleText += ". <?= $hari_formatted ?> <?= $tanggal_formatted ?>\n";
+            <?php if (!empty($detail_jam)): ?>
+                <?php foreach ($detail_jam as $jam): 
+                    $jam_formatted = $jam->jam ? date('h:i a', strtotime($jam->jam)) : '-';
+                    
+                    // Laki-laki: total = male_with_barcode + male_no_barcode
+                    $male_total = (int)($jam->male_with_barcode ?? 0) + (int)($jam->male_no_barcode ?? 0);
+                    // Laki-laki done (semua barcode checked) -> jika male_no_barcode == 0, maka ada centang hijau
+                    $male_done = $male_total > 0 && (int)($jam->male_no_barcode ?? 0) === 0;
+                    
+                    // Perempuan: total = female_with_barcode + female_no_barcode
+                    $female_total = (int)($jam->female_with_barcode ?? 0) + (int)($jam->female_no_barcode ?? 0);
+                    // Perempuan done (semua barcode checked) -> jika female_no_barcode == 0, maka ada centang hijau
+                    $female_done = $female_total > 0 && (int)($jam->female_no_barcode ?? 0) === 0;
+                ?>
+                    <?php if ($female_total > 0): ?>
+                    scheduleText += "      🧕🏻 <?= $jam_formatted ?> (<?= $female_total ?>)<?= $female_done ? '✅' : '' ?>\n";
+                    <?php endif; ?>
+                    <?php if ($male_total > 0): ?>
+                    scheduleText += "      👳‍♀️ <?= $jam_formatted ?> (<?= $male_total ?>)<?= $male_done ? '✅' : '' ?>\n";
+                    <?php endif; ?>
+                <?php endforeach; ?>
+            <?php endif; ?>
+            scheduleText += "\n";
+            <?php endforeach; ?>
+        <?php endif; ?>
+
+        // Copy to clipboard with fallback check
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(scheduleText.trim()).then(function() {
+                showAlert('success', 'Jadwal berhasil disalin ke clipboard!');
+            }, function(err) {
+                fallbackCopy(scheduleText.trim());
+            });
+        } else {
+            fallbackCopy(scheduleText.trim());
+        }
+
+        function fallbackCopy(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            // Avoid scrolling to bottom
+            textArea.style.top = "0";
+            textArea.style.left = "0";
+            textArea.style.position = "fixed";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showAlert('success', 'Jadwal berhasil disalin ke clipboard!');
+                } else {
+                    showAlert('danger', 'Gagal menyalin jadwal.');
+                }
+            } catch (err) {
+                showAlert('danger', 'Gagal menyalin jadwal.');
+            }
+            document.body.removeChild(textArea);
         }
     });
 
