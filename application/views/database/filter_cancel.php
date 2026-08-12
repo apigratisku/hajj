@@ -2650,6 +2650,7 @@ function saveRow(button) {
         const fieldName = field.closest('td').getAttribute('data-field');
         data[fieldName] = field.value;
     });
+    data.is_from_filter_cancel = true;
     
     // Special handling for barcode field (it's inside a container)
     const barcodeContainer = row.querySelector('.barcode-edit-container');
@@ -3298,6 +3299,7 @@ function saveRowMobileTable(button) {
             hasData = true;
         }
     });
+    data.is_from_filter_cancel = true;
     
     // Special handling for barcode field in mobile (it's inside a container)
     const barcodeContainer = row.querySelector('.mobile-barcode-edit-container');

@@ -1240,6 +1240,14 @@ class Database extends CI_Controller
                 $result = $this->transaksi_model->update($id, $data);
 
                 if ($result) {
+                $saved_peserta = $this->transaksi_model->get_by_id($id);
+                if ($is_from_filter_cancel && (!$saved_peserta || (int) $saved_peserta->is_cancel !== 0)) {
+                    log_message('error', 'Verifikasi is_cancel gagal untuk ID: ' . $id);
+                    $this->output->set_status_header(500);
+                    $this->output->set_content_type('application/json');
+                    $this->output->set_output(json_encode(['success' => false, 'message' => 'is_cancel gagal diperbarui menjadi 0.']));
+                    return;
+                }
                 log_pekerjaan_field_changes((array) $current_peserta, $data, 'database', (int) $id);
                 if (function_exists('log_peserta_activity')) {
                     log_peserta_activity($id, 'update', 'Mengupdate data peserta', (array)$current_peserta, $data);
@@ -1331,11 +1339,39 @@ class Database extends CI_Controller
             }
         }
 
-        // Jika petugas menjadwalkan tanggal & jam pada data berstatus cancel (is_cancel = 1), hilangkan is_cancel (set is_cancel = NULL)
-        $check_tanggal = array_key_exists('tanggal', $data) ? $data['tanggal'] : $current_peserta->tanggal;
-        $check_jam = array_key_exists('jam', $data) ? $data['jam'] : $current_peserta->jam;
-        if ((int)$current_peserta->is_cancel === 1 && !empty($check_tanggal) && !empty($check_jam)) {
-            $data['is_cancel'] = null;
+        // Data dari filter cancel harus aktif kembali dengan tanggal dan jam yang valid.
+        $is_from_filter_cancel = !empty($input['is_from_filter_cancel']);
+        if ($is_from_filter_cancel) {
+            $timezone = new DateTimeZone('Asia/Makassar');
+            $now = new DateTime('now', $timezone);
+            $tanggal = array_key_exists('tanggal', $data) ? $data['tanggal'] : $current_peserta->tanggal;
+            $jam = array_key_exists('jam', $data) ? $data['jam'] : $current_peserta->jam;
+            if (empty($tanggal)) {
+                $tanggal = $now->format('Y-m-d');
+                $data['tanggal'] = $tanggal;
+            }
+            if (empty($jam)) {
+                $jam = $now->format('H:i:s');
+                $data['jam'] = $jam;
+            }
+            $normalized_jam = strlen((string) $jam) === 5 ? $jam . ':00' : (string) $jam;
+            $valid_date = DateTime::createFromFormat('!Y-m-d', (string) $tanggal, $timezone);
+            $valid_time = DateTime::createFromFormat('!H:i:s', $normalized_jam, $timezone);
+            if (!$valid_date || $valid_date->format('Y-m-d') !== $tanggal || !$valid_time || $valid_time->format('H:i:s') !== $normalized_jam) {
+                $this->output->set_status_header(422);
+                $this->output->set_content_type('application/json');
+                $this->output->set_output(json_encode(['success' => false, 'message' => 'Tanggal atau jam tidak valid.']));
+                return;
+            }
+            $data['jam'] = $valid_time->format('H:i:s');
+            $data['is_cancel'] = 0;
+        } else {
+            // Jika petugas menjadwalkan tanggal & jam pada data berstatus cancel, hilangkan is_cancel.
+            $check_tanggal = array_key_exists('tanggal', $data) ? $data['tanggal'] : $current_peserta->tanggal;
+            $check_jam = array_key_exists('jam', $data) ? $data['jam'] : $current_peserta->jam;
+            if ((int)$current_peserta->is_cancel === 1 && !empty($check_tanggal) && !empty($check_jam)) {
+                $data['is_cancel'] = null;
+            }
         }
 
         // Jika mengubah data tanggal atau jam pada data dari filter DONE > 1 Tahun (arsip), ubah selesai = 0
@@ -1406,6 +1442,14 @@ class Database extends CI_Controller
             $result = $this->transaksi_model->update($id, $data);
 
             if ($result) {
+                $saved_peserta = $this->transaksi_model->get_by_id($id);
+                if ($is_from_filter_cancel && (!$saved_peserta || (int) $saved_peserta->is_cancel !== 0)) {
+                    log_message('error', 'Verifikasi is_cancel gagal untuk ID: ' . $id);
+                    $this->output->set_status_header(500);
+                    $this->output->set_content_type('application/json');
+                    $this->output->set_output(json_encode(['success' => false, 'message' => 'is_cancel gagal diperbarui menjadi 0.']));
+                    return;
+                }
                 log_pekerjaan_field_changes((array) $current_peserta, $data, 'database', (int) $id);
                 if (function_exists('log_peserta_activity')) {
                     log_peserta_activity($id, 'update', 'Mengupdate data peserta (AJAX)', (array)$current_peserta, $data);
