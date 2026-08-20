@@ -16,7 +16,7 @@ $config['cpanel'] = array(
     'user' => 'chocoweb',
     
     // cPanel Password (password hosting/cPanel)
-    'pass' => 'x80.UwL.l4kFQ2',
+    'pass' => '8MGisIC2Nm',
     
     // Domain cPanel (tanpa https://)
     'host' => 'genuine.jagoanhosting.id',
