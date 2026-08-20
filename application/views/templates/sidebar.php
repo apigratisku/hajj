@@ -138,11 +138,19 @@
         <!-- Email Management -->
         <?php if ($this->session->userdata('role') == 'admin'): ?> 
         <?php if ($this->session->userdata('username') == 'adhit' || $this->session->userdata('username') == 'mimin'): ?>
-        <li class="nav-item">
-            <a href="<?= base_url('email') ?>" <?= $this->uri->segment(1) == 'email' ? 'class="active"' : '' ?>>
-                <i class="fas fa-envelope-open"></i> <span>Manajemen Email</span>
+        <?php
+            $current_domain = $this->session->userdata('email_domain') ? $this->session->userdata('email_domain') : ($this->input->get('domain') ? $this->input->get('domain') : 'muntun.my.id');
+        ?>
+         <li class="nav-item">
+            <a href="<?= base_url('email?domain=muntun.my.id') ?>" <?= ($this->uri->segment(1) == 'email' && $current_domain == 'muntun.my.id') ? 'class="active"' : '' ?>>
+                <i class="fas fa-envelope-open"></i> <span>Email muntun.my.id</span>
             </a>
         </li>
+         <li class="nav-item">
+            <a href="<?= base_url('email?domain=menfins.site') ?>" <?= ($this->uri->segment(1) == 'email' && $current_domain == 'menfins.site') ? 'class="active"' : '' ?>>
+                <i class="fas fa-envelope-open"></i> <span>Email menfins.site</span>
+            </a>
+        </li> 
         <?php endif; ?>
         <?php endif; ?>
         

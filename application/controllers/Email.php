@@ -18,7 +18,23 @@ class Email extends CI_Controller {
         
         // Load cPanel config
         $this->load->config('cpanel_config');
-        $this->cpanel_config = $this->config->item('cpanel');
+        
+        $requested_domain = $this->input->get('domain');
+        if (!$requested_domain) {
+            $requested_domain = $this->input->post('domain_context');
+        }
+        
+        $domain_configs = $this->config->item('cpanel_domains');
+        if ($requested_domain && is_array($domain_configs) && isset($domain_configs[$requested_domain])) {
+            $this->session->set_userdata('email_domain', $requested_domain);
+            $this->cpanel_config = $domain_configs[$requested_domain];
+        } elseif ($this->session->userdata('email_domain') && is_array($domain_configs) && isset($domain_configs[$this->session->userdata('email_domain')])) {
+            $this->cpanel_config = $domain_configs[$this->session->userdata('email_domain')];
+        } else {
+            $default_domain = 'choco.web.id';
+            $this->session->set_userdata('email_domain', $default_domain);
+            $this->cpanel_config = isset($domain_configs[$default_domain]) ? $domain_configs[$default_domain] : $this->config->item('cpanel');
+        }
         
         // Load Telegram notification library if it exists
         if (file_exists(APPPATH . 'libraries/Telegram_notification.php')) {

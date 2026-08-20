@@ -11,34 +11,58 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 |
 */
 
-$config['cpanel'] = array(
-    // cPanel Username (biasanya sama dengan hosting username)
-    'user' => 'chocoweb',
-    
-    // cPanel Password (password hosting/cPanel)
-    'pass' => '8MGisIC2Nm',
-    
-    // Domain cPanel (tanpa https://)
-    'host' => 'genuine.jagoanhosting.id',
-    
-    // Port cPanel (biasanya 2083 untuk SSL)
-    'port' => 2083,
-    
-    // Auth Token (jika menggunakan token authentication)
-    'auth_token' => '', // Kosongkan karena API Token dinonaktifkan
-    
-    // Protocol (http atau https)
-    'protocol' => 'https',
-    
-    // Timeout untuk request (dalam detik)
-    'timeout' => 30,
-    
-    // SSL Verification (true/false)
-    'ssl_verify' => false,
-    
-    // Debug mode (true/false)
-    'debug' => false
+$config['cpanel_domains'] = array(
+    'choco.web.id' => array(
+        'user' => 'chocoweb',
+        'pass' => '8MGisIC2Nm',
+        'host' => 'genuine.jagoanhosting.id',
+        'domain' => 'genuine.jagoanhosting.id',
+        'port' => 2083,
+        'auth_token' => '',
+        'protocol' => 'https',
+        'timeout' => 30,
+        'ssl_verify' => false,
+        'debug' => false
+    ),
+    'muntun.my.id' => array(
+        'user' => 'munz6135',
+        'pass' => '5#ls96LD!%dK7Zx3',
+        'host' => 'muntun.my.id',
+        'domain' => 'muntun.my.id',
+        'port' => 2083,
+        'auth_token' => '',
+        'protocol' => 'https',
+        'timeout' => 30,
+        'ssl_verify' => false,
+        'debug' => false
+    ),
+    'goreproject.com' => array(
+        'user' => 'goreproj',
+        'pass' => 'C^!YSQI(GZ',
+        'host' => 'genuine.jagoanhosting.id',
+        'domain' => 'genuine.jagoanhosting.id',
+        'port' => 2083,
+        'auth_token' => '',
+        'protocol' => 'https',
+        'timeout' => 30,
+        'ssl_verify' => false,
+        'debug' => false
+    ),
+    'menfins.site' => array(
+        'user' => 'menb8295',
+        'pass' => 'vj5xS09IaE!hc@8%',
+        'host' => 'menfins.site',
+        'domain' => 'menfins.site',
+        'port' => 2083,
+        'auth_token' => '',
+        'protocol' => 'https',
+        'timeout' => 30,
+        'ssl_verify' => false,
+        'debug' => false
+    )
 );
+
+$config['cpanel'] = $config['cpanel_domains']['choco.web.id'];
 
 /*
 |--------------------------------------------------------------------------
