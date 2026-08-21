@@ -414,6 +414,93 @@ class Database extends CI_Controller
         $this->load->view('templates/footer');
     }
 
+    public function filter_already_trash()
+    {
+        $this->load->model('transaksi_model');
+        $data['title'] = 'Filter Already -> Trash';
+
+        $data['email_domain_list'] = $this->transaksi_model->get_unique_email_domains_already_trash();
+        $allowed_domains = array_map(function ($row) {
+            return $row->email_domain;
+        }, $data['email_domain_list']);
+
+        $email_domain = trim($this->input->get('email_domain'));
+        $nomor_paspor = trim($this->input->get('nomor_paspor'));
+        $filters = ['status' => 1, 'status_register_kembali' => 'sudah'];
+        if ($email_domain !== '' && in_array($email_domain, $allowed_domains, true)) {
+            $filters['email_domain'] = $email_domain;
+        }
+        if ($nomor_paspor !== '') {
+            $filters['nomor_paspor'] = $nomor_paspor;
+        }
+
+        $per_page = 25;
+        $page = $this->input->get('page') ? $this->input->get('page') : 1;
+        $offset = ($page - 1) * $per_page;
+
+        $data['peserta'] = $this->transaksi_model->get_paginated_filtered_already_trash($per_page, $offset, $filters);
+        $data['flag_doc_list'] = $this->transaksi_model->get_unique_flag_doc_already_trash();
+
+        $total_rows = $this->transaksi_model->count_filtered_already_trash($filters);
+
+        $this->load->library('pagination');
+
+        $base_url = base_url('database/filter_already_trash');
+        $query_params = [];
+
+        if (!empty($filters['email_domain'])) {
+            $query_params['email_domain'] = $filters['email_domain'];
+        }
+        if (!empty($filters['nomor_paspor'])) {
+            $query_params['nomor_paspor'] = $filters['nomor_paspor'];
+        }
+
+        if (!empty($query_params)) {
+            $base_url .= '?' . http_build_query($query_params);
+        }
+
+        $config['base_url'] = $base_url;
+        $config['total_rows'] = $total_rows;
+        $config['per_page'] = $per_page;
+        $config['page_query_string'] = TRUE;
+        $config['query_string_segment'] = 'page';
+        $config['use_page_numbers'] = TRUE;
+        $config['num_links'] = 5;
+
+        $config['full_tag_open'] = '<nav aria-label="Data navigation"><ul class="pagination pagination-custom justify-content-center">';
+        $config['full_tag_close'] = '</ul></nav>';
+        $config['num_tag_open'] = '<li class="page-item">';
+        $config['num_tag_close'] = '</li>';
+        $config['cur_tag_open'] = '<li class="page-item active"><a class="page-link" href="#">';
+        $config['cur_tag_close'] = '</a></li>';
+        $config['next_tag_open'] = '<li class="page-item">';
+        $config['next_tag_close'] = '</li>';
+        $config['prev_tag_open'] = '<li class="page-item">';
+        $config['prev_tag_close'] = '</li>';
+        $config['first_tag_open'] = '<li class="page-item">';
+        $config['first_tag_close'] = '</li>';
+        $config['last_tag_open'] = '<li class="page-item">';
+        $config['last_tag_close'] = '</li>';
+        $config['anchor_class'] = 'page-link';
+        $config['next_link'] = '<i class="fas fa-chevron-right"></i>';
+        $config['prev_link'] = '<i class="fas fa-chevron-left"></i>';
+        $config['first_link'] = '<i class="fas fa-angle-double-left"></i>';
+        $config['last_link'] = '<i class="fas fa-angle-double-right"></i>';
+
+        $this->pagination->initialize($config);
+        $data['pagination'] = $this->pagination->create_links();
+
+        $data['total_rows'] = $total_rows;
+        $data['per_page'] = $per_page;
+        $data['current_page'] = $page;
+        $data['offset'] = $offset;
+
+        $this->load->view('templates/sidebar');
+        $this->load->view('templates/header', $data);
+        $this->load->view('database/filter_already_trash', $data);
+        $this->load->view('templates/footer');
+    }
+
     public function filter_done()
     {
         $this->load->model('transaksi_model');

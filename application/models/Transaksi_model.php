@@ -1129,6 +1129,19 @@ class Transaksi_model extends CI_Model {
         return $this->db->get()->result();
     }
 
+    public function get_unique_email_domains_already_trash() {
+        $this->db->select("SUBSTRING_INDEX(email, '@', -1) AS email_domain", false);
+        $this->db->from($this->table);
+        $this->db->where('status', 1);
+        $this->db->where('status_register_kembali', 'sudah');
+        $this->db->where('email IS NOT NULL');
+        $this->db->where('email !=', '');
+        $this->db->like('email', '@');
+        $this->db->group_by('email_domain');
+        $this->db->order_by('email_domain', 'ASC');
+        return $this->db->get()->result();
+    }
+
     private function apply_email_domain_filter_already($filters) {
         if (!empty($filters['email_domain'])) {
             $this->db->like('peserta.email', '@' . $filters['email_domain'], 'before');
@@ -1152,9 +1165,37 @@ class Transaksi_model extends CI_Model {
         return $this->db->get()->result();
     }
 
+    public function get_paginated_filtered_already_trash($limit, $offset, $filters = []) {
+        $this->db->select('peserta.*');
+        $this->db->from($this->table);
+        $this->db->where('peserta.status', 1);
+        $this->db->where('peserta.status_register_kembali', 'sudah');
+        $this->apply_email_domain_filter_already($filters);
+        $this->apply_nomor_paspor_filter($filters);
+
+        $this->db->order_by('peserta.created_at', 'ASC');
+        $this->db->order_by('peserta.id', 'ASC');
+
+        if ($limit !== null) {
+            $this->db->limit($limit, isset($offset) ? $offset : 0);
+        }
+
+        return $this->db->get()->result();
+    }
+
     public function count_filtered_already($filters = []) {
         $this->db->from($this->table);
         $this->db->where('peserta.status', 1);
+        $this->apply_email_domain_filter_already($filters);
+        $this->apply_nomor_paspor_filter($filters);
+
+        return $this->db->count_all_results();
+    }
+
+    public function count_filtered_already_trash($filters = []) {
+        $this->db->from($this->table);
+        $this->db->where('peserta.status', 1);
+        $this->db->where('peserta.status_register_kembali', 'sudah');
         $this->apply_email_domain_filter_already($filters);
         $this->apply_nomor_paspor_filter($filters);
 
@@ -1165,6 +1206,18 @@ class Transaksi_model extends CI_Model {
         $this->db->select('flag_doc, MAX(created_at) as created_at');
         $this->db->from($this->table);
         $this->db->where('status', 1);
+        $this->db->where('flag_doc IS NOT NULL');
+        $this->db->where('flag_doc !=', '');
+        $this->db->group_by('flag_doc');
+        $this->db->order_by('created_at', 'ASC');
+        return $this->db->get()->result();
+    }
+
+    public function get_unique_flag_doc_already_trash() {
+        $this->db->select('flag_doc, MAX(created_at) as created_at');
+        $this->db->from($this->table);
+        $this->db->where('status', 1);
+        $this->db->where('status_register_kembali', 'sudah');
         $this->db->where('flag_doc IS NOT NULL');
         $this->db->where('flag_doc !=', '');
         $this->db->group_by('flag_doc');

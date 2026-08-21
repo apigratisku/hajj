@@ -41,7 +41,7 @@
        
         
         <?php
-        $filter_routes = ['filter_already_done', 'filter_on_target_done', 'filter_done', 'filter_already', 'filter_done_1_tahun', 'filter_cancel'];
+        $filter_routes = ['filter_already_done', 'filter_on_target_done', 'filter_done', 'filter_already', 'filter_done_1_tahun', 'filter_cancel', 'filter_already_trash'];
         $current_filter_route = ($this->uri->segment(1) == 'database') ? $this->uri->segment(2) : '';
         $is_filter_menu_active = in_array($current_filter_route, $filter_routes, true);
         ?>
@@ -75,6 +75,11 @@
                 <li>
                     <a href="<?= base_url('database/filter_already') ?>" <?= $current_filter_route == 'filter_already' ? 'class="active"' : '' ?>>
                         <i class="fas fa-clock"></i> <span>Already</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="<?= base_url('database/filter_already_trash') ?>" <?= $current_filter_route == 'filter_already_trash' ? 'class="active"' : '' ?>>
+                        <i class="fas fa-trash"></i> <span>Already → Trash</span>
                     </a>
                 </li>
                 <li>
