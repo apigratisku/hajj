@@ -1142,6 +1142,37 @@ class Transaksi_model extends CI_Model {
         return $this->db->get()->result();
     }
 
+    /**
+     * Ambil daftar email peserta yang masuk kategori "Already -> Trash"
+     * (status = 1 && status_register_kembali = 'sudah').
+     * Digunakan untuk memfilter daftar forwarder agar hanya menampilkan
+     * forwarder yang berhubungan dengan email peserta tersebut.
+     *
+     * @param string|null $domain Batasi domain (opsional), mis. 'muntun.my.id'.
+     * @return array Daftar email (lowercase) tanpa duplikat.
+     */
+    public function get_email_list_already_trash($domain = null) {
+        $this->db->select('LOWER(email) AS email', false);
+        $this->db->from($this->table);
+        $this->db->where('status', 1);
+        $this->db->where('status_register_kembali', 'sudah');
+        $this->db->where('email IS NOT NULL');
+        $this->db->where('email !=', '');
+        $this->db->like('email', '@');
+        if (!empty($domain)) {
+            $this->db->like('email', '@' . $domain, 'before');
+        }
+        $this->db->group_by('email');
+        $this->db->order_by('email', 'ASC');
+
+        $rows = $this->db->get()->result();
+        $emails = [];
+        foreach ($rows as $row) {
+            $emails[$row->email] = true;
+        }
+        return $emails;
+    }
+
     private function apply_email_domain_filter_already($filters) {
         if (!empty($filters['email_domain'])) {
             $this->db->like('peserta.email', '@' . $filters['email_domain'], 'before');

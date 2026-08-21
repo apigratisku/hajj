@@ -1,4 +1,5 @@
     <!-- Content Body -->
+    <?php if (!isset($cpanel_email_set) || !is_array($cpanel_email_set)): $cpanel_email_set = []; endif; ?>
     <div class="content-body">
     <div class="row mb-4">
         <div class="col-12">
@@ -154,8 +155,14 @@
                                             <input type="text" class="mobile-edit-field" value="<?= $p->nomor_hp ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                             </td>
                                             <td class="col-email" data-field="email" data-value="<?= $p->email ?>">
+                                            <?php $hasCpanelEmail = !empty($p->email) && isset($cpanel_email_set[strtolower(trim($p->email))]); ?>
+                                            <?php if ($hasCpanelEmail): ?>
                                             <span class="value copyable-text" data-field="email" data-value="<?= $p->email ?>" onclick="copyToClipboard('<?= htmlspecialchars($p->email ?: '-', ENT_QUOTES) ?>', 'Email')" title="Klik untuk copy"><?= $p->email ?: '-' ?></span>
                                             <input type="email" class="mobile-edit-field" value="<?= $p->email ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
+                                            <?php else: ?>
+                                            <span class="value" title="Tidak ada akun cPanel"><i class="fas fa-times-circle" style="color: #dc3545;" title="Email tidak memiliki akun cPanel"></i></span>
+                                            <input type="email" class="mobile-edit-field" value="<?= $p->email ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
+                                            <?php endif; ?>
                                             </td>
                                             <td class="col-barcode" data-field="barcode" data-value="<?= $p->barcode ?>">
                                             <span class="value">
@@ -358,8 +365,14 @@
                                         <input type="text" class="form-control edit-field" value="<?= $p->nomor_hp ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
                                         </td>
                                         <td class="email text-center" data-field="email" data-value="<?= $p->email ?>"> 
+                                        <?php $hasCpanelEmail = !empty($p->email) && isset($cpanel_email_set[strtolower(trim($p->email))]); ?>
+                                        <?php if ($hasCpanelEmail): ?>
                                         <span class="display-value copyable-text" onclick="copyToClipboard('<?= htmlspecialchars($p->email ?: '-', ENT_QUOTES) ?>', 'Email')" title="Klik untuk copy"><?= $p->email ?></span>
                                         <input type="email" class="form-control edit-field" value="<?= $p->email ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
+                                        <?php else: ?>
+                                        <span class="display-value" title="Email tidak memiliki akun cPanel"><i class="fas fa-times-circle" style="color: #dc3545;" title="Email tidak memiliki akun cPanel"></i></span>
+                                        <input type="email" class="form-control edit-field" value="<?= $p->email ?>" style="display:none;" <?php if($this->session->userdata('role') == 'operator'): ?> readonly disabled <?php endif; ?>>
+                                        <?php endif; ?>
                                         </td>
                                         <td class="barcode text-center" data-field="barcode" data-value="<?= $p->barcode ?>">
                                         <span class="display-value">

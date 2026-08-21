@@ -790,6 +790,141 @@ class Email extends CI_Controller {
         }
     }
 
+    /**
+     * Halaman khusus forwarder: daftar forwarder untuk domain aktif.
+     */
+    public function forwarders() {
+        try {
+            log_message('info', 'Email forwarders - Loading forwarders page');
+
+            $data['title'] = 'Manajemen Forwarder';
+
+            // Load cPanel library
+            $this->load->library('Cpanel_new', $this->cpanel_config);
+
+            // Resolve domain aktif dari konfigurasi
+            $domain = isset($this->cpanel_config['domain']) ? $this->cpanel_config['domain'] : '';
+
+            $data['domain'] = $domain;
+            $data['forwarders'] = [];
+            $data['error_message'] = null;
+
+            if ($domain === '') {
+                $data['error_message'] = 'Domain tidak ditemukan dalam konfigurasi cPanel.';
+            } else {
+                $result = $this->cpanel_new->listForwarders($domain);
+
+                if (isset($result['error'])) {
+                    $data['error_message'] = $result['error'];
+                    log_message('error', 'Email forwarders - Error: ' . $result['error']);
+                } else {
+                    // Ambil daftar email peserta yang masuk kategori "Already -> Trash"
+                    // agar hanya forwarder yang berhubungan dengan email tersebut yang ditampilkan.
+                    $this->load->model('transaksi_model');
+                    $allowed_emails = $this->transaksi_model->get_email_list_already_trash($domain);
+
+                    // Pagination untuk forwarder (jumlah bisa sangat besar)
+                    $per_page = 50;
+                    $page = $this->input->get('page') ? max(1, (int)$this->input->get('page')) : 1;
+                    $offset = ($page - 1) * $per_page;
+
+                    $all_forwarders = [];
+                    foreach ($result as $fwd) {
+                        if (!is_array($fwd)) {
+                            continue;
+                        }
+                        $dest = isset($fwd['dest']) ? trim($fwd['dest']) : '';
+                        $forward = isset($fwd['forward']) ? trim($fwd['forward']) : '';
+                        if ($dest === '' || $forward === '') {
+                            continue;
+                        }
+                        // Normalisasi dest: forwarder biasanya berbentuk 'user@domain.com'
+                        $dest_email = strtolower($dest);
+                        $has_match = isset($allowed_emails[$dest_email]);
+
+                        // Jika tidak cocok dengan email peserta, lewati
+                        if (!$has_match) {
+                            continue;
+                        }
+
+                        $all_forwarders[] = [
+                            'dest' => $dest,
+                            'forward' => $forward,
+                            'has_account' => $has_match
+                        ];
+                    }
+
+                    $total_forwarders = count($all_forwarders);
+                    $data['forwarders'] = array_slice($all_forwarders, $offset, $per_page);
+                    $data['total_forwarders'] = $total_forwarders;
+                    $data['current_page'] = $page;
+                    $data['per_page'] = $per_page;
+                    $data['offset'] = $offset;
+                    $data['total_pages'] = $total_forwarders > 0 ? (int)ceil($total_forwarders / $per_page) : 1;
+
+                    log_message('info', 'Email forwarders - Total participant-matching forwarders for ' . $domain . ': ' . $total_forwarders . ' page ' . $page . '/' . $data['total_pages']);
+                }
+            }
+
+            $this->load->view('templates/sidebar');
+            $this->load->view('templates/header', $data);
+            $this->load->view('email_management/forwarders', $data);
+            $this->load->view('templates/footer');
+        } catch (Exception $e) {
+            log_message('error', 'Error in Email forwarders: ' . $e->getMessage());
+            show_error('Terjadi kesalahan saat memuat halaman forwarder. Silakan coba lagi.', 500);
+        }
+    }
+
+    /**
+     * Hapus satu pasangan forwarder.
+     *
+     * @param string $address
+     */
+    public function delete_forwarder($address = null) {
+        try {
+            // Hanya admin yang boleh menghapus forwarder
+            if ($this->session->userdata('role') != 'admin') {
+                log_message('error', 'Email delete_forwarder - Permission denied for user: ' . $this->session->userdata('username'));
+                $this->session->set_flashdata('error', 'Anda tidak memiliki izin untuk menghapus forwarder.');
+                redirect('email/forwarders');
+                return;
+            }
+
+            $address = urldecode((string)$address);
+            $forwarder = trim((string)$this->input->get('forwarder'));
+
+            log_message('info', 'Email delete_forwarder - Deleting forwarder address: ' . $address . ' -> ' . $forwarder);
+
+            if ($address === '' || $forwarder === '') {
+                $this->session->set_flashdata('error', 'Parameter forwarder tidak lengkap.');
+                redirect('email/forwarders');
+                return;
+            }
+
+            // Load cPanel library
+            $this->load->library('Cpanel_new', $this->cpanel_config);
+
+            $result = $this->cpanel_new->deleteForwarder($address, $forwarder);
+
+            log_message('info', 'Email delete_forwarder - Result: ' . json_encode($result));
+
+            if (is_array($result) && isset($result['error'])) {
+                $this->session->set_flashdata('error', 'Gagal menghapus forwarder: ' . $result['error']);
+            } elseif (is_array($result) && isset($result['errors']) && !empty($result['errors'])) {
+                $this->session->set_flashdata('error', 'Gagal menghapus forwarder: ' . implode(', ', $result['errors']));
+            } else {
+                $this->session->set_flashdata('success', 'Forwarder berhasil dihapus: ' . $address . ' -> ' . $forwarder);
+            }
+
+            redirect('email/forwarders');
+        } catch (Exception $e) {
+            log_message('error', 'Error in Email delete_forwarder: ' . $e->getMessage());
+            $this->session->set_flashdata('error', 'Terjadi kesalahan saat menghapus forwarder: ' . $e->getMessage());
+            redirect('email/forwarders');
+        }
+    }
+
     public function get_email_quota_info($email) {
         try {
             // Clean any output buffer
@@ -947,6 +1082,7 @@ class Email extends CI_Controller {
             $query = $this->db->select('email')
                 ->from('peserta')
                 ->where('status', (int)$status)
+                ->where('status_register_kembali', 'sudah')
                 ->where('email IS NOT NULL', null, false)
                 ->where('email !=', '')
                 ->get();

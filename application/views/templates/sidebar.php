@@ -156,6 +156,19 @@
                 <i class="fas fa-envelope-open"></i> <span>Email menfins.site</span>
             </a>
         </li> 
+        
+        <!-- Forwarder Management (menu terpisah) -->
+        <li class="nav-header mt-3"><i class="fas fa-share-alt"></i> <span>Forwarder</span></li>
+        <li class="nav-item">
+            <a href="<?= base_url('email/forwarders?domain=muntun.my.id') ?>" <?= ($this->uri->segment(1) == 'email' && $this->uri->segment(2) == 'forwarders' && $current_domain == 'muntun.my.id') ? 'class="active"' : '' ?>>
+                <i class="fas fa-share-alt"></i> <span>Forwarder muntun.my.id</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="<?= base_url('email/forwarders?domain=menfins.site') ?>" <?= ($this->uri->segment(1) == 'email' && $this->uri->segment(2) == 'forwarders' && $current_domain == 'menfins.site') ? 'class="active"' : '' ?>>
+                <i class="fas fa-share-alt"></i> <span>Forwarder menfins.site</span>
+            </a>
+        </li>
         <?php endif; ?>
         <?php endif; ?>
         
@@ -231,6 +244,62 @@
 
 .nav-item-has-submenu > .nav-submenu-toggle .submenu-chevron.rotated {
     transform: rotate(180deg);
+}
+
+/* ===== Navigation Header (pemisah grup menu) ===== */
+.nav-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px 6px 14px;
+    margin-top: 14px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent-color);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.nav-header:first-child {
+    margin-top: 0;
+}
+
+.nav-header i {
+    font-size: 0.75rem;
+    width: 18px;
+    text-align: center;
+}
+
+/* ===== Nav item umum ===== */
+.nav-item > a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 14px;
+    border-radius: 8px;
+    margin: 2px 8px;
+    font-size: 0.88rem;
+    color: rgba(255, 255, 255, 0.78);
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.nav-item > a:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--white);
+}
+
+.nav-item > a.active {
+    background: var(--accent-color);
+    color: var(--white);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+}
+
+.nav-item > a i {
+    width: 20px;
+    text-align: center;
+    font-size: 0.95rem;
 }
 </style>
 

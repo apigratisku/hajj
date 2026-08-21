@@ -845,6 +845,51 @@ class Cpanel_new {
     }
 
     /**
+     * Daftar forwarder untuk sebuah domain dalam bentuk baris ternormalisasi.
+     *
+     * @param string $domain
+     * @return array Array baris forwarder (['dest' => ..., 'forward' => ...]) atau ['error' => ...].
+     */
+    public function listForwarders($domain)
+    {
+        try {
+            $result = $this->listForwardersForDomain($domain);
+            $rows = $this->extractForwardersRowsFromApiResult($result);
+
+            if ($rows === null) {
+                $msg = is_array($result) && isset($result['error']) ? $result['error'] : 'Failed to list forwarders';
+                log_message('error', 'CPanel listForwarders - Error: ' . $msg);
+                return ['error' => $msg];
+            }
+
+            return $rows;
+        } catch (Exception $e) {
+            log_message('error', 'CPanel listForwarders - Exception: ' . $e->getMessage());
+            return ['error' => 'Exception in listForwarders: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Hapus satu pasangan forwarder (Email/delete_forwarder).
+     *
+     * @param string $address Alamat yang diforward (dest dari list).
+     * @param string $forwardDestination Tujuan forward.
+     * @return array
+     */
+    public function deleteForwarder($address, $forwardDestination)
+    {
+        try {
+            if ($address === '' || $forwardDestination === '') {
+                return ['error' => 'Address and forwarder destination are required'];
+            }
+            return $this->deleteForwarderEntry($address, $forwardDestination);
+        } catch (Exception $e) {
+            log_message('error', 'CPanel deleteForwarder - Exception: ' . $e->getMessage());
+            return ['error' => 'Exception in deleteForwarder: ' . $e->getMessage()];
+        }
+    }
+
+    /**
      * Hapus satu pasangan forwarder (Email/delete_forwarder).
      *
      * @param string $address Alamat yang diforward (dest dari list).

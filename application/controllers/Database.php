@@ -441,6 +441,10 @@ class Database extends CI_Controller
         $data['peserta'] = $this->transaksi_model->get_paginated_filtered_already_trash($per_page, $offset, $filters);
         $data['flag_doc_list'] = $this->transaksi_model->get_unique_flag_doc_already_trash();
 
+        // Daftar akun email cPanel yang benar-benar ada, untuk memfilter kolom email
+        // agar hanya menampilkan email yang memiliki akun cPanel.
+        $data['cpanel_email_set'] = $this->get_cpanel_email_set($email_domain);
+
         $total_rows = $this->transaksi_model->count_filtered_already_trash($filters);
 
         $this->load->library('pagination');
@@ -499,6 +503,76 @@ class Database extends CI_Controller
         $this->load->view('templates/header', $data);
         $this->load->view('database/filter_already_trash', $data);
         $this->load->view('templates/footer');
+    }
+
+    /**
+     * Ambil daftar email akun cPanel yang benar-benar ada (sesuai domain aktif),
+     * untuk dipakai memfilter kolom email peserta di halaman filter_already_trash.
+     *
+     * @param string $filter_domain Domain yang sedang difilter (opsional).
+     * @return array Set email (lowercase) yang memiliki akun cPanel.
+     */
+    private function get_cpanel_email_set($filter_domain = '')
+    {
+        try {
+            $this->load->config('cpanel_config');
+            $domain_configs = $this->config->item('cpanel_domains');
+
+            if (!is_array($domain_configs) || empty($domain_configs)) {
+                log_message('error', 'Database get_cpanel_email_set - cpanel_domains config not found');
+                return [];
+            }
+
+            // Pilih konfigurasi domain: pakai domain yang difilter jika tersedia,
+            // jika tidak, gunakan session/domain default.
+            if ($filter_domain !== '' && isset($domain_configs[$filter_domain])) {
+                $active_domain = $filter_domain;
+            } else {
+                $session_domain = $this->session->userdata('email_domain');
+                $active_domain = ($session_domain && isset($domain_configs[$session_domain])) ? $session_domain : array_key_first($domain_configs);
+            }
+
+            if (!$active_domain) {
+                return [];
+            }
+
+            $cfg = $domain_configs[$active_domain];
+
+            // Load cPanel library dengan konfigurasi domain aktif
+            $this->load->library('Cpanel_new', $cfg);
+            $result = $this->cpanel_new->listEmailAccounts();
+
+            if (isset($result['error'])) {
+                log_message('error', 'Database get_cpanel_email_set - Error listing email accounts: ' . $result['error']);
+                return [];
+            }
+
+            $emails = [];
+
+            // Normalisasi respons (session auth: result['data'], token auth: result langsung array)
+            $raw_accounts = [];
+            if (isset($result['data']) && is_array($result['data'])) {
+                $raw_accounts = $result['data'];
+            } elseif (is_array($result)) {
+                $raw_accounts = $result;
+            }
+
+            foreach ($raw_accounts as $account) {
+                if (!is_array($account)) {
+                    continue;
+                }
+                $email = isset($account['email']) ? strtolower(trim($account['email'])) : '';
+                if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    $emails[$email] = true;
+                }
+            }
+
+            log_message('info', 'Database get_cpanel_email_set - Total cPanel accounts loaded for domain ' . $active_domain . ': ' . count($emails));
+            return $emails;
+        } catch (Exception $e) {
+            log_message('error', 'Database get_cpanel_email_set - Exception: ' . $e->getMessage());
+            return [];
+        }
     }
 
     public function filter_done()

@@ -119,6 +119,8 @@ $route['email/check_accounts'] = 'email/check_accounts';
 $route['email/test_connection'] = 'email/test_connection';
 $route['email/get_quota_info/(:any)'] = 'email/get_email_quota_info/$1';
 $route['email/bulk_delete'] = 'email/bulk_delete';
+$route['email/forwarders'] = 'email/forwarders';
+$route['email/delete_forwarder/(:any)'] = 'email/delete_forwarder/$1';
 
 // Upload routes
 $route['upload/upload_barcode'] = 'upload/upload_barcode';
