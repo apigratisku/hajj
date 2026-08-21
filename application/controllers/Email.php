@@ -925,6 +925,121 @@ class Email extends CI_Controller {
         }
     }
 
+    /**
+     * Hapus beberapa forwarder sekaligus (Bulk Delete).
+     */
+    public function bulk_delete_forwarders() {
+        try {
+            log_message('info', 'Email bulk_delete_forwarders - Processing bulk delete request');
+            
+            // Check if user is admin
+            if ($this->session->userdata('role') != 'admin') {
+                log_message('error', 'Email bulk_delete_forwarders - Permission denied for user: ' . $this->session->userdata('username'));
+                $this->output->set_status_header(403);
+                $this->output->set_content_type('application/json');
+                $this->output->set_output(json_encode([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki izin untuk menghapus forwarder.'
+                ]));
+                return;
+            }
+
+            // Check if this is an AJAX request
+            if (!$this->input->is_ajax_request()) {
+                log_message('error', 'Email bulk_delete_forwarders - Not an AJAX request');
+                $this->output->set_status_header(400);
+                $this->output->set_content_type('application/json');
+                $this->output->set_output(json_encode([
+                    'success' => false,
+                    'message' => 'Invalid request method'
+                ]));
+                return;
+            }
+            
+            // Get JSON input
+            $input = json_decode($this->input->raw_input_stream, true);
+            
+            if (!$input || !isset($input['forwarders']) || !is_array($input['forwarders'])) {
+                log_message('error', 'Email bulk_delete_forwarders - Invalid input data');
+                $this->output->set_status_header(400);
+                $this->output->set_content_type('application/json');
+                $this->output->set_output(json_encode([
+                    'success' => false,
+                    'message' => 'Data input tidak valid.'
+                ]));
+                return;
+            }
+            
+            $forwarders = $input['forwarders'];
+            $total_forwarders = count($forwarders);
+            
+            log_message('info', 'Email bulk_delete_forwarders - Deleting ' . $total_forwarders . ' forwarders');
+            
+            // Load cPanel library
+            $this->load->library('Cpanel_new', $this->cpanel_config);
+            
+            $success_count = 0;
+            $failed_forwarders = [];
+            
+            foreach ($forwarders as $fwd) {
+                $dest = isset($fwd['dest']) ? trim($fwd['dest']) : '';
+                $forward = isset($fwd['forward']) ? trim($fwd['forward']) : '';
+                
+                if ($dest === '' || $forward === '') {
+                    continue;
+                }
+                
+                log_message('info', 'Email bulk_delete_forwarders - Deleting: ' . $dest . ' -> ' . $forward);
+                
+                $result = $this->cpanel_new->deleteForwarder($dest, $forward);
+                
+                if (is_array($result) && (isset($result['error']) || !empty($result['errors']))) {
+                    $err_msg = isset($result['error']) ? $result['error'] : implode(', ', $result['errors']);
+                    $failed_forwarders[] = [
+                        'dest' => $dest,
+                        'forward' => $forward,
+                        'error' => $err_msg
+                    ];
+                    log_message('error', 'Email bulk_delete_forwarders - Failed to delete: ' . $dest . ' -> ' . $forward . ' - ' . $err_msg);
+                } else {
+                    $success_count++;
+                    log_message('info', 'Email bulk_delete_forwarders - Successfully deleted: ' . $dest . ' -> ' . $forward);
+                }
+            }
+            
+            $response = [
+                'success' => true,
+                'deleted_count' => $success_count,
+                'total_count' => $total_forwarders,
+                'failed_count' => count($failed_forwarders),
+                'failed_forwarders' => $failed_forwarders
+            ];
+            
+            if ($success_count > 0) {
+                $response['message'] = "Berhasil menghapus {$success_count} dari {$total_forwarders} forwarder";
+                if (count($failed_forwarders) > 0) {
+                    $response['message'] .= ". Gagal menghapus " . count($failed_forwarders) . " forwarder";
+                }
+            } else {
+                $response['success'] = false;
+                $response['message'] = "Gagal menghapus semua forwarder terpilih";
+            }
+            
+            log_message('info', 'Email bulk_delete_forwarders - Final result: ' . json_encode($response));
+            
+            $this->output->set_content_type('application/json');
+            $this->output->set_output(json_encode($response));
+        } catch (Exception $e) {
+            log_message('error', 'Error in Email bulk_delete_forwarders: ' . $e->getMessage());
+            $this->output->set_status_header(500);
+            $this->output->set_content_type('application/json');
+            $this->output->set_output(json_encode([
+                'success' => false,
+                'message' => 'Terjadi kesalahan internal server: ' . $e->getMessage()
+            ]));
+        }
+    }
+
     public function get_email_quota_info($email) {
         try {
             // Clean any output buffer

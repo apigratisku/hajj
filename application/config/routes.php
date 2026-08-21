@@ -121,6 +121,7 @@ $route['email/get_quota_info/(:any)'] = 'email/get_email_quota_info/$1';
 $route['email/bulk_delete'] = 'email/bulk_delete';
 $route['email/forwarders'] = 'email/forwarders';
 $route['email/delete_forwarder/(:any)'] = 'email/delete_forwarder/$1';
+$route['email/bulk_delete_forwarders'] = 'email/bulk_delete_forwarders';
 
 // Upload routes
 $route['upload/upload_barcode'] = 'upload/upload_barcode';
