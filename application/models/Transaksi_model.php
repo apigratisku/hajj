@@ -1155,8 +1155,10 @@ class Transaksi_model extends CI_Model {
         $this->apply_email_domain_filter_already($filters);
         $this->apply_nomor_paspor_filter($filters);
 
-        $this->db->order_by('peserta.created_at', 'ASC');
-        $this->db->order_by('peserta.id', 'ASC');
+        // Prioritas belum register ulang (status_register_kembali is null atau 'belum') tampil paling atas
+        $this->db->order_by("CASE WHEN peserta.status_register_kembali = 'sudah' THEN 1 ELSE 0 END", 'ASC');
+        // Urutkan abjad nama
+        $this->db->order_by('peserta.nama', 'ASC');
 
         if ($limit !== null) {
             $this->db->limit($limit, isset($offset) ? $offset : 0);
