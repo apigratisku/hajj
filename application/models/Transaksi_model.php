@@ -2095,6 +2095,7 @@ class Transaksi_model extends CI_Model {
         $this->db->where('tanggal !=', '');
         $this->db->where('jam IS NOT NULL');
         $this->db->where('jam !=', '');
+        $this->db->where('TIME_FORMAT(jam, "%H:%i") !=', '00:00');
         $this->db->where('selesai !=', 2);
         $this->db->where('tanggal >=', date('Y') . '-01-01');
         
