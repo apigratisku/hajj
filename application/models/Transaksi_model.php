@@ -2113,7 +2113,8 @@ class Transaksi_model extends CI_Model {
     }
 
     public function get_schedule_detail_by_date($tanggal, $flag_doc = null) {
-        $this->db->select("jam,
+        // Standarkan jam ke HH:MM agar data (03:20 vs 03:20:00) tergabung dalam satu slot jadwal
+        $this->db->select("TIME_FORMAT(jam, '%H:%i') AS jam,
             SUM(CASE WHEN gender = 'L' AND (barcode IS NOT NULL AND barcode != '') THEN 1 ELSE 0 END) AS male_with_barcode,
             SUM(CASE WHEN gender = 'L' AND (barcode IS NULL OR barcode = '') THEN 1 ELSE 0 END) AS male_no_barcode,
             SUM(CASE WHEN gender = 'P' AND (barcode IS NOT NULL AND barcode != '') THEN 1 ELSE 0 END) AS female_with_barcode,
@@ -2126,6 +2127,7 @@ class Transaksi_model extends CI_Model {
         $this->db->where('tanggal', $tanggal);
         $this->db->where('jam IS NOT NULL');
         $this->db->where('jam !=', '');
+        $this->db->where('TIME_FORMAT(jam, "%H:%i") !=', '00:00');
         $this->db->where('selesai !=', 2);
         
         $this->db->group_start();
@@ -2137,14 +2139,15 @@ class Transaksi_model extends CI_Model {
             $this->db->where('flag_doc', $flag_doc);
         }
         
-        $this->db->group_by('jam');
+        $this->db->group_by('TIME_FORMAT(jam, "%H:%i")');
         $this->db->order_by('jam', 'ASC');
         return $this->db->get()->result();
     }
 
     public function update_status_massal($tanggal, $jam, $flag_doc = null) {
         $this->db->where('tanggal', $tanggal);
-        $this->db->where('jam', $jam);
+        // Cocokkan jam meski format DB berbeda (HH:MM vs HH:MM:SS)
+        $this->db->where('TIME_FORMAT(jam, "%H:%i") =', substr($jam, 0, 5));
         $this->db->where('selesai !=', 2); // Update hanya yang belum status 2
         
         if ($flag_doc) {
@@ -2507,7 +2510,8 @@ class Transaksi_model extends CI_Model {
         $this->db->select('id, nama, tanggal, jam, nomor_paspor, flag_doc, barcode, gender, no_visa, nama_travel, status');
         $this->db->from($this->table);
         $this->db->where('tanggal', $tanggal);
-        $this->db->where('jam', $jam);
+        // Cocokkan meski format jam di DB berbeda (HH:MM vs HH:MM:SS)
+        $this->db->where('TIME_FORMAT(jam, "%H:%i") =', substr($jam, 0, 5));
         $this->db->where('tanggal IS NOT NULL');
         $this->db->where('tanggal !=', '');
         $this->db->where('jam IS NOT NULL');

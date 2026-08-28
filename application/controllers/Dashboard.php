@@ -99,6 +99,8 @@ class Dashboard extends CI_Controller {
         // Cek apakah tanggal dan jam sudah lewat
         $current_date = date('Y-m-d');
         $current_time = date('H:i:s');
+        // Standarkan jam ke HH:MM untuk perbandingan (data tombol bisa HH:MM:SS)
+        $jam_norm = strlen(trim($jam)) >= 8 ? substr(trim($jam), 0, 5) : trim($jam);
         
         // Validasi: tombol hanya bisa diklik jika:
         // 1. Tanggal sudah lewat, atau
@@ -106,7 +108,7 @@ class Dashboard extends CI_Controller {
         $can_complete = false;
         if ($tanggal < $current_date) {
             $can_complete = true;
-        } elseif ($tanggal == $current_date && $jam <= $current_time) {
+        } elseif ($tanggal == $current_date && $jam_norm <= substr($current_time, 0, 5)) {
             $can_complete = true;
         }
         
