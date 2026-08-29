@@ -156,6 +156,16 @@
                 <i class="fas fa-envelope-open"></i> <span>Email menfins.site</span>
             </a>
         </li> 
+         <li class="nav-item">
+            <a href="<?= base_url('email?domain=choco.web.id') ?>" <?= ($this->uri->segment(1) == 'email' && $current_domain == 'choco.web.id') ? 'class="active"' : '' ?>>
+                <i class="fas fa-envelope-open"></i> <span>Email choco.web.id</span>
+            </a>
+        </li> 
+         <li class="nav-item">
+            <a href="<?= base_url('email?domain=goreproject.com') ?>" <?= ($this->uri->segment(1) == 'email' && $current_domain == 'goreproject.com') ? 'class="active"' : '' ?>>
+                <i class="fas fa-envelope-open"></i> <span>Email goreproject.com</span>
+            </a>
+        </li> 
         
         <!-- Forwarder Management (menu terpisah) -->
         <li class="nav-header mt-3"><i class="fas fa-share-alt"></i> <span>Forwarder</span></li>
@@ -167,6 +177,16 @@
         <li class="nav-item">
             <a href="<?= base_url('email/forwarders?domain=menfins.site') ?>" <?= ($this->uri->segment(1) == 'email' && $this->uri->segment(2) == 'forwarders' && $current_domain == 'menfins.site') ? 'class="active"' : '' ?>>
                 <i class="fas fa-share-alt"></i> <span>Forwarder menfins.site</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="<?= base_url('email/forwarders?domain=choco.web.id') ?>" <?= ($this->uri->segment(1) == 'email' && $this->uri->segment(2) == 'forwarders' && $current_domain == 'choco.web.id') ? 'class="active"' : '' ?>>
+                <i class="fas fa-share-alt"></i> <span>Forwarder choco.web.id</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="<?= base_url('email/forwarders?domain=goreproject.com') ?>" <?= ($this->uri->segment(1) == 'email' && $this->uri->segment(2) == 'forwarders' && $current_domain == 'goreproject.com') ? 'class="active"' : '' ?>>
+                <i class="fas fa-share-alt"></i> <span>Forwarder goreproject.com</span>
             </a>
         </li>
         <?php endif; ?>

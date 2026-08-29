@@ -91,6 +91,7 @@ class Cpanel_new {
 
     /**
      * Login menggunakan session token dengan optimasi performa
+     * Coba session login dulu, fallback ke HTTP Basic Auth jika JS challenge terdeteksi
      */
     private function loginWithSession()
     {
@@ -112,9 +113,9 @@ class Cpanel_new {
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
             curl_setopt($ch, CURLOPT_HEADER, true);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 15); // Kurangi timeout
-            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10); // Tambah connect timeout
-            curl_setopt($ch, CURLOPT_USERAGENT, 'CodeIgniter-CPanel/1.0');
+            curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+            curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
             curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 
             $result = curl_exec($ch);
@@ -126,16 +127,21 @@ class Cpanel_new {
             curl_close($ch);
 
             log_message('info', 'CPanel Session Login - HTTP Code: ' . $http_code);
-            log_message('info', 'CPanel Session Login - Response Body: ' . substr($body, 0, 200)); // Kurangi log
 
             if ($error) {
                 log_message('error', 'CPanel Session Login - cURL Error: ' . $error);
-                return false;
+                return $this->loginWithBasicAuth();
             }
 
             if ($http_code !== 200) {
                 log_message('error', 'CPanel Session Login - HTTP Error: ' . $http_code);
-                return false;
+                return $this->loginWithBasicAuth();
+            }
+
+            // Deteksi JS Challenge (WAF)
+            if (strpos($body, 'One moment, please') !== false || strpos($body, 'Please wait while') !== false) {
+                log_message('info', 'CPanel Session Login - JS Challenge detected, switching to Basic Auth');
+                return $this->loginWithBasicAuth();
             }
 
             // Coba parse JSON response
@@ -173,10 +179,142 @@ class Cpanel_new {
             }
 
             log_message('error', 'CPanel Session Login - Failed to extract session token');
-            return false;
+            return $this->loginWithBasicAuth();
         } catch (Exception $e) {
             log_message('error', 'CPanel Session Login - Exception: ' . $e->getMessage());
+            return $this->loginWithBasicAuth();
+        }
+    }
+
+    /**
+     * Login menggunakan HTTP Basic Auth (bypass WAF/JS Challenge)
+     * cPanel mendukung Basic Auth pada endpoint /execute/*
+     */
+    private function loginWithBasicAuth()
+    {
+        try {
+            $testUrl = "https://{$this->cpanel_host}:{$this->cpanel_port}/execute/Email/list_pops";
+
+            log_message('info', 'CPanel Basic Auth - Testing Basic Auth to: ' . $testUrl);
+
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $testUrl);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($ch, CURLOPT_USERPWD, $this->cpanel_user . ':' . $this->cpanel_pass);
+            curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+            curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+
+            $result = curl_exec($ch);
+            $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $error = curl_error($ch);
+            curl_close($ch);
+
+            log_message('info', 'CPanel Basic Auth - HTTP Code: ' . $http_code);
+
+            if ($error) {
+                log_message('error', 'CPanel Basic Auth - cURL Error: ' . $error);
+                return false;
+            }
+
+            if ($http_code === 200) {
+                $json = json_decode($result, true);
+                if (json_last_error() === JSON_ERROR_NONE && isset($json['status']) && $json['status'] == 1) {
+                    $this->session_token = 'BASIC_AUTH';
+                    log_message('info', 'CPanel Basic Auth - Authentication successful');
+                    return true;
+                }
+            }
+
+            log_message('error', 'CPanel Basic Auth - Failed, HTTP: ' . $http_code);
             return false;
+        } catch (Exception $e) {
+            log_message('error', 'CPanel Basic Auth - Exception: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Request menggunakan HTTP Basic Auth
+     */
+    private function requestWithBasicAuth($url, $method = 'GET', $data = null)
+    {
+        try {
+            $endpoint = "https://{$this->cpanel_host}:{$this->cpanel_port}/execute" . $url;
+
+            // Jika URL sudah mengandung /execute atau /json-api, normalisasi
+            if (strpos($url, '/execute/') === 0) {
+                $endpoint = "https://{$this->cpanel_host}:{$this->cpanel_port}" . $url;
+            } elseif (strpos($url, '/json-api/') === 0) {
+                // Basic Auth tidak support json-api, konversi ke execute endpoint
+                if (preg_match('/cpanel_jsonapi_module=(\w+)&cpanel_jsonapi_func=(\w+)/', $url, $m)) {
+                    $cleanUrl = '/' . $m[1] . '/' . $m[2];
+                    // Extract query params lain selain cpanel_jsonapi_*
+                    $parsed = parse_url($url);
+                    $extra = [];
+                    if (isset($parsed['query'])) {
+                        parse_str($parsed['query'], $params);
+                        foreach ($params as $k => $v) {
+                            if (strpos($k, 'cpanel_jsonapi_') !== 0) {
+                                $extra[$k] = $v;
+                            }
+                        }
+                    }
+                    $endpoint = "https://{$this->cpanel_host}:{$this->cpanel_port}/execute" . $cleanUrl;
+                    if (!empty($extra)) {
+                        $endpoint .= '?' . http_build_query($extra);
+                    }
+                }
+            }
+
+            log_message('info', 'CPanel Basic Auth Request - Making request to: ' . $endpoint);
+
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $endpoint);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($ch, CURLOPT_USERPWD, $this->cpanel_user . ':' . $this->cpanel_pass);
+            curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+            curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+
+            if ($method === 'POST' && $data) {
+                curl_setopt($ch, CURLOPT_POST, 1);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
+            }
+
+            $result = curl_exec($ch);
+            $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $error = curl_error($ch);
+            curl_close($ch);
+
+            log_message('info', 'CPanel Basic Auth Request - HTTP Code: ' . $http_code);
+
+            if ($error) {
+                log_message('error', 'CPanel Basic Auth Request - cURL Error: ' . $error);
+                return ["error" => "Request error: " . $error];
+            }
+
+            if ($http_code !== 200) {
+                log_message('error', 'CPanel Basic Auth Request - HTTP Error: ' . $http_code);
+                return ["error" => "HTTP error: " . $http_code];
+            }
+
+            $decoded = json_decode($result, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                log_message('error', 'CPanel Basic Auth Request - JSON decode error: ' . json_last_error_msg());
+                return ["error" => "Invalid JSON response"];
+            }
+
+            return $decoded;
+        } catch (Exception $e) {
+            log_message('error', 'CPanel Basic Auth Request - Exception: ' . $e->getMessage());
+            return ["error" => "Basic Auth request exception: " . $e->getMessage()];
         }
     }
 
@@ -198,6 +336,12 @@ class Cpanel_new {
             if ($this->session_token === 'TOKEN_AUTH') {
                 log_message('info', 'CPanel request - Using token authentication');
                 return $this->requestWithToken($url, $method, $data);
+            }
+
+            // Jika menggunakan basic auth (bypass WAF)
+            if ($this->session_token === 'BASIC_AUTH') {
+                log_message('info', 'CPanel request - Using Basic Auth');
+                return $this->requestWithBasicAuth($url, $method, $data);
             }
 
             // Jika menggunakan session auth
