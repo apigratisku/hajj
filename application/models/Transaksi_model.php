@@ -1198,6 +1198,9 @@ class Transaksi_model extends CI_Model {
         $this->db->select('peserta.*');
         $this->db->from($this->table);
         $this->db->where('peserta.status', 1);
+        if (!empty($filters['status_register_kembali'])) {
+            $this->db->where('peserta.status_register_kembali', $filters['status_register_kembali']);
+        }
         $this->apply_email_domain_filter_already($filters);
         $this->apply_nomor_paspor_filter($filters);
 
@@ -1234,6 +1237,9 @@ class Transaksi_model extends CI_Model {
     public function count_filtered_already($filters = []) {
         $this->db->from($this->table);
         $this->db->where('peserta.status', 1);
+        if (!empty($filters['status_register_kembali'])) {
+            $this->db->where('peserta.status_register_kembali', $filters['status_register_kembali']);
+        }
         $this->apply_email_domain_filter_already($filters);
         $this->apply_nomor_paspor_filter($filters);
 

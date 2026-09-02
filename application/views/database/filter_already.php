@@ -13,7 +13,7 @@
                     <!-- Mobile Search Form -->
                     <div class="mobile-search-container d-block d-md-none">
                         <div class="search-toggle" onclick="toggleMobileSearch()">
-                            <i class="fas fa-search"></i> Filter Email
+                            <i class="fas fa-search"></i> Filter Already
                         </div>
                         <div class="mobile-search-form" id="mobileSearchForm" style="display: none;">
                             <form method="get" action="<?= base_url('database/filter_already') ?>" class="mobile-form">
@@ -32,6 +32,14 @@
                                 <div class="form-group">
                                     <label class="form-label"><i class="fas fa-passport"></i> No Paspor</label>
                                     <input type="text" name="nomor_paspor" class="form-control mobile-input" placeholder="Cari no paspor..." value="<?= isset($_GET['nomor_paspor']) ? htmlspecialchars($_GET['nomor_paspor']) : '' ?>">
+                                </div>
+                                <div class="form-group mb-2">
+                                    <div class="form-check mt-2">
+                                        <input class="form-check-input" type="checkbox" name="status_register_kembali" value="sudah" id="status_register_kembali_mobile" <?= (isset($_GET['status_register_kembali']) && $_GET['status_register_kembali'] === 'sudah') ? 'checked' : '' ?> onchange="this.form.submit()">
+                                        <label class="form-check-label fw-bold text-dark" for="status_register_kembali_mobile">
+                                            <i class="fas fa-redo text-success"></i> Register Ulang Saja
+                                        </label>
+                                    </div>
                                 </div>
                                 <div class="form-actions">
                                     <button type="submit" class="btn btn-search">
@@ -61,11 +69,20 @@
                                         <?php endforeach; endif; ?>
                                     </select>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-4">
                                     <label for="nomor_paspor_desktop" class="form-label"><i class="fas fa-passport"></i> No Paspor</label>
                                     <input type="text" id="nomor_paspor_desktop" name="nomor_paspor" class="form-control form-control-sm" placeholder="Cari no paspor..." value="<?= isset($_GET['nomor_paspor']) ? htmlspecialchars($_GET['nomor_paspor']) : '' ?>">
                                 </div>
-                                <div class="col-md-auto">
+                                <div class="col-md-4">
+                                    <label for="status_register_kembali_desktop" class="form-label"><i class="fas fa-redo text-success"></i> Status Register</label>
+                                    <div class="form-check py-1 mb-0">
+                                        <input class="form-check-input" type="checkbox" name="status_register_kembali" value="sudah" id="status_register_kembali_desktop" <?= (isset($_GET['status_register_kembali']) && $_GET['status_register_kembali'] === 'sudah') ? 'checked' : '' ?> onchange="this.form.submit()">
+                                        <label class="form-check-label fw-bold text-dark" for="status_register_kembali_desktop">
+                                            Register Ulang Saja
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 d-flex align-items-end justify-content-start">
                                     <button type="submit" class="btn btn-brown btn-sm me-2">
                                         <i class="fas fa-search"></i> Cari
                                     </button>

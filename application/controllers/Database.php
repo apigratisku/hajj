@@ -339,12 +339,17 @@ class Database extends CI_Controller
 
         $email_domain = trim($this->input->get('email_domain'));
         $nomor_paspor = trim($this->input->get('nomor_paspor'));
+        $status_register_kembali = trim($this->input->get('status_register_kembali'));
+
         $filters = ['status' => 1];
         if ($email_domain !== '' && in_array($email_domain, $allowed_domains, true)) {
             $filters['email_domain'] = $email_domain;
         }
         if ($nomor_paspor !== '') {
             $filters['nomor_paspor'] = $nomor_paspor;
+        }
+        if ($status_register_kembali !== '') {
+            $filters['status_register_kembali'] = $status_register_kembali;
         }
 
         $per_page = 25;
@@ -366,6 +371,9 @@ class Database extends CI_Controller
         }
         if (!empty($filters['nomor_paspor'])) {
             $query_params['nomor_paspor'] = $filters['nomor_paspor'];
+        }
+        if (!empty($filters['status_register_kembali'])) {
+            $query_params['status_register_kembali'] = $filters['status_register_kembali'];
         }
 
         if (!empty($query_params)) {
