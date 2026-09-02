@@ -41,6 +41,7 @@ class Dashboard extends CI_Controller {
         $data['stats_on_target'] = $this->transaksi_model->get_dashboard_stats_on_target($flag_doc);
         $data['stats_already'] = $this->transaksi_model->get_dashboard_stats_already($flag_doc);
         $data['stats_register_ulang'] = $this->transaksi_model->get_dashboard_stats_register_ulang($flag_doc);
+        $data['stats_register_ulang_today'] = $this->transaksi_model->get_dashboard_stats_register_ulang_today($flag_doc);
         $data['stats_already_to_done'] = $this->transaksi_model->get_dashboard_stats_already_to_done($flag_doc);
         
         // Estimasi Data stats

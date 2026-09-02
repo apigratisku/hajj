@@ -206,7 +206,17 @@
                     </div>
                     <div class="stats-content">
                         <div class="stats-count"><?= number_format($stats_register_ulang, 0, ',', '.') ?></div>
-                        <div class="stats-title">Register Ulang <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
+                        <div class="stats-title">Total Register Ulang <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
+                    </div>
+                </div>
+
+                <div class="stats-item">
+                    <div class="stats-icon text-success">
+                        <i class="fas fa-calendar-day"></i>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-count"><?= number_format($stats_register_ulang_today, 0, ',', '.') ?></div>
+                        <div class="stats-title">Register Ulang Hari Ini <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
                     </div>
                 </div>
                 
@@ -254,6 +264,16 @@
                     <div class="stats-content">
                         <div class="stats-count"><?= number_format($stats_register_ulang, 0, ',', '.') ?></div>
                         <div class="stats-title">Register Ulang <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
+                    </div>
+                </div>
+
+                <div class="stats-item mobile-stats-item">
+                    <div class="stats-icon text-success">
+                        <i class="fas fa-calendar-day"></i>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-count"><?= number_format($stats_register_ulang_today, 0, ',', '.') ?></div>
+                        <div class="stats-title">Register Ulang Hari Ini <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
                     </div>
                 </div>
                 
