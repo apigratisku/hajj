@@ -61,9 +61,6 @@ class Dashboard extends CI_Controller {
         // Get schedule grouped by date
         $data['schedule_by_date'] = $this->transaksi_model->get_schedule_by_date($flag_doc);
         
-        // Get monthly visa import statistics for the last 12 months
-        $data['monthly_visa_stats'] = $this->transaksi_model->get_monthly_visa_import_stats();
-        
         // Get unique travel names for filter
         $data['travel_list'] = $this->transaksi_model->get_unique_nama_travel();
         

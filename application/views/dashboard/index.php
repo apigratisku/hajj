@@ -523,7 +523,7 @@
             <div class="card mobile-card">
                 <div class="card-header bg-info text-white">
                     <h5 class="mb-0">
-                        <i class="fas fa-chart-line"></i> Statistik Import Visa Bulanan (12 Bulan Terakhir)
+                        <i class="fas fa-chart-line"></i> Statistik Import Visa Bulanan (13 Bulan Terakhir)
                     </h5>
                 </div>
                 <div class="card-body">
@@ -552,7 +552,9 @@
                     <!-- Chart Container -->
                     <div class="row">
                         <div class="col-12">
-                            <canvas id="monthlyVisaChart" height="5"></canvas>
+                            <div style="position: relative; width: 100%; height: 320px;">
+                                <canvas id="monthlyVisaChart"></canvas>
+                            </div>
                         </div>
                     </div>
                     
@@ -569,6 +571,7 @@
                                             <th class="text-center">Already</th>
                                             <th class="text-center">Done</th>
                                             <th class="text-center">Register Ulang</th>
+                                            <th class="text-center">Selesai</th>
                                         </tr>
                                     </thead>
                                     <tbody id="monthlyStatsTable">
@@ -1886,17 +1889,16 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize monthly stats first
+    // Load saved state for monthly visa stats (tampilkan blok bila state tersimpan visible)
+    loadMonthlyVisaStatsState();
+    
+    // Initialize monthly stats (render chart & isi tabel setelah container visibility diatur)
     loadMonthlyStats();
     
     // Add event listener for travel filter
     document.getElementById('travelFilter').addEventListener('change', function() {
         loadMonthlyStats();
     });
-    
-    
-    // Load saved state for monthly visa stats
-    loadMonthlyVisaStatsState();
     
     // Handle tombol Selesai
     document.addEventListener('click', function(e) {
@@ -2079,6 +2081,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         // Save state to localStorage
                         localStorage.setItem('stats_' + target + '_visible', 'true');
+                        
+                        // Render ulang chart bila statistik visa import baru saja ditampilkan
+                        // (chart sengaja tidak dirender saat kontainer masih display:none)
+                        if (target === 'monthly-visa-stats' && typeof loadMonthlyStats === 'function') {
+                            loadMonthlyStats();
+                        }
                     } else {
                         // Hide statistics
                         targetElement.style.display = 'none';
@@ -2243,11 +2251,10 @@ function loadMonthlyStats() {
     const travelFilter = document.getElementById('travelFilter').value;
     
     // Show loading state
-    const chartContainer = document.getElementById('monthlyVisaChart');
     const tableBody = document.getElementById('monthlyStatsTable');
     
     if (tableBody) {
-        tableBody.innerHTML = '<tr><td colspan="6" class="text-center">Loading...</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="7" class="text-center">Loading...</td></tr>';
     }
     
     // Fetch data
@@ -2266,20 +2273,28 @@ function loadMonthlyStats() {
         } else {
             console.error('Error loading monthly stats:', data.message);
             if (tableBody) {
-                tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error loading data</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error loading data</td></tr>';
             }
         }
     })
     .catch(error => {
         console.error('Error:', error);
         if (tableBody) {
-            tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error loading data</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error loading data</td></tr>';
         }
     });
 }
 
 function updateMonthlyChart(data) {
-    const ctx = document.getElementById('monthlyVisaChart').getContext('2d');
+    const canvas = document.getElementById('monthlyVisaChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+    
+    // Jangan render chart jika kontainer sedang disembunyikan (display:none),
+    // karena Chart.js tidak bisa mengukur kanvas berukuran 0. Chart akan
+    // dirender ulang saat blok statistik ditampilkan (lihat toggle handler).
+    if (!canvas.offsetParent) return;
+    
+    const ctx = canvas.getContext('2d');
     
     // Destroy existing chart
     if (monthlyVisaChart) {
@@ -2296,8 +2311,70 @@ function updateMonthlyChart(data) {
     const onTargetData = data.map(item => parseInt(item.on_target));
     const alreadyData = data.map(item => parseInt(item.already));
     const doneData = data.map(item => parseInt(item.done));
+    const selesaiData = data.map(item => parseInt(item.total_selesai || 0));
     
-    
+    monthlyVisaChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Total Import',
+                    data: totalData,
+                    backgroundColor: 'rgba(108, 117, 125, 0.7)',
+                    borderColor: 'rgba(108, 117, 125, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'On Target',
+                    data: onTargetData,
+                    backgroundColor: 'rgba(220, 53, 69, 0.7)',
+                    borderColor: 'rgba(220, 53, 69, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Already',
+                    data: alreadyData,
+                    backgroundColor: 'rgba(255, 193, 7, 0.7)',
+                    borderColor: 'rgba(255, 193, 7, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Done',
+                    data: doneData,
+                    backgroundColor: 'rgba(23, 162, 184, 0.7)',
+                    borderColor: 'rgba(23, 162, 184, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Selesai',
+                    data: selesaiData,
+                    type: 'line',
+                    borderColor: 'rgba(40, 167, 69, 1)',
+                    backgroundColor: 'rgba(40, 167, 69, 0.15)',
+                    fill: false,
+                    tension: 0.3,
+                    pointRadius: 3
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: { boxWidth: 12 }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { precision: 0 }
+                }
+            }
+        }
+    });
 }
 
 function updateMonthlyTable(data) {
@@ -2306,7 +2383,7 @@ function updateMonthlyTable(data) {
     if (!tableBody) return;
     
     if (data.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Tidak ada data</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Tidak ada data</td></tr>';
         return;
     }
     
@@ -2323,6 +2400,7 @@ function updateMonthlyTable(data) {
                 <td class="text-center">${formatNumberID(item.already)}</td>
                 <td class="text-center">${formatNumberID(item.done)}</td>
                 <td class="text-center">${formatNumberID(item.register_ulang || 0)}</td>
+                <td class="text-center">${formatNumberID(item.total_selesai || 0)}</td>
             </tr>
         `;
     });

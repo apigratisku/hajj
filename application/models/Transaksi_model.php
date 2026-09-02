@@ -2435,65 +2435,66 @@ class Transaksi_model extends CI_Model {
     }
     
     /**
-     * Get monthly visa import statistics for the last 12 months
-     */
-    public function get_monthly_visa_import_stats() {
-        $this->db->select('
-            DATE_FORMAT(created_at, "%Y-%m") as month_year,
-            COUNT(*) as total_imported,
-            SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) as on_target,
-            SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as already,
-            SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) as done,
-            SUM(CASE WHEN status = 3 THEN 1 ELSE 0 END) as fasttrack
-        ');
-        $this->db->from($this->table);
-        $this->db->where('created_at >=', date('Y-m-01', strtotime('-11 months')));
-        $this->db->group_by('DATE_FORMAT(created_at, "%Y-%m")');
-        $this->db->order_by('month_year', 'ASC');
-        
-        return $this->db->get()->result();
-    }
-    
-    /**
-     * Get monthly visa import statistics by travel for the last 12 months
+     * Get monthly visa import statistics by travel for the last 13 months.
+     *
+     * Kolom Total Import, On Target, Already, Done, Fasttrack, Register Ulang
+     * dihitung berdasarkan bulan created_at (bulan import).
+     * Kolom Selesai (selesai=2) dihitung berdasarkan bulan arsip_create_at
+     * (bulan saat data benar-benar diselesaikan/diarsip), dengan fallback
+     * ke created_at bila arsip_create_at masih kosong (data lama).
+     * Semua bulan dalam 13 bulan terakhir tetap dimunculkan (termasuk bulan
+     * yang tidak memiliki import baru namun memiliki data selesai).
      */
     public function get_monthly_visa_import_by_travel($nama_travel = null) {
-        if (!empty($nama_travel)) {
-            // Filter by specific travel
-            $this->db->select('
-                DATE_FORMAT(created_at, "%Y-%m") as month_year,
-                nama_travel,
-                COUNT(*) as total_imported,
-                SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) as on_target,
-                SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as already,
-                SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) as done,
-                SUM(CASE WHEN status = 3 THEN 1 ELSE 0 END) as fasttrack,
-                SUM(CASE WHEN status_register_kembali = "sudah" THEN 1 ELSE 0 END) as register_ulang
-            ');
-            $this->db->from($this->table);
-            $this->db->where('created_at >=', date('Y-m-01', strtotime('-11 months')));
-            $this->db->where('nama_travel', $nama_travel);
-            $this->db->group_by('DATE_FORMAT(created_at, "%Y-%m"), nama_travel');
-            $this->db->order_by('month_year', 'ASC');
-        } else {
-            // Show total for all travels combined
-            $this->db->select('
-                DATE_FORMAT(created_at, "%Y-%m") as month_year,
-                "All Travels" as nama_travel,
-                COUNT(*) as total_imported,
-                SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) as on_target,
-                SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as already,
-                SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) as done,
-                SUM(CASE WHEN status = 3 THEN 1 ELSE 0 END) as fasttrack,
-                SUM(CASE WHEN status_register_kembali = "sudah" THEN 1 ELSE 0 END) as register_ulang
-            ');
-            $this->db->from($this->table);
-            $this->db->where('created_at >=', date('Y-m-01', strtotime('-11 months')));
-            $this->db->group_by('DATE_FORMAT(created_at, "%Y-%m")');
-            $this->db->order_by('month_year', 'ASC');
-        }
-        
-        return $this->db->get()->result();
+        $where_travel = !empty($nama_travel) ? "AND nama_travel = " . $this->db->escape($nama_travel) : "";
+
+        $sql = "
+            SELECT
+                m.month_year,
+                IFNULL(SUM(t.total_imported), 0)  AS total_imported,
+                IFNULL(SUM(t.on_target), 0)       AS on_target,
+                IFNULL(SUM(t.already), 0)         AS already,
+                IFNULL(SUM(t.done), 0)            AS done,
+                IFNULL(SUM(t.fasttrack), 0)       AS fasttrack,
+                IFNULL(SUM(t.register_ulang), 0)  AS register_ulang,
+                IFNULL(SUM(s.selesai), 0)         AS total_selesai
+            FROM (
+                SELECT DATE_FORMAT(DATE_FORMAT(NOW(), '%Y-%m-01') - INTERVAL seq MONTH, '%Y-%m') AS month_year
+                FROM (
+                    SELECT 0 AS seq UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4
+                    UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9
+                    UNION SELECT 10 UNION SELECT 11 UNION SELECT 12
+                ) nums
+            ) m
+            LEFT JOIN (
+                SELECT
+                    DATE_FORMAT(created_at, '%Y-%m') AS month_year,
+                    COUNT(*)                             AS total_imported,
+                    SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) AS on_target,
+                    SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) AS already,
+                    SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) AS done,
+                    SUM(CASE WHEN status = 3 THEN 1 ELSE 0 END) AS fasttrack,
+                    SUM(CASE WHEN status_register_kembali = 'sudah' THEN 1 ELSE 0 END) AS register_ulang
+                FROM " . $this->table . "
+                WHERE created_at >= DATE_FORMAT(NOW(), '%Y-%m-01') - INTERVAL 12 MONTH
+                " . $where_travel . "
+                GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+            ) t ON t.month_year = m.month_year
+            LEFT JOIN (
+                SELECT
+                    DATE_FORMAT(COALESCE(arsip_create_at, created_at), '%Y-%m') AS month_year,
+                    COUNT(*) AS selesai
+                FROM " . $this->table . "
+                WHERE selesai = 2
+                  AND COALESCE(arsip_create_at, created_at) >= DATE_FORMAT(NOW(), '%Y-%m-01') - INTERVAL 12 MONTH
+                " . $where_travel . "
+                GROUP BY DATE_FORMAT(COALESCE(arsip_create_at, created_at), '%Y-%m')
+            ) s ON s.month_year = m.month_year
+            GROUP BY m.month_year
+            ORDER BY m.month_year ASC
+        ";
+
+        return $this->db->query($sql)->result();
     }
 
     /**
