@@ -130,7 +130,7 @@
 
                     <?php if (isset($total_pages) && $total_pages > 1): ?>
                     <nav aria-label="Pagination forwarder" class="mt-3">
-                        <ul class="pagination justify-content-center mb-0">
+                        <ul class="pagination pagination-sm justify-content-center flex-wrap mb-0">
                             <li class="page-item <?= $current_page <= 1 ? 'disabled' : '' ?>">
                                 <a class="page-link" href="<?= base_url('email/forwarders?domain=' . urlencode($domain) . '&page=' . ($current_page - 1)) ?>">
                                     <i class="fas fa-chevron-left"></i>

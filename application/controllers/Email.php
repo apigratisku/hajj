@@ -52,7 +52,7 @@ class Email extends CI_Controller {
             $this->load->library('Cpanel_new', $this->cpanel_config);
             
             // Pagination settings
-            $per_page = 30;
+            $per_page = 10;
             $page = $this->input->get('page') ? $this->input->get('page') : 1;
             $offset = ($page - 1) * $per_page;
             
@@ -267,7 +267,7 @@ class Email extends CI_Controller {
                         'accounts' => [],
                         'pagination' => [
                             'current_page' => 1,
-                            'per_page' => 30,
+                            'per_page' => 10,
                             'total_pages' => 0,
                             'total_accounts' => 0,
                             'has_prev' => false,
@@ -280,7 +280,7 @@ class Email extends CI_Controller {
             }
             
             // Pagination parameters
-            $per_page = 30;
+            $per_page = 10;
             $page = $this->input->get('page') ? intval($this->input->get('page')) : 1;
             if ($page < 1) {
                 $page = 1;
@@ -824,7 +824,7 @@ class Email extends CI_Controller {
                     $allowed_emails = $this->transaksi_model->get_email_list_already_trash($domain);
 
                     // Pagination untuk forwarder (jumlah bisa sangat besar)
-                    $per_page = 50;
+                    $per_page = 10;
                     $page = $this->input->get('page') ? max(1, (int)$this->input->get('page')) : 1;
                     $offset = ($page - 1) * $per_page;
 

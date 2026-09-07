@@ -222,12 +222,12 @@
                     
                     <!-- Pagination -->
                     <?php if (isset($total_pages) && $total_pages > 1): ?>
-                        <div id="serverPagination" class="d-flex justify-content-between align-items-center mt-3">
-                            <div class="text-muted">
-                                Menampilkan <?= $offset + 1 ?> - <?= min($offset + $per_page, $total_accounts) ?> dari <?= $total_accounts ?> akun email
+                        <div id="serverPagination" class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
+                            <div class="text-muted small">
+                                Menampilkan <?= number_format($offset + 1) ?> - <?= number_format(min($offset + $per_page, $total_accounts)) ?> dari <?= number_format($total_accounts) ?> akun email
                             </div>
                             <nav id="serverPaginationNav" aria-label="Email pagination">
-                                <ul class="pagination pagination-sm mb-0">
+                                <ul class="pagination pagination-sm flex-wrap mb-0">
                                     <!-- Previous Page -->
                                     <?php if ($current_page > 1): ?>
                                         <li class="page-item">
@@ -1928,7 +1928,7 @@ function updatePagination(pagination, options = {}) {
         const tableContainer = document.querySelector('.table-responsive');
         if (tableContainer) {
             const paginationDiv = document.createElement('div');
-            paginationDiv.className = 'd-flex justify-content-between align-items-center mt-3 pagination-container';
+            paginationDiv.className = 'd-flex flex-wrap justify-content-between align-items-center gap-2 mt-3 pagination-container';
             tableContainer.parentNode.insertBefore(paginationDiv, tableContainer.nextSibling);
             paginationContainer = paginationDiv;
         }
@@ -1954,11 +1954,11 @@ function updatePagination(pagination, options = {}) {
         : `Menampilkan ${startItem} - ${endItem} dari ${pagination.total_accounts} akun email`;
 
     let html = `
-        <div class="text-muted">
+        <div class="text-muted small">
             ${totalInfoText}
         </div>
         <nav aria-label="Email pagination">
-            <ul class="pagination pagination-sm mb-0">
+            <ul class="pagination pagination-sm flex-wrap mb-0">
     `;
     
     // Previous button
