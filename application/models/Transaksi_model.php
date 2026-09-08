@@ -1094,6 +1094,71 @@ class Transaksi_model extends CI_Model {
         $result = $this->db->get()->row();
         return $result ? $result->total : 0;
     }
+
+    public function get_dashboard_stats_estimasi_gender($flag_doc = null) {
+        $tz = new DateTimeZone('Asia/Singapore');
+        $one_year_ago = (new DateTime('now', $tz))->modify('-1 year')->format('Y-m-d');
+
+        $this->db->select("
+            SUM(CASE WHEN gender = 'L' THEN 1 ELSE 0 END) AS total_male,
+            SUM(CASE WHEN gender = 'P' THEN 1 ELSE 0 END) AS total_female,
+            SUM(CASE WHEN gender NOT IN ('L', 'P') OR gender IS NULL THEN 1 ELSE 0 END) AS total_other
+        ");
+        $this->db->from($this->table);
+
+        // Filter gabungan 4 kategori estimasi data
+        $this->db->group_start();
+            // 1. On Target Done (status=2, status_asal=0, tanggal IS NULL, jam IS NULL)
+            $this->db->group_start();
+                $this->db->where('status', 2);
+                $this->db->where('status_asal', 0);
+                $this->db->where('tanggal IS NULL');
+                $this->db->where('jam IS NULL');
+            $this->db->group_end();
+
+            // 2. Already Done (status=2, status_asal=1, tanggal IS NULL, jam IS NULL)
+            $this->db->or_group_start();
+                $this->db->where('status', 2);
+                $this->db->where('status_asal', 1);
+                $this->db->where('tanggal IS NULL');
+                $this->db->where('jam IS NULL');
+            $this->db->group_end();
+
+            // 3. Done Gender (status=2, tanggal IS NULL/'', jam IS NULL/'', status_asal IS NULL/'')
+            $this->db->or_group_start();
+                $this->db->where('status', 2);
+                $this->db->group_start();
+                    $this->db->where('tanggal IS NULL');
+                    $this->db->or_where('tanggal', '');
+                $this->db->group_end();
+                $this->db->group_start();
+                    $this->db->where('jam IS NULL');
+                    $this->db->or_where('jam', '');
+                $this->db->group_end();
+                $this->db->group_start();
+                    $this->db->where('status_asal IS NULL');
+                    $this->db->or_where('status_asal', '');
+                $this->db->group_end();
+            $this->db->group_end();
+
+            // 4. Done > 1 Tahun (tanggal IS NOT NULL/'', tanggal <= one_year_ago, (status=2 OR selesai=2))
+            $this->db->or_group_start();
+                $this->db->where('tanggal IS NOT NULL');
+                $this->db->where("tanggal != ''");
+                $this->db->where('tanggal <=', $one_year_ago);
+                $this->db->group_start();
+                    $this->db->where('status', 2);
+                    $this->db->or_where('selesai', 2);
+                $this->db->group_end();
+            $this->db->group_end();
+        $this->db->group_end();
+
+        if ($flag_doc) {
+            $this->db->where('flag_doc', $flag_doc);
+        }
+
+        return $this->db->get()->row();
+    }
     
     /**
      * Get statistics for data updated on specific date

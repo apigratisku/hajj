@@ -49,6 +49,7 @@ class Dashboard extends CI_Controller {
         $data['stats_already_done'] = $this->transaksi_model->get_dashboard_stats_already_done($flag_doc);
         $data['stats_done_gender'] = $this->transaksi_model->get_dashboard_stats_done_gender($flag_doc);
         $data['stats_done_1tahun'] = $this->transaksi_model->get_dashboard_stats_done_1tahun($flag_doc);
+        $data['stats_estimasi_gender'] = $this->transaksi_model->get_dashboard_stats_estimasi_gender($flag_doc);
         
         // Get data by gender for selected flag_doc
         $data['gender_stats'] = $this->transaksi_model->get_gender_stats($flag_doc);

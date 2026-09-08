@@ -111,10 +111,23 @@
             </div>
 
             <!-- Estimasi Data (Merged & placed below On Target) -->
-            <div class="estimasi-data-divider-title mt-2 mb-1 px-1 d-flex justify-content-between align-items-center">
+            <div class="estimasi-data-divider-title mt-2 mb-1 px-1 d-flex justify-content-start align-items-center flex-wrap gap-2">
                 <span class="fw-bold text-brown" style="font-size: 0.9rem;">
                     <i class="fas fa-calculator"></i> Estimasi Data: <strong><?= number_format($stats_on_target_done + $stats_already_done + $stats_done_gender + $stats_done_1tahun, 0, ',', '.') ?></strong>
                 </span>
+                <div class="schedule-gender-summary d-flex align-items-center gap-1">
+                    <span class="gender-badge male" title="Total Laki-laki">
+                        <i class="fas fa-mars"></i> Laki-laki: <?= number_format((int)($stats_estimasi_gender->total_male ?? 0), 0, ',', '.') ?>
+                    </span>
+                    <span class="gender-badge female" title="Total Perempuan">
+                        <i class="fas fa-venus"></i> Perempuan: <?= number_format((int)($stats_estimasi_gender->total_female ?? 0), 0, ',', '.') ?>
+                    </span>
+                    <?php if (!empty($stats_estimasi_gender->total_other) && (int)$stats_estimasi_gender->total_other > 0): ?>
+                    <span class="gender-badge other" title="Total Lainnya">
+                        <i class="fas fa-genderless"></i> Lainnya: <?= number_format((int)$stats_estimasi_gender->total_other, 0, ',', '.') ?>
+                    </span>
+                    <?php endif; ?>
+                </div>
             </div>
             <div class="stats-horizontal-container estimasi-container">
                 <a href="<?= base_url('database/filter_on_target_done') ?>" class="stats-item" style="text-decoration: none; color: inherit;">
@@ -444,10 +457,23 @@
             </div>
 
             <!-- Mobile Estimasi Data (Merged & placed below On Target) -->
-            <div class="estimasi-data-divider-title mt-2 mb-1 px-1 d-flex justify-content-between align-items-center">
+            <div class="estimasi-data-divider-title mt-2 mb-1 px-1 d-flex justify-content-start align-items-center flex-wrap gap-2">
                 <span class="fw-bold text-brown" style="font-size: 0.85rem;">
                     <i class="fas fa-calculator"></i> Estimasi Data: <strong><?= number_format($stats_on_target_done + $stats_already_done + $stats_done_gender + $stats_done_1tahun, 0, ',', '.') ?></strong>
                 </span>
+                <div class="schedule-gender-summary d-flex align-items-center gap-1">
+                    <span class="gender-badge male" title="Total Laki-laki">
+                        <i class="fas fa-mars"></i> L: <?= number_format((int)($stats_estimasi_gender->total_male ?? 0), 0, ',', '.') ?>
+                    </span>
+                    <span class="gender-badge female" title="Total Perempuan">
+                        <i class="fas fa-venus"></i> P: <?= number_format((int)($stats_estimasi_gender->total_female ?? 0), 0, ',', '.') ?>
+                    </span>
+                    <?php if (!empty($stats_estimasi_gender->total_other) && (int)$stats_estimasi_gender->total_other > 0): ?>
+                    <span class="gender-badge other" title="Total Lainnya">
+                        <i class="fas fa-genderless"></i> <?= number_format((int)$stats_estimasi_gender->total_other, 0, ',', '.') ?>
+                    </span>
+                    <?php endif; ?>
+                </div>
             </div>
             <div class="stats-horizontal-container mobile-stats-horizontal estimasi-container">
                 <a href="<?= base_url('database/filter_on_target_done') ?>" class="stats-item mobile-stats-item" style="text-decoration: none; color: inherit;">
@@ -940,6 +966,12 @@
     background: rgba(220, 53, 69, 0.1);
     color: #dc3545;
     border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+.gender-badge.other {
+    background: rgba(111, 66, 193, 0.1);
+    color: #6f42c1;
+    border: 1px solid rgba(111, 66, 193, 0.3);
 }
 
 .schedule-details {
