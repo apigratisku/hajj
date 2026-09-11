@@ -411,10 +411,12 @@ class Transaksi_model extends CI_Model {
         if (!empty($filters['nama'])) {
             $this->db->like('peserta.nama', $filters['nama']);
         }
-        if (!empty($filters['nama_travel'])) {
-            $this->db->where('peserta.nama_travel', $filters['nama_travel']);
+        if (!empty($filters['nomor_paspor'])) {
+            $this->db->like('peserta.nomor_paspor', $filters['nomor_paspor']);
         }
-
+        if (!empty($filters['no_visa'])) {
+            $this->db->like('peserta.no_visa', $filters['no_visa']);
+        }
         if (isset($filters['flag_doc'])) {
             // Handle flag_doc filter more precisely
             if ($filters['flag_doc'] === null || $filters['flag_doc'] === 'null' || $filters['flag_doc'] === 'NULL') {
@@ -423,16 +425,24 @@ class Transaksi_model extends CI_Model {
                 $this->db->where('peserta.flag_doc', $filters['flag_doc']);
             }
         }
-
         if (!empty($filters['nama_travel'])) {
             $this->db->where('peserta.nama_travel', $filters['nama_travel']);
+        }
+        if (!empty($filters['tanggaljam'])) {
+            $this->db->where("CONCAT(peserta.tanggal, ' ', peserta.jam) LIKE '%" . $this->db->escape_like_str($filters['tanggaljam']) . "%'", NULL, FALSE);
         }
 
         $this->db->where('peserta.status', 0);
         $this->db->order_by('peserta.flag_doc', 'DESC');
         $this->db->order_by('peserta.id', 'DESC');
-        $this->db->limit($limit, $offset);
+        if ($limit !== null) {
+            $this->db->limit($limit, $offset);
+        }
         return $this->db->get()->result();
+    }
+
+    public function get_all_filtered_todo($filters = []) {
+        return $this->get_paginated_filtered_todo(null, 0, $filters);
     }
 
 

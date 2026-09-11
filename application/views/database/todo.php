@@ -49,8 +49,19 @@
                                         <a href="<?= base_url('todo/index') ?>" class="btn btn-reset">
                                             <i class="fas fa-times"></i> Reset
                                         </a>
+                                        <div class="d-flex flex-column gap-2 mt-2">
+                                            <a href="<?= base_url('todo/download_successful_data?' . http_build_query($_GET)) ?>" class="btn btn-success btn-sm text-start">
+                                                <i class="fas fa-file-excel me-1"></i> Download Data Todo List
+                                            </a>
+                                            <a href="<?= base_url('todo/download_successful_data_cpanel?' . http_build_query($_GET)) ?>" class="btn btn-primary btn-sm text-start">
+                                                <i class="fas fa-envelope me-1"></i> Download Import Email
+                                            </a>
+                                            <a href="<?= base_url('todo/download_successful_data_cpanel_forwarding?' . http_build_query($_GET)) ?>" class="btn btn-info btn-sm text-white text-start">
+                                                <i class="fas fa-share-square me-1"></i> Download Import Forwarder Email
+                                            </a>
+                                        </div>
                                         <?php if($this->session->userdata('role') == 'admin'): ?>
-                                        <button type="button" class="btn btn-danger" id="deleteMultipleBtnMobile" style="display: none;" onclick="deleteMultipleRecords()">
+                                        <button type="button" class="btn btn-danger mt-2" id="deleteMultipleBtnMobile" style="display: none;" onclick="deleteMultipleRecords()">
                                             <i class="fas fa-trash"></i> Hapus Terpilih
                                         </button>
                                         <?php endif; ?>
@@ -94,12 +105,21 @@
                                     <input type="text" name="nama" class="form-control form-control-sm" placeholder="Nama Peserta">
                                 </div>
                                 
-                                <div class="col-md-1">
-                                    <button type="submit" class="btn btn-brown btn-sm me-2">
+                                <div class="col-md-auto d-flex align-items-center gap-1 flex-wrap">
+                                    <button type="submit" class="btn btn-brown btn-sm me-1">
                                         <i class="fas fa-search"></i> Cari
                                     </button>
-                                    <a href="<?= base_url('todo/index') ?>" class="btn btn-brown-light btn-sm">
+                                    <a href="<?= base_url('todo/index') ?>" class="btn btn-brown-light btn-sm me-1">
                                         <i class="fas fa-times"></i> Reset
+                                    </a>
+                                    <a href="<?= base_url('todo/download_successful_data?' . http_build_query($_GET)) ?>" class="btn btn-success btn-sm me-1" title="Download Data Todo List Excel">
+                                        <i class="fas fa-file-excel"></i> Data Todo
+                                    </a>
+                                    <a href="<?= base_url('todo/download_successful_data_cpanel?' . http_build_query($_GET)) ?>" class="btn btn-primary btn-sm me-1" title="Download File Excel Import Email Cpanel">
+                                        <i class="fas fa-envelope"></i> Import Email
+                                    </a>
+                                    <a href="<?= base_url('todo/download_successful_data_cpanel_forwarding?' . http_build_query($_GET)) ?>" class="btn btn-info btn-sm text-white me-1" title="Download File Excel Import Forwarder Email Cpanel">
+                                        <i class="fas fa-share-square"></i> Import Forwarder Email
                                     </a>
                                 </div>
                                 <?php if($this->session->userdata('role') == 'admin'): ?>

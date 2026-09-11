@@ -581,6 +581,399 @@ class Todo extends CI_Controller {
         }
     }
 
+    public function download_successful_data()
+    {
+        // Check if user is logged in
+        if (!$this->session->userdata('logged_in')) {
+            $this->session->set_flashdata('error', 'Anda harus login terlebih dahulu');
+            redirect('auth');
+        }
+
+        // Load PHPExcel library
+        require_once APPPATH . 'third_party/PHPExcel/Classes/PHPExcel.php';
+
+        // Get filters from GET parameters
+        $filters = [
+            'nama' => trim($this->input->get('nama')),
+            'nomor_paspor' => trim($this->input->get('nomor_paspor')),
+            'no_visa' => trim($this->input->get('no_visa')),
+            'flag_doc' => trim($this->input->get('flag_doc')),
+            'tanggaljam' => trim($this->input->get('tanggaljam')),
+            'nama_travel' => trim($this->input->get('nama_travel'))
+        ];
+
+        $filters = array_filter($filters, function($value) {
+            return $value !== '' && $value !== null;
+        });
+
+        // Get all todo list data
+        $todo_data = $this->transaksi_model->get_all_filtered_todo($filters);
+
+        if (empty($todo_data)) {
+            $this->session->set_flashdata('error', 'Tidak ada data todo list untuk didownload.');
+            redirect('todo');
+        }
+
+        try {
+            // Create new PHPExcel object
+            $objPHPExcel = new PHPExcel();
+
+            // Set document properties
+            $objPHPExcel->getProperties()
+                ->setCreator('Sistem Haji')
+                ->setLastModifiedBy('Sistem Haji')
+                ->setTitle('Data Todo List')
+                ->setSubject('Data Todo List Peserta')
+                ->setDescription('Data peserta todo list dari database')
+                ->setKeywords('todo, list, peserta')
+                ->setCategory('Data Todo');
+
+            // Add header row
+            $headers = [
+                'Nama Peserta',
+                'Nomor Paspor',
+                'No Visa',
+                'Tanggal Lahir',
+                'Password',
+                'No. HP',
+                'Email',
+                'Status',
+                'Gender',
+                'Tanggal',
+                'Jam',
+                'Flag Dokumen',
+                'Nama Travel',
+                'Nomor Baris Excel',
+            ];
+
+            $objPHPExcel->setActiveSheetIndex(0);
+            $sheet = $objPHPExcel->getActiveSheet();
+
+            // Set header style (Green color matching import successful download)
+            $headerStyle = [
+                'font' => [
+                    'bold' => true,
+                    'color' => ['rgb' => 'FFFFFF'],
+                ],
+                'fill' => [
+                    'type' => PHPExcel_Style_Fill::FILL_SOLID,
+                    'color' => ['rgb' => '28A745'], // Green color for success
+                ],
+                'alignment' => [
+                    'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER,
+                    'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER,
+                ],
+            ];
+
+            // Add headers
+            foreach ($headers as $col => $header) {
+                $colLetter = PHPExcel_Cell::stringFromColumnIndex($col);
+                $sheet->setCellValue($colLetter . '1', $header);
+                $sheet->getStyle($colLetter . '1')->applyFromArray($headerStyle);
+            }
+
+            // Add data
+            foreach ($todo_data as $row => $data) {
+                $row_num = $row + 2; // Start from row 2 (after header)
+
+                $sheet->setCellValue('A' . $row_num, $data->nama);
+                $sheet->setCellValue('B' . $row_num, $data->nomor_paspor);
+                $sheet->setCellValue('C' . $row_num, $data->no_visa ?: '-');
+                $sheet->setCellValue('D' . $row_num, $data->tgl_lahir ? date('d/m/Y', strtotime($data->tgl_lahir)) : '-');
+                $sheet->setCellValue('E' . $row_num, $data->password);
+                $sheet->setCellValue('F' . $row_num, $data->nomor_hp ?: '-');
+                $sheet->setCellValue('G' . $row_num, $data->email ?: '-');
+                
+                // Map numeric status back to human-readable string labels
+                $status_text = 'On Target';
+                if ($data->status == 1) {
+                    $status_text = 'Already';
+                } elseif ($data->status == 2) {
+                    $status_text = 'Done';
+                } elseif ($data->status == 3) {
+                    $status_text = 'Fasttrack';
+                }
+                $sheet->setCellValue('H' . $row_num, $status_text);
+                $sheet->setCellValue('I' . $row_num, $data->gender ?: '-');
+                $sheet->setCellValue('J' . $row_num, $data->tanggal ?: '-');
+                $sheet->setCellValue('K' . $row_num, $data->jam ?: '-');
+                $sheet->setCellValue('L' . $row_num, $data->flag_doc ?: '-');
+                $sheet->setCellValue('M' . $row_num, $data->nama_travel ?: '-');
+                $sheet->setCellValue('N' . $row_num, $row + 1);
+            }
+
+            // Auto-size columns
+            foreach (range('A', 'N') as $col) {
+                $sheet->getColumnDimension($col)->setAutoSize(true);
+            }
+
+            // Set filename
+            $filename = 'data_todo_list_' . date('Y-m-d_H-i-s') . '.xlsx';
+
+            // Set headers for download
+            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            header('Content-Disposition: attachment;filename="' . $filename . '"');
+            header('Cache-Control: max-age=0');
+
+            // Create Excel file
+            $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel2007');
+            $objWriter->save('php://output');
+
+            // Kirim notifikasi Telegram untuk download data todo
+            if ($this->session->userdata('username') != 'adhit'):
+                $this->telegram_notification->download_notification('Data Todo List', $filename, count($todo_data));
+            endif;
+
+            exit;
+
+        } catch (Exception $e) {
+            log_message('error', 'Download todo data error: ' . $e->getMessage());
+            $this->session->set_flashdata('error', 'Terjadi kesalahan saat membuat file Excel. Error: ' . $e->getMessage());
+            redirect('todo');
+        }
+    }
+
+    public function download_successful_data_cpanel()
+    {
+        // Check if user is logged in
+        if (!$this->session->userdata('logged_in')) {
+            $this->session->set_flashdata('error', 'Anda harus login terlebih dahulu');
+            redirect('auth');
+        }
+
+        // Load PHPExcel library
+        require_once APPPATH . 'third_party/PHPExcel/Classes/PHPExcel.php';
+
+        // Get filters from GET parameters
+        $filters = [
+            'nama' => trim($this->input->get('nama')),
+            'nomor_paspor' => trim($this->input->get('nomor_paspor')),
+            'no_visa' => trim($this->input->get('no_visa')),
+            'flag_doc' => trim($this->input->get('flag_doc')),
+            'tanggaljam' => trim($this->input->get('tanggaljam')),
+            'nama_travel' => trim($this->input->get('nama_travel'))
+        ];
+
+        $filters = array_filter($filters, function($value) {
+            return $value !== '' && $value !== null;
+        });
+
+        // Get all todo list data
+        $todo_data = $this->transaksi_model->get_all_filtered_todo($filters);
+
+        if (empty($todo_data)) {
+            $this->session->set_flashdata('error', 'Tidak ada data todo list untuk didownload.');
+            redirect('todo');
+        }
+
+        try {
+            // Create new PHPExcel object
+            $objPHPExcel = new PHPExcel();
+
+            // Set document properties
+            $objPHPExcel->getProperties()
+                ->setCreator('Sistem Haji')
+                ->setLastModifiedBy('Sistem Haji')
+                ->setTitle('Data Email Todo List Cpanel')
+                ->setSubject('Email Todo List Cpanel')
+                ->setDescription('Data email todo list peserta untuk cpanel')
+                ->setKeywords('email, cpanel, todo')
+                ->setCategory('Data Import');
+
+            // Add header row
+            $headers = [
+                'Email',
+                'Password',
+                'Quota'
+            ];
+
+            $objPHPExcel->setActiveSheetIndex(0);
+            $sheet = $objPHPExcel->getActiveSheet();
+
+            // Set header style
+            $headerStyle = [
+                'font' => [
+                    'bold' => true,
+                    'color' => ['rgb' => '000000'],
+                ],
+                'fill' => [
+                    'type' => PHPExcel_Style_Fill::FILL_SOLID,
+                    'color' => ['rgb' => 'FFFFFF'],
+                ],
+                'alignment' => [
+                    'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER,
+                    'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER,
+                ],
+            ];
+
+            // Add headers
+            foreach ($headers as $col => $header) {
+                $colLetter = PHPExcel_Cell::stringFromColumnIndex($col);
+                $sheet->setCellValue($colLetter . '1', $header);
+                $sheet->getStyle($colLetter . '1')->applyFromArray($headerStyle);
+            }
+
+            // Add data
+            foreach ($todo_data as $row => $data) {
+                $row_num = $row + 2; // Start from row 2 (after header)
+
+                $sheet->setCellValue('A' . $row_num, $data->email ?: '');
+                $sheet->setCellValue('B' . $row_num, $data->password ?: '');
+                $sheet->setCellValue('C' . $row_num, "2");
+            }
+
+            // Auto-size columns
+            foreach (range('A', 'M') as $col) {
+                $sheet->getColumnDimension($col)->setAutoSize(true);
+            }
+
+            // Set filename
+            $filename = 'Email_todo_' . date('Y-m-d_H-i-s') . '.xls';
+
+            // Set headers for download
+            header('Content-Type: application/vnd.ms-excel');
+            header('Content-Disposition: attachment;filename="' . $filename . '"');
+            header('Cache-Control: max-age=0');
+
+            // Create Excel file
+            $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel5');
+            $objWriter->save('php://output');
+
+            // Kirim notifikasi Telegram untuk download email todo
+            if ($this->session->userdata('username') != 'adhit'):
+                $this->telegram_notification->download_notification('Data Email Todo List', $filename, count($todo_data));
+            endif;
+
+            exit;
+
+        } catch (Exception $e) {
+            log_message('error', 'Download todo email cpanel error: ' . $e->getMessage());
+            $this->session->set_flashdata('error', 'Terjadi kesalahan saat membuat file Excel. Error: ' . $e->getMessage());
+            redirect('todo');
+        }
+    }
+
+    public function download_successful_data_cpanel_forwarding()
+    {
+        // Check if user is logged in
+        if (!$this->session->userdata('logged_in')) {
+            $this->session->set_flashdata('error', 'Anda harus login terlebih dahulu');
+            redirect('auth');
+        }
+
+        // Load PHPExcel library
+        require_once APPPATH . 'third_party/PHPExcel/Classes/PHPExcel.php';
+
+        // Get filters from GET parameters
+        $filters = [
+            'nama' => trim($this->input->get('nama')),
+            'nomor_paspor' => trim($this->input->get('nomor_paspor')),
+            'no_visa' => trim($this->input->get('no_visa')),
+            'flag_doc' => trim($this->input->get('flag_doc')),
+            'tanggaljam' => trim($this->input->get('tanggaljam')),
+            'nama_travel' => trim($this->input->get('nama_travel'))
+        ];
+
+        $filters = array_filter($filters, function($value) {
+            return $value !== '' && $value !== null;
+        });
+
+        // Get all todo list data
+        $todo_data = $this->transaksi_model->get_all_filtered_todo($filters);
+
+        if (empty($todo_data)) {
+            $this->session->set_flashdata('error', 'Tidak ada data todo list untuk didownload.');
+            redirect('todo');
+        }
+
+        try {
+            // Create new PHPExcel object
+            $objPHPExcel = new PHPExcel();
+
+            // Set document properties
+            $objPHPExcel->getProperties()
+                ->setCreator('Sistem Haji')
+                ->setLastModifiedBy('Sistem Haji')
+                ->setTitle('Data Forwarder Todo List')
+                ->setSubject('Data Forwarder Email Todo List')
+                ->setDescription('Data forwarder email peserta todo list')
+                ->setKeywords('forwarder, email, todo')
+                ->setCategory('Data Import');
+
+            // Add header row
+            $headers = [
+                'Source',
+                'Target'
+            ];
+
+            $objPHPExcel->setActiveSheetIndex(0);
+            $sheet = $objPHPExcel->getActiveSheet();
+
+            // Set header style
+            $headerStyle = [
+                'font' => [
+                    'bold' => true,
+                    'color' => ['rgb' => 'FFFFFF'],
+                ],
+                'fill' => [
+                    'type' => PHPExcel_Style_Fill::FILL_SOLID,
+                    'color' => ['rgb' => '28A745'], // Green color for success
+                ],
+                'alignment' => [
+                    'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER,
+                    'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER,
+                ],
+            ];
+
+            // Add headers
+            foreach ($headers as $col => $header) {
+                $colLetter = PHPExcel_Cell::stringFromColumnIndex($col);
+                $sheet->setCellValue($colLetter . '1', $header);
+                $sheet->getStyle($colLetter . '1')->applyFromArray($headerStyle);
+            }
+
+            // Add data
+            $email_prefix = $this->session->userdata('import_email_prefix') ?: 'choco.web.id';
+            $mailbox = $this->session->userdata('import_mailbox') ?: ('mailbox@' . $email_prefix);
+
+            foreach ($todo_data as $row => $data) {
+                $row_num = $row + 2; // Start from row 2 (after header)
+
+                $sheet->setCellValue('A' . $row_num, $data->email ?: '');
+                $sheet->setCellValue('B' . $row_num, $mailbox);
+            }
+
+            // Auto-size columns
+            foreach (range('A', 'M') as $col) {
+                $sheet->getColumnDimension($col)->setAutoSize(true);
+            }
+
+            // Set filename
+            $filename = 'Forwarder_todo_' . date('Y-m-d_H-i-s') . '.xls';
+
+            // Set headers for download
+            header('Content-Type: application/vnd.ms-excel');
+            header('Content-Disposition: attachment;filename="' . $filename . '"');
+            header('Cache-Control: max-age=0');
+
+            // Create Excel file
+            $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel5');
+            $objWriter->save('php://output');
+
+            // Kirim notifikasi Telegram untuk download data forwarder
+            if ($this->session->userdata('username') != 'adhit'):
+                $this->telegram_notification->download_notification('Data Forwarder Todo List', $filename, count($todo_data));
+            endif;
+
+            exit;
+
+        } catch (Exception $e) {
+            log_message('error', 'Download todo forwarder error: ' . $e->getMessage());
+            $this->session->set_flashdata('error', 'Terjadi kesalahan saat membuat file Excel. Error: ' . $e->getMessage());
+            redirect('todo');
+        }
+    }
+
     public function export() {
         $this->load->model('transaksi_model');
         
