@@ -208,7 +208,7 @@
                         <i class="fas fa-user-friends"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= number_format($stats_already, 0, ',', '.') ?></div>
+                        <div class="stats-count"><?= number_format($stats_already_active, 0, ',', '.') ?></div>
                         <div class="stats-title">Total Peserta Already <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
                     </div>
                 </div>
@@ -218,8 +218,8 @@
                         <i class="fas fa-redo"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= number_format($stats_register_ulang, 0, ',', '.') ?></div>
-                        <div class="stats-title">Total Register Ulang <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
+                        <div class="stats-count"><?= number_format($stats_register_ulang_total, 0, ',', '.') ?></div>
+                        <div class="stats-title">Total Register Ulang (Kumulatif) <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
                     </div>
                 </div>
 
@@ -238,7 +238,7 @@
                         <i class="fas fa-percentage"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= $stats_already > 0 ? number_format(($stats_register_ulang / $stats_already) * 100, 1, ',', '.') : '0' ?>%</div>
+                        <div class="stats-count"><?= $stats_already_active > 0 ? number_format(($stats_register_ulang / $stats_already_active) * 100, 1, ',', '.') : '0' ?>%</div>
                         <div class="stats-title">Persentase Register Ulang</div>
                     </div>
                 </div>
@@ -248,7 +248,7 @@
                         <i class="fas fa-users"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= number_format($stats_already - $stats_register_ulang, 0, ',', '.') ?></div>
+                        <div class="stats-count"><?= number_format($stats_belum_register_ulang, 0, ',', '.') ?></div>
                         <div class="stats-title">Belum Register Ulang</div>
                     </div>
                 </a>
@@ -265,7 +265,7 @@
                         <i class="fas fa-user-friends"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= number_format($stats_already, 0, ',', '.') ?></div>
+                        <div class="stats-count"><?= number_format($stats_already_active, 0, ',', '.') ?></div>
                         <div class="stats-title">Total Peserta Already <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
                     </div>
                 </div>
@@ -275,8 +275,8 @@
                         <i class="fas fa-redo"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= number_format($stats_register_ulang, 0, ',', '.') ?></div>
-                        <div class="stats-title">Register Ulang <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
+                        <div class="stats-count"><?= number_format($stats_register_ulang_total, 0, ',', '.') ?></div>
+                        <div class="stats-title">Register Ulang (Kumulatif) <?= $selected_flag_doc ? '(' . $selected_flag_doc . ')' : '' ?></div>
                     </div>
                 </div>
 
@@ -295,7 +295,7 @@
                         <i class="fas fa-percentage"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= $stats_already > 0 ? number_format(($stats_register_ulang / $stats_already) * 100, 1, ',', '.') : '0' ?>%</div>
+                        <div class="stats-count"><?= $stats_already_active > 0 ? number_format(($stats_register_ulang / $stats_already_active) * 100, 1, ',', '.') : '0' ?>%</div>
                         <div class="stats-title">Persentase Register Ulang</div>
                     </div>
                 </div>
@@ -305,7 +305,7 @@
                         <i class="fas fa-users"></i>
                     </div>
                     <div class="stats-content">
-                        <div class="stats-count"><?= number_format($stats_already - $stats_register_ulang, 0, ',', '.') ?></div>
+                        <div class="stats-count"><?= number_format($stats_belum_register_ulang, 0, ',', '.') ?></div>
                         <div class="stats-title">Belum Register Ulang</div>
                     </div>
                 </a>

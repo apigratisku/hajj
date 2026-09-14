@@ -41,6 +41,13 @@ class Dashboard extends CI_Controller {
         $data['stats_on_target'] = $this->transaksi_model->get_dashboard_stats_on_target($flag_doc);
         $data['stats_already'] = $this->transaksi_model->get_dashboard_stats_already($flag_doc);
         $data['stats_register_ulang'] = $this->transaksi_model->get_dashboard_stats_register_ulang($flag_doc);
+        // Basis pool kartu register ulang (hanya data aktif) agar konsisten
+        // dengan daftar yang ditautkan (filter status_register_kembali).
+        $data['stats_already_active'] = $this->transaksi_model->get_dashboard_stats_already_active($flag_doc);
+        $data['stats_belum_register_ulang'] = $this->transaksi_model->get_dashboard_stats_belum_register_ulang($flag_doc);
+        // Kumulatif semua status (Already/Done/Fasttrack) agar konsisten dengan
+        // Statistik Register Ulang per operator yang berbasis log event.
+        $data['stats_register_ulang_total'] = $this->transaksi_model->get_dashboard_stats_register_ulang_total($flag_doc);
         $data['stats_register_ulang_today'] = $this->transaksi_model->get_dashboard_stats_register_ulang_today($flag_doc);
         $data['stats_already_to_done'] = $this->transaksi_model->get_dashboard_stats_already_to_done($flag_doc);
         

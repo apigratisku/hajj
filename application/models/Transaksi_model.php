@@ -254,6 +254,19 @@ class Transaksi_model extends CI_Model {
         return $this->db->get()->result();
     }
 
+    /**
+     * Scope standar: hanya peserta yang tidak dibatalkan (is_cancel = 0 / NULL).
+     * Dipakai agar metrik dashboard konsisten dengan daftar yang ditautkan.
+     *
+     * @param string $alias Alias tabel peserta (mis. 'peserta' atau 'p').
+     */
+    private function apply_active_scope($alias = 'peserta') {
+        $this->db->group_start();
+        $this->db->where($alias . '.is_cancel', 0);
+        $this->db->or_where($alias . '.is_cancel IS NULL');
+        $this->db->group_end();
+    }
+
     public function get_paginated_filtered($limit, $offset, $filters = []) {
         $this->db->select('peserta.*');
         $this->db->from($this->table);
@@ -280,9 +293,9 @@ class Transaksi_model extends CI_Model {
         if (isset($filters['status_register_kembali']) && $filters['status_register_kembali'] !== '') {
             // Samakan dengan logika dashboard:
             // - "Belum Register Ulang" = status=1 dan status_register_kembali IS NULL
-            // - "Register Ulang" = status IN (1,2) dan status_register_kembali='sudah'
+            // - "Register Ulang" = status IN (1,2,3) dan status_register_kembali='sudah'
             if ($filters['status_register_kembali'] === 'sudah') {
-                $this->db->where_in('peserta.status', [1, 2]);
+                $this->db->where_in('peserta.status', [1, 2, 3]);
                 $this->db->where('peserta.status_register_kembali', 'sudah');
             } elseif ($filters['status_register_kembali'] === 'belum') {
                 $this->db->where('peserta.status', 1);
@@ -467,9 +480,9 @@ class Transaksi_model extends CI_Model {
         if (isset($filters['status_register_kembali']) && $filters['status_register_kembali'] !== '') {
             // Samakan dengan logika dashboard:
             // - "Belum Register Ulang" = status=1 dan status_register_kembali IS NULL
-            // - "Register Ulang" = status IN (1,2) dan status_register_kembali='sudah'
+            // - "Register Ulang" = status IN (1,2,3) dan status_register_kembali='sudah'
             if ($filters['status_register_kembali'] === 'sudah') {
-                $this->db->where_in('peserta.status', [1, 2]);
+                $this->db->where_in('peserta.status', [1, 2, 3]);
                 $this->db->where('peserta.status_register_kembali', 'sudah');
             } elseif ($filters['status_register_kembali'] === 'belum') {
                 $this->db->where('peserta.status', 1);
@@ -984,26 +997,98 @@ class Transaksi_model extends CI_Model {
         $this->db->from($this->table);
         $this->db->where('status', 1); // Only Already status
         $this->db->where('status_register_kembali', 'sudah');
-        
+        $this->apply_active_scope();
+
         if ($flag_doc) {
             $this->db->where('flag_doc', $flag_doc);
         }
-        
+
         $result = $this->db->get()->row();
         return $result ? $result->total_register_ulang : 0;
     }
 
-    public function get_dashboard_stats_register_ulang_today($flag_doc = null) {
-        $this->db->select('COUNT(*) as total_register_ulang_today');
+    /**
+     * Peserta status Already (status=1) yang masih aktif (belum dibatalkan).
+     * Dipakai sebagai basis pool pada kartu Statistik Register Ulang agar
+     * konsisten dengan daftar yang ditautkan (filter status_register_kembali).
+     */
+    public function get_dashboard_stats_already_active($flag_doc = null) {
+        $this->db->select('COUNT(*) as total_already_active');
         $this->db->from($this->table);
-        $this->db->where('status', 1); // Only Already status
-        $this->db->where('status_register_kembali', 'sudah');
-        $this->db->where('DATE(updated_at)', date('Y-m-d'));
-        
+        $this->db->where('status', 1);
+        $this->apply_active_scope();
+
         if ($flag_doc) {
             $this->db->where('flag_doc', $flag_doc);
         }
-        
+
+        $result = $this->db->get()->row();
+        return $result ? $result->total_already_active : 0;
+    }
+
+    /**
+     * Jumlah peserta aktif yang BELUM register ulang.
+     * Definisi sama persis dengan filter daftar status_register_kembali=belum
+     * (status=1 AND status_register_kembali IS NULL AND tidak dibatalkan).
+     */
+    public function get_dashboard_stats_belum_register_ulang($flag_doc = null) {
+        $this->db->select('COUNT(*) as total_belum');
+        $this->db->from($this->table);
+        $this->db->where('status', 1);
+        $this->db->where('status_register_kembali IS NULL', null, false);
+        $this->apply_active_scope();
+
+        if ($flag_doc) {
+            $this->db->where('flag_doc', $flag_doc);
+        }
+
+        $result = $this->db->get()->row();
+        return $result ? $result->total_belum : 0;
+    }
+
+    /**
+     * Total register ulang kumulatif (state-based) untuk rekonsiliasi dengan
+     * Statistik Register Ulang per operator (event-based).
+     * Mencakup seluruh status peserta (Already/Done/Fasttrack) yang pernah
+     * ditandai register ulang, hanya data aktif (tidak dibatalkan).
+     */
+    public function get_dashboard_stats_register_ulang_total($flag_doc = null) {
+        $this->db->select('COUNT(*) as total_register_ulang_all');
+        $this->db->from($this->table);
+        $this->db->where('status_register_kembali', 'sudah');
+        $this->apply_active_scope();
+
+        if ($flag_doc) {
+            $this->db->where('flag_doc', $flag_doc);
+        }
+
+        $result = $this->db->get()->row();
+        return $result ? $result->total_register_ulang_all : 0;
+    }
+
+    /**
+     * Register ulang HARI INI dihitung dari TANGGAL AKSI (log event),
+     * bukan dari peserta.updated_at yang bisa tertimpa oleh edit lain.
+     */
+    public function get_dashboard_stats_register_ulang_today($flag_doc = null) {
+        if (!$this->db->table_exists('log_statistik_pekerjaan')) {
+            return 0;
+        }
+
+        $this->db->select('COUNT(*) as total_register_ulang_today');
+        $this->db->from('log_statistik_pekerjaan l');
+        $this->db->join('peserta p', 'p.id = l.id_peserta', 'inner');
+        $this->db->where('l.jenis_perubahan', 'register_ulang');
+        $this->db->where('DATE(l.created_at)', date('Y-m-d'));
+        $this->db->group_start();
+        $this->db->where('p.is_cancel', 0);
+        $this->db->or_where('p.is_cancel IS NULL');
+        $this->db->group_end();
+
+        if ($flag_doc) {
+            $this->db->where('p.flag_doc', $flag_doc);
+        }
+
         $result = $this->db->get()->row();
         return $result ? $result->total_register_ulang_today : 0;
     }
@@ -1013,11 +1098,12 @@ class Transaksi_model extends CI_Model {
         $this->db->from($this->table);
         $this->db->where('status', 2);
         $this->db->where('status_register_kembali', 'sudah');
-        
+        $this->apply_active_scope();
+
         if ($flag_doc) {
             $this->db->where('flag_doc', $flag_doc);
         }
-        
+
         $result = $this->db->get()->row();
         return $result ? $result->total_already_to_done : 0;
     }
@@ -2467,45 +2553,58 @@ class Transaksi_model extends CI_Model {
     }
     
     /**
-     * Get register ulang statistics per operator
-     * Shows only register ulang data for each operator
-     * Uses same logic as get_flagdoc_summary: filters by created_at and uses SUM for counting
+     * Get register ulang statistics per operator (EVENT-BASED).
+     *
+     * Sumber data: tabel log_statistik_pekerjaan (jenis_perubahan = 'register_ulang').
+     * Alasan: operator pelaku register ulang & tanggal aksi tercatat akurat di log,
+     * sedangkan peserta.history_done hanya terisi saat status menjadi Done dan
+     * peserta.updated_at mudah tertimpa oleh edit field lain.
+     *
+     * @param array $filters start_date, end_date (format Y-m-d)
+     * @return array Objek {id_user, nama_lengkap, username, register_ulang_count}
      */
     public function get_register_ulang_statistics($filters = []) {
+        if (!$this->db->table_exists('log_statistik_pekerjaan')) {
+            return [];
+        }
+
         $start_date = isset($filters['start_date']) && !empty($filters['start_date'])
             ? date('Y-m-d', strtotime($filters['start_date']))
             : null;
         $end_date = isset($filters['end_date']) && !empty($filters['end_date'])
             ? date('Y-m-d', strtotime($filters['end_date']))
             : null;
-        
+
         $this->db->select('
             u.id_user,
             u.nama_lengkap,
             u.username,
-            SUM(CASE WHEN p.status IN (1, 2) AND p.status_register_kembali = \'sudah\' THEN 1 ELSE 0 END) as register_ulang_count
-        ');
-        $this->db->from('users u');
-        $this->db->join('peserta p', 'u.id_user = p.history_done', 'left');
+            COUNT(l.id_log) AS register_ulang_count
+        ', false);
+        $this->db->from('log_statistik_pekerjaan l');
+        $this->db->join('users u', 'u.username = l.user_operator', 'inner');
+        $this->db->join('peserta p', 'p.id = l.id_peserta', 'inner');
+        $this->db->where('l.jenis_perubahan', 'register_ulang');
         $this->db->where('u.username !=', 'adhit');
         $this->db->where('u.username !=', 'mimin');
         $this->db->where('u.status', 1); // Active users only
-        $this->db->where_in('p.status', [1, 2, 3]);
-        $this->db->where('p.status_register_kembali', 'sudah');
-        $this->db->having('register_ulang_count >', 0); // Only show operators with register ulang data
-        
-        // Apply date range filters if provided (using created_at like get_flagdoc_summary)
+        // Hanya data peserta aktif (konsisten dengan dashboard & daftar)
+        $this->apply_active_scope('p');
+
+        // Filter berdasarkan TANGGAL AKSI register ulang (log created_at),
+        // bukan tanggal import data peserta (created_at peserta).
         if ($start_date) {
-            $this->db->where('DATE(p.created_at) >=', $start_date);
+            $this->db->where('DATE(l.created_at) >=', $start_date);
         }
         if ($end_date) {
-            $this->db->where('DATE(p.created_at) <=', $end_date);
+            $this->db->where('DATE(l.created_at) <=', $end_date);
         }
-        
+
         $this->db->group_by('u.id_user, u.nama_lengkap, u.username');
+        $this->db->having('register_ulang_count >', 0);
         $this->db->order_by('register_ulang_count', 'DESC');
         $this->db->order_by('u.nama_lengkap', 'ASC');
-        
+
         return $this->db->get()->result();
     }
     
