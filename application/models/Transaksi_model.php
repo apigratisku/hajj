@@ -636,6 +636,16 @@ class Transaksi_model extends CI_Model {
         $this->db->where('nomor_paspor', $nomor_paspor);
         return $this->db->get($this->table)->row();
     }
+
+    public function get_by_visa($no_visa) {
+        $this->db->where('no_visa', $no_visa);
+        return $this->db->get($this->table)->row();
+    }
+
+    public function get_by_email($email) {
+        $this->db->where('email', $email);
+        return $this->db->get($this->table)->row();
+    }
     
     public function get_unique_flag_doc() {
         $this->db->select('flag_doc, MAX(created_at) as created_at');

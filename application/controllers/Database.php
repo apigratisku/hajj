@@ -3463,20 +3463,30 @@ class Database extends CI_Controller
                     $email = trim($sheet->getCellByColumnAndRow(6, $row)->getValue() ?: '');
                     log_message('info', "Row $row: Email menggunakan dari file excel: $email");
                 } else {
-                    // Logika: Email dibuat dari no_visa@{email_prefix} atau nomor_paspor@{email_prefix}
+                    // Logika: Email dibuat dari $kataPertama + 5 digit angka acak unik@{email_prefix}
                     $parts = preg_split('/\s+/', trim($nama_peserta));
-                    $kataPertama = strtolower($parts[0]);
-                    if (!empty($no_visa)) {
-                        // Buat email dari no_visa + domain prefix
-                        $last3 = substr($no_visa, -3);
-                        $email = $kataPertama . "" . $last3 . '@' . $email_prefix;
-                        log_message('info', "Row $row: Email dibuat dari no_visa: $email");
-                    } else {
-                        // Jika no_visa kosong, gunakan nomor_paspor + domain prefix
-                        $last3 = substr($nomor_paspor, -3);
-                        $email = $kataPertama . "" . $last3 . '@' . $email_prefix;
-                        log_message('info', "Row $row: Email dibuat dari nomor_paspor (no_visa kosong): $email");
+                    $kataPertama = !empty($parts[0]) ? strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $parts[0])) : 'user';
+                    if (empty($kataPertama)) {
+                        $kataPertama = 'user';
                     }
+
+                    $max_email_attempts = 100;
+                    $email_attempt = 0;
+                    do {
+                        $random_5digit = str_pad(mt_rand(0, 99999), 5, '0', STR_PAD_LEFT);
+                        $candidate_email = $kataPertama . $random_5digit . '@' . $email_prefix;
+                        $existing_email = $this->transaksi_model->get_by_email($candidate_email);
+                        $email_attempt++;
+
+                        if ($email_attempt >= $max_email_attempts) {
+                            $candidate_email = $kataPertama . substr(time(), -5) . '@' . $email_prefix;
+                            log_message('warning', "Row $row: Menggunakan timestamp suffix untuk email setelah $max_email_attempts percobaan");
+                            break;
+                        }
+                    } while ($existing_email);
+
+                    $email = $candidate_email;
+                    log_message('info', "Row $row: Email berhasil dibuat secara unik: $email (Attempts: $email_attempt)");
                 }
                 // ===== END MODIFIKASI EMAIL =====
                 // ===== END MODIFIKASI EMAIL =====
@@ -3699,7 +3709,7 @@ class Database extends CI_Controller
                     continue;
                 }
 
-                // Check if peserta already exists
+                // Check if peserta already exists (nomor_paspor)
                 $existing_peserta = $this->transaksi_model->get_by_passport($nomor_paspor);
                 if ($existing_peserta) {
                     // Jika ada opsi replace flag atau travel, update data yang sudah ada
@@ -3728,7 +3738,7 @@ class Database extends CI_Controller
                     }
 
                     // Mode normal: tolak jika sudah ada
-                    $error_message = "Row $row: Peserta dengan nomor paspor '$nomor_paspor' sudah ada";
+                    $error_message = "Row $row: Peserta dengan nomor paspor '$nomor_paspor' sudah terdaftar";
                     $errors[] = $error_message;
                     $error_count++;
 
@@ -3750,7 +3760,7 @@ class Database extends CI_Controller
                         'jam'           => $jam_value ?: '00:00:00',
                         'flag_doc'      => $flag_doc,
                         'nama_travel'   => $nama_travel ?: null,
-                        'reject_reason' => "Nomor paspor '$nomor_paspor' sudah ada dalam database",
+                        'reject_reason' => "Nomor paspor sudah terdaftar dalam sistem",
                         'row_number'    => $row
                     ];
 
@@ -3758,6 +3768,78 @@ class Database extends CI_Controller
                         $rejected_data[] = $reject_data;
                     }
                     continue;
+                }
+
+                // Validasi UNIQUE no_visa sebelum insert
+                if (!empty($no_visa)) {
+                    $existing_visa = $this->transaksi_model->get_by_visa($no_visa);
+                    if ($existing_visa) {
+                        $error_message = "Row $row: Nomor visa '$no_visa' sudah terdaftar dalam sistem";
+                        $errors[] = $error_message;
+                        $error_count++;
+
+                        log_message('warning', $error_message);
+
+                        $reject_data = [
+                            'nama'          => $nama_peserta,
+                            'nomor_paspor'  => $nomor_paspor,
+                            'no_visa'       => $no_visa,
+                            'tgl_lahir'     => $tgl_lahir_value ?: '1900-01-01',
+                            'password'      => $password ?: 'Madiun2025!',
+                            'nomor_hp'      => $nomor_hp ?: null,
+                            'email'         => $email ?: null,
+                            'barcode'       => $barcode ?: null,
+                            'gender'        => $gender_value ?: 'L',
+                            'status'        => $status_value,
+                            'tanggal'       => $tanggal_value ?: '1900-01-01',
+                            'jam'           => $jam_value ?: '00:00:00',
+                            'flag_doc'      => $flag_doc,
+                            'nama_travel'   => $nama_travel ?: null,
+                            'reject_reason' => "Nomor visa sudah terdaftar dalam sistem",
+                            'row_number'    => $row
+                        ];
+
+                        if ($this->insert_reject_data($reject_data, $row)) {
+                            $rejected_data[] = $reject_data;
+                        }
+                        continue;
+                    }
+                }
+
+                // Validasi UNIQUE email sebelum insert
+                if (!empty($email)) {
+                    $existing_email_db = $this->transaksi_model->get_by_email($email);
+                    if ($existing_email_db) {
+                        $error_message = "Row $row: Alamat email '$email' sudah terdaftar dalam sistem";
+                        $errors[] = $error_message;
+                        $error_count++;
+
+                        log_message('warning', $error_message);
+
+                        $reject_data = [
+                            'nama'          => $nama_peserta,
+                            'nomor_paspor'  => $nomor_paspor,
+                            'no_visa'       => $no_visa ?: null,
+                            'tgl_lahir'     => $tgl_lahir_value ?: '1900-01-01',
+                            'password'      => $password ?: 'Madiun2025!',
+                            'nomor_hp'      => $nomor_hp ?: null,
+                            'email'         => $email,
+                            'barcode'       => $barcode ?: null,
+                            'gender'        => $gender_value ?: 'L',
+                            'status'        => $status_value,
+                            'tanggal'       => $tanggal_value ?: '1900-01-01',
+                            'jam'           => $jam_value ?: '00:00:00',
+                            'flag_doc'      => $flag_doc,
+                            'nama_travel'   => $nama_travel ?: null,
+                            'reject_reason' => "Alamat email sudah terdaftar dalam sistem",
+                            'row_number'    => $row
+                        ];
+
+                        if ($this->insert_reject_data($reject_data, $row)) {
+                            $rejected_data[] = $reject_data;
+                        }
+                        continue;
+                    }
                 }
 
                 // Insert peserta data
@@ -3816,11 +3898,32 @@ class Database extends CI_Controller
                             'row_number' => $row
                         ];
                     } else {
+                        // Periksa error database internal CodeIgniter
+                        $db_err = $this->db->error();
+                        $db_code = isset($db_err['code']) ? (int)$db_err['code'] : 0;
+                        $db_msg = isset($db_err['message']) ? $db_err['message'] : '';
+
                         // Debug: Log error details
                         log_message('error', "Row $row: Insert failed - Result: " . json_encode($result));
+                        log_message('error', "Row $row: DB Error: " . json_encode($db_err));
                         log_message('error', "Row $row: Data that failed: " . json_encode($peserta_data));
 
-                        $error_message = "Row $row: Gagal menyimpan data peserta ke database";
+                        $reject_reason = "Gagal menyimpan data peserta ke database";
+                        if ($db_code === 1062 || stripos($db_msg, 'Duplicate entry') !== false) {
+                            if (stripos($db_msg, 'no_visa') !== false) {
+                                $reject_reason = "Nomor visa sudah terdaftar dalam sistem";
+                            } elseif (stripos($db_msg, 'nomor_paspor') !== false) {
+                                $reject_reason = "Nomor paspor sudah terdaftar dalam sistem";
+                            } elseif (stripos($db_msg, 'email') !== false) {
+                                $reject_reason = "Alamat email sudah terdaftar dalam sistem";
+                            } elseif (stripos($db_msg, 'barcode') !== false) {
+                                $reject_reason = "Barcode sudah terdaftar dalam sistem";
+                            } else {
+                                $reject_reason = "Data duplikat ditemukan dalam database";
+                            }
+                        }
+
+                        $error_message = "Row $row: " . $reject_reason;
                         $errors[] = $error_message;
                         $error_count++;
 
@@ -3840,7 +3943,7 @@ class Database extends CI_Controller
                             'jam' => $jam_value ?: '00:00:00',
                             'flag_doc' => $flag_doc,
                             'nama_travel' => $nama_travel ?: null,
-                            'reject_reason' => "Gagal menyimpan data ke database (Insert returned: " . json_encode($result) . ")",
+                            'reject_reason' => $reject_reason,
                             'row_number' => $row
                         ];
 
@@ -3857,18 +3960,17 @@ class Database extends CI_Controller
                         'trace' => $e->getTraceAsString()
                     ]));
 
-                    // Handle specific database errors gracefully
                     $error_message = $e->getMessage();
-                    $reject_reason = "Error database: " . $error_message;
+                    $reject_reason = "Terjadi kesalahan saat memproses data";
 
-                    // Check for duplicate entry errors
+                    // Check for duplicate entry errors without exposing raw table/column info
                     if (strpos($error_message, 'Duplicate entry') !== false) {
                         if (strpos($error_message, 'no_visa') !== false) {
-                            $reject_reason = "Nomor visa sudah ada dalam database";
+                            $reject_reason = "Nomor visa sudah terdaftar dalam sistem";
                         } elseif (strpos($error_message, 'nomor_paspor') !== false) {
-                            $reject_reason = "Nomor paspor sudah ada dalam database";
+                            $reject_reason = "Nomor paspor sudah terdaftar dalam sistem";
                         } elseif (strpos($error_message, 'email') !== false) {
-                            $reject_reason = "Email sudah ada dalam database";
+                            $reject_reason = "Alamat email sudah terdaftar dalam sistem";
                         } else {
                             $reject_reason = "Data duplikat ditemukan dalam database";
                         }
