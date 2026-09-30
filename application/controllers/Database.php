@@ -12,7 +12,8 @@ class Database extends CI_Controller
 
     private function is_export_request()
     {
-        return $this->input->get('export_data') || $this->input->get('debug');
+        return $this->input->get('export_data') || $this->input->get('debug')
+            || $this->input->post('export_data') || $this->input->post('debug');
     }
 
     /**
@@ -1904,6 +1905,18 @@ class Database extends CI_Controller
     public function export()
     {
         try {
+            // Export dikirim modal via POST (filter bisa sangat banyak sehingga URL GET
+            // kepanjangan dan ditolak Apache dengan "414 Request-URI Too Large").
+            // Satukan parameter POST ke $_GET supaya semua pembacaan filter di bawah tetap jalan.
+            $is_post_export = ($this->input->method() === 'post');
+            if ($is_post_export) {
+                foreach ($_POST as $post_key => $post_value) {
+                    if (!array_key_exists($post_key, $_GET)) {
+                        $_GET[$post_key] = $post_value;
+                    }
+                }
+            }
+
             log_message('debug', 'Export method called - GET parameters: ' . json_encode($this->input->get()));
             log_message('debug', 'Export method called - POST parameters: ' . json_encode($this->input->post()));
             log_message('debug', 'Export method called - REQUEST parameters: ' . json_encode($_REQUEST));
@@ -2009,6 +2022,11 @@ class Database extends CI_Controller
                     $has_null = false;
 
                     foreach ($filters['flag_doc'] as $value) {
+                        // Modal lama mengirim via GET dengan encode ganda (mis. "%2520"),
+                        // sedangkan POST sudah bersih (hanya di-decode sekali oleh PHP).
+                        if (!$is_post_export) {
+                            $value = rawurldecode($value);
+                        }
                         // Trim whitespace and handle different null representations
                         $value = trim($value);
 
@@ -2075,22 +2093,22 @@ class Database extends CI_Controller
                 $hasStatusFilter = $rawStatusInput !== null && $rawStatusInput !== '';
 
                 $hasFlagDocFilter = false;
+                // Key "flag_doc[]" tidak pernah ada di $_GET/$_POST karena PHP
+                // mengubahnya menjadi key "flag_doc" berisi array. Cek keduanya.
                 $rawFlagDocArray = $this->input->get('flag_doc[]');
+                if ($rawFlagDocArray === null) {
+                    $rawFlagDocArray = $this->input->get('flag_doc');
+                }
 
                 if ($rawFlagDocArray !== null) {
                     $rawFlagDocValues = is_array($rawFlagDocArray) ? $rawFlagDocArray : [$rawFlagDocArray];
                     foreach ($rawFlagDocValues as $flagValue) {
-                        $decodedValue = rawurldecode($flagValue);
+                        $decodedValue = $is_post_export ? trim((string) $flagValue) : rawurldecode((string) $flagValue);
                         if ($decodedValue === '') {
-                            continue;
+                            continue; // opsi "Semua Data" -> bukan filter
                         }
                         $hasFlagDocFilter = true;
                         break;
-                    }
-                } elseif ($this->input->get('flag_doc') !== null) {
-                    $decodedValue = rawurldecode($this->input->get('flag_doc'));
-                    if ($decodedValue !== '') {
-                        $hasFlagDocFilter = true;
                     }
                 } elseif (isset($filters['flag_doc'])) {
                     $flagDocValues = is_array($filters['flag_doc']) ? $filters['flag_doc'] : [$filters['flag_doc']];
@@ -2317,303 +2335,20 @@ class Database extends CI_Controller
 
     private function export_excel($peserta, $filters)
     {
-        // Set memory limit and execution time for large exports
+        // Export XLSX memakai streaming writer sendiri (tanpa PHPExcel).
+        // PHPExcel menyimpan seluruh sel di RAM sehingga export tanpa filter
+        // (~60 rb baris) kena "Allowed memory size exhausted", koneksi server
+        // ditutup, dan file gagal diunduh (ERR_CONNECTION_CLOSED).
         ini_set('memory_limit', '512M');
         ini_set('max_execution_time', 300); // 5 minutes
         set_time_limit(300);
 
-        // Check if PHPExcel library exists
-        $phpexcel_path = APPPATH . 'third_party/PHPExcel/Classes/PHPExcel.php';
-        if (!file_exists($phpexcel_path)) {
-            $this->session->set_flashdata('error', 'Library PHPExcel tidak ditemukan. Silakan install library terlebih dahulu.');
-            redirect('database');
-        }
-
-        // Load PHPExcel library
-        require_once $phpexcel_path;
-
         try {
-            $excel = new PHPExcel();
-
-            // Set document properties
-            $excel->getProperties()
-                ->setCreator("Hajj System")
-                ->setLastModifiedBy("Hajj System")
-                ->setTitle("Database Peserta")
-                ->setSubject("Data Peserta")
-                ->setDescription("Export data peserta dari sistem hajj");
-
-            // Set column headers
-            $excel->setActiveSheetIndex(0)
-                ->setCellValue('A1', 'Nama Peserta')
-                ->setCellValue('B1', 'No Paspor')
-                ->setCellValue('C1', 'No Visa')
-                ->setCellValue('D1', 'Tgl Lahir')
-                ->setCellValue('E1', 'Password')
-                ->setCellValue('F1', 'No HP')
-                ->setCellValue('G1', 'Email')
-                ->setCellValue('H1', 'Barcode')
-                ->setCellValue('I1', 'Gender')
-                ->setCellValue('J1', 'Tanggal')
-                ->setCellValue('K1', 'Jam')
-                ->setCellValue('L1', 'Status')
-                ->setCellValue('M1', 'Flag Dokumen')
-                ->setCellValue('N1', 'Nama Travel');
-
-            // Set column widths
-            $excel->getActiveSheet()->getColumnDimension('A')->setWidth(25);
-            $excel->getActiveSheet()->getColumnDimension('B')->setWidth(15);
-            $excel->getActiveSheet()->getColumnDimension('C')->setWidth(15);
-            $excel->getActiveSheet()->getColumnDimension('D')->setWidth(15);
-            $excel->getActiveSheet()->getColumnDimension('E')->setWidth(15);
-            $excel->getActiveSheet()->getColumnDimension('F')->setWidth(15);
-            $excel->getActiveSheet()->getColumnDimension('G')->setWidth(25);
-            $excel->getActiveSheet()->getColumnDimension('H')->setWidth(10);
-            $excel->getActiveSheet()->getColumnDimension('I')->setWidth(15);
-            $excel->getActiveSheet()->getColumnDimension('J')->setWidth(15);
-            $excel->getActiveSheet()->getColumnDimension('K')->setWidth(15);
-            $excel->getActiveSheet()->getColumnDimension('L')->setWidth(15);
-            $excel->getActiveSheet()->getColumnDimension('M')->setWidth(15);
-            $excel->getActiveSheet()->getColumnDimension('N')->setWidth(15);
-            // Style header row
-            $headerStyle = [
-                'font' => [
-                    'bold' => true,
-                    'color' => ['rgb' => 'FFFFFF'],
-                ],
-                'fill' => [
-                    'type' => PHPExcel_Style_Fill::FILL_SOLID,
-                    'color' => ['rgb' => '8B4513'],
-                ],
-                'alignment' => [
-                    'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER,
-                    'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER,
-                ],
-            ];
-
-            $excel->getActiveSheet()->getStyle('A1:M1')->applyFromArray($headerStyle);
-
-            // Populate data
-            $row = 2;
-            $on_target_count = 0;
-            $already_count = 0;
-            $done_count = 0;
-            $fasttrack_count = 0;
-
-            foreach ($peserta as $p) {
-                $status = '';
-                if ($p->status == 0) {
-                    $status = 'On Target';
-                    $on_target_count++;
-                } elseif ($p->status == 1) {
-                    $status = 'Already';
-                    $already_count++;
-                } elseif ($p->status == 2) {
-                    $status = 'Done';
-                    $done_count++;
-                } elseif ($p->status == 3) {
-                    $status = 'Fasttrack';
-                    $fasttrack_count++;
-                }
-
-                $gender = '';
-                if ($p->gender == 'L') {
-                    $gender = 'Laki-laki';
-                } elseif ($p->gender == 'P') {
-                    $gender = 'Perempuan';
-                }
-
-                $excel->setActiveSheetIndex(0)
-                    ->setCellValue('A' . $row, $p->nama)
-                    ->setCellValue('B' . $row, $p->nomor_paspor)
-                    ->setCellValue('C' . $row, $p->no_visa ? $p->no_visa : '-')
-                    ->setCellValue('D' . $row, $p->tgl_lahir ? date('d/m/Y', strtotime($p->tgl_lahir)) : '-')
-                    ->setCellValue('E' . $row, $p->password)
-                    ->setCellValue('F' . $row, $p->nomor_hp ? $p->nomor_hp : '-')
-                    ->setCellValue('G' . $row, $p->email ? $p->email : '-')
-                    ->setCellValue('H' . $row, $p->barcode ?: '-')
-                    ->setCellValue('I' . $row, $gender ?: '-')
-                    ->setCellValue('J' . $row, $p->tanggal ?: '-')
-                    ->setCellValue('K' . $row, $p->jam ? date('h:i A', strtotime($p->jam)) : '-')
-                    ->setCellValue('L' . $row, $status)
-                    ->setCellValue('M' . $row, $p->flag_doc ?: '-')
-                    ->setCellValue('N' . $row, $p->nama_travel ?: '-');
-
-                $row++;
+            if (!class_exists('ZipArchive')) {
+                throw new Exception('Ekstensi PHP "zip" tidak tersedia sehingga file XLSX tidak bisa dibuat.');
             }
 
-            // Freeze panes starting from row 2
-            $excel->getActiveSheet()->freezePane('A2');
-
-            // Add summary statistics 3 rows below the last data
-            $summary_row = $row + 3;
-            $total_count = count($peserta);
-
-            // Get flag_doc from filters or use default
-            $flag_doc_display = 'Semua Data';
-            if (!empty($filters['flag_doc'])) {
-                if (is_array($filters['flag_doc'])) {
-                    $flag_doc_display = implode(', ', $filters['flag_doc']);
-                } else {
-                    $flag_doc_display = $filters['flag_doc'] === 'null' ? 'Tanpa Flag Dokumen' : $filters['flag_doc'];
-                }
-            }
-
-            // Add summary headers
-            $excel->setActiveSheetIndex(0)
-                ->setCellValue('A' . $summary_row, $flag_doc_display)
-                ->setCellValue('B' . $summary_row, '');
-
-            $summary_row++;
-            $excel->setActiveSheetIndex(0)
-                ->setCellValue('A' . $summary_row, 'Status')
-                ->setCellValue('B' . $summary_row, 'Jumlah')
-            ;
-
-            $summary_row++;
-            $excel->setActiveSheetIndex(0)
-                ->setCellValue('A' . $summary_row, 'On Target')
-                ->setCellValue('B' . $summary_row, $on_target_count);
-
-            $summary_row++;
-            $excel->setActiveSheetIndex(0)
-                ->setCellValue('A' . $summary_row, 'Already')
-                ->setCellValue('B' . $summary_row, $already_count);
-
-            $summary_row++;
-            $excel->setActiveSheetIndex(0)
-                ->setCellValue('A' . $summary_row, 'Done')
-                ->setCellValue('B' . $summary_row, $done_count);
-
-            $summary_row++;
-            $excel->setActiveSheetIndex(0)
-                ->setCellValue('A' . $summary_row, 'Fasttrack')
-                ->setCellValue('B' . $summary_row, $fasttrack_count);
-
-            $summary_row++;
-            $excel->setActiveSheetIndex(0)
-                ->setCellValue('A' . $summary_row, 'TOTAL')
-                ->setCellValue('B' . $summary_row, $total_count);
-
-            // Style data rows
-            $dataStyle = [
-                'alignment' => [
-                    'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER,
-                    'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER,
-                ],
-                'borders' => [
-                    'allborders' => [
-                        'style' => PHPExcel_Style_Border::BORDER_THIN,
-                        'color' => ['rgb' => '000000'],
-                    ],
-                ],
-            ];
-
-            if ($row > 2) {
-                $excel->getActiveSheet()->getStyle('A2:M' . ($row - 1))->applyFromArray($dataStyle);
-            }
-
-            // Style status column based on status value
-            if ($row > 2) {
-                $row_num = 2;
-                foreach ($peserta as $p) {
-                    $status_style = [];
-
-                    if ($p->status == 2) { // Done - Green
-                        $status_style = [
-                            'fill' => [
-                                'type' => PHPExcel_Style_Fill::FILL_SOLID,
-                                'color' => ['rgb' => '90EE90'], // Light green
-                            ],
-                            'font' => [
-                                'bold' => true,
-                                'color' => ['rgb' => '006400'], // Dark green text
-                            ],
-                        ];
-                    } elseif ($p->status == 1) { // Already - Orange/Yellow
-                        $status_style = [
-                            'fill' => [
-                                'type' => PHPExcel_Style_Fill::FILL_SOLID,
-                                'color' => ['rgb' => 'FFEB3B'], // Yellow
-                            ],
-                            'font' => [
-                                'bold' => true,
-                                'color' => ['rgb' => 'FF8C00'], // Orange text
-                            ],
-                        ];
-                    } elseif ($p->status == 3) { // Fasttrack - Purple
-                        $status_style = [
-                            'fill' => [
-                                'type' => PHPExcel_Style_Fill::FILL_SOLID,
-                                'color' => ['rgb' => 'E1BEE7'], // Light purple
-                            ],
-                            'font' => [
-                                'bold' => true,
-                                'color' => ['rgb' => '7B1FA2'], // Dark purple text
-                            ],
-                        ];
-                    } elseif ($p->status == 0) { // On Target - Blue
-                        $status_style = [
-                            'fill' => [
-                                'type' => PHPExcel_Style_Fill::FILL_SOLID,
-                                'color' => ['rgb' => 'ADD8E6'], // Light blue
-                            ],
-                            'font' => [
-                                'bold' => true,
-                                'color' => ['rgb' => '00008B'], // Dark blue text
-                            ],
-                        ];
-                    }
-
-                    if (!empty($status_style)) {
-                        $excel->getActiveSheet()->getStyle('L' . ($row_num))->applyFromArray($status_style);
-                    }
-                    $row_num++;
-                }
-            }
-
-            // Style summary section
-            $summaryStyle = [
-                'font' => [
-                    'bold' => true,
-                    'color' => ['rgb' => 'FFFFFF'],
-                ],
-                'fill' => [
-                    'type' => PHPExcel_Style_Fill::FILL_SOLID,
-                    'color' => ['rgb' => '2E8B57'],
-                ],
-                'alignment' => [
-                    'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER,
-                    'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER,
-                ],
-            ];
-
-            $summaryDataStyle = [
-                'font' => [
-                    'bold' => true,
-                ],
-                'fill' => [
-                    'type' => PHPExcel_Style_Fill::FILL_SOLID,
-                    'color' => ['rgb' => 'F0F8FF'],
-                ],
-                'alignment' => [
-                    'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_LEFT,
-                    'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER,
-                ],
-                'borders' => [
-                    'allborders' => [
-                        'style' => PHPExcel_Style_Border::BORDER_THIN,
-                        'color' => ['rgb' => '000000'],
-                    ],
-                ],
-            ];
-
-            // Apply summary styles
-            $excel->getActiveSheet()->getStyle('A' . ($row + 3) . ':B' . ($row + 3))->applyFromArray($summaryStyle);
-            $excel->getActiveSheet()->getStyle('A' . ($row + 4) . ':B' . ($row + 4))->applyFromArray($summaryStyle);
-            $excel->getActiveSheet()->getStyle('A' . ($row + 5) . ':B' . ($row + 8))->applyFromArray($summaryDataStyle);
-
-            // Set filename
+            // ---------- Nama file ----------
             $filename = 'Data_Peserta_' . date('Y-m-d_H-i-s') . '.xlsx';
             if (!empty($filters['flag_doc'])) {
                 if (is_array($filters['flag_doc'])) {
@@ -2624,23 +2359,242 @@ class Database extends CI_Controller
                 }
             }
 
-            // Set headers for download
+            // ---------- Helper penulisan sel ----------
+            $esc = function ($value) {
+                $value = (string) $value;
+                if (function_exists('mb_check_encoding') && !mb_check_encoding($value, 'UTF-8')) {
+                    $value = mb_convert_encoding($value, 'UTF-8', 'UTF-8');
+                }
+                // buang karakter kontrol yang tidak valid di XML
+                $value = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $value);
+                return htmlspecialchars($value, ENT_QUOTES | ENT_XML1, 'UTF-8');
+            };
+            $cell = function ($ref, $style, $text) use ($esc) {
+                return '<c r="' . $ref . '" s="' . $style . '" t="inlineStr"><is><t xml:space="preserve">' . $esc($text) . '</t></is></c>';
+            };
+
+            $columns = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N'];
+            $headers = ['Nama Peserta', 'No Paspor', 'No Visa', 'Tgl Lahir', 'Password', 'No HP', 'Email', 'Barcode', 'Gender', 'Tanggal', 'Jam', 'Status', 'Flag Dokumen', 'Nama Travel'];
+            $widths  = [25, 15, 15, 15, 15, 15, 25, 10, 15, 15, 15, 15, 15, 15];
+
+            $cols_xml = '<cols>';
+            foreach ($widths as $i => $w) {
+                $n = $i + 1;
+                $cols_xml .= '<col min="' . $n . '" max="' . $n . '" width="' . $w . '" customWidth="1"/>';
+            }
+            $cols_xml .= '</cols>';
+
+            // ---------- Tulis sheet XML baris-per-baris ke file sementara ----------
+            $sheet_tmp = tempnam(sys_get_temp_dir(), 'xlsx_sheet_');
+            $fh = fopen($sheet_tmp, 'wb');
+            if (!$fh) {
+                throw new Exception('Gagal membuat file sementara untuk export.');
+            }
+
+            fwrite($fh, '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                . '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+                . '<sheetViews><sheetView tabSelected="1" workbookViewId="0">'
+                . '<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>'
+                . '<selection pane="bottomLeft" activeCell="A2" sqref="A2"/>'
+                . '</sheetView></sheetViews>'
+                . '<sheetFormatPr defaultRowHeight="15"/>'
+                . $cols_xml
+                . '<sheetData>');
+
+            // Baris header (freeze pane mulai baris 2)
+            $row_xml = '<row r="1">';
+            foreach ($headers as $i => $title) {
+                $row_xml .= $cell($columns[$i] . '1', 1, $title);
+            }
+            $row_xml .= '</row>';
+            fwrite($fh, $row_xml);
+
+            // Baris data
+            $row = 2;
+            $on_target_count = 0;
+            $already_count = 0;
+            $done_count = 0;
+            $fasttrack_count = 0;
+
+            foreach ($peserta as $p) {
+                $status = '';
+                $status_style = 2; // style data default
+
+                if ($p->status == 0) {
+                    $status = 'On Target';
+                    $status_style = 6; // biru
+                    $on_target_count++;
+                } elseif ($p->status == 1) {
+                    $status = 'Already';
+                    $status_style = 4; // kuning
+                    $already_count++;
+                } elseif ($p->status == 2) {
+                    $status = 'Done';
+                    $status_style = 3; // hijau
+                    $done_count++;
+                } elseif ($p->status == 3) {
+                    $status = 'Fasttrack';
+                    $status_style = 5; // ungu
+                    $fasttrack_count++;
+                }
+
+                $gender = '';
+                if ($p->gender == 'L') {
+                    $gender = 'Laki-laki';
+                } elseif ($p->gender == 'P') {
+                    $gender = 'Perempuan';
+                }
+
+                $row_xml = '<row r="' . $row . '">'
+                    . $cell('A' . $row, 2, $p->nama)
+                    . $cell('B' . $row, 2, $p->nomor_paspor)
+                    . $cell('C' . $row, 2, $p->no_visa ? $p->no_visa : '-')
+                    . $cell('D' . $row, 2, $p->tgl_lahir ? date('d/m/Y', strtotime($p->tgl_lahir)) : '-')
+                    . $cell('E' . $row, 2, $p->password)
+                    . $cell('F' . $row, 2, $p->nomor_hp ? $p->nomor_hp : '-')
+                    . $cell('G' . $row, 2, $p->email ? $p->email : '-')
+                    . $cell('H' . $row, 2, $p->barcode ?: '-')
+                    . $cell('I' . $row, 2, $gender ?: '-')
+                    . $cell('J' . $row, 2, $p->tanggal ?: '-')
+                    . $cell('K' . $row, 2, $p->jam ? date('h:i A', strtotime($p->jam)) : '-')
+                    . $cell('L' . $row, $status_style, $status)
+                    . $cell('M' . $row, 2, $p->flag_doc ?: '-')
+                    . $cell('N' . $row, 2, $p->nama_travel ?: '-')
+                    . '</row>';
+                fwrite($fh, $row_xml);
+                $row++;
+            }
+
+            // ---------- Ringkasan ----------
+            $summary_row = $row + 3;
+            $total_count = count($peserta);
+
+            $flag_doc_display = 'Semua Data';
+            if (!empty($filters['flag_doc'])) {
+                if (is_array($filters['flag_doc'])) {
+                    $flag_doc_display = implode(', ', $filters['flag_doc']);
+                } else {
+                    $flag_doc_display = $filters['flag_doc'] === 'null' ? 'Tanpa Flag Dokumen' : $filters['flag_doc'];
+                }
+            }
+
+            $summary = [
+                [$flag_doc_display, '', 7],
+                ['Status', 'Jumlah', 7],
+                ['On Target', $on_target_count, 8],
+                ['Already', $already_count, 8],
+                ['Done', $done_count, 8],
+                ['Fasttrack', $fasttrack_count, 8],
+                ['TOTAL', $total_count, 8],
+            ];
+            foreach ($summary as $item) {
+                fwrite($fh, '<row r="' . $summary_row . '">'
+                    . $cell('A' . $summary_row, $item[2], $item[0])
+                    . $cell('B' . $summary_row, $item[2], $item[1])
+                    . '</row>');
+                $summary_row++;
+            }
+
+            fwrite($fh, '</sheetData></worksheet>');
+            fclose($fh);
+
+            // ---------- Bungkus menjadi file .xlsx (ZIP) ----------
+            $zip_tmp = tempnam(sys_get_temp_dir(), 'xlsx_zip_');
+            $zip = new ZipArchive();
+            if ($zip->open($zip_tmp, ZipArchive::OVERWRITE) !== true) {
+                throw new Exception('Gagal membuat file XLSX.');
+            }
+
+            $zip->addFromString('[Content_Types].xml',
+                '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                . '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+                . '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+                . '<Default Extension="xml" ContentType="application/xml"/>'
+                . '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+                . '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+                . '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
+                . '</Types>');
+
+            $zip->addFromString('_rels/.rels',
+                '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                . '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
+                . '</Relationships>');
+
+            $zip->addFromString('xl/workbook.xml',
+                '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                . '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+                . '<sheets><sheet name="Data Peserta" sheetId="1" r:id="rId1"/></sheets>'
+                . '</workbook>');
+
+            $zip->addFromString('xl/_rels/workbook.xml.rels',
+                '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                . '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
+                . '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
+                . '</Relationships>');
+
+            $zip->addFromString('xl/styles.xml',
+                '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                . '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+                . '<fonts count="7">'
+                . '<font><sz val="11"/><name val="Calibri"/></font>'
+                . '<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>'
+                . '<font><b/><sz val="11"/><color rgb="FF006400"/><name val="Calibri"/></font>'
+                . '<font><b/><sz val="11"/><color rgb="FFFF8C00"/><name val="Calibri"/></font>'
+                . '<font><b/><sz val="11"/><color rgb="FF7B1FA2"/><name val="Calibri"/></font>'
+                . '<font><b/><sz val="11"/><color rgb="FF00008B"/><name val="Calibri"/></font>'
+                . '<font><b/><sz val="11"/><name val="Calibri"/></font>'
+                . '</fonts>'
+                . '<fills count="9">'
+                . '<fill><patternFill patternType="none"/></fill>'
+                . '<fill><patternFill patternType="gray125"/></fill>'
+                . '<fill><patternFill patternType="solid"><fgColor rgb="FF8B4513"/><bgColor indexed="64"/></patternFill></fill>'
+                . '<fill><patternFill patternType="solid"><fgColor rgb="FF90EE90"/><bgColor indexed="64"/></patternFill></fill>'
+                . '<fill><patternFill patternType="solid"><fgColor rgb="FFFFEB3B"/><bgColor indexed="64"/></patternFill></fill>'
+                . '<fill><patternFill patternType="solid"><fgColor rgb="FFE1BEE7"/><bgColor indexed="64"/></patternFill></fill>'
+                . '<fill><patternFill patternType="solid"><fgColor rgb="FFADD8E6"/><bgColor indexed="64"/></patternFill></fill>'
+                . '<fill><patternFill patternType="solid"><fgColor rgb="FF2E8B57"/><bgColor indexed="64"/></patternFill></fill>'
+                . '<fill><patternFill patternType="solid"><fgColor rgb="FFF0F8FF"/><bgColor indexed="64"/></patternFill></fill>'
+                . '</fills>'
+                . '<borders count="2">'
+                . '<border><left/><right/><top/><bottom/><diagonal/></border>'
+                . '<border><left style="thin"><color rgb="FF000000"/></left><right style="thin"><color rgb="FF000000"/></right><top style="thin"><color rgb="FF000000"/></top><bottom style="thin"><color rgb="FF000000"/></bottom><diagonal/></border>'
+                . '</borders>'
+                . '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
+                . '<cellXfs count="9">'
+                . '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'
+                . '<xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+                . '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+                . '<xf numFmtId="0" fontId="2" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+                . '<xf numFmtId="0" fontId="3" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+                . '<xf numFmtId="0" fontId="4" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+                . '<xf numFmtId="0" fontId="5" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+                . '<xf numFmtId="0" fontId="1" fillId="7" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+                . '<xf numFmtId="0" fontId="6" fillId="8" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
+                . '</cellXfs>'
+                . '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>'
+                . '</styleSheet>');
+
+            // Sheet besar ditambahkan langsung dari file (streaming, tidak dibaca ke memori)
+            $zip->addFile($sheet_tmp, 'xl/worksheets/sheet1.xml');
+            $zip->close();
+
+            // ---------- Kirim ke browser ----------
+            while (ob_get_level() > 0) {
+                ob_end_clean();
+            }
+
             header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-            header('Content-Disposition: attachment;filename="' . $filename . '"');
+            header('Content-Disposition: attachment; filename="' . $filename . '"');
+            header('Content-Length: ' . filesize($zip_tmp));
             header('Cache-Control: max-age=0');
-            header('Cache-Control: max-age=1');
-            header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
-            header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
-            header('Cache-Control: cache, must-revalidate');
             header('Pragma: public');
 
-            // Create Excel writer
-            $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel2007');
-            $writer->save('php://output');
+            readfile($zip_tmp);
 
-            // Clean up memory
-            $excel->disconnectWorksheets();
-            unset($excel);
+            @unlink($zip_tmp);
+            @unlink($sheet_tmp);
             exit;
 
         } catch (Exception $e) {

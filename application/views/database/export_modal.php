@@ -9,7 +9,7 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form id="exportForm" action="<?= base_url('database/export') ?>" method="GET">
+                <form id="exportForm" action="<?= base_url('database/export') ?>" method="POST">
                     <div class="mb-3">
                         <label for="export_data" class="form-label">
                             <i class="fas fa-file"></i> Pilih Data Export
@@ -281,23 +281,6 @@
 function submitExport() {
     const form = document.getElementById('exportForm');
     const formData = new FormData(form);
-    const params = new URLSearchParams();
-    
-    // Add non-empty values to params
-    for (let [key, value] of formData.entries()) {
-        // Handle flag_doc array specially - append each selected flag_doc
-        if (key === 'flag_doc[]') {
-            // For flag_doc, we want to include empty values too (for "Semua Data" and "Tanpa Flag Dokumen")
-            // Handle special characters by using encodeURIComponent for safe transmission
-            const safeValue = encodeURIComponent(value);
-            params.append('flag_doc[]', safeValue);
-        } else {
-            // For other fields, only add non-empty values
-            if (value.trim() !== '') {
-                params.append(key, value);
-            }
-        }
-    }
     
     // Check if export data type is selected
     const exportData = formData.get('export_data');
@@ -319,33 +302,35 @@ function submitExport() {
     exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
     exportBtn.disabled = true;
     
-    // Build export URL
-    const exportUrl = '<?= base_url('database/export') ?>' + (params.toString() ? '?' + params.toString() : '');
-    
-    // Set filename based on format
-    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-    const extension = format === 'pdf' ? '.html' : '.xlsx';
-    const filename = 'Database_Peserta_' + timestamp + extension;
-    
-    // For PDF, open in new window first to check for errors
+    // Kirim export via POST (form submit), BUKAN query string.
+    // Kalau flag dokumen yang dipilih banyak, URL GET bisa kepanjangan dan ditolak
+    // Apache dengan "414 Request-URI Too Large" sehingga file gagal terunduh.
+    // Submit form native juga membuat browser mengunduh file langsung (tanpa fetch),
+    // jadi aman untuk data besar.
+    const postForm = document.createElement('form');
+    postForm.method = 'POST';
+    postForm.action = '<?= base_url('database/export') ?>';
+    postForm.style.display = 'none';
     if (format === 'pdf') {
-        const newWindow = window.open(exportUrl, '_blank');
-        if (!newWindow) {
-            showAlert('Pop-up blocker mungkin mencegah download. Silakan izinkan pop-up untuk situs ini.', 'warning');
-        }
-    } else {
-        // Untuk Excel, pakai native browser download (klik <a download>).
-        // JANGAN pakai fetch() + blob: response besar ditahan di memori dan sering
-        // bikin koneksi ditutup -> "net::ERR_CONNECTION_CLOSED" / "TypeError: Failed to fetch".
-        const downloadLink = document.createElement('a');
-        downloadLink.href = exportUrl;
-        downloadLink.download = filename;
-        downloadLink.rel = 'noopener';
-        downloadLink.style.display = 'none';
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
+        postForm.target = '_blank';
     }
+    
+    for (let [key, value] of formData.entries()) {
+        // flag_doc[] boleh kosong (opsi "Semua Data" / "Tanpa Flag Dokumen"),
+        // sedangkan field lain dilewati kalau kosong.
+        if (key !== 'flag_doc[]' && value.trim() === '') {
+            continue;
+        }
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        input.value = value;
+        postForm.appendChild(input);
+    }
+    
+    document.body.appendChild(postForm);
+    postForm.submit();
+    document.body.removeChild(postForm);
     
     // Reset button and close modal
     setTimeout(() => {
