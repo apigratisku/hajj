@@ -322,14 +322,10 @@ function submitExport() {
     // Build export URL
     const exportUrl = '<?= base_url('database/export') ?>' + (params.toString() ? '?' + params.toString() : '');
     
-    // Create temporary link and trigger download
-    const link = document.createElement('a');
-    link.href = exportUrl;
-    
     // Set filename based on format
     const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
     const extension = format === 'pdf' ? '.html' : '.xlsx';
-    link.download = 'Database_Peserta_' + timestamp + extension;
+    const filename = 'Database_Peserta_' + timestamp + extension;
     
     // For PDF, open in new window first to check for errors
     if (format === 'pdf') {
@@ -338,29 +334,17 @@ function submitExport() {
             showAlert('Pop-up blocker mungkin mencegah download. Silakan izinkan pop-up untuk situs ini.', 'warning');
         }
     } else {
-        // For Excel, use fetch to check for errors first
-        fetch(exportUrl)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.blob();
-            })
-            .then(blob => {
-                // Create download link
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = 'Database_Peserta_' + timestamp + extension;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(url);
-            })
-            .catch(error => {
-                console.error('Export error:', error);
-                showAlert('Terjadi kesalahan saat export. Silakan coba lagi atau hubungi administrator.', 'error');
-            });
+        // Untuk Excel, pakai native browser download (klik <a download>).
+        // JANGAN pakai fetch() + blob: response besar ditahan di memori dan sering
+        // bikin koneksi ditutup -> "net::ERR_CONNECTION_CLOSED" / "TypeError: Failed to fetch".
+        const downloadLink = document.createElement('a');
+        downloadLink.href = exportUrl;
+        downloadLink.download = filename;
+        downloadLink.rel = 'noopener';
+        downloadLink.style.display = 'none';
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
     }
     
     // Reset button and close modal
