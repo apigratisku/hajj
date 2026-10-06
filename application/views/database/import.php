@@ -68,6 +68,55 @@
                         </div>
                     <?php endif; ?>
 
+                    <?php if(!empty($import_batches)): ?>
+                        <div class="alert alert-light border" role="alert">
+                            <h6><i class="fas fa-rotate-left"></i> Riwayat Import (Bisa Dibatalkan)</h6>
+                            <p class="small text-muted mb-2">
+                                Pilih batch import untuk dibatalkan. Data peserta yang dihapus <strong>hanya</strong> data hasil import pada batch tersebut.
+                            </p>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Waktu Import</th>
+                                            <th>Nama File</th>
+                                            <th>Flag Dokumen</th>
+                                            <th class="text-center">Jumlah Data</th>
+                                            <th>Operator</th>
+                                            <th class="text-center">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach($import_batches as $batch): ?>
+                                            <tr>
+                                                <td><?= $batch->id_batch ?></td>
+                                                <td><?= date('d-m-Y H:i', strtotime($batch->created_at)) ?></td>
+                                                <td><?= htmlspecialchars($batch->nama_file ?: '-') ?></td>
+                                                <td><?= htmlspecialchars($batch->flag_doc ?: '-') ?></td>
+                                                <td class="text-center"><span class="badge bg-secondary"><?= (int)$batch->total_data ?></span></td>
+                                                <td><?= htmlspecialchars($batch->user_operator ?: '-') ?></td>
+                                                <td class="text-center">
+                                                    <button type="button"
+                                                            class="btn btn-danger btn-sm btn-cancel-import"
+                                                            data-batch="<?= $batch->id_batch ?>"
+                                                            data-count="<?= (int)$batch->total_data ?>"
+                                                            data-file="<?= htmlspecialchars($batch->nama_file ?: '-') ?>">
+                                                        <i class="fas fa-ban"></i> Batalkan
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
+                    <form id="cancel_import_form" action="<?= base_url('database/cancel_import') ?>" method="post" style="display:none;">
+                        <input type="hidden" name="id_batch" id="cancel_import_batch">
+                    </form>
+
                     <div class="row">
                         <div class="col-md-8">
                             <form action="<?= base_url('database/process_import') ?>" method="post" enctype="multipart/form-data">
@@ -433,6 +482,26 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 travelFormInputDiv.style.display = 'none';
                 if (travelField) travelField.removeAttribute('required');
+            }
+        });
+    });
+
+    // ===== Tombol Batalkan Import =====
+    const cancelForm = document.getElementById('cancel_import_form');
+    const cancelBatchField = document.getElementById('cancel_import_batch');
+    document.querySelectorAll('.btn-cancel-import').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const batchId = this.getAttribute('data-batch');
+            const count   = this.getAttribute('data-count');
+            const file    = this.getAttribute('data-file');
+
+            const msg = 'PERINGATAN: Membatalkan import akan MENGHAPUS ' + count +
+                        ' data peserta yang berasal dari file "' + file + '" (batch #' + batchId + ').\n\n' +
+                        'Data yang dihapus TIDAK dapat dikembalikan. Lanjutkan?';
+
+            if (window.confirm(msg)) {
+                cancelBatchField.value = batchId;
+                cancelForm.submit();
             }
         });
     });

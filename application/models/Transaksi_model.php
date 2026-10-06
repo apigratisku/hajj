@@ -146,6 +146,37 @@ class Transaksi_model extends CI_Model {
         $this->db->where('id', $id);
         return $this->db->delete($this->table);
     }
+
+    /**
+     * Ambil data peserta berdasarkan daftar id (untuk proses batalkan import).
+     *
+     * @param array $ids
+     * @return array
+     */
+    public function get_by_ids($ids = []) {
+        if (empty($ids)) {
+            return [];
+        }
+        $this->db->where_in('id', $ids);
+        return $this->db->get($this->table)->result();
+    }
+
+    /**
+     * Hapus banyak peserta sekaligus berdasarkan daftar id.
+     * Hanya menghapus id yang memang ada.
+     *
+     * @param array $ids
+     * @return int jumlah baris terhapus
+     */
+    public function delete_by_ids($ids = []) {
+        if (empty($ids)) {
+            return 0;
+        }
+        $ids = array_map('intval', $ids);
+        $this->db->where_in('id', $ids);
+        $this->db->delete($this->table);
+        return $this->db->affected_rows();
+    }
     
     public function count_all() {
         return $this->db->count_all($this->table);

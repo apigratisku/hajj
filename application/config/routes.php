@@ -77,6 +77,7 @@ $route['database/download_failed_import'] = 'database/download_failed_import';
 $route['database/clear_rejected_data'] = 'database/clear_rejected_data';
 $route['database/delete_rejected/(:num)'] = 'database/delete_rejected/$1';
 $route['database/remove_schedule/(:num)'] = 'database/remove_schedule/$1';
+$route['database/cancel_import'] = 'database/cancel_import';
 $route['database/download_barcode_attachments'] = 'database/download_barcode_attachments';
 $route['database/delete_barcode_bulk'] = 'database/delete_barcode_bulk';
 $route['database/delete_barcode_single/(:num)'] = 'database/delete_barcode_single/$1';

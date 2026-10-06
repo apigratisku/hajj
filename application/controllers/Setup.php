@@ -380,5 +380,86 @@ class Setup extends CI_Controller {
         } else {
             echo "Tabel '$table_pekerjaan' sudah ada.<br>";
         }
+
+        // Create import_batch table (log setiap proses import untuk fitur batalkan import)
+        $table_import_batch = 'import_batch';
+
+        if (!$this->db->table_exists($table_import_batch)) {
+            $fields_import_batch = array(
+                'id_batch' => array(
+                    'type' => 'INT',
+                    'constraint' => 11,
+                    'auto_increment' => TRUE
+                ),
+                'nama_file' => array(
+                    'type' => 'VARCHAR',
+                    'constraint' => 255,
+                    'null' => TRUE
+                ),
+                'flag_doc' => array(
+                    'type' => 'VARCHAR',
+                    'constraint' => 255,
+                    'null' => TRUE
+                ),
+                'total_data' => array(
+                    'type' => 'INT',
+                    'constraint' => 11,
+                    'null' => FALSE,
+                    'default' => 0
+                ),
+                'user_operator' => array(
+                    'type' => 'VARCHAR',
+                    'constraint' => 100,
+                    'null' => TRUE
+                ),
+                'created_at' => array(
+                    'type' => 'TIMESTAMP',
+                    'null' => FALSE,
+                    'default' => 'CURRENT_TIMESTAMP'
+                )
+            );
+
+            $this->dbforge->add_field($fields_import_batch);
+            $this->dbforge->add_key('id_batch', TRUE);
+            $this->dbforge->create_table($table_import_batch, TRUE);
+
+            echo "Tabel '$table_import_batch' berhasil dibuat.<br>";
+        } else {
+            echo "Tabel '$table_import_batch' sudah ada.<br>";
+        }
+
+        // Create import_batch_item table (daftar id peserta per batch import)
+        $table_import_batch_item = 'import_batch_item';
+
+        if (!$this->db->table_exists($table_import_batch_item)) {
+            $fields_import_batch_item = array(
+                'id_item' => array(
+                    'type' => 'INT',
+                    'constraint' => 11,
+                    'auto_increment' => TRUE
+                ),
+                'id_batch' => array(
+                    'type' => 'INT',
+                    'constraint' => 11,
+                    'null' => FALSE
+                ),
+                'id_peserta' => array(
+                    'type' => 'INT',
+                    'constraint' => 11,
+                    'null' => FALSE
+                )
+            );
+
+            $this->dbforge->add_field($fields_import_batch_item);
+            $this->dbforge->add_key('id_item', TRUE);
+            $this->dbforge->create_table($table_import_batch_item, TRUE);
+
+            $this->db->query("ALTER TABLE `$table_import_batch_item` ADD INDEX `idx_id_batch` (`id_batch`)");
+            $this->db->query("ALTER TABLE `$table_import_batch_item` ADD INDEX `idx_id_peserta` (`id_peserta`)");
+
+            echo "Tabel '$table_import_batch_item' berhasil dibuat.<br>";
+        } else {
+            echo "Tabel '$table_import_batch_item' sudah ada.<br>";
+        }
     }
 }

@@ -51,6 +51,7 @@ class Database extends CI_Controller
         parent::__construct();
         $this->load->model('transaksi_model');
         $this->load->model('peserta_reject_model');
+        $this->load->model('import_batch_model');
         $this->load->model('user_model');
         $this->load->model('log_activity_model');
         $this->load->library('form_validation');
@@ -3033,11 +3034,83 @@ class Database extends CI_Controller
     public function import()
     {
         $data['title'] = 'Import Data Peserta';
+        // Daftar batch import terbaru untuk fitur batalkan import
+        $data['import_batches'] = $this->import_batch_model->get_batches(20);
 
         $this->load->view('templates/sidebar');
         $this->load->view('templates/header', $data);
         $this->load->view('database/import', $data);
         $this->load->view('templates/footer');
+    }
+
+    /**
+     * Batalkan hasil import berdasarkan batch.
+     * Menghapus HANYA data peserta yang tercatat pada batch tersebut,
+     * sehingga data hasil import terbaru bisa di-rollback.
+     */
+    public function cancel_import()
+    {
+        $id_batch = $this->input->post('id_batch') ?: $this->input->get('id_batch');
+
+        if (empty($id_batch)) {
+            $this->session->set_flashdata('error', 'Batch import tidak valid.');
+            redirect('database/import');
+        }
+
+        $batch = $this->import_batch_model->get_batch($id_batch);
+        if (!$batch) {
+            $this->session->set_flashdata('error', 'Data batch import tidak ditemukan.');
+            redirect('database/import');
+        }
+
+        $ids = $this->import_batch_model->get_item_ids($id_batch);
+        if (empty($ids)) {
+            $this->import_batch_model->delete_batch($id_batch);
+            $this->session->set_flashdata('error', 'Tidak ada data peserta pada batch ini (kemungkinan sudah dihapus).');
+            redirect('database/import');
+        }
+
+        // Ambil data peserta untuk hapus file barcode terkait & logging
+        $peserta_list = $this->transaksi_model->get_by_ids($ids);
+
+        $deleted = 0;
+        if (!empty($peserta_list)) {
+            foreach ($peserta_list as $peserta) {
+                if (!empty($peserta->barcode)) {
+                    $this->delete_barcode_file($peserta->barcode);
+                }
+                $deleted++;
+            }
+        }
+
+        // Hapus data peserta berdasarkan id pada batch
+        $this->transaksi_model->delete_by_ids($ids);
+
+        // Hapus record batch beserta itemnya setelah berhasil dibatalkan
+        $this->import_batch_model->delete_batch($id_batch);
+
+        // Bersihkan session data hasil import jika batch ini yang terakhir diimport
+        if ($this->session->userdata('import_batch_id') == $id_batch) {
+            $this->session->unset_userdata('successful_count');
+            $this->session->unset_userdata('successful_data');
+            $this->session->unset_userdata('successful_count_cpanel');
+            $this->session->unset_userdata('successful_data_cpanel');
+            $this->session->unset_userdata('successful_count_cpanel_forwarding');
+            $this->session->unset_userdata('successful_data_cpanel_forwarding');
+            $this->session->unset_userdata('import_batch_id');
+        }
+
+        // Log aktivitas pembatalan import
+        $this->log_activity_model->insert_log([
+            'user_operator' => $this->session->userdata('username') ?: 'system',
+            'id_peserta'    => 0,
+            'aktivitas'     => 'Batalkan Import batch #' . $id_batch . ' (' . $deleted . ' data dihapus)',
+            'tanggal'       => date('Y-m-d'),
+            'jam'           => date('H:i:s'),
+        ]);
+
+        $this->session->set_flashdata('success', '✅ Import dibatalkan. Sebanyak ' . $deleted . ' data hasil import berhasil dihapus.');
+        redirect('database/import');
     }
 
     public function process_import()
@@ -3989,6 +4062,20 @@ class Database extends CI_Controller
                 // Simpan konfigurasi email prefix & mailbox ke session
                 $this->session->set_userdata('import_email_prefix', $email_prefix);
                 $this->session->set_userdata('import_mailbox', $mailbox);
+
+                // Catat batch import agar data hasil import ini bisa dibatalkan
+                $imported_ids = [];
+                foreach ($successful_data as $row_data) {
+                    if (!empty($row_data['id'])) {
+                        $imported_ids[] = $row_data['id'];
+                    }
+                }
+                $batch_id = $this->import_batch_model->create_batch([
+                    'nama_file'     => $file['name'],
+                    'flag_doc'      => $flag_source === 'form' ? $flag_doc_form : null,
+                    'user_operator' => $this->session->userdata('username') ?: null,
+                ], $imported_ids);
+                $this->session->set_userdata('import_batch_id', $batch_id);
 
                 // Log successful imports
                 log_message('info', 'Import successful: ' . $success_count . ' records imported successfully');

@@ -160,7 +160,7 @@
                                             <td class="col-barcode" data-field="barcode" data-value="<?= $p->barcode ?>">
                                             <span class="value">
                                             <?php if($p->barcode): ?>
-                                            <a href="<?= base_url('upload/view_barcode/' . $p->barcode) ?>" target="_blank" title="Lihat gambar barcode"><i class="fas fa-check-circle" style="color: green;"></i></a>
+                                            <a href="<?= base_url('assets/uploads/barcode/' . $p->barcode) ?>" target="_blank" title="Lihat gambar barcode"><i class="fas fa-check-circle" style="color: green;"></i></a>
                                             <?php else: ?>
                                             <i class="fas fa-times-circle" style="color: red;" title="Tidak ada barcode"></i>
                                             <?php endif; ?>
@@ -349,7 +349,7 @@
                                         <td class="barcode text-center" data-field="barcode" data-value="<?= $p->barcode ?>">
                                         <span class="display-value">
                                         <?php if($p->barcode): ?>
-                                        <a href="<?= base_url('upload/view_barcode/' . $p->barcode) ?>" target="_blank" title="Lihat gambar barcode"><i class="fas fa-check-circle" style="color: green;"></i></a>
+                                        <a href="<?= base_url('assets/uploads/barcode/' . $p->barcode) ?>" target="_blank" title="Lihat gambar barcode"><i class="fas fa-check-circle" style="color: green;"></i></a>
                                         <?php else: ?>
                                         <i class="fas fa-times-circle" style="color: red;" title="Tidak ada barcode"></i>
                                         <?php endif; ?>
@@ -2284,7 +2284,7 @@ function toggleEditMobileTable(button) {
                 if (previewImg) {
                     // Add timestamp to prevent browser cache
                     const timestamp = new Date().getTime();
-                    previewImg.src = '<?= base_url('upload/view_barcode/') ?>' + barcodeValue + '?t=' + timestamp;
+                    previewImg.src = '<?= base_url('assets/uploads/barcode/') ?>' + barcodeValue + '?t=' + timestamp;
                     console.log('Mobile preview image src set to:', previewImg.src);
                 }
             }
@@ -2545,7 +2545,7 @@ function toggleEdit(button) {
                 if (previewImg) {
                     // Add timestamp to prevent browser cache
                     const timestamp = new Date().getTime();
-                    previewImg.src = '<?= base_url('upload/view_barcode/') ?>' + barcodeValue + '?t=' + timestamp;
+                    previewImg.src = '<?= base_url('assets/uploads/barcode/') ?>' + barcodeValue + '?t=' + timestamp;
                     console.log('Preview image src set to:', previewImg.src);
                 }
             }
@@ -3177,7 +3177,7 @@ function toggleEditMobileTable(button) {
                 if (previewImg) {
                     // Add timestamp to prevent browser cache
                     const timestamp = new Date().getTime();
-                    previewImg.src = '<?= base_url('upload/view_barcode/') ?>' + barcodeValue + '?t=' + timestamp;
+                    previewImg.src = '<?= base_url('assets/uploads/barcode/') ?>' + barcodeValue + '?t=' + timestamp;
                 }
             }
             
@@ -3377,7 +3377,7 @@ function saveRowMobileTable(button) {
                     if (barcodeValue && barcodeValue !== '') {
                         // Add timestamp to prevent browser cache
                         const timestamp = new Date().getTime();
-                        barcodeValueElement.innerHTML = '<a href="<?= base_url('upload/view_barcode/') ?>' + barcodeValue + '?t=' + timestamp + '" target="_blank" title="Lihat gambar barcode"><i class="fas fa-check-circle" style="color: green;"></i></a>';
+                        barcodeValueElement.innerHTML = '<a href="<?= base_url('assets/uploads/barcode/') ?>' + barcodeValue + '?t=' + timestamp + '" target="_blank" title="Lihat gambar barcode"><i class="fas fa-check-circle" style="color: green;"></i></a>';
                     } else {
                         barcodeValueElement.innerHTML = '<i class="fas fa-times-circle" style="color: red;" title="Tidak ada barcode"></i>';
                     }
@@ -4265,7 +4265,7 @@ function uploadBarcodeFile(file, flagDoc, barcodeInput, row) {
             if (preview && previewImg) {
                 // Add timestamp to prevent browser cache
                 const timestamp = new Date().getTime();
-                previewImg.src = '<?= base_url('upload/view_barcode/') ?>' + data.barcode_value + '?t=' + timestamp;
+                previewImg.src = '<?= base_url('assets/uploads/barcode/') ?>' + data.barcode_value + '?t=' + timestamp;
                 if (isMobile) {
                     preview.classList.add('active');
                 } else {
@@ -4569,7 +4569,7 @@ function autoSaveBarcodeToDatabase(row, barcodeValue) {
                 if (barcodeValue && barcodeValue.trim() !== '') {
                     // Add timestamp to prevent browser cache
                     const timestamp = new Date().getTime();
-                    barcodeValueElement.innerHTML = '<a href="<?= base_url('upload/view_barcode/') ?>' + barcodeValue + '?t=' + timestamp + '" target="_blank" title="Lihat gambar barcode"><i class="fas fa-check-circle" style="color: green;"></i></a>';
+                    barcodeValueElement.innerHTML = '<a href="<?= base_url('assets/uploads/barcode/') ?>' + barcodeValue + '?t=' + timestamp + '" target="_blank" title="Lihat gambar barcode"><i class="fas fa-check-circle" style="color: green;"></i></a>';
                 } else {
                     // Show empty barcode icon
                     barcodeValueElement.innerHTML = '<i class="fas fa-times-circle" style="color: red;" title="Tidak ada barcode"></i>';
