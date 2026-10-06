@@ -57,9 +57,24 @@ if (!empty($_SERVER['HTTP_X_FORWARDED_PORT'])) {
     }
 }
 
-// Dapatkan path aplikasi (subfolder)
-$script_name = isset($_SERVER['SCRIPT_NAME']) ? $_SERVER['SCRIPT_NAME'] : '';
-$path = rtrim(str_replace(basename($script_name), '', $script_name), '/');
+// Dapatkan path aplikasi (subfolder) dari lokasi front controller index.php
+// Hitung relatif DOCUMENT_ROOT agar kebal terhadap rewrite PATH_INFO/ScriptName yang tercemar
+$app_path = '';
+if (!empty($_SERVER['DOCUMENT_ROOT']) && !empty($_SERVER['SCRIPT_FILENAME'])) {
+    $doc_root = rtrim(str_replace('\\', '/', realpath($_SERVER['DOCUMENT_ROOT'])), '/');
+    $script_file = str_replace('\\', '/', realpath($_SERVER['SCRIPT_FILENAME']));
+    if ($doc_root !== '' && $script_file !== '' && strpos($script_file, $doc_root) === 0) {
+        $app_path = trim(str_replace('\\', '/', dirname(substr($script_file, strlen($doc_root)))), '/.');
+    }
+}
+// Fallback: deteksi dari SCRIPT_NAME (buang bagian index.php & path info)
+if ($app_path === '') {
+    $script_name = isset($_SERVER['SCRIPT_NAME']) ? $_SERVER['SCRIPT_NAME'] : '';
+    $script_name = preg_replace('#/index\.php/.*$#', '/index.php', $script_name);
+    $app_path = rtrim(str_replace(basename($script_name), '', $script_name), '/');
+    $app_path = trim($app_path, '/');
+}
+$path = ($app_path === '') ? '' : '/' . $app_path;
 
 // Gabungkan & pastikan slash di akhir
 $config['base_url'] = $scheme . '://' . $host . $port . $path . '/';
