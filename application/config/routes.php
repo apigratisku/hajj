@@ -99,6 +99,14 @@ $route['user/edit/(:num)'] = 'user/edit/$1';
 $route['user/hapus/(:num)'] = 'user/hapus/$1';
 $route['user/profile'] = 'user/profile';
 
+// Barcode Manager routes
+$route['barcode-manager'] = 'barcode_manager/index';
+$route['barcode-manager/list'] = 'barcode_manager/list_files';
+$route['barcode-manager/delete'] = 'barcode_manager/delete';
+$route['barcode-manager/mass_delete'] = 'barcode_manager/mass_delete';
+$route['barcode-manager/download'] = 'barcode_manager/download';
+$route['barcode-manager/view'] = 'barcode_manager/view';
+
 // Settings routes
 $route['settings'] = 'settings';
 $route['settings/backup_database'] = 'settings/backup_database';

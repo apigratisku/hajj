@@ -123,7 +123,14 @@
         </li>
         <div class="nav-section-divider"></div>
         
-      
+        <!-- Barcode Manager -->
+        <?php if ($this->session->userdata('role') == 'admin'): ?>
+        <li class="nav-item">
+            <a href="<?= base_url('barcode-manager') ?>" <?= ($this->uri->segment(1) == 'barcode-manager' || $this->uri->segment(1) == 'barcode_manager') ? 'class="active"' : '' ?>>
+                <i class="fas fa-barcode"></i> <span>Barcode Manager</span>
+            </a>
+        </li>
+        <?php endif; ?>
 
         <!-- User Management -->
         <?php if ($this->session->userdata('role') == 'admin'): ?>
@@ -192,21 +199,6 @@
         <?php endif; ?>
         <?php endif; ?>
         
-        <!-- System Settings -->
-        <?php if ($this->session->userdata('role') == 'admin'): ?>
-            <?php if ($this->session->userdata('username') == 'adhit' || $this->session->userdata('username') == 'mimin'): ?>
-        <li class="nav-item">
-            <a href="<?= base_url('settings') ?>" <?= $this->uri->segment(1) == 'settings' ? 'class="active"' : '' ?>>
-                <i class="fas fa-cogs"></i> <span>Pengaturan Sistem</span>
-            </a>
-        </li>
-        <?php endif; ?>
-        <li class="nav-item">
-            <a href="<?= base_url('sync-production') ?>" <?= ($this->uri->segment(1) == 'sync-production' || $this->uri->segment(1) == 'syncproduction') ? 'class="active"' : '' ?>>
-                <i class="fas fa-sync-alt"></i> <span>Sync Production</span>
-            </a>
-        </li>
-        <?php endif; ?>
         <!-- Log Aktifitas -->
         <?php if ($this->session->userdata('role') == 'admin'): ?>
         <li class="nav-item">
