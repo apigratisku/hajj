@@ -70,24 +70,40 @@ if (isset($_SERVER['REQUEST_URI'], $_SERVER['SCRIPT_NAME']) && PHP_SAPI !== 'cli
 	$script_dir = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])), '/');
 	$app_folder = basename(__DIR__);
 
-	if ($uri_path !== false && preg_match('#^/([^/]+)(/|$)#', $uri_path, $matches))
+	// Subfolder fisik = dir tempat index.php ini berada relatif DOCUMENT_ROOT.
+	// Jika app berada di root docroot, subfolder = '' (bukan segmen URI apa pun).
+	$physical_sub = '';
+	if (!empty($_SERVER['DOCUMENT_ROOT']) && !empty($_SERVER['SCRIPT_FILENAME']))
 	{
-		$url_prefix = $matches[1];
+	$doc_root = rtrim(str_replace('\\', '/', realpath($_SERVER['DOCUMENT_ROOT'])), '/');
+	$script_file = str_replace('\\', '/', realpath($_SERVER['SCRIPT_FILENAME']));
+		if ($doc_root !== '' && $script_file !== '' && strpos($script_file, $doc_root) === 0)
+	{
+			$physical_sub = trim(str_replace('\\', '/', dirname(substr($script_file, strlen($doc_root)))), '/.');
+	}
+	}
 
-		// Alias: prefix URL (/onte) != nama folder fisik (hajj)
-		if ($url_prefix !== $app_folder)
-		{
+	// Hanya terapkan perbaikan untuk kasus Apache Alias / app di subfolder fisik.
+	// Di root docroot (production) SCRIPT_NAME sudah benar -> jangan diubah,
+	// agar segmen controller (mis. /database) tidak disalah-artikan sebagai prefix.
+	if ($physical_sub !== '' && $uri_path !== false && preg_match('#^/([^/]+)(/|$)#', $uri_path, $matches))
+	{
+	$url_prefix = $matches[1];
+
+	// Alias: prefix URL (/onte) != nama folder fisik (hajj)
+		if ($url_prefix !== $app_folder && $url_prefix !== $physical_sub)
+	{
 			$_SERVER['SCRIPT_NAME'] = '/' . $url_prefix . '/index.php';
-		}
-		// Docroot = folder app, URL pakai prefix nama folder (/hajj/...)
+	}
+	// Docroot = folder app, URL pakai prefix nama folder (/hajj/...)
 		elseif ($script_dir === '' || $script_dir === '/')
-		{
+	{
 			$rest = ltrim(substr($uri_path, strlen($url_prefix) + 1), '/');
 			$query = isset($_SERVER['QUERY_STRING']) && $_SERVER['QUERY_STRING'] !== ''
 				? '?' . $_SERVER['QUERY_STRING']
 				: '';
 			$_SERVER['REQUEST_URI'] = ($rest !== '' ? '/' . $rest : '/') . $query;
-		}
+	}
 	}
 }
 
