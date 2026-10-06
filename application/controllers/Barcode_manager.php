@@ -433,11 +433,15 @@ class Barcode_manager extends CI_Controller
         if (empty($filenames)) {
             return;
         }
+        $updated = 0;
         foreach (array_chunk($filenames, 500) as $chunk) {
             $this->db->where_in('barcode', $chunk);
             $this->db->set('barcode', null);
+            $this->db->set('updated_at', date('Y-m-d H:i:s'));
             $this->db->update('peserta');
+            $updated += $this->db->affected_rows();
         }
+        log_message('info', 'Barcode Manager clear_peserta_barcode - affected rows: ' . $updated);
     }
 
     private function log_activity($filenames = array())
